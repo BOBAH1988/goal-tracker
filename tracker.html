@@ -41,6 +41,7 @@
   .actions button:hover{color:var(--text); border-color:var(--accent);}
   #btnLangToggle{padding:1px 2px !important; font-size:25px !important; line-height:1; display:flex; align-items:center; justify-content:center; border-color:transparent;}
   #btnInstallApp{padding:1px 2px !important; font-size:22px !important; line-height:1; display:flex; align-items:center; justify-content:center; border-color:transparent;}
+  #btnAbout{padding:1px 2px !important; font-size:22px !important; line-height:1; display:flex; align-items:center; justify-content:center; border-color:transparent; filter:brightness(0.8) saturate(0.85);}
   .lang-dropdown{position:relative; display:inline-flex;}
   .lang-menu{
     position:absolute; top:calc(100% + 4px); right:0; background:var(--card2); border:1px solid var(--border);
@@ -105,6 +106,7 @@
   .install-steps ol{margin:0; padding-left:20px;}
   .install-steps li{margin-bottom:8px;}
   .install-steps li:last-child{margin-bottom:0;}
+  .about-text{color:var(--text); font-size:13px; line-height:1.6; white-space:pre-line;}
   .auth-link{
     background:none; border:none; color:var(--accent); font-size:12px; padding:0;
     cursor:pointer; text-align:right; align-self:auto;
@@ -448,7 +450,12 @@ const STRINGS = {
     installAppTitle: 'Установить как приложение',
     installStepsIOS: '<ol><li>Нажмите значок <b>«Поделиться»</b> ⬆️ внизу экрана в Safari.</li><li>Выберите <b>«На экран «Домой»»</b>.</li><li>Нажмите <b>«Добавить»</b> — иконка появится на экране, как у обычного приложения.</li></ol>',
     installStepsAndroid: '<ol><li>Откройте меню браузера — обычно значок ⋮ в правом верхнем углу.</li><li>Выберите <b>«Установить приложение»</b> или <b>«Добавить на главный экран»</b>.</li><li>Подтвердите установку — готово!</li></ol>',
-    installNowBtn: 'Установить сейчас'
+    installNowBtn: 'Установить сейчас',
+    exportData: 'Скачать экспорт данных',
+    exportDateLabel: 'Дата экспорта',
+    exportChecklistLabel: 'Чек-лист',
+    aboutTitle: 'О проекте',
+    aboutText: 'Трекер целей — простой способ дойти до цели: шаг за шагом, без давления дедлайнов и лишней сложности.\n\nНикаких обязательных дат, формулировок по SMART и лишних рамок — только цель и путь к ней. Пишете цель → делите на подцели → если подцель всё ещё кажется сложной, делите и её. Так, маленькими шагами, вы видите, как закрываете задачу за задачей и приближаетесь к своей мечте.\n\n— Владимир Соколов'
   },
   en: {
     appTitle: '🎯 Goal Tracker',
@@ -537,7 +544,12 @@ const STRINGS = {
     installAppTitle: 'Install as an app',
     installStepsIOS: '<ol><li>Tap the <b>Share</b> icon ⬆️ at the bottom of Safari.</li><li>Select <b>“Add to Home Screen”</b>.</li><li>Tap <b>“Add”</b> — the icon will appear on your home screen like a regular app.</li></ol>',
     installStepsAndroid: '<ol><li>Open the browser menu — usually the ⋮ icon in the top-right corner.</li><li>Select <b>“Install app”</b> or <b>“Add to Home screen”</b>.</li><li>Confirm — done!</li></ol>',
-    installNowBtn: 'Install now'
+    installNowBtn: 'Install now',
+    exportData: 'Download data export',
+    exportDateLabel: 'Export date',
+    exportChecklistLabel: 'Checklist',
+    aboutTitle: 'About',
+    aboutText: 'Goal Tracker is a simple way to reach your goals — one small step at a time, without deadline pressure or unnecessary complexity.\n\nNo mandatory dates, no SMART framework, no extra rules — just the goal and the path to it. Write a goal → break it into subgoals → if a subgoal still feels too big, break it down again. That way, in small steps, you watch yourself close one task after another and get closer to your dream.\n\n— Vladimir Sokolov'
   }
 };
 function loadLang(){
@@ -567,6 +579,7 @@ let addSubMode = false;
 let checklistMode = false;
 let installPanelOpen = false;
 let deferredInstallPrompt = null;
+let aboutPanelOpen = false;
 function isMobileDevice(){
   return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 }
@@ -945,6 +958,57 @@ function doneCount(node){
   if(!node.children) return 0;
   return node.children.filter(c => computePercent(c) === 100).length;
 }
+// Plain-text, indented rendering of one node and everything under it — used for the "share your
+// progress with a mentor" data export. Deliberately simple (no special file format) so it opens
+// and reads cleanly anywhere: email body, chat message, text editor.
+function exportNodeLines(node, depth){
+  const indent = '  '.repeat(depth);
+  const lines = [];
+  if(isLeaf(node)){
+    if(node.checklist && node.checklist.length){
+      const pct = computePercent(node);
+      lines.push(`${indent}- ${node.name} — ${pct}%`);
+      node.checklist.forEach(item=>{
+        lines.push(`${indent}    [${item.done ? 'x' : ' '}] ${item.text}`);
+      });
+    } else {
+      lines.push(`${indent}- ${node.name} ${node.done ? '✅' : '❌'}`);
+    }
+    return lines;
+  }
+  if(node.children && node.children.length){
+    lines.push(`${indent}- ${node.name} — ${computePercent(node)}%`);
+    node.children.forEach(child => { lines.push(...exportNodeLines(child, depth + 1)); });
+  } else {
+    lines.push(`${indent}- ${node.name}`);
+  }
+  return lines;
+}
+function buildExportText(){
+  const now = new Date();
+  const dateStr = `${now.toLocaleDateString()} ${now.toLocaleTimeString()}`;
+  const lines = [
+    t('appTitle').replace(/^\S+\s*/, ''),
+    `${t('exportDateLabel')}: ${dateStr}`,
+    '',
+    `${t('overallProgress')}: ${computePercent(state)}%`,
+    ''
+  ];
+  (state.children || []).forEach(child => { lines.push(...exportNodeLines(child, 0)); });
+  return lines.join('\n');
+}
+function doExportData(){
+  const text = buildExportText();
+  const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `goal-tracker-export-${new Date().toISOString().slice(0,10)}.txt`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
 function barColor(pct){
   if(pct>=70) return "var(--green)";
   if(pct>=40) return "var(--yellow)";
@@ -966,6 +1030,7 @@ function render(){
   let html = `<div class="topbar">
     <h1>${t('appTitle')}</h1>
     <div class="actions">
+      <button id="btnAbout" title="${t('aboutTitle')}" aria-label="${t('aboutTitle')}">❓</button>
       <div class="lang-dropdown">
         <button id="btnLangToggle" title="${lang==='ru'?'Русский':'English'}">${LANG_FLAGS[lang]}</button>
         ${langMenuOpen ? `<div class="lang-menu">
@@ -978,6 +1043,7 @@ function render(){
             <button id="btnAccount" title="${esc(authUser.email)}">👤 ${esc(authUser.name || authUser.email)}</button>
             ${accountMenuOpen ? `<div class="account-menu">
               <button id="btnEditAccount">${t('editAccount')}</button>
+              <button id="btnExportData">${t('exportData')}</button>
               <button id="btnSignOutMenu" class="danger">${t('accountSignOut')}</button>
             </div>` : ''}
           </div>`
@@ -992,6 +1058,16 @@ function render(){
         <h2 style="margin:0 0 4px; font-size:16px;">${t('installAppTitle')}</h2>
         <div class="install-steps">${isIOSDevice() ? t('installStepsIOS') : t('installStepsAndroid')}</div>
         ${(deferredInstallPrompt && !isIOSDevice()) ? `<button id="btnInstallNow">${t('installNowBtn')}</button>` : ''}
+      </div>
+    </div>`;
+  }
+
+  if(aboutPanelOpen){
+    html += `<div class="auth-modal-overlay" id="aboutOverlay">
+      <div class="auth-panel">
+        <button class="auth-close" id="btnAboutClose" aria-label="close" title="${t('done')}">✕</button>
+        <h2 style="margin:0 0 4px; font-size:16px;">${t('aboutTitle')}</h2>
+        <div class="about-text">${esc(t('aboutText'))}</div>
       </div>
     </div>`;
   }
@@ -1678,6 +1754,15 @@ function attachHandlers(){
       render();
     });
   }
+  const btnExportData = document.getElementById('btnExportData');
+  if(btnExportData){
+    btnExportData.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      accountMenuOpen = false;
+      doExportData();
+      render();
+    });
+  }
   const btnSignOutMenu = document.getElementById('btnSignOutMenu');
   if(btnSignOutMenu){
     btnSignOutMenu.addEventListener('click', (e)=>{
@@ -1949,6 +2034,29 @@ function attachHandlers(){
       document.removeEventListener('click', closeLangMenu);
       render();
     }, { once:true });
+  }
+  const btnAbout = document.getElementById('btnAbout');
+  if(btnAbout){
+    btnAbout.addEventListener('click', ()=>{
+      aboutPanelOpen = true;
+      render();
+    });
+  }
+  const aboutOverlay = document.getElementById('aboutOverlay');
+  if(aboutOverlay){
+    aboutOverlay.addEventListener('click', (e)=>{
+      if(e.target === aboutOverlay){
+        aboutPanelOpen = false;
+        render();
+      }
+    });
+  }
+  const btnAboutClose = document.getElementById('btnAboutClose');
+  if(btnAboutClose){
+    btnAboutClose.addEventListener('click', ()=>{
+      aboutPanelOpen = false;
+      render();
+    });
   }
 }
 
