@@ -145,6 +145,15 @@
 </head>
 <body>
 <div id="app"></div>
+<div id="vkOneTapContainer" style="max-width:280px;margin:0 auto 20px;display:none;"></div>
+
+<!-- Cloud sync (optional): loads Firebase's client SDK so goals can sync across devices via a
+     private sync code. Harmless no-op if you never fill in firebaseConfig further down. -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<!-- VK ID (optional): branded login widget, cosmetic only. Harmless no-op if VK_APP_ID stays 0. -->
+<script src="https://unpkg.com/@vkid/sdk/dist-sdk/umd/index.js"></script>
 
 <script>
 /* ===== Seed data (transcribed from the Excel table) =====
@@ -203,7 +212,14 @@ const STRINGS = {
     footer: 'Данные хранятся локально в этом браузере. Делайте «Экспорт», чтобы сохранить резервную копию.',
     profile: 'Личный кабинет',
     addSubgoal: 'Развернуть',
-    addSubHint: '— нажмите на цель без подцелей, чтобы добавить к ней 2 подцели-чекбокса'
+    addSubHint: '— нажмите на цель без подцелей, чтобы добавить к ней 2 подцели-чекбокса',
+    sync: 'Синхронизация',
+    syncChooseConfirm: 'Нажмите OK, чтобы создать новый код синхронизации, или «Отмена», чтобы ввести код с другого устройства.',
+    syncEnterPrompt: 'Введите код синхронизации с другого устройства:',
+    syncCreated: code => `Ваш код синхронизации:\n\n${code}\n\nСохраните его — он понадобится, чтобы подключить другое устройство.`,
+    syncJoined: 'Устройство подключено к синхронизации.',
+    syncShowCodeConfirm: code => `Ваш код синхронизации:\n\n${code}\n\nOK — закрыть. «Отмена» — отключить синхронизацию на этом устройстве.`,
+    syncDisconnectConfirm: 'Точно отключить синхронизацию на этом устройстве? Локальные данные останутся, но перестанут обновляться из облака.'
   },
   en: {
     appTitle: '🎯 Goal Tracker',
@@ -238,7 +254,14 @@ const STRINGS = {
     footer: 'Data is stored locally in this browser. Use “Export” to keep a backup.',
     profile: 'Profile',
     addSubgoal: 'Expand',
-    addSubHint: '— click a goal with no subgoals yet to add 2 checkbox subgoals to it'
+    addSubHint: '— click a goal with no subgoals yet to add 2 checkbox subgoals to it',
+    sync: 'Sync',
+    syncChooseConfirm: 'Press OK to create a new sync code, or Cancel to enter a code from another device.',
+    syncEnterPrompt: 'Enter the sync code from your other device:',
+    syncCreated: code => `Your sync code:\n\n${code}\n\nSave it — you'll need it to connect another device.`,
+    syncJoined: 'Device connected to sync.',
+    syncShowCodeConfirm: code => `Your sync code:\n\n${code}\n\nOK to close. Cancel to disconnect sync on this device.`,
+    syncDisconnectConfirm: 'Disconnect sync on this device? Local data stays, but will stop updating from the cloud.'
   }
 };
 function loadLang(){
@@ -287,6 +310,138 @@ function structuredCloneFallback(obj){
 }
 function saveState(){
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  scheduleCloudPush();
+}
+
+/* ===== Cloud sync (Firebase Firestore + secret sync code) =====
+   No "Sign in with Google/Apple" button here (Russian law 199-ФЗ bans that for site owners since
+   6 Jul 2026) — instead, syncing between your own devices works via a private code you generate
+   once and copy to your other device. The browser signs in to Firebase anonymously (invisible,
+   no foreign-branded login prompt) purely so Firestore's security rules have a session to check;
+   the actual protection is that only someone who has your code can read/write that document.
+   To turn this on:
+   1) Create a free project at https://console.firebase.google.com
+   2) Build -> Firestore Database -> Create database (production mode, any region).
+   3) Authentication -> Sign-in method -> enable "Anonymous" (this is NOT a visible login button,
+      just lets the app open a private session with Firestore).
+   4) Firestore -> Rules, paste this and Publish:
+        rules_version = '2';
+        service cloud.firestore {
+          match /databases/{database}/documents {
+            match /sync/{code} {
+              allow read, write: if request.auth != null;
+            }
+          }
+        }
+   5) Project settings (gear icon) -> General -> "Your apps" -> add a Web app -> copy the
+      firebaseConfig object it gives you and paste its values below, replacing the placeholders.
+   Until you do this, cloudEnabled stays false and the app behaves exactly as before (local only). */
+const firebaseConfig = {
+  apiKey: "AIzaSyBKBHaR72J_d7tgKiWeWQ-Aco9Od193j3A",
+  authDomain: "goal-tracker-496b8.firebaseapp.com",
+  projectId: "goal-tracker-496b8",
+  storageBucket: "goal-tracker-496b8.firebasestorage.app",
+  messagingSenderId: "809817715891",
+  appId: "1:809817715891:web:b8a10918d3307c19922cc6"
+};
+const SYNC_CODE_KEY = "goal_tracker_sync_code";
+let cloudEnabled = false;
+let syncCode = null;
+let cloudSyncTimer = null;
+let applyingRemoteUpdate = false;
+let unsubscribeSnapshot = null;
+try{
+  if(firebaseConfig.apiKey && firebaseConfig.apiKey.indexOf('ВСТАВЬТЕ') === -1 && typeof firebase !== 'undefined'){
+    firebase.initializeApp(firebaseConfig);
+    cloudEnabled = true;
+  }
+}catch(e){ cloudEnabled = false; }
+try{ syncCode = localStorage.getItem(SYNC_CODE_KEY); }catch(e){ syncCode = null; }
+
+function generateSyncCode(){
+  if(window.crypto && window.crypto.randomUUID) return window.crypto.randomUUID().replace(/-/g,'');
+  let s = '';
+  for(let i=0;i<32;i++) s += Math.floor(Math.random()*16).toString(16);
+  return s;
+}
+function ensureAnonAuth(){
+  if(!cloudEnabled) return Promise.resolve(null);
+  const existing = firebase.auth().currentUser;
+  if(existing) return Promise.resolve(existing);
+  return firebase.auth().signInAnonymously().then(cred => cred.user).catch(()=>null);
+}
+function scheduleCloudPush(){
+  if(!cloudEnabled || !syncCode || applyingRemoteUpdate) return;
+  clearTimeout(cloudSyncTimer);
+  cloudSyncTimer = setTimeout(()=>{
+    ensureAnonAuth().then(()=>{
+      firebase.firestore().collection('sync').doc(syncCode)
+        .set({ state, updatedAt: firebase.firestore.FieldValue.serverTimestamp() })
+        .catch(()=>{});
+    });
+  }, 800);
+}
+function startCloudSync(code){
+  ensureAnonAuth().then(()=>{
+    const ref = firebase.firestore().collection('sync').doc(code);
+    unsubscribeSnapshot = ref.onSnapshot((doc)=>{
+      if(doc.exists){
+        const data = doc.data();
+        if(data && data.state){
+          applyingRemoteUpdate = true;
+          state = data.state;
+          saveState();
+          applyingRemoteUpdate = false;
+          render();
+        }
+      } else {
+        ref.set({ state, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }).catch(()=>{});
+      }
+    });
+  });
+}
+function stopCloudSync(){
+  if(unsubscribeSnapshot){ unsubscribeSnapshot(); unsubscribeSnapshot = null; }
+}
+
+/* ===== VK ID OneTap (branded login, cosmetic only — does NOT gate data access) =====
+   1) Create an app at https://id.vk.com/about/business/go/accounts (VK ID connection console).
+   2) Add your site's URL (e.g. https://ваш-логин.github.io/) to the app's trusted redirect domains.
+   3) Copy the numeric App ID and paste it below instead of 0. */
+const VK_APP_ID = 0;
+let vkUser = null;
+function initVkOneTap(){
+  if(!VK_APP_ID || typeof VKID === 'undefined') return;
+  try{
+    VKID.Config.init({
+      app: VK_APP_ID,
+      redirectUrl: window.location.origin + window.location.pathname,
+      responseMode: VKID.ConfigResponseMode.Callback,
+      source: VKID.ConfigSource.LOWCODE,
+      scope: ''
+    });
+    const container = document.getElementById('vkOneTapContainer');
+    if(!container) return;
+    const oneTap = new VKID.OneTap();
+    oneTap
+      .render({ container, showAlternativeLogin: false })
+      .on(VKID.WidgetEvents.ERROR, ()=>{})
+      .on(VKID.OneTapInternalEvents.LOGIN_SUCCESS, (payload)=>{
+        VKID.Auth.exchangeCode(payload.code, payload.device_id)
+          .then((result)=> VKID.Auth.userInfo(result.access_token))
+          .then((info)=>{
+            vkUser = (info && info.user) ? info.user : info;
+            updateVkContainerVisibility();
+            render();
+          })
+          .catch(()=>{});
+      });
+  }catch(e){}
+}
+function updateVkContainerVisibility(){
+  const c = document.getElementById('vkOneTapContainer');
+  if(!c) return;
+  c.style.display = (vkUser || !VK_APP_ID) ? 'none' : '';
 }
 
 function resolve(p){
@@ -336,6 +491,8 @@ function render(){
       <button id="btnLangRu" class="lang-btn ${lang==='ru'?'active':''}" title="Русский">🇷🇺</button>
       <button id="btnLangEn" class="lang-btn ${lang==='en'?'active':''}" title="English">🇺🇸</button>
       <button id="btnProfile" title="${t('profile')}">👤</button>
+      ${cloudEnabled ? `<button id="btnSync">${syncCode ? '🔗' : '🔓'} ${t('sync')}</button>` : ''}
+      ${vkUser ? `<span style="font-size:12px;color:var(--muted);align-self:center;">👋 ${esc(vkUser.first_name||'')}</span>` : ''}
     </div>
   </div>`;
 
@@ -415,6 +572,7 @@ function render(){
   html += `<footer>${t('footer')}</footer>`;
   app.innerHTML = html;
   attachHandlers();
+  updateVkContainerVisibility();
 }
 
 function renderBreadcrumb(){
@@ -835,6 +993,40 @@ function attachHandlers(){
       render();
     });
   }
+  const btnSync = document.getElementById('btnSync');
+  if(btnSync){
+    btnSync.addEventListener('click', ()=>{
+      if(syncCode){
+        if(!confirm(t('syncShowCodeConfirm')(syncCode))){
+          if(confirm(t('syncDisconnectConfirm'))){
+            stopCloudSync();
+            try{ localStorage.removeItem(SYNC_CODE_KEY); }catch(e){}
+            syncCode = null;
+            render();
+          }
+        }
+        return;
+      }
+      const wantsNew = confirm(t('syncChooseConfirm'));
+      if(wantsNew){
+        const code = generateSyncCode();
+        try{ localStorage.setItem(SYNC_CODE_KEY, code); }catch(e){}
+        syncCode = code;
+        startCloudSync(code);
+        alert(t('syncCreated')(code));
+      } else {
+        const entered = prompt(t('syncEnterPrompt'));
+        if(entered && entered.trim()){
+          const code = entered.trim();
+          try{ localStorage.setItem(SYNC_CODE_KEY, code); }catch(e){}
+          syncCode = code;
+          startCloudSync(code);
+          alert(t('syncJoined'));
+        }
+      }
+      render();
+    });
+  }
   function setLang(newLang){
     if(lang === newLang) return;
     lang = newLang;
@@ -848,6 +1040,12 @@ function attachHandlers(){
 }
 
 render();
+
+if(cloudEnabled && syncCode){
+  startCloudSync(syncCode);
+}
+try{ initVkOneTap(); }catch(e){}
+updateVkContainerVisibility();
 
 // PWA: register the service worker so the app can be installed and used offline.
 // Registration silently no-ops on file:// pages or browsers without support.
