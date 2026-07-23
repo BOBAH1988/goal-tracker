@@ -40,6 +40,7 @@
   }
   .actions button:hover{color:var(--text); border-color:var(--accent);}
   #btnLangToggle{padding:1px 2px !important; font-size:25px !important; line-height:1; display:flex; align-items:center; justify-content:center; border-color:transparent;}
+  #btnInstallApp{padding:1px 2px !important; font-size:22px !important; line-height:1; display:flex; align-items:center; justify-content:center; border-color:transparent;}
   .lang-dropdown{position:relative; display:inline-flex;}
   .lang-menu{
     position:absolute; top:calc(100% + 4px); right:0; background:var(--card2); border:1px solid var(--border);
@@ -100,6 +101,10 @@
   .auth-error{color:var(--red); font-size:12px;}
   .auth-hint{color:var(--muted); font-size:12px;}
   .auth-hint.valid{color:var(--green);}
+  .install-steps{color:var(--text); font-size:13px; line-height:1.6;}
+  .install-steps ol{margin:0; padding-left:20px;}
+  .install-steps li{margin-bottom:8px;}
+  .install-steps li:last-child{margin-bottom:0;}
   .auth-link{
     background:none; border:none; color:var(--accent); font-size:12px; padding:0;
     cursor:pointer; text-align:right; align-self:auto;
@@ -244,10 +249,11 @@
     min-width:32px; display:inline-flex; align-items:center; justify-content:center;
   }
   #btnAddGoal.icon-btn, #btnAddChild.icon-btn, #btnDelete.icon-btn{ font-size:18px; }
-  #btnReset.icon-btn{ font-size:26px; padding:2px; color:var(--red); }
+  #btnReset.icon-btn{ font-size:24px; padding:2px; color:var(--red); }
   #btnReset.icon-btn:hover{ color:var(--red); border-color:var(--red); }
   #btnAddSubgoal.icon-btn{ font-size:24px; padding:2px; }
   #btnChecklist.icon-btn{ font-size:24px; padding:2px; }
+  #btnEdit.icon-btn{ font-size:24px; padding:2px; }
   .checklist-section{margin-top:20px;}
   .checklist-row{
     display:flex; align-items:center; gap:10px; background:var(--card); border:1px solid var(--border);
@@ -438,7 +444,11 @@ const STRINGS = {
     backToSignIn: 'Уже есть аккаунт? Войти',
     nameCheckingMsg: 'Проверяем...',
     nameAvailableMsg: 'Имя свободно',
-    passwordHintText: 'Минимум 6 символов, буквы и цифры'
+    passwordHintText: 'Минимум 6 символов, буквы и цифры',
+    installAppTitle: 'Установить как приложение',
+    installStepsIOS: '<ol><li>Нажмите значок <b>«Поделиться»</b> ⬆️ внизу экрана в Safari.</li><li>Выберите <b>«На экран «Домой»»</b>.</li><li>Нажмите <b>«Добавить»</b> — иконка появится на экране, как у обычного приложения.</li></ol>',
+    installStepsAndroid: '<ol><li>Откройте меню браузера — обычно значок ⋮ в правом верхнем углу.</li><li>Выберите <b>«Установить приложение»</b> или <b>«Добавить на главный экран»</b>.</li><li>Подтвердите установку — готово!</li></ol>',
+    installNowBtn: 'Установить сейчас'
   },
   en: {
     appTitle: '🎯 Goal Tracker',
@@ -523,7 +533,11 @@ const STRINGS = {
     backToSignIn: 'Already have an account? Sign in',
     nameCheckingMsg: 'Checking...',
     nameAvailableMsg: 'Username is available',
-    passwordHintText: 'Minimum 6 characters, letters and digits'
+    passwordHintText: 'Minimum 6 characters, letters and digits',
+    installAppTitle: 'Install as an app',
+    installStepsIOS: '<ol><li>Tap the <b>Share</b> icon ⬆️ at the bottom of Safari.</li><li>Select <b>“Add to Home Screen”</b>.</li><li>Tap <b>“Add”</b> — the icon will appear on your home screen like a regular app.</li></ol>',
+    installStepsAndroid: '<ol><li>Open the browser menu — usually the ⋮ icon in the top-right corner.</li><li>Select <b>“Install app”</b> or <b>“Add to Home screen”</b>.</li><li>Confirm — done!</li></ol>',
+    installNowBtn: 'Install now'
   }
 };
 function loadLang(){
@@ -551,6 +565,17 @@ let editMode = false;
 let deleteMode = false;
 let addSubMode = false;
 let checklistMode = false;
+let installPanelOpen = false;
+let deferredInstallPrompt = null;
+function isMobileDevice(){
+  return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+}
+function isIOSDevice(){
+  return /iPhone|iPad|iPod/i.test(navigator.userAgent);
+}
+function isStandalonePwa(){
+  return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
+}
 
 // Minimum number of children allowed to remain at a given level, and how many of the leading
 // items are protected from deletion there. Home (depth 0) still protects the first goal (floor
@@ -947,6 +972,7 @@ function render(){
           ${Object.keys(LANG_FLAGS).map(code => `<button class="lang-option ${lang===code?'active':''}" data-lang="${code}" title="${code==='ru'?'Русский':'English'}">${LANG_FLAGS[code]}</button>`).join('')}
         </div>` : ''}
       </div>
+      ${(isMobileDevice() && !isStandalonePwa()) ? `<button id="btnInstallApp" title="${t('installAppTitle')}" aria-label="${t('installAppTitle')}">📲</button>` : ''}
       ${cloudEnabled ? (authUser
         ? `<div class="account-dropdown">
             <button id="btnAccount" title="${esc(authUser.email)}">👤 ${esc(authUser.name || authUser.email)}</button>
@@ -958,6 +984,17 @@ function render(){
         : `<button id="btnAccount">🔐 ${t('account')}</button>`) : ''}
     </div>
   </div>`;
+
+  if(installPanelOpen){
+    html += `<div class="auth-modal-overlay" id="installOverlay">
+      <div class="auth-panel">
+        <button class="auth-close" id="btnInstallClose" aria-label="close" title="${t('done')}">✕</button>
+        <h2 style="margin:0 0 4px; font-size:16px;">${t('installAppTitle')}</h2>
+        <div class="install-steps">${isIOSDevice() ? t('installStepsIOS') : t('installStepsAndroid')}</div>
+        ${(deferredInstallPrompt && !isIOSDevice()) ? `<button id="btnInstallNow">${t('installNowBtn')}</button>` : ''}
+      </div>
+    </div>`;
+  }
 
   if(cloudEnabled && authUser && !authUser.emailVerified){
     html += `<div class="verify-banner">
@@ -1464,6 +1501,9 @@ function attachHandlers(){
       delete node.done;
       delete node.date;
       addSubMode = false;
+      // Jump straight into the goal we just expanded, so the newly created subgoals are
+      // immediately visible instead of leaving the user on the same overview page.
+      path = [...path, idx];
       saveState();
       render();
     });
@@ -1833,6 +1873,40 @@ function attachHandlers(){
       setLang(el.dataset.lang);
     });
   });
+  const btnInstallApp = document.getElementById('btnInstallApp');
+  if(btnInstallApp){
+    btnInstallApp.addEventListener('click', ()=>{
+      installPanelOpen = true;
+      render();
+    });
+  }
+  const installOverlay = document.getElementById('installOverlay');
+  if(installOverlay){
+    installOverlay.addEventListener('click', (e)=>{
+      if(e.target === installOverlay){
+        installPanelOpen = false;
+        render();
+      }
+    });
+  }
+  const btnInstallClose = document.getElementById('btnInstallClose');
+  if(btnInstallClose){
+    btnInstallClose.addEventListener('click', ()=>{
+      installPanelOpen = false;
+      render();
+    });
+  }
+  const btnInstallNow = document.getElementById('btnInstallNow');
+  if(btnInstallNow){
+    btnInstallNow.addEventListener('click', async ()=>{
+      if(!deferredInstallPrompt) return;
+      deferredInstallPrompt.prompt();
+      try{ await deferredInstallPrompt.userChoice; }catch(e){}
+      deferredInstallPrompt = null;
+      installPanelOpen = false;
+      render();
+    });
+  }
   if(langMenuOpen){
     document.addEventListener('click', function closeLangMenu(){
       langMenuOpen = false;
@@ -1868,6 +1942,13 @@ if('serviceWorker' in navigator){
     navigator.serviceWorker.register('./sw.js').catch(()=>{});
   });
 }
+// Captures Chrome/Android's native install prompt so the "Установить сейчас" button in the
+// install-instructions modal can trigger it directly instead of only showing manual steps.
+window.addEventListener('beforeinstallprompt', (e)=>{
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  render();
+});
 </script>
 </body>
 </html>
