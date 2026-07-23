@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Трекер целей</title>
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#0f1420">
+<link rel="icon" href="./icon-192.png">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Трекер целей">
+<style>
+  :root{
+    --bg:#0f1420; --card:#1a2233; --card2:#20293d; --text:#eef2f8; --muted:#8a93a6;
+    --green:#3ecf8e; --yellow:#f2b84b; --red:#e5645a; --accent:#5b8cff; --border:#2a3348;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:linear-gradient(160deg,#0b0e17,#141b2c 60%,#0f1420); color:var(--text); min-height:100vh;
+  }
+  #app{max-width:920px; margin:0 auto; padding:28px 20px 80px;}
+  .topbar{display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; flex-wrap:wrap; gap:10px;}
+  .topbar h1{font-size:20px; margin:0; font-weight:600;}
+  .actions{display:flex; gap:8px; flex-wrap:wrap;}
+  .actions button{
+    background:var(--card2); color:var(--muted); border:1px solid var(--border); border-radius:8px;
+    padding:6px 12px; font-size:12px; cursor:pointer;
+  }
+  .actions button:hover{color:var(--text); border-color:var(--accent);}
+  #btnLangRu, #btnLangEn, #btnProfile{padding:1px 2px !important; font-size:25px !important; line-height:1; display:flex; align-items:center; justify-content:center; border-color:transparent;}
+  #btnLangRu.active, #btnLangEn.active{border-color:var(--accent); box-shadow:0 0 0 1px var(--accent);}
+  #btnEdit, #btnDelete, #btnAddSubgoal{
+    background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:8px;
+    padding:6px 12px; font-size:12px; cursor:pointer; white-space:nowrap;
+  }
+  #btnEdit:hover{color:var(--text); border-color:var(--accent);}
+  #btnEdit.active{background:var(--accent); color:#fff; border-color:var(--accent);}
+  #btnDelete:hover{border-color:var(--red); color:var(--red);}
+  #btnDelete.active{background:var(--red); color:#fff; border-color:var(--red);}
+  #btnDelete.active:hover{color:#fff;}
+  #btnAddSubgoal:hover{color:var(--text); border-color:var(--accent);}
+  #btnAddSubgoal.active{background:var(--accent); color:#fff; border-color:var(--accent);}
+  .edit-hint{color:var(--muted); font-weight:400; font-size:12px;}
+  .edit-hint.delete-hint{color:var(--red);}
+  .breadcrumb{display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin-bottom:16px; font-size:13px; color:var(--muted);}
+  .breadcrumb span.crumb{cursor:pointer; padding:3px 8px; border-radius:6px;}
+  .breadcrumb span.crumb:hover{background:var(--card2); color:var(--text);}
+  .breadcrumb span.sep{opacity:.4;}
+  .overall{
+    background:var(--card); border:1px solid var(--border); border-radius:16px; padding:20px 22px; margin-bottom:22px;
+  }
+  .overall .row{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:10px;}
+  .overall h2{margin:0; font-size:16px; font-weight:600; color:var(--muted);}
+  .overall .pct{font-size:28px; font-weight:700;}
+  .bar{height:10px; border-radius:6px; background:#0c1120; overflow:hidden; border:1px solid var(--border);}
+  .bar > div{height:100%; border-radius:6px; transition:width .3s ease;}
+  .node-header{margin-bottom:18px;}
+  .node-header h2{font-size:22px; margin:0 0 6px;}
+  .node-header .meta{color:var(--muted); font-size:13px; margin-bottom:10px;}
+  .grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:14px;}
+  .grid-goals{grid-template-columns:repeat(2,1fr);}
+  .grid-hero-first{grid-template-columns:repeat(2,1fr);}
+  .grid-hero-first > *:first-child{grid-column:1 / -1;}
+  .card{
+    background:var(--card); border:1px solid var(--border); border-radius:14px; padding:16px;
+    cursor:pointer; transition:border-color .15s, transform .1s;
+  }
+  .card:hover{border-color:var(--accent); transform:translateY(-1px);}
+  .card.editable{cursor:default; border-color:var(--red); box-shadow:0 0 0 1px var(--red);}
+  .card.editable:hover{transform:none; border-color:var(--red);}
+  .card.deletable{cursor:pointer; border-color:var(--red); box-shadow:0 0 0 1px var(--red); background:rgba(229,100,90,0.14);}
+  .card.deletable:hover{border-color:var(--red); background:rgba(229,100,90,0.24);}
+  .card.locked{cursor:default; opacity:.5;}
+  .card.locked:hover{transform:none; border-color:var(--border);}
+  .card.selectable{cursor:pointer; border-color:var(--accent); box-shadow:0 0 0 1px var(--accent); background:rgba(91,140,255,0.14);}
+  .card.selectable:hover{border-color:var(--accent); background:rgba(91,140,255,0.24);}
+  .card .title{font-size:15px; font-weight:600; margin-bottom:8px; display:flex; justify-content:space-between; gap:8px;}
+  .card .title .arrow{color:var(--muted); font-weight:400;}
+  .card .sub{font-size:12px; color:var(--muted); margin-bottom:10px; display:flex; justify-content:space-between;}
+  .card .bar{margin-top:2px;}
+  .edit-pencil{
+    background:var(--card2); border:1px solid var(--border); border-radius:6px; font-size:13px;
+    padding:2px 7px; cursor:pointer; line-height:1.4;
+  }
+  .edit-pencil:hover{border-color:var(--accent);}
+  .goal-input{
+    background:transparent; border:none; border-bottom:1px dashed var(--red); color:var(--text);
+    font-size:15px; font-weight:600; font-family:inherit; padding:0 0 2px; width:100%; outline:none;
+  }
+  .goal-input:focus{border-bottom-style:solid; border-bottom-color:var(--red);}
+  .leaf-row{
+    display:flex; align-items:flex-start; gap:12px; background:var(--card); border:1px solid var(--border);
+    border-radius:12px; padding:14px 16px; margin-bottom:10px;
+  }
+  .leaf-row.done{border-color:rgba(62,207,142,.4);}
+  .chk{
+    width:24px; height:24px; border-radius:7px; border:2px solid var(--border); flex:none; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; font-size:14px; margin-top:2px; user-select:none;
+  }
+  .chk.done{background:var(--green); border-color:var(--green); color:#0b0e17; font-weight:700;}
+  .leaf-body{flex:1;}
+  .leaf-title{font-size:14px; line-height:1.4;}
+  .leaf-meta{display:flex; gap:14px; margin-top:6px; font-size:12px; color:var(--muted); align-items:center; flex-wrap:wrap;}
+  .leaf-meta input[type=date]{
+    background:var(--card2); border:1px solid var(--border); color:var(--text); border-radius:6px; padding:2px 6px; font-size:12px;
+  }
+  .leaf-meta button, .nav-arrow{
+    background:none; border:1px solid var(--border); color:var(--muted); border-radius:6px; padding:2px 8px; font-size:12px; cursor:pointer;
+  }
+  .leaf-meta button:hover{color:var(--text); border-color:var(--accent);}
+  .empty-state{color:var(--muted); font-size:13px; padding:20px; text-align:center; border:1px dashed var(--border); border-radius:12px;}
+  .add-sub{margin-top:14px;}
+  .add-sub button{
+    background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:8px; padding:8px 14px; font-size:13px; cursor:pointer;
+  }
+  .add-sub button:hover{color:var(--text); border-color:var(--accent);}
+  footer{color:var(--muted); font-size:11px; text-align:center; margin-top:40px; opacity:.7;}
+  .cat-label{font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin:2px 0 10px;}
+  .section-title{font-size:15px; font-weight:600; color:var(--text); margin:4px 0 12px;}
+  .section-title-row{display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:8px;}
+  .section-title-row .section-title{margin:0;}
+  .add-goal-wrap{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
+  #btnAddGoal{
+    background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:8px;
+    padding:6px 12px; font-size:12px; cursor:pointer; white-space:nowrap;
+  }
+  #btnAddGoal:hover{color:var(--text); border-color:var(--accent);}
+  #btnAddGoal:disabled{opacity:.5; cursor:not-allowed;}
+  #btnAddGoal:disabled:hover{color:var(--muted); border-color:var(--border);}
+  .add-goal-msg{color:var(--red); font-size:12px; white-space:nowrap;}
+  .add-child-row{display:flex; justify-content:flex-end; align-items:center; gap:10px; margin:-8px 0 8px; flex-wrap:wrap;}
+  #btnAddChild{
+    background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:8px;
+    padding:6px 12px; font-size:12px; cursor:pointer; white-space:nowrap;
+  }
+  #btnAddChild:hover{color:var(--text); border-color:var(--accent);}
+  #btnAddChild:disabled{opacity:.5; cursor:not-allowed;}
+  #btnAddChild:disabled:hover{color:var(--muted); border-color:var(--border);}
+  .wheel-wrap{background:var(--card); border:1px solid var(--border); border-radius:16px; padding:7px 22px; text-align:center;}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+/* ===== Seed data (transcribed from the Excel table) =====
+   emptyGoals/emptySteps take the noun to use for auto-generated names, so items added later via
+   the UI can be named in whichever language is active at the time (default: Russian for the
+   built-in seed data). */
+function emptyGoals(word){
+  word = word || 'Цель';
+  return [1].map(n => ({ name:`${word} ${n}`, date:"", done:false, children:[] }));
+}
+function emptySteps(subWord, goalWord){
+  subWord = subWord || 'Подцель';
+  return [1,2].map(n => ({ name:`${subWord} ${n}`, children: emptyGoals(goalWord) }));
+}
+
+const SEED = { name:"Главная", children: [
+  { name:"Энергия", children: emptySteps() },
+  { name:"Достаток", children: emptySteps() },
+  { name:"Взаимоотношения", children: emptySteps() },
+  { name:"Навыки", children: emptySteps() }
+]};
+
+/* ===== Language ===== */
+const LANG_KEY = "goal_tracker_lang";
+const STRINGS = {
+  ru: {
+    appTitle: '🎯 Трекер целей',
+    export: 'Экспорт',
+    import: 'Импорт',
+    resetAll: 'Сброс',
+    home: 'Главная',
+    overallProgress: 'Общий прогресс',
+    mainGoals: 'Главные цели',
+    addGoal: 'Добавить',
+    editGoal: 'Изменить',
+    deleteGoal: 'Удалить',
+    done: 'Готово',
+    editHint: '— впишите новое название прямо в карточке',
+    deleteHint: n => n === 0 ? '— нажмите на красную карточку, чтобы удалить (можно удалить все)' : n === 1 ? '— нажмите на красную карточку, чтобы удалить (первая всегда защищена)' : `— нажмите на красную карточку, чтобы удалить (первые ${n} всегда защищены)`,
+    maxN: n => `Максимум ${n} целей`,
+    minN: n => `Минимум ${n}`,
+    balanceWheel: 'Колесо баланса',
+    completedOf: 'выполнено',
+    addLabel: 'Добавить',
+    deleteLabel: 'Удалить',
+    subgoal: 'подцель',
+    goal: 'цель',
+    item: 'элемент',
+    emptyState: 'Здесь пока пусто.',
+    splitInto6: 'Разбить на 6 подшагов',
+    due: 'Срок:',
+    rename: '✏️ Переименовать',
+    renamePrompt: 'Новое название шага:',
+    resetConfirm: 'Точно всё сбросить?',
+    importError: 'Не удалось прочитать файл.',
+    footer: 'Данные хранятся локально в этом браузере. Делайте «Экспорт», чтобы сохранить резервную копию.',
+    profile: 'Личный кабинет',
+    addSubgoal: 'Развернуть',
+    addSubHint: '— нажмите на цель без подцелей, чтобы добавить к ней 2 подцели-чекбокса'
+  },
+  en: {
+    appTitle: '🎯 Goal Tracker',
+    export: 'Export',
+    import: 'Import',
+    resetAll: 'Reset All',
+    home: 'Home',
+    overallProgress: 'Overall Progress',
+    mainGoals: 'Main Goals',
+    addGoal: 'Add',
+    editGoal: 'Edit',
+    deleteGoal: 'Delete',
+    done: 'Done',
+    editHint: '— type a new name right in the card',
+    deleteHint: n => n === 0 ? '— click a red card to delete it (you can delete all of them)' : n === 1 ? '— click a red card to delete it (the first one is always protected)' : `— click a red card to delete it (the first ${n} are always protected)`,
+    maxN: n => `Maximum ${n} goals`,
+    minN: n => `Minimum ${n}`,
+    balanceWheel: 'Balance Wheel',
+    completedOf: 'done',
+    addLabel: 'Add',
+    deleteLabel: 'Delete',
+    subgoal: 'subgoal',
+    goal: 'goal',
+    item: 'item',
+    emptyState: 'Nothing here yet.',
+    splitInto6: 'Split into 6 steps',
+    due: 'Due:',
+    rename: '✏️ Rename',
+    renamePrompt: 'New step name:',
+    resetConfirm: 'Reset everything and keep only 1 goal?',
+    importError: 'Could not read the file.',
+    footer: 'Data is stored locally in this browser. Use “Export” to keep a backup.',
+    profile: 'Profile',
+    addSubgoal: 'Expand',
+    addSubHint: '— click a goal with no subgoals yet to add 2 checkbox subgoals to it'
+  }
+};
+function loadLang(){
+  try{
+    const v = localStorage.getItem(LANG_KEY);
+    if(v === 'ru' || v === 'en') return v;
+  }catch(e){}
+  return 'ru';
+}
+let lang = loadLang();
+function t(key){ return STRINGS[lang][key]; }
+// Capitalized noun for auto-generated names ("цель"->"Цель", "goal"->"Goal") in the current language.
+function capWord(key){
+  const w = t(key);
+  return w.charAt(0).toUpperCase() + w.slice(1);
+}
+
+/* ===== State ===== */
+const STORAGE_KEY = "goal_tracker_state_v6";
+let state = loadState();
+let path = [];
+let editMode = false;
+let deleteMode = false;
+let addSubMode = false;
+
+// Minimum number of children allowed to remain at a given level, and how many of the leading
+// items are protected from deletion there. Home (depth 0) still protects the first goal (floor
+// of 1); every other level (subgoals, goals, deeper) has no floor at all — everything there can
+// be deleted, down to 0 remaining items.
+function protectedCountFor(depth){
+  return depth === 0 ? 1 : 0;
+}
+function minChildrenFor(depth){
+  return protectedCountFor(depth);
+}
+
+function loadState(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw) return JSON.parse(raw);
+  }catch(e){}
+  return structuredCloneFallback(SEED);
+}
+function structuredCloneFallback(obj){
+  return JSON.parse(JSON.stringify(obj));
+}
+function saveState(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+function resolve(p){
+  let node = state;
+  for(const i of p) node = node.children[i];
+  return node;
+}
+function isLeaf(node){
+  return (!node.children || node.children.length===0) && ('done' in node);
+}
+function computePercent(node){
+  if(isLeaf(node)) return node.done ? 100 : 0;
+  if(node.children && node.children.length){
+    const vals = node.children.map(computePercent);
+    return Math.round(vals.reduce((a,b)=>a+b,0)/vals.length);
+  }
+  return 0;
+}
+function doneCount(node){
+  if(!node.children) return 0;
+  return node.children.filter(c => isLeaf(c) ? c.done : computePercent(c)===100).length;
+}
+function barColor(pct){
+  if(pct>=70) return "var(--green)";
+  if(pct>=40) return "var(--yellow)";
+  return "var(--red)";
+}
+function esc(s){
+  return (s||"").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+/* ===== Render ===== */
+function render(){
+  const app = document.getElementById('app');
+  const node = resolve(path);
+  const overallPct = computePercent(state);
+
+  document.documentElement.lang = lang;
+  document.title = t('appTitle');
+
+  let html = `<div class="topbar">
+    <h1>${t('appTitle')}</h1>
+    <div class="actions">
+      <button id="btnExport">${t('export')}</button>
+      <button id="btnImport">${t('import')}</button>
+      <button id="btnReset">${t('resetAll')}</button>
+      <button id="btnLangRu" class="lang-btn ${lang==='ru'?'active':''}" title="Русский">🇷🇺</button>
+      <button id="btnLangEn" class="lang-btn ${lang==='en'?'active':''}" title="English">🇺🇸</button>
+      <button id="btnProfile" title="${t('profile')}">👤</button>
+    </div>
+  </div>`;
+
+  html += renderBreadcrumb();
+
+  const addSubActive = addSubMode && path.length === 2;
+  const mode = editMode ? 'edit' : deleteMode ? 'delete' : addSubActive ? 'addsub' : null;
+  const protectedCount = protectedCountFor(path.length);
+  const hintHTML = editMode
+    ? ` <span class="edit-hint">${t('editHint')}</span>`
+    : deleteMode
+      ? ` <span class="edit-hint delete-hint">${t('deleteHint')(protectedCount)}</span>`
+      : addSubActive
+        ? ` <span class="edit-hint">${t('addSubHint')}</span>`
+        : '';
+
+  if(path.length===0){
+    html += `<div class="overall">
+      <div class="row"><h2>${t('overallProgress')}</h2><div class="pct" style="color:${barColor(overallPct)}">${overallPct}%</div></div>
+      <div class="bar"><div style="width:${overallPct}%; background:${barColor(overallPct)}"></div></div>
+    </div>`;
+    html += `<div class="section-title-row">
+      <div class="section-title">${t('mainGoals')}${hintHTML}</div>
+      <div class="add-goal-wrap">
+        <button id="btnAddGoal" ${state.children.length>=10?'disabled':''}>${t('addGoal')}</button>
+        <button id="btnEdit" class="${editMode?'active':''}">${editMode ? t('done') : t('editGoal')}</button>
+        <button id="btnDelete" class="${deleteMode?'active':''}">${deleteMode ? t('done') : t('deleteGoal')}</button>
+        <span id="addGoalMsg" class="add-goal-msg">${state.children.length>=10?t('maxN')(10):''}</span>
+        <span id="deleteMsg" class="add-goal-msg"></span>
+      </div>
+    </div>`;
+    html += `<div class="grid grid-goals">`;
+    state.children.forEach((cat, i) => { html += cardOrLeafHTML(cat, i, mode, protectedCount); });
+    html += `</div>`;
+    html += `<div class="section-title" style="margin-top:24px;">${t('balanceWheel')}</div>`;
+    html += `<div class="wheel-wrap" id="wheelWrap">${wheelHTML(state.children)}</div>`;
+  } else {
+    const pct = computePercent(node);
+    const dc = doneCount(node);
+    const isContainer = !('done' in node);
+    const metaCountHTML = (isContainer && node.children && node.children.length) ? dc + ' / ' + node.children.length + ' ' + t('completedOf') : '';
+    const metaHintHTML = isContainer ? hintHTML : '';
+    html += `<div class="node-header">
+      <h2>${esc(node.name)}</h2>
+      <div class="meta">${metaCountHTML}${metaHintHTML}</div>
+      <div class="bar"><div style="width:${pct}%; background:${barColor(pct)}"></div></div>
+    </div>`;
+
+    if(isContainer){
+      // Container page (subgoal/goal/deeper level): always show the Add/Edit/Delete row,
+      // even when there are currently 0 children — every non-home level can be emptied out.
+      const childLabel = path.length === 1 ? t('subgoal') : path.length === 2 ? t('goal') : t('item');
+      const atLimit = node.children.length >= 10;
+      html += `<div class="add-child-row">
+        <button id="btnAddChild" ${atLimit?'disabled':''}>${t('addLabel')}</button>
+        ${path.length === 2 ? `<button id="btnAddSubgoal" class="${addSubMode?'active':''}">${addSubMode ? t('done') : t('addSubgoal')}</button>` : ''}
+        <button id="btnEdit" class="${editMode?'active':''}">${editMode ? t('done') : t('editGoal')}</button>
+        <button id="btnDelete" class="${deleteMode?'active':''}">${deleteMode ? t('done') : t('deleteLabel')}</button>
+        <span id="addChildMsg" class="add-goal-msg">${atLimit?t('maxN')(10):''}</span>
+        <span id="deleteMsg" class="add-goal-msg"></span>
+      </div>`;
+      if(node.children.length){
+        html += `<div class="grid grid-goals">`;
+        node.children.forEach((child, i) => { html += cardOrLeafHTML(child, i, mode, protectedCount); });
+        html += `</div>`;
+        html += `<div class="section-title" style="margin-top:24px;">${t('balanceWheel')}</div>`;
+        html += `<div class="wheel-wrap" id="wheelWrap">${wheelHTML(node.children)}</div>`;
+      } else {
+        html += `<div class="empty-state">${t('emptyState')}</div>`;
+      }
+    } else {
+      html += leafDetailHTML(node);
+      html += `<div class="add-sub"><button id="btnAddSub">${t('splitInto6')}</button></div>`;
+    }
+  }
+
+  html += `<footer>${t('footer')}</footer>`;
+  app.innerHTML = html;
+  attachHandlers();
+}
+
+function renderBreadcrumb(){
+  let parts = [`<span class="crumb" data-crumb="0">${t('home')}</span>`];
+  let node = state;
+  path.forEach((i, idx) => {
+    node = node.children[i];
+    parts.push(`<span class="sep">›</span><span class="crumb" data-crumb="${idx+1}">${esc(node.name)}</span>`);
+  });
+  return `<div class="breadcrumb">${parts.join('')}</div>`;
+}
+
+// Shared card wrapper attrs/class for the interaction modes: normal (navigate/toggle),
+// 'edit' (rename inline), 'delete' (every item is removable except the protected leading
+// positions) and 'addsub' (pick a goal that has no subgoals yet, to add 2 to it).
+function cardModeAttrs(node, idx, mode, protectedCount){
+  if(mode === 'edit') return { cls:'editable', attrs:'' };
+  if(mode === 'delete'){
+    return idx >= protectedCount
+      ? { cls:'deletable', attrs:`data-delete-idx="${idx}"` }
+      : { cls:'locked', attrs:'' };
+  }
+  if(mode === 'addsub'){
+    const eligible = !node.children || node.children.length === 0;
+    return eligible
+      ? { cls:'selectable', attrs:`data-addsub-idx="${idx}"` }
+      : { cls:'locked', attrs:'' };
+  }
+  return { cls:'', attrs:`data-nav="${idx}"` };
+}
+function cardModeTitle(node, idx, mode, defaultArrow, protectedCount){
+  if(mode === 'edit'){
+    return `<input type="text" class="goal-input" data-goal-idx="${idx}" data-original="${esc(node.name)}" value="${esc(node.name)}">`;
+  }
+  if(mode === 'delete'){
+    return `<span>${esc(node.name)}</span><span class="arrow">${idx >= protectedCount ? '🗑' : '🔒'}</span>`;
+  }
+  if(mode === 'addsub'){
+    const eligible = !node.children || node.children.length === 0;
+    return `<span>${esc(node.name)}</span><span class="arrow">${eligible ? '➕' : '🔒'}</span>`;
+  }
+  return `<span>${esc(node.name)}</span><span class="arrow">${defaultArrow}</span>`;
+}
+
+function cardHTML(node, idx, mode, protectedCount){
+  const pct = computePercent(node);
+  const dc = doneCount(node);
+  const { cls, attrs } = cardModeAttrs(node, idx, mode, protectedCount);
+  const titleHTML = cardModeTitle(node, idx, mode, '›', protectedCount);
+  return `<div class="card ${cls}" ${attrs}>
+    <div class="title">${titleHTML}</div>
+    <div class="sub"><span>${dc} / ${node.children.length}</span><span>${pct}%</span></div>
+    <div class="bar"><div style="width:${pct}%; background:${barColor(pct)}"></div></div>
+  </div>`;
+}
+
+function cardOrLeafHTML(node, idx, mode, protectedCount){
+  const { cls, attrs } = cardModeAttrs(node, idx, mode, protectedCount);
+
+  if(isLeaf(node)){
+    const pct = node.done ? 100 : 0;
+    const titleHTML = cardModeTitle(node, idx, mode, node.done ? '✅' : '❌', protectedCount);
+    return `<div class="card ${cls}" ${attrs}>
+      <div class="title">${titleHTML}</div>
+      ${node.date ? `<div class="sub"><span>${t('due')} ${esc(node.date)}</span></div>` : ''}
+      <div class="bar"><div style="width:${pct}%; background:${barColor(pct)}"></div></div>
+    </div>`;
+  }
+  const pct = computePercent(node);
+  const dc = doneCount(node);
+  const titleHTML = cardModeTitle(node, idx, mode, '›', protectedCount);
+  return `<div class="card ${cls}" ${attrs}>
+    <div class="title">${titleHTML}</div>
+    <div class="sub"><span>${dc} / ${node.children.length}</span><span>${pct}%</span></div>
+    <div class="bar"><div style="width:${pct}%; background:${barColor(pct)}"></div></div>
+  </div>`;
+}
+
+function polarToCartesian(cx, cy, r, angleDeg){
+  const rad = (angleDeg - 90) * Math.PI / 180;
+  return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
+}
+function wedgePath(cx, cy, r, startAngle, endAngle){
+  const start = polarToCartesian(cx, cy, r, endAngle);
+  const end = polarToCartesian(cx, cy, r, startAngle);
+  const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
+  return `M ${cx} ${cy} L ${start.x.toFixed(2)} ${start.y.toFixed(2)} A ${r} ${r} 0 ${largeArcFlag} 0 ${end.x.toFixed(2)} ${end.y.toFixed(2)} Z`;
+}
+// plain arc (no center point) for text-on-a-path labels. Traces from angleA to angleB; the sweep
+// direction is picked automatically (angleA<angleB draws clockwise, angleA>angleB counter-clockwise)
+// so that in both cases the local path direction runs left-to-right through the label's midpoint —
+// that's what keeps curved text upright instead of rendering mirrored/upside-down at the bottom of the ring.
+function arcPath(cx, cy, r, angleA, angleB){
+  const p1 = polarToCartesian(cx, cy, r, angleA);
+  const p2 = polarToCartesian(cx, cy, r, angleB);
+  const delta = angleB - angleA;
+  const largeArcFlag = Math.abs(delta) <= 180 ? "0" : "1";
+  const sweepFlag = delta >= 0 ? "1" : "0";
+  return `M ${p1.x.toFixed(2)} ${p1.y.toFixed(2)} A ${r} ${r} 0 ${largeArcFlag} ${sweepFlag} ${p2.x.toFixed(2)} ${p2.y.toFixed(2)}`;
+}
+// Generalized for any number of sectors (4 on the home page, 5 on subgoal pages, etc).
+// Sector i is centered at angle i*(360/n), 0 = top, increasing = clockwise. For sectors whose
+// center falls in the upper half (-90..90) the curved label arc runs in increasing-angle order;
+// for the lower half it's reversed — both keep the text upright (see arcPath comment).
+function wheelHTML(items){
+  const n = items.length;
+  if(!n) return '';
+  const width = 572, height = 320, cx = 286, cy = 160, maxR = 119;
+  const colors = ['#3ecf8e', '#ff6b9d', '#f2b84b', '#5b8cff', '#f28c4b', '#8a7bf2'];
+  const curveR = maxR + 20;
+  const sectorSpan = 360 / n;
+  const labelSpan = Math.min(sectorSpan * 0.85, 80);
+  const fontSize = n > 4 ? 15 : 17;
+
+  let defsInner = '';
+  const arcIds = items.map((item, i) => {
+    const center = i * sectorSpan;
+    const norm = ((center + 180) % 360 + 360) % 360 - 180;
+    const isUpper = norm > -90 && norm < 90;
+    const half = labelSpan / 2;
+    const a1 = isUpper ? center - half : center + half;
+    const a2 = isUpper ? center + half : center - half;
+    const id = `wheelArc${i}`;
+    defsInner += `<path id="${id}" d="${arcPath(cx, cy, curveR, a1, a2)}" fill="none"/>`;
+    return id;
+  });
+
+  let svg = `<svg viewBox="0 0 ${width} ${height}" width="100%" style="max-width:580px; height:auto; display:block; margin:0 auto;" xmlns:xlink="http://www.w3.org/1999/xlink">`;
+  svg += `<defs>${defsInner}</defs>`;
+  for(let lvl = 1; lvl <= 5; lvl++){
+    const r = maxR * lvl / 5;
+    svg += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#2a3348" stroke-width="1"/>`;
+  }
+  if(n > 1){
+    for(let i = 0; i < n; i++){
+      const boundary = i * sectorSpan + sectorSpan / 2;
+      const p = polarToCartesian(cx, cy, maxR, boundary);
+      svg += `<line x1="${cx}" y1="${cy}" x2="${p.x.toFixed(2)}" y2="${p.y.toFixed(2)}" stroke="#2a3348" stroke-width="1"/>`;
+    }
+  }
+  items.forEach((item, i) => {
+    const pct = computePercent(item);
+    const r = maxR * (pct / 100);
+    const center = i * sectorSpan;
+    const start = center - sectorSpan / 2, end = center + sectorSpan / 2;
+    const color = colors[i % colors.length];
+    if(r > 1){
+      // A single item spans the full 360°, which degenerates an SVG arc command (start/end
+      // points coincide) into a barely-visible sliver. Draw a plain filled circle instead.
+      if(n === 1){
+        svg += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${color}" opacity="0.75" stroke="${color}" stroke-width="1"/>`;
+      } else {
+        svg += `<path d="${wedgePath(cx, cy, r, start, end)}" fill="${color}" opacity="0.75" stroke="${color}" stroke-width="1"/>`;
+      }
+    }
+    svg += `<text font-size="${fontSize}" font-weight="700" fill="#eef2f8"><textPath href="#${arcIds[i]}" xlink:href="#${arcIds[i]}" startOffset="50%" text-anchor="middle">${esc(item.name)}</textPath></text>`;
+  });
+  svg += `<circle cx="${cx}" cy="${cy}" r="3" fill="#eef2f8"/>`;
+  svg += `</svg>`;
+  return svg;
+}
+
+function leafDetailHTML(node){
+  return `<div class="leaf-row ${node.done?'done':''}">
+    <div class="chk ${node.done?'done':''}" id="leafToggle">${node.done?'✓':''}</div>
+    <div class="leaf-body">
+      <div class="leaf-title">${esc(node.name)}</div>
+      <div class="leaf-meta">
+        <span>${t('due')}</span>
+        <input type="date" id="leafDate" value="${esc(node.date||'')}">
+        <button id="btnRename">${t('rename')}</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function attachHandlers(){
+  document.querySelectorAll('[data-crumb]').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      const c = parseInt(el.dataset.crumb,10);
+      path = path.slice(0, c);
+      render();
+    });
+  });
+  document.querySelectorAll('[data-nav]').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      const idx = parseInt(el.dataset.nav,10);
+      const node = resolve(path).children[idx];
+      if(isLeaf(node)){
+        node.done = !node.done;
+        saveState();
+        render();
+      } else {
+        path = [...path, idx];
+        render();
+      }
+    });
+  });
+  document.querySelectorAll('.goal-input').forEach(el=>{
+    el.addEventListener('click', (e)=> e.stopPropagation());
+    el.addEventListener('input', ()=>{
+      const idx = parseInt(el.dataset.goalIdx,10);
+      resolve(path).children[idx].name = el.value;
+      const wheelWrap = document.getElementById('wheelWrap');
+      if(wheelWrap) wheelWrap.innerHTML = wheelHTML(resolve(path).children);
+    });
+    el.addEventListener('blur', ()=>{
+      const idx = parseInt(el.dataset.goalIdx,10);
+      const v = el.value.trim();
+      const finalName = v !== '' ? v : el.dataset.original;
+      resolve(path).children[idx].name = finalName;
+      el.value = finalName;
+      saveState();
+      const wheelWrap = document.getElementById('wheelWrap');
+      if(wheelWrap) wheelWrap.innerHTML = wheelHTML(resolve(path).children);
+    });
+    el.addEventListener('keydown', (e)=>{
+      if(e.key === 'Enter'){
+        el.blur();
+        editMode = false;
+        render();
+      }
+    });
+  });
+  const btnAddGoal = document.getElementById('btnAddGoal');
+  if(btnAddGoal){
+    btnAddGoal.addEventListener('click', ()=>{
+      const msg = document.getElementById('addGoalMsg');
+      if(state.children.length >= 10){
+        if(msg) msg.textContent = t('maxN')(10);
+        return;
+      }
+      const goalWord = capWord('goal');
+      // Number the new item by how many already exist, regardless of what they're named
+      // (e.g. custom-named categories like "Энергия" still count toward the total).
+      const nextN = state.children.length + 1;
+      state.children.push({ name:`${goalWord} ${nextN}`, children: emptySteps(capWord('subgoal'), goalWord) });
+      saveState();
+      render();
+    });
+  }
+  const btnAddChild = document.getElementById('btnAddChild');
+  if(btnAddChild){
+    btnAddChild.addEventListener('click', ()=>{
+      const parent = resolve(path);
+      const msg = document.getElementById('addChildMsg');
+      if(parent.children.length >= 10){
+        if(msg) msg.textContent = t('maxN')(10);
+        return;
+      }
+      let prefix, shapeIsContainer;
+      if(path.length === 1){ prefix = capWord('subgoal'); shapeIsContainer = true; }
+      else if(path.length === 2){ prefix = capWord('goal'); shapeIsContainer = false; }
+      else {
+        const template = parent.children[0];
+        const m = template ? /^(.*?)\s*\d+$/.exec(template.name) : null;
+        prefix = m ? m[1].trim() : capWord('item');
+        shapeIsContainer = template ? !isLeaf(template) : false;
+      }
+      // Number the new item by how many already exist, regardless of what they're named.
+      const newName = `${prefix} ${parent.children.length + 1}`;
+      parent.children.push(
+        shapeIsContainer
+          ? { name:newName, children: emptyGoals(capWord('goal')) }
+          : { name:newName, date:"", done:false, children:[] }
+      );
+      saveState();
+      render();
+    });
+  }
+  document.querySelectorAll('[data-delete-idx]').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      const idx = parseInt(el.dataset.deleteIdx,10);
+      const parent = resolve(path);
+      const min = minChildrenFor(path.length);
+      const msg = document.getElementById('deleteMsg');
+      if(parent.children.length <= min){
+        if(msg) msg.textContent = t('minN')(min);
+        return;
+      }
+      parent.children.splice(idx,1);
+      // Any container (main goal, subgoal, goal, or deeper) that loses its last remaining child
+      // shouldn't sit there as an empty "0/0" container — turn it back into a plain checkbox item
+      // instead, same as a freshly-added leaf. Applies everywhere except the home root itself
+      // (path.length 0 = state, which is never shown as a card).
+      if(parent.children.length === 0 && path.length >= 1){
+        parent.done = false;
+        if(!('date' in parent)) parent.date = "";
+        parent.children = [];
+        // The page we were deleting from no longer has an Add/Edit/Delete row (it's now a leaf) —
+        // step back up to the parent page instead of stranding the user on a leaf.
+        path = path.slice(0, -1);
+      }
+      // One delete = one action: turn delete mode off automatically after every deletion,
+      // same as the other single-action buttons.
+      deleteMode = false;
+      saveState();
+      render();
+    });
+  });
+  document.querySelectorAll('[data-addsub-idx]').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      const idx = parseInt(el.dataset.addsubIdx,10);
+      const parent = resolve(path);
+      const node = parent.children[idx];
+      // 2 plain checkbox subgoals — no nested goal inside each one.
+      const subWord = capWord('subgoal');
+      node.children = [1,2].map(n => ({ name:`${subWord} ${n}`, date:"", done:false, children:[] }));
+      delete node.done;
+      delete node.date;
+      addSubMode = false;
+      saveState();
+      render();
+    });
+  });
+  const btnEdit = document.getElementById('btnEdit');
+  if(btnEdit){
+    btnEdit.addEventListener('click', ()=>{
+      editMode = !editMode;
+      if(editMode){ deleteMode = false; addSubMode = false; }
+      render();
+    });
+  }
+  const btnDelete = document.getElementById('btnDelete');
+  if(btnDelete){
+    btnDelete.addEventListener('click', ()=>{
+      deleteMode = !deleteMode;
+      if(deleteMode){ editMode = false; addSubMode = false; }
+      render();
+    });
+  }
+  const btnAddSubgoal = document.getElementById('btnAddSubgoal');
+  if(btnAddSubgoal){
+    btnAddSubgoal.addEventListener('click', ()=>{
+      addSubMode = !addSubMode;
+      if(addSubMode){ editMode = false; deleteMode = false; }
+      render();
+    });
+  }
+  const leafToggle = document.getElementById('leafToggle');
+  if(leafToggle){
+    leafToggle.addEventListener('click', ()=>{
+      const node = resolve(path);
+      node.done = !node.done;
+      saveState();
+      render();
+    });
+  }
+  const leafDate = document.getElementById('leafDate');
+  if(leafDate){
+    leafDate.addEventListener('change', ()=>{
+      const node = resolve(path);
+      node.date = leafDate.value;
+      saveState();
+    });
+  }
+  const btnRename = document.getElementById('btnRename');
+  if(btnRename){
+    btnRename.addEventListener('click', ()=>{
+      const node = resolve(path);
+      const v = prompt(t('renamePrompt'), node.name);
+      if(v!==null && v.trim()!==''){ node.name = v.trim(); saveState(); render(); }
+    });
+  }
+  const btnAddSub = document.getElementById('btnAddSub');
+  if(btnAddSub){
+    btnAddSub.addEventListener('click', ()=>{
+      const node = resolve(path);
+      delete node.done;
+      delete node.date;
+      node.children = [1,2,3,4,5,6].map(n => ({ name:`Подшаг ${n}`, date:"", done:false, children:[] }));
+      saveState();
+      render();
+    });
+  }
+  document.getElementById('btnExport').addEventListener('click', ()=>{
+    const blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'goal_tracker_backup.json';
+    a.click();
+  });
+  document.getElementById('btnImport').addEventListener('click', ()=>{
+    const input = document.createElement('input');
+    input.type = 'file'; input.accept = '.json,application/json';
+    input.addEventListener('change', e=>{
+      const file = e.target.files[0];
+      if(!file) return;
+      const reader = new FileReader();
+      reader.onload = ()=>{
+        try{
+          state = JSON.parse(reader.result);
+          path = [];
+          saveState();
+          render();
+        }catch(err){ alert(t('importError')); }
+      };
+      reader.readAsText(file);
+    });
+    input.click();
+  });
+  document.getElementById('btnReset').addEventListener('click', ()=>{
+    if(confirm(t('resetConfirm'))){
+      const goalWord = capWord('goal');
+      state = { name:"Главная", children: [
+        { name:`${goalWord} 1`, children: emptySteps(capWord('subgoal'), goalWord) }
+      ]};
+      path = [];
+      saveState();
+      render();
+    }
+  });
+  const btnProfile = document.getElementById('btnProfile');
+  if(btnProfile){
+    btnProfile.addEventListener('click', ()=>{
+      state = structuredCloneFallback(SEED);
+      path = [];
+      render();
+    });
+  }
+  function setLang(newLang){
+    if(lang === newLang) return;
+    lang = newLang;
+    try{ localStorage.setItem(LANG_KEY, lang); }catch(e){}
+    render();
+  }
+  const btnLangRu = document.getElementById('btnLangRu');
+  if(btnLangRu) btnLangRu.addEventListener('click', ()=> setLang('ru'));
+  const btnLangEn = document.getElementById('btnLangEn');
+  if(btnLangEn) btnLangEn.addEventListener('click', ()=> setLang('en'));
+}
+
+render();
+
+// PWA: register the service worker so the app can be installed and used offline.
+// Registration silently no-ops on file:// pages or browsers without support.
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('./sw.js').catch(()=>{});
+  });
+}
+</script>
+</body>
+</html>
