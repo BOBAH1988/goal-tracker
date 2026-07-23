@@ -46,6 +46,23 @@
   #btnAddSubgoal.active{background:var(--accent); color:#fff; border-color:var(--accent);}
   .edit-hint{color:var(--muted); font-weight:400; font-size:12px;}
   .edit-hint.delete-hint{color:var(--red);}
+  .auth-panel{
+    background:var(--card); border:1px solid var(--border); border-radius:12px; padding:14px 16px;
+    margin-bottom:16px; display:flex; gap:8px; flex-wrap:wrap; align-items:center;
+  }
+  .auth-panel input{
+    background:var(--card2); border:1px solid var(--border); color:var(--text); border-radius:8px;
+    padding:7px 10px; font-size:13px; outline:none; min-width:160px;
+  }
+  .auth-panel input:focus{border-color:var(--accent);}
+  .auth-panel button{
+    background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:8px;
+    padding:7px 14px; font-size:12px; cursor:pointer; white-space:nowrap;
+  }
+  .auth-panel button:hover{color:var(--text); border-color:var(--accent);}
+  .auth-panel button:disabled{opacity:.5; cursor:not-allowed;}
+  .auth-error{color:var(--red); font-size:12px; width:100%;}
+  .auth-hint{color:var(--muted); font-size:12px; width:100%;}
   .breadcrumb{display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin-bottom:16px; font-size:13px; color:var(--muted);}
   .breadcrumb span.crumb{cursor:pointer; padding:3px 8px; border-radius:6px;}
   .breadcrumb span.crumb:hover{background:var(--card2); color:var(--text);}
@@ -213,13 +230,20 @@ const STRINGS = {
     profile: 'Личный кабинет',
     addSubgoal: 'Развернуть',
     addSubHint: '— нажмите на цель без подцелей, чтобы добавить к ней 2 подцели-чекбокса',
-    sync: 'Синхронизация',
-    syncChooseConfirm: 'Нажмите OK, чтобы создать новый код синхронизации, или «Отмена», чтобы ввести код с другого устройства.',
-    syncEnterPrompt: 'Введите код синхронизации с другого устройства:',
-    syncCreated: code => `Ваш код синхронизации:\n\n${code}\n\nСохраните его — он понадобится, чтобы подключить другое устройство.`,
-    syncJoined: 'Устройство подключено к синхронизации.',
-    syncShowCodeConfirm: code => `Ваш код синхронизации:\n\n${code}\n\nOK — закрыть. «Отмена» — отключить синхронизацию на этом устройстве.`,
-    syncDisconnectConfirm: 'Точно отключить синхронизацию на этом устройстве? Локальные данные останутся, но перестанут обновляться из облака.'
+    account: 'Аккаунт',
+    emailPlaceholder: 'Email',
+    passwordPlaceholder: 'Пароль',
+    accountSignIn: 'Войти',
+    accountSignUp: 'Регистрация',
+    accountSignOut: 'Выйти',
+    accountSignOutConfirm: 'Выйти из аккаунта на этом устройстве? Локальные данные останутся, но перестанут обновляться из облака.',
+    accountHint: '— единый аккаунт на всех устройствах: данные видите только вы',
+    authErrEmailInUse: 'Этот email уже зарегистрирован — попробуйте «Войти».',
+    authErrInvalidEmail: 'Некорректный email.',
+    authErrWeakPassword: 'Пароль слишком короткий (минимум 6 символов).',
+    authErrWrongPassword: 'Неверный email или пароль.',
+    authErrTooMany: 'Слишком много попыток. Подождите немного.',
+    authErrGeneric: 'Не получилось. Проверьте email и пароль.'
   },
   en: {
     appTitle: '🎯 Goal Tracker',
@@ -255,13 +279,20 @@ const STRINGS = {
     profile: 'Profile',
     addSubgoal: 'Expand',
     addSubHint: '— click a goal with no subgoals yet to add 2 checkbox subgoals to it',
-    sync: 'Sync',
-    syncChooseConfirm: 'Press OK to create a new sync code, or Cancel to enter a code from another device.',
-    syncEnterPrompt: 'Enter the sync code from your other device:',
-    syncCreated: code => `Your sync code:\n\n${code}\n\nSave it — you'll need it to connect another device.`,
-    syncJoined: 'Device connected to sync.',
-    syncShowCodeConfirm: code => `Your sync code:\n\n${code}\n\nOK to close. Cancel to disconnect sync on this device.`,
-    syncDisconnectConfirm: 'Disconnect sync on this device? Local data stays, but will stop updating from the cloud.'
+    account: 'Account',
+    emailPlaceholder: 'Email',
+    passwordPlaceholder: 'Password',
+    accountSignIn: 'Sign In',
+    accountSignUp: 'Sign Up',
+    accountSignOut: 'Sign Out',
+    accountSignOutConfirm: 'Sign out on this device? Local data stays, but will stop updating from the cloud.',
+    accountHint: '— one account across all your devices: only you see your data',
+    authErrEmailInUse: 'This email is already registered — try "Sign In" instead.',
+    authErrInvalidEmail: 'Invalid email address.',
+    authErrWeakPassword: 'Password is too short (minimum 6 characters).',
+    authErrWrongPassword: 'Wrong email or password.',
+    authErrTooMany: 'Too many attempts. Please wait a bit.',
+    authErrGeneric: "Couldn't sign in. Check your email and password."
   }
 };
 function loadLang(){
@@ -313,23 +344,22 @@ function saveState(){
   scheduleCloudPush();
 }
 
-/* ===== Cloud sync (Firebase Firestore + secret sync code) =====
-   No "Sign in with Google/Apple" button here (Russian law 199-ФЗ bans that for site owners since
-   6 Jul 2026) — instead, syncing between your own devices works via a private code you generate
-   once and copy to your other device. The browser signs in to Firebase anonymously (invisible,
-   no foreign-branded login prompt) purely so Firestore's security rules have a session to check;
-   the actual protection is that only someone who has your code can read/write that document.
+/* ===== Cloud sync (Firebase Firestore + email/password account) =====
+   No "Sign in with Google/Apple/VK" button here — this is a plain email+password account form
+   you own, just backed by Firebase for storage (that's allowed under 199-ФЗ; the law bans
+   third-party identification *buttons*, not using a database). Only you know your password, and
+   Firestore rules only let a signed-in user read/write their own document — real per-account
+   privacy, not just a secret link.
    To turn this on:
    1) Create a free project at https://console.firebase.google.com
    2) Build -> Firestore Database -> Create database (production mode, any region).
-   3) Authentication -> Sign-in method -> enable "Anonymous" (this is NOT a visible login button,
-      just lets the app open a private session with Firestore).
+   3) Authentication -> Sign-in method -> enable "Email/Password".
    4) Firestore -> Rules, paste this and Publish:
         rules_version = '2';
         service cloud.firestore {
           match /databases/{database}/documents {
-            match /sync/{code} {
-              allow read, write: if request.auth != null;
+            match /users/{userId} {
+              allow read, write: if request.auth != null && request.auth.uid == userId;
             }
           }
         }
@@ -344,9 +374,11 @@ const firebaseConfig = {
   messagingSenderId: "809817715891",
   appId: "1:809817715891:web:b8a10918d3307c19922cc6"
 };
-const SYNC_CODE_KEY = "goal_tracker_sync_code";
 let cloudEnabled = false;
-let syncCode = null;
+let authUser = null;
+let authPanelOpen = false;
+let authError = '';
+let authBusy = false;
 let cloudSyncTimer = null;
 let applyingRemoteUpdate = false;
 let unsubscribeSnapshot = null;
@@ -356,52 +388,62 @@ try{
     cloudEnabled = true;
   }
 }catch(e){ cloudEnabled = false; }
-try{ syncCode = localStorage.getItem(SYNC_CODE_KEY); }catch(e){ syncCode = null; }
 
-function generateSyncCode(){
-  if(window.crypto && window.crypto.randomUUID) return window.crypto.randomUUID().replace(/-/g,'');
-  let s = '';
-  for(let i=0;i<32;i++) s += Math.floor(Math.random()*16).toString(16);
-  return s;
-}
-function ensureAnonAuth(){
-  if(!cloudEnabled) return Promise.resolve(null);
-  const existing = firebase.auth().currentUser;
-  if(existing) return Promise.resolve(existing);
-  return firebase.auth().signInAnonymously().then(cred => cred.user).catch(()=>null);
+function translateAuthError(err){
+  const code = err && err.code;
+  const map = {
+    'auth/email-already-in-use': t('authErrEmailInUse'),
+    'auth/invalid-email': t('authErrInvalidEmail'),
+    'auth/weak-password': t('authErrWeakPassword'),
+    'auth/wrong-password': t('authErrWrongPassword'),
+    'auth/user-not-found': t('authErrWrongPassword'),
+    'auth/invalid-credential': t('authErrWrongPassword'),
+    'auth/too-many-requests': t('authErrTooMany')
+  };
+  return (code && map[code]) || t('authErrGeneric');
 }
 function scheduleCloudPush(){
-  if(!cloudEnabled || !syncCode || applyingRemoteUpdate) return;
+  if(!cloudEnabled || !authUser || applyingRemoteUpdate) return;
   clearTimeout(cloudSyncTimer);
   cloudSyncTimer = setTimeout(()=>{
-    ensureAnonAuth().then(()=>{
-      firebase.firestore().collection('sync').doc(syncCode)
-        .set({ state, updatedAt: firebase.firestore.FieldValue.serverTimestamp() })
-        .catch(()=>{});
-    });
+    firebase.firestore().collection('users').doc(authUser.uid)
+      .set({ state, updatedAt: firebase.firestore.FieldValue.serverTimestamp() })
+      .catch(()=>{});
   }, 800);
 }
-function startCloudSync(code){
-  ensureAnonAuth().then(()=>{
-    const ref = firebase.firestore().collection('sync').doc(code);
-    unsubscribeSnapshot = ref.onSnapshot((doc)=>{
-      if(doc.exists){
-        const data = doc.data();
-        if(data && data.state){
-          applyingRemoteUpdate = true;
-          state = data.state;
-          saveState();
-          applyingRemoteUpdate = false;
-          render();
-        }
-      } else {
-        ref.set({ state, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }).catch(()=>{});
+function startCloudSync(uid){
+  const ref = firebase.firestore().collection('users').doc(uid);
+  unsubscribeSnapshot = ref.onSnapshot((doc)=>{
+    if(doc.exists){
+      const data = doc.data();
+      if(data && data.state){
+        applyingRemoteUpdate = true;
+        state = data.state;
+        saveState();
+        applyingRemoteUpdate = false;
+        render();
       }
-    });
+    } else {
+      ref.set({ state, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }).catch(()=>{});
+    }
   });
 }
 function stopCloudSync(){
   if(unsubscribeSnapshot){ unsubscribeSnapshot(); unsubscribeSnapshot = null; }
+}
+function doAuthSignIn(email, password){
+  authBusy = true; authError = '';
+  firebase.auth().signInWithEmailAndPassword(email, password)
+    .catch(err => { authError = translateAuthError(err); authBusy = false; render(); });
+}
+function doAuthSignUp(email, password){
+  authBusy = true; authError = '';
+  firebase.auth().createUserWithEmailAndPassword(email, password)
+    .catch(err => { authError = translateAuthError(err); authBusy = false; render(); });
+}
+function doAuthSignOut(){
+  if(!cloudEnabled) return;
+  firebase.auth().signOut();
 }
 
 /* ===== VK ID OneTap (branded login, cosmetic only — does NOT gate data access) =====
@@ -491,10 +533,23 @@ function render(){
       <button id="btnLangRu" class="lang-btn ${lang==='ru'?'active':''}" title="Русский">🇷🇺</button>
       <button id="btnLangEn" class="lang-btn ${lang==='en'?'active':''}" title="English">🇺🇸</button>
       <button id="btnProfile" title="${t('profile')}">👤</button>
-      ${cloudEnabled ? `<button id="btnSync">${syncCode ? '🔗' : '🔓'} ${t('sync')}</button>` : ''}
+      ${cloudEnabled ? (authUser
+        ? `<button id="btnAccount" title="${esc(authUser.email)}">👤 ${esc(authUser.email)}</button>`
+        : `<button id="btnAccount">🔐 ${t('account')}</button>`) : ''}
       ${vkUser ? `<span style="font-size:12px;color:var(--muted);align-self:center;">👋 ${esc(vkUser.first_name||'')}</span>` : ''}
     </div>
   </div>`;
+
+  if(cloudEnabled && authPanelOpen && !authUser){
+    html += `<div class="auth-panel">
+      <input type="email" id="authEmail" placeholder="${t('emailPlaceholder')}" autocomplete="email">
+      <input type="password" id="authPassword" placeholder="${t('passwordPlaceholder')}" autocomplete="current-password">
+      <button id="btnAuthSignIn" ${authBusy?'disabled':''}>${t('accountSignIn')}</button>
+      <button id="btnAuthSignUp" ${authBusy?'disabled':''}>${t('accountSignUp')}</button>
+      ${authError ? `<div class="auth-error">${esc(authError)}</div>` : ''}
+      <div class="auth-hint">${t('accountHint')}</div>
+    </div>`;
+  }
 
   html += renderBreadcrumb();
 
@@ -993,38 +1048,40 @@ function attachHandlers(){
       render();
     });
   }
-  const btnSync = document.getElementById('btnSync');
-  if(btnSync){
-    btnSync.addEventListener('click', ()=>{
-      if(syncCode){
-        if(!confirm(t('syncShowCodeConfirm')(syncCode))){
-          if(confirm(t('syncDisconnectConfirm'))){
-            stopCloudSync();
-            try{ localStorage.removeItem(SYNC_CODE_KEY); }catch(e){}
-            syncCode = null;
-            render();
-          }
-        }
+  const btnAccount = document.getElementById('btnAccount');
+  if(btnAccount){
+    btnAccount.addEventListener('click', ()=>{
+      if(authUser){
+        if(confirm(t('accountSignOutConfirm'))) doAuthSignOut();
         return;
       }
-      const wantsNew = confirm(t('syncChooseConfirm'));
-      if(wantsNew){
-        const code = generateSyncCode();
-        try{ localStorage.setItem(SYNC_CODE_KEY, code); }catch(e){}
-        syncCode = code;
-        startCloudSync(code);
-        alert(t('syncCreated')(code));
-      } else {
-        const entered = prompt(t('syncEnterPrompt'));
-        if(entered && entered.trim()){
-          const code = entered.trim();
-          try{ localStorage.setItem(SYNC_CODE_KEY, code); }catch(e){}
-          syncCode = code;
-          startCloudSync(code);
-          alert(t('syncJoined'));
-        }
-      }
+      authPanelOpen = !authPanelOpen;
+      authError = '';
       render();
+    });
+  }
+  const btnAuthSignIn = document.getElementById('btnAuthSignIn');
+  if(btnAuthSignIn){
+    btnAuthSignIn.addEventListener('click', ()=>{
+      const email = document.getElementById('authEmail').value.trim();
+      const password = document.getElementById('authPassword').value;
+      if(!email || !password) return;
+      doAuthSignIn(email, password);
+    });
+  }
+  const btnAuthSignUp = document.getElementById('btnAuthSignUp');
+  if(btnAuthSignUp){
+    btnAuthSignUp.addEventListener('click', ()=>{
+      const email = document.getElementById('authEmail').value.trim();
+      const password = document.getElementById('authPassword').value;
+      if(!email || !password) return;
+      doAuthSignUp(email, password);
+    });
+  }
+  const authPasswordEl = document.getElementById('authPassword');
+  if(authPasswordEl){
+    authPasswordEl.addEventListener('keydown', (e)=>{
+      if(e.key === 'Enter') btnAuthSignIn && btnAuthSignIn.click();
     });
   }
   function setLang(newLang){
@@ -1041,8 +1098,20 @@ function attachHandlers(){
 
 render();
 
-if(cloudEnabled && syncCode){
-  startCloudSync(syncCode);
+if(cloudEnabled){
+  firebase.auth().onAuthStateChanged((user)=>{
+    if(user){
+      authUser = { email: user.email, uid: user.uid };
+      authPanelOpen = false;
+      authError = '';
+      authBusy = false;
+      startCloudSync(user.uid);
+    } else {
+      authUser = null;
+      stopCloudSync();
+    }
+    render();
+  });
 }
 try{ initVkOneTap(); }catch(e){}
 updateVkContainerVisibility();
