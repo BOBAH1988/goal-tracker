@@ -1154,6 +1154,7 @@ function render(){
   html += `<footer>${t('footer')}</footer>`;
   app.innerHTML = html;
   attachHandlers();
+  adjustWheelLabels();
 }
 
 function renderBreadcrumb(){
@@ -1281,16 +1282,12 @@ function wheelHTML(items){
   const labelSpan = Math.min(sectorSpan * 0.85, 80);
   const fontSize = n > 4 ? 15 : 17;
   // Names that don't fit the arc used to get clipped by the SVG textPath itself, which (since the
-  // text was centered on the arc) cut off both the start AND the end of the word. Now a name that
-  // fits stays centered on the arc like before; a name that's too long is truncated from the end
-  // only (with an ellipsis) and left-aligned to the start of the arc, so it fills the available
-  // space instead of still being centered around a now-shorter string.
-  const arcLenPx = (labelSpan * Math.PI / 180) * curveR;
-  const maxChars = Math.max(1, Math.floor(arcLenPx / (fontSize * 0.62)));
-  function labelInfo(name){
-    if(name.length <= maxChars) return { text: name, truncated: false };
-    return { text: name.slice(0, Math.max(1, maxChars - 1)) + '…', truncated: true };
-  }
+  // text was centered on the arc) cut off both the start AND the end of the word. Guessing a
+  // per-character pixel width isn't reliable enough across fonts/devices, so instead every label
+  // is first rendered in full (left-aligned to the arc start) and then adjustWheelLabels() —
+  // called right after this HTML is inserted into the page — measures each one for real with the
+  // browser's own SVG text APIs: a label that fits gets re-centered, one that doesn't gets
+  // trimmed character-by-character from the end only until it fits, with an ellipsis appended.
 
   let defsInner = '';
   const arcIds = items.map((item, i) => {
@@ -1326,10 +1323,9 @@ function wheelHTML(items){
         svg += `<path d="${wedgePath(cx, cy, r, start, end)}" fill="${color}" opacity="0.75" stroke="${color}" stroke-width="1"/>`;
       }
     }
-    const label = labelInfo(item.name);
-    const offset = label.truncated ? '0%' : '50%';
-    const anchor = label.truncated ? 'start' : 'middle';
-    svg += `<text font-size="${fontSize}" font-weight="700" fill="#eef2f8"><textPath href="#${arcIds[i]}" xlink:href="#${arcIds[i]}" startOffset="${offset}" text-anchor="${anchor}">${esc(label.text)}</textPath></text>`;
+    // Rendered in full, left-aligned to the start of the arc for now — adjustWheelLabels() fixes
+    // this up for real once the SVG is actually in the DOM and can be measured (see note above).
+    svg += `<text font-size="${fontSize}" font-weight="700" fill="#eef2f8"><textPath href="#${arcIds[i]}" xlink:href="#${arcIds[i]}" startOffset="0%" text-anchor="start">${esc(item.name)}</textPath></text>`;
   });
   // Grid rings + radial dividers are drawn last, on top of the filled wedges (in a lighter tone
   // than before), so the fill level always reads clearly against the scale instead of hiding under it.
@@ -1347,6 +1343,32 @@ function wheelHTML(items){
   svg += `<circle cx="${cx}" cy="${cy}" r="3" fill="#eef2f8"/>`;
   svg += `</svg>`;
   return svg;
+}
+// Balance-wheel labels are rendered full-length and left-aligned in wheelHTML(); this runs right
+// after that markup lands in the real DOM and uses the browser's own SVG measurement (not a guess
+// at character width) to fix each one up: fits → re-centered on the arc; doesn't fit → trimmed
+// character-by-character from the end only (with an ellipsis) until it does.
+function adjustWheelLabels(){
+  document.querySelectorAll('.wheel-wrap textPath').forEach(tp=>{
+    try{
+      if(typeof tp.getComputedTextLength !== 'function') return;
+      const href = tp.getAttribute('href') || tp.getAttribute('xlink:href');
+      if(!href) return;
+      const pathEl = document.querySelector(href);
+      if(!pathEl || typeof pathEl.getTotalLength !== 'function') return;
+      const pathLen = pathEl.getTotalLength();
+      if(tp.getComputedTextLength() <= pathLen){
+        tp.setAttribute('startOffset', '50%');
+        tp.setAttribute('text-anchor', 'middle');
+        return;
+      }
+      let base = tp.textContent;
+      while(base.length > 1 && tp.getComputedTextLength() > pathLen){
+        base = base.slice(0, -1);
+        tp.textContent = base + '…';
+      }
+    }catch(e){}
+  });
 }
 
 function leafDetailHTML(node){
@@ -1408,7 +1430,7 @@ function attachHandlers(){
       const idx = parseInt(el.dataset.goalIdx,10);
       resolve(path).children[idx].name = el.value;
       const wheelWrap = document.getElementById('wheelWrap');
-      if(wheelWrap) wheelWrap.innerHTML = wheelHTML(resolve(path).children);
+      if(wheelWrap){ wheelWrap.innerHTML = wheelHTML(resolve(path).children); adjustWheelLabels(); }
     });
     el.addEventListener('blur', ()=>{
       const idx = parseInt(el.dataset.goalIdx,10);
@@ -1418,7 +1440,7 @@ function attachHandlers(){
       el.value = finalName;
       saveState();
       const wheelWrap = document.getElementById('wheelWrap');
-      if(wheelWrap) wheelWrap.innerHTML = wheelHTML(resolve(path).children);
+      if(wheelWrap){ wheelWrap.innerHTML = wheelHTML(resolve(path).children); adjustWheelLabels(); }
     });
     el.addEventListener('keydown', (e)=>{
       if(e.key === 'Enter'){
