@@ -18,9 +18,17 @@
     --green:#3ecf8e; --yellow:#f2b84b; --red:#e5645a; --accent:#5b8cff; --border:#2a3348;
   }
   *{box-sizing:border-box;}
+  html{
+    /* Matches the body gradient's darkest tone so iOS/Android overscroll bounce (dragging past
+       the top/bottom/sides in the installed PWA) reveals this instead of the browser's white
+       default canvas. */
+    background:#0b0e17;
+    overscroll-behavior:none;
+  }
   body{
     margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
     background:linear-gradient(160deg,#0b0e17,#141b2c 60%,#0f1420); color:var(--text); min-height:100vh;
+    overscroll-behavior:none; overflow-x:hidden;
   }
   #app{max-width:920px; margin:0 auto; padding:28px 20px 80px;}
   .topbar{display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; flex-wrap:wrap; gap:10px;}
@@ -31,9 +39,19 @@
     padding:6px 12px; font-size:12px; cursor:pointer;
   }
   .actions button:hover{color:var(--text); border-color:var(--accent);}
-  #btnLangRu, #btnLangEn, #btnProfile{padding:1px 2px !important; font-size:25px !important; line-height:1; display:flex; align-items:center; justify-content:center; border-color:transparent;}
-  #btnLangRu.active, #btnLangEn.active{border-color:var(--accent); box-shadow:0 0 0 1px var(--accent);}
-  #btnEdit, #btnDelete, #btnAddSubgoal{
+  #btnLangToggle{padding:1px 2px !important; font-size:25px !important; line-height:1; display:flex; align-items:center; justify-content:center; border-color:transparent;}
+  .lang-dropdown{position:relative; display:inline-flex;}
+  .lang-menu{
+    position:absolute; top:calc(100% + 4px); right:0; background:var(--card2); border:1px solid var(--border);
+    border-radius:8px; padding:4px; display:flex; flex-direction:column; gap:2px; z-index:10;
+  }
+  .lang-option{
+    background:none; border:1px solid transparent; border-radius:6px; padding:1px 2px; font-size:28px;
+    line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center;
+  }
+  .lang-option:hover{border-color:var(--accent);}
+  .lang-option.active{border-color:var(--accent); box-shadow:0 0 0 1px var(--accent);}
+  #btnEdit, #btnDelete, #btnAddSubgoal, #btnReset, #btnChecklist{
     background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:8px;
     padding:6px 12px; font-size:12px; cursor:pointer; white-space:nowrap;
   }
@@ -42,27 +60,89 @@
   #btnDelete:hover{border-color:var(--red); color:var(--red);}
   #btnDelete.active{background:var(--red); color:#fff; border-color:var(--red);}
   #btnDelete.active:hover{color:#fff;}
+  #btnReset:hover{color:var(--text); border-color:var(--accent);}
   #btnAddSubgoal:hover{color:var(--text); border-color:var(--accent);}
   #btnAddSubgoal.active{background:var(--accent); color:#fff; border-color:var(--accent);}
+  #btnChecklist:hover{color:var(--text); border-color:var(--accent);}
+  #btnChecklist.active{background:var(--accent); color:#fff; border-color:var(--accent);}
   .edit-hint{color:var(--muted); font-weight:400; font-size:12px;}
   .edit-hint.delete-hint{color:var(--red);}
-  .auth-panel{
-    background:var(--card); border:1px solid var(--border); border-radius:12px; padding:14px 16px;
-    margin-bottom:16px; display:flex; gap:8px; flex-wrap:wrap; align-items:center;
+  .auth-modal-overlay{
+    position:fixed; inset:0; background:rgba(6,9,16,0.6); display:flex; align-items:center;
+    justify-content:center; padding:20px; z-index:50;
   }
+  .auth-panel{
+    background:var(--card); border:1px solid var(--border); border-radius:14px; padding:24px 20px 18px;
+    display:flex; flex-direction:column; gap:10px; width:100%; max-width:340px; position:relative;
+    box-shadow:0 20px 60px rgba(0,0,0,.45);
+  }
+  .auth-panel button.auth-close{
+    position:absolute; top:8px; right:8px; background:none; border:none; color:var(--muted);
+    font-size:18px; cursor:pointer; line-height:1; padding:6px; flex:none;
+  }
+  .auth-panel button.auth-close:hover{color:var(--text);}
   .auth-panel input{
     background:var(--card2); border:1px solid var(--border); color:var(--text); border-radius:8px;
-    padding:7px 10px; font-size:13px; outline:none; min-width:160px;
+    padding:9px 10px; font-size:13px; outline:none; width:100%;
   }
   .auth-panel input:focus{border-color:var(--accent);}
+  .auth-panel input.input-error{border-color:var(--red); box-shadow:0 0 0 1px var(--red);}
+  .auth-panel .auth-btn-row{display:flex; align-items:center; justify-content:space-evenly; gap:8px;}
+  .auth-panel .auth-btn-row button{flex:none;}
+  .auth-signup-row{display:flex; justify-content:center;}
+  .auth-signup-row button{flex:none; min-width:160px;}
   .auth-panel button{
     background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:8px;
-    padding:7px 14px; font-size:12px; cursor:pointer; white-space:nowrap;
+    padding:9px 14px; font-size:12px; cursor:pointer; white-space:nowrap; flex:1;
   }
   .auth-panel button:hover{color:var(--text); border-color:var(--accent);}
   .auth-panel button:disabled{opacity:.5; cursor:not-allowed;}
-  .auth-error{color:var(--red); font-size:12px; width:100%;}
-  .auth-hint{color:var(--muted); font-size:12px; width:100%;}
+  .auth-error{color:var(--red); font-size:12px;}
+  .auth-hint{color:var(--muted); font-size:12px;}
+  .auth-hint.valid{color:var(--green);}
+  .auth-link{
+    background:none; border:none; color:var(--accent); font-size:12px; padding:0;
+    cursor:pointer; text-align:right; align-self:auto;
+  }
+  .auth-link-center{
+    background:none; border:none; color:var(--accent); font-size:12px; padding:4px 0;
+    cursor:pointer; text-align:center; width:100%; flex:none;
+  }
+  .auth-link:disabled{opacity:.5; cursor:not-allowed;}
+  .auth-consent{display:flex; align-items:flex-start; gap:8px; font-size:12px; color:var(--muted); cursor:pointer; line-height:1.4;}
+  .auth-consent input[type=checkbox]{width:16px; height:16px; flex:none; margin-top:1px; accent-color:var(--accent); cursor:pointer;}
+  .auth-consent-details{margin-top:4px;}
+  .auth-consent-details summary{color:var(--accent); cursor:pointer; display:inline;}
+  .auth-consent-details[open] summary{margin-bottom:4px; display:block;}
+  .account-dropdown{position:relative; display:inline-flex;}
+  .account-menu{
+    position:absolute; top:calc(100% + 4px); right:0; background:var(--card2); border:1px solid var(--border);
+    border-radius:10px; padding:4px; display:flex; flex-direction:column; gap:2px; z-index:10; min-width:180px;
+  }
+  .account-menu button{
+    background:none; border:none; color:var(--text); border-radius:6px; padding:9px 12px; font-size:13px;
+    cursor:pointer; text-align:left; white-space:nowrap;
+  }
+  .account-menu button:hover{background:var(--card);}
+  .account-menu button.danger{color:var(--red);}
+  .verify-banner{
+    display:flex; align-items:center; flex-wrap:wrap; gap:8px; background:rgba(230,180,60,.12);
+    border:1px solid var(--yellow); color:var(--text); border-radius:10px; padding:8px 12px;
+    font-size:12px; margin:0 0 12px;
+  }
+  .verify-banner button{
+    background:var(--card2); border:1px solid var(--border); color:var(--text); border-radius:8px;
+    padding:5px 10px; font-size:12px; cursor:pointer; white-space:nowrap;
+  }
+  .verify-banner button:hover{background:var(--card);}
+  .verify-banner button:disabled{opacity:.5; cursor:not-allowed;}
+  .verify-msg{color:var(--muted);}
+  .edit-account-panel{max-width:380px;}
+  .field-label{color:var(--muted); font-size:12px; margin-bottom:-4px;}
+  .auth-panel select{
+    background:var(--card2); border:1px solid var(--border); color:var(--text); border-radius:8px;
+    padding:9px 10px; font-size:13px; outline:none; width:100%;
+  }
   .breadcrumb{display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin-bottom:16px; font-size:13px; color:var(--muted);}
   .breadcrumb span.crumb{cursor:pointer; padding:3px 8px; border-radius:6px;}
   .breadcrumb span.crumb:hover{background:var(--card2); color:var(--text);}
@@ -157,20 +237,50 @@
   #btnAddChild:hover{color:var(--text); border-color:var(--accent);}
   #btnAddChild:disabled{opacity:.5; cursor:not-allowed;}
   #btnAddChild:disabled:hover{color:var(--muted); border-color:var(--border);}
+  /* Compact "+"/"−" icon style for Add/Delete, used instead of full text labels to save room on
+     narrow (phone) screens. */
+  #btnAddGoal.icon-btn, #btnAddChild.icon-btn, #btnDelete.icon-btn, #btnEdit.icon-btn, #btnReset.icon-btn, #btnAddSubgoal.icon-btn, #btnChecklist.icon-btn{
+    font-size:16px; font-weight:700; line-height:1; padding:5px 13px;
+    min-width:32px; display:inline-flex; align-items:center; justify-content:center;
+  }
+  #btnAddGoal.icon-btn, #btnAddChild.icon-btn, #btnDelete.icon-btn{ font-size:18px; }
+  #btnReset.icon-btn{ font-size:26px; padding:2px; color:var(--red); }
+  #btnReset.icon-btn:hover{ color:var(--red); border-color:var(--red); }
+  #btnAddSubgoal.icon-btn{ font-size:24px; padding:2px; }
+  #btnChecklist.icon-btn{ font-size:24px; padding:2px; }
+  .checklist-section{margin-top:20px;}
+  .checklist-row{
+    display:flex; align-items:center; gap:10px; background:var(--card); border:1px solid var(--border);
+    border-radius:10px; padding:9px 12px; margin-bottom:8px;
+  }
+  .checklist-circle{
+    width:20px; height:20px; border-radius:50%; border:2px solid var(--border); flex:none; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; font-size:12px; user-select:none;
+  }
+  .checklist-circle.done{background:var(--green); border-color:var(--green); color:#0b0e17; font-weight:700;}
+  .checklist-text{flex:1; font-size:14px;}
+  .checklist-text.done{color:var(--muted); text-decoration:line-through;}
+  .checklist-remove{
+    background:none; border:none; color:var(--muted); cursor:pointer; font-size:13px; padding:2px 6px; flex:none;
+  }
+  .checklist-remove:hover{color:var(--red);}
+  .checklist-add-row{display:flex; gap:8px; margin-top:4px;}
+  .checklist-add-row input{
+    flex:1; background:var(--card2); border:1px solid var(--border); color:var(--text); border-radius:8px;
+    padding:8px 10px; font-size:13px; outline:none;
+  }
+  .checklist-add-row input:focus{border-color:var(--accent);}
   .wheel-wrap{background:var(--card); border:1px solid var(--border); border-radius:16px; padding:7px 22px; text-align:center;}
 </style>
 </head>
 <body>
 <div id="app"></div>
-<div id="vkOneTapContainer" style="max-width:280px;margin:0 auto 20px;display:none;"></div>
 
 <!-- Cloud sync (optional): loads Firebase's client SDK so goals can sync across devices via a
      private sync code. Harmless no-op if you never fill in firebaseConfig further down. -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<!-- VK ID (optional): branded login widget, cosmetic only. Harmless no-op if VK_APP_ID stays 0. -->
-<script src="https://unpkg.com/@vkid/sdk/dist-sdk/umd/index.js"></script>
 
 <script>
 /* ===== Seed data (transcribed from the Excel table) =====
@@ -186,20 +296,67 @@ function emptySteps(subWord, goalWord){
   return [1,2].map(n => ({ name:`${subWord} ${n}`, children: emptyGoals(goalWord) }));
 }
 
+// Sample data shown on the main page before signing in — 4 goal areas with deliberately different
+// progress levels for visual variety: Энергия 75%, Достаток 60%, Взаимоотношения 80%, Навыки 55%.
+function leafGoals(names, doneFlags){
+  return names.map((name, i) => ({ name, date:"", done: !!doneFlags[i], children:[] }));
+}
 const SEED = { name:"Главная", children: [
-  { name:"Энергия", children: emptySteps() },
-  { name:"Достаток", children: emptySteps() },
-  { name:"Взаимоотношения", children: emptySteps() },
-  { name:"Навыки", children: emptySteps() }
+  { name:"Энергия", children: [
+    { name:"Физическая форма", children: leafGoals(
+      ["Утренняя зарядка", "Бег 3 раза в неделю", "Питьевой режим 2л в день", "Здоровый сон 8 часов"],
+      [true, true, true, false]
+    ) },
+    { name:"Здоровое питание", children: leafGoals(
+      ["Отказ от сахара", "Больше овощей в рационе", "Курс витаминов", "Готовка дома"],
+      [true, true, true, false]
+    ) }
+  ]},
+  { name:"Достаток", children: [
+    { name:"Доход", children: leafGoals(
+      ["Повышение на работе", "Дополнительный источник дохода", "Инвестиции 10% дохода", "Финансовая подушка", "Пассивный доход"],
+      [true, true, true, false, false]
+    ) },
+    { name:"Расходы", children: leafGoals(
+      ["Бюджет на месяц", "Учёт трат", "Отказ от импульсивных покупок", "Погашение долгов", "Экономия на подписках"],
+      [true, true, true, false, false]
+    ) }
+  ]},
+  { name:"Взаимоотношения", children: [
+    { name:"Семья", children: leafGoals(
+      ["Семейный ужин раз в неделю", "Звонок родителям", "Совместный отдых", "Поддержка партнёра", "Забота о близких"],
+      [true, true, true, false, true]
+    ) },
+    { name:"Друзья", children: leafGoals(
+      ["Встречи с друзьями", "Нетворкинг", "Помощь друзьям", "Новые знакомства", "Организация встреч"],
+      [true, true, true, false, true]
+    ) }
+  ]},
+  { name:"Навыки", children: [
+    { name:"Профессиональные", children: leafGoals(
+      ["Курс по специальности", "Чтение книг по теме", "Сертификация", "Практика на проекте"],
+      [true, true, false, false]
+    ) },
+    { name:"Личностные", children: leafGoals(
+      ["Английский язык", "Публичные выступления", "Тайм-менеджмент", "Медитация", "Чтение художественной литературы"],
+      [true, true, true, false, false]
+    ) }
+  ]}
 ]};
+
+// Blank starting point for a brand-new personal account — identical shape to what "Сброс" produces.
+function emptyTemplate(){
+  const goalWord = capWord('goal');
+  return { name:"Главная", children: [
+    { name:`${goalWord} 1`, children: emptySteps(capWord('subgoal'), goalWord) }
+  ]};
+}
 
 /* ===== Language ===== */
 const LANG_KEY = "goal_tracker_lang";
 const STRINGS = {
   ru: {
     appTitle: '🎯 Трекер целей',
-    export: 'Экспорт',
-    import: 'Импорт',
     resetAll: 'Сброс',
     home: 'Главная',
     overallProgress: 'Общий прогресс',
@@ -225,9 +382,7 @@ const STRINGS = {
     rename: '✏️ Переименовать',
     renamePrompt: 'Новое название шага:',
     resetConfirm: 'Точно всё сбросить?',
-    importError: 'Не удалось прочитать файл.',
-    footer: 'Данные хранятся локально в этом браузере. Делайте «Экспорт», чтобы сохранить резервную копию.',
-    profile: 'Личный кабинет',
+    footer: 'Данные хранятся локально в этом браузере. Войдите в аккаунт, чтобы данные сохранились.',
     addSubgoal: 'Развернуть',
     addSubHint: '— нажмите на цель без подцелей, чтобы добавить к ней 2 подцели-чекбокса',
     account: 'Аккаунт',
@@ -237,18 +392,56 @@ const STRINGS = {
     accountSignUp: 'Регистрация',
     accountSignOut: 'Выйти',
     accountSignOutConfirm: 'Выйти из аккаунта на этом устройстве? Локальные данные останутся, но перестанут обновляться из облака.',
-    accountHint: '— единый аккаунт на всех устройствах: данные видите только вы',
+    accountHint: 'Вход сохраняет прогресс. Приватно — видите только вы',
     authErrEmailInUse: 'Этот email уже зарегистрирован — попробуйте «Войти».',
     authErrInvalidEmail: 'Некорректный email.',
     authErrWeakPassword: 'Пароль слишком короткий (минимум 6 символов).',
     authErrWrongPassword: 'Неверный email или пароль.',
     authErrTooMany: 'Слишком много попыток. Подождите немного.',
-    authErrGeneric: 'Не получилось. Проверьте email и пароль.'
+    authErrGeneric: 'Не получилось. Проверьте email и пароль.',
+    consentLabel: 'Я согласен(на) на обработку персональных данных',
+    consentDetailsLabel: 'Подробнее',
+    consentText: 'Регистрируясь, я в соответствии со ст. 9 Федерального закона №152-ФЗ «О персональных данных» даю согласие на обработку моих персональных данных (адрес электронной почты, пароль в зашифрованном виде, а также данные о целях и прогрессе, которые я сохраняю в приложении). Обработка включает сбор, запись, хранение, использование и обновление данных в целях регистрации, авторизации и синхронизации личного кабинета между устройствами. Обработка и хранение данных осуществляется с использованием сервиса Firebase (Google LLC). Персональные данные не передаются третьим лицам и не используются в рекламных целях. Согласие действует до его отзыва — для отзыва достаточно удалить аккаунт в разделе «Аккаунт» или написать на почту разработчика.',
+    consentRequired: 'Подтвердите согласие на обработку персональных данных, чтобы продолжить.',
+    namePlaceholder: 'Уникальное имя пользователя',
+    nameRequired: 'Введите имя пользователя.',
+    nameTaken: 'Это имя уже занято, выберите другое.',
+    editAccount: 'Редактировать аккаунт',
+    namePlaceholderEdit: 'Имя',
+    surnamePlaceholder: 'Фамилия (необязательно)',
+    birthDateLabel: 'Дата рождения (необязательно)',
+    genderLabel: 'Пол (необязательно)',
+    genderUnspecified: 'Не указан',
+    genderMale: 'Мужской',
+    genderFemale: 'Женский',
+    occupationPlaceholder: 'Род деятельности (необязательно)',
+    saveChanges: 'Сохранить',
+    tipAdd: 'Добавить цель',
+    tipDelete: 'Удалить цель',
+    tipEdit: 'Переименовать цель',
+    tipReset: 'Сбросить все настройки',
+    tipExpand: 'Развернуть цель',
+    tipChecklist: 'Добавить чек-лист',
+    checklistHint: '— нажмите на цель с чекбоксом, чтобы добавить к ней чек-лист',
+    checklistTitle: 'Чек-лист',
+    checklistPlaceholder: 'Новый пункт',
+    verifyBannerText: 'Подтвердите email — мы отправили письмо со ссылкой на подтверждение.',
+    verifyResend: 'Отправить письмо ещё раз',
+    verifyRecheck: 'Я подтвердил(а)',
+    verifyResentMsg: 'Письмо отправлено, проверьте почту.',
+    verifyStillNot: 'Email пока не подтверждён.',
+    verifyConfirmedMsg: 'Email подтверждён, спасибо!',
+    forgotPassword: 'Забыли пароль?',
+    resetEmailRequired: 'Введите email в поле выше, затем нажмите «Забыли пароль?».',
+    resetSentMsg: 'Если такой email зарегистрирован, письмо со ссылкой для сброса пароля уже отправлено.',
+    fillRegistrationFields: 'Заполните поля для регистрации',
+    backToSignIn: 'Уже есть аккаунт? Войти',
+    nameCheckingMsg: 'Проверяем...',
+    nameAvailableMsg: 'Имя свободно',
+    passwordHintText: 'Минимум 6 символов, буквы и цифры'
   },
   en: {
     appTitle: '🎯 Goal Tracker',
-    export: 'Export',
-    import: 'Import',
     resetAll: 'Reset All',
     home: 'Home',
     overallProgress: 'Overall Progress',
@@ -274,9 +467,7 @@ const STRINGS = {
     rename: '✏️ Rename',
     renamePrompt: 'New step name:',
     resetConfirm: 'Reset everything and keep only 1 goal?',
-    importError: 'Could not read the file.',
-    footer: 'Data is stored locally in this browser. Use “Export” to keep a backup.',
-    profile: 'Profile',
+    footer: 'Data is stored locally in this browser. Sign in to sync it across devices.',
     addSubgoal: 'Expand',
     addSubHint: '— click a goal with no subgoals yet to add 2 checkbox subgoals to it',
     account: 'Account',
@@ -292,7 +483,47 @@ const STRINGS = {
     authErrWeakPassword: 'Password is too short (minimum 6 characters).',
     authErrWrongPassword: 'Wrong email or password.',
     authErrTooMany: 'Too many attempts. Please wait a bit.',
-    authErrGeneric: "Couldn't sign in. Check your email and password."
+    authErrGeneric: "Couldn't sign in. Check your email and password.",
+    consentLabel: 'I agree to the processing of my personal data',
+    consentDetailsLabel: 'Learn more',
+    consentText: 'By registering, I consent to the processing of my personal data (email address, encrypted password, and the goal/progress data I save in the app) in accordance with applicable personal data protection law. Processing includes collecting, storing, using, and updating this data for account registration, authentication, and syncing between devices, using the Firebase service (Google LLC). Personal data is not shared with third parties and is not used for advertising. Consent remains valid until withdrawn — you can withdraw it by deleting your account from the Account section or by emailing the developer.',
+    consentRequired: 'Please confirm consent to personal data processing to continue.',
+    namePlaceholder: 'Unique username',
+    nameRequired: 'Please enter a username.',
+    nameTaken: 'This name is already taken, please choose another.',
+    editAccount: 'Edit account',
+    namePlaceholderEdit: 'Name',
+    surnamePlaceholder: 'Last name (optional)',
+    birthDateLabel: 'Date of birth (optional)',
+    genderLabel: 'Gender (optional)',
+    genderUnspecified: 'Not specified',
+    genderMale: 'Male',
+    genderFemale: 'Female',
+    occupationPlaceholder: 'Occupation (optional)',
+    saveChanges: 'Save',
+    tipAdd: 'Add goal',
+    tipDelete: 'Delete goal',
+    tipEdit: 'Rename goal',
+    tipReset: 'Reset all settings',
+    tipExpand: 'Expand goal',
+    tipChecklist: 'Add checklist',
+    checklistHint: '— click a goal with a checkbox to add a checklist to it',
+    checklistTitle: 'Checklist',
+    checklistPlaceholder: 'New item',
+    verifyBannerText: 'Please verify your email — we sent a confirmation link.',
+    verifyResend: 'Resend email',
+    verifyRecheck: "I've verified",
+    verifyResentMsg: 'Email sent, please check your inbox.',
+    verifyStillNot: 'Email is not verified yet.',
+    verifyConfirmedMsg: 'Email verified, thank you!',
+    forgotPassword: 'Forgot password?',
+    resetEmailRequired: 'Enter your email above, then click "Forgot password?".',
+    resetSentMsg: "If that email is registered, we've sent a password reset link.",
+    fillRegistrationFields: 'Please fill in the registration fields',
+    backToSignIn: 'Already have an account? Sign in',
+    nameCheckingMsg: 'Checking...',
+    nameAvailableMsg: 'Username is available',
+    passwordHintText: 'Minimum 6 characters, letters and digits'
   }
 };
 function loadLang(){
@@ -303,6 +534,8 @@ function loadLang(){
   return 'ru';
 }
 let lang = loadLang();
+let langMenuOpen = false;
+const LANG_FLAGS = { ru: '🇷🇺', en: '🇺🇸' };
 function t(key){ return STRINGS[lang][key]; }
 // Capitalized noun for auto-generated names ("цель"->"Цель", "goal"->"Goal") in the current language.
 function capWord(key){
@@ -311,12 +544,13 @@ function capWord(key){
 }
 
 /* ===== State ===== */
-const STORAGE_KEY = "goal_tracker_state_v6";
+const STORAGE_KEY = "goal_tracker_state_v7";
 let state = loadState();
 let path = [];
 let editMode = false;
 let deleteMode = false;
 let addSubMode = false;
+let checklistMode = false;
 
 // Minimum number of children allowed to remain at a given level, and how many of the leading
 // items are protected from deletion there. Home (depth 0) still protects the first goal (floor
@@ -361,6 +595,16 @@ function saveState(){
             match /users/{userId} {
               allow read, write: if request.auth != null && request.auth.uid == userId;
             }
+            // Usernames must be unique across the whole app. Anyone can read the collection
+            // (needed to check availability before an account even exists). A name can only be
+            // created once (Firestore treats writing to an existing doc as an "update", which is
+            // blocked below), and only its own owner can delete their reservation when renaming.
+            match /usernames/{name} {
+              allow read: if true;
+              allow create: if request.auth != null && request.auth.uid == request.resource.data.uid;
+              allow delete: if request.auth != null && request.auth.uid == resource.data.uid;
+              allow update: if false;
+            }
           }
         }
    5) Project settings (gear icon) -> General -> "Your apps" -> add a Web app -> copy the
@@ -377,7 +621,21 @@ const firebaseConfig = {
 let cloudEnabled = false;
 let authUser = null;
 let authPanelOpen = false;
+let verifyBusy = false;
+let verifyMsg = '';
+let privacyConsent = false;
+let pendingSignupName = '';
 let authError = '';
+let resetBusy = false;
+let resetMsg = '';
+let signupPanelOpen = false;
+let nameCheckStatus = '';
+let nameCheckTimer = null;
+let nameCheckToken = 0;
+let accountMenuOpen = false;
+let editAccountOpen = false;
+let editAccountError = '';
+let editAccountBusy = false;
 let authBusy = false;
 let cloudSyncTimer = null;
 let applyingRemoteUpdate = false;
@@ -406,10 +664,22 @@ function scheduleCloudPush(){
   if(!cloudEnabled || !authUser || applyingRemoteUpdate) return;
   clearTimeout(cloudSyncTimer);
   cloudSyncTimer = setTimeout(()=>{
+    // merge:true so this doesn't wipe out the account's `name`/`consent` fields — this call
+    // only ever needs to touch `state`.
     firebase.firestore().collection('users').doc(authUser.uid)
-      .set({ state, updatedAt: firebase.firestore.FieldValue.serverTimestamp() })
+      .set({ state, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge:true })
       .catch(()=>{});
   }, 800);
+}
+// Normalizes a display name into a Firestore-doc-id-safe uniqueness key (trimmed, case-insensitive,
+// collapsed whitespace, no slashes).
+function normalizeUsername(name){
+  return (name || '').trim().toLowerCase().replace(/\s+/g, ' ').replace(/\//g, '-');
+}
+// Password policy: must contain at least one letter and one digit, min 6 characters —
+// symbols and mixed case are welcome but never required.
+function isPasswordStrong(pw){
+  return pw.length >= 6 && /[A-Za-zА-Яа-яЁё]/.test(pw) && /[0-9]/.test(pw);
 }
 function startCloudSync(uid){
   const ref = firebase.firestore().collection('users').doc(uid);
@@ -421,10 +691,34 @@ function startCloudSync(uid){
         state = data.state;
         saveState();
         applyingRemoteUpdate = false;
-        render();
       }
+      if(data && authUser){
+        if(data.name) authUser.name = data.name;
+        authUser.surname = data.surname || '';
+        authUser.birthDate = data.birthDate || '';
+        authUser.gender = data.gender || '';
+        authUser.occupation = data.occupation || '';
+      }
+      render();
     } else {
-      ref.set({ state, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }).catch(()=>{});
+      // Brand-new account: always start from a blank template, never from the local demo/sample
+      // data or whatever was sitting unsynced in this browser.
+      const initial = emptyTemplate();
+      applyingRemoteUpdate = true;
+      state = initial;
+      path = [];
+      saveState();
+      applyingRemoteUpdate = false;
+      if(authUser && pendingSignupName) authUser.name = pendingSignupName;
+      render();
+      // Record proof of the personal-data-processing consent given on the sign-up form
+      // (152-ФЗ), plus the reserved username, alongside the new account's initial data.
+      ref.set({
+        state: initial,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        consent: { given: !!privacyConsent, at: firebase.firestore.FieldValue.serverTimestamp() },
+        name: pendingSignupName || null
+      }, { merge:true }).catch(()=>{});
     }
   });
 }
@@ -436,54 +730,166 @@ function doAuthSignIn(email, password){
   firebase.auth().signInWithEmailAndPassword(email, password)
     .catch(err => { authError = translateAuthError(err); authBusy = false; render(); });
 }
-function doAuthSignUp(email, password){
+async function doPasswordReset(email){
+  const trimmed = (email || '').trim();
+  if(!trimmed){
+    authError = t('resetEmailRequired');
+    render();
+    return;
+  }
+  resetBusy = true; authError = ''; resetMsg = '';
+  render();
+  try{
+    await firebase.auth().sendPasswordResetEmail(trimmed);
+    resetMsg = t('resetSentMsg');
+  }catch(err){
+    // Don't reveal whether an account exists for this email — always show the same
+    // "sent" message for a not-found user, same as for a real one.
+    if(err && err.code === 'auth/user-not-found'){
+      resetMsg = t('resetSentMsg');
+    } else {
+      authError = translateAuthError(err);
+    }
+  }
+  resetBusy = false;
+  render();
+}
+async function doAuthSignUp(email, password, name){
   authBusy = true; authError = '';
-  firebase.auth().createUserWithEmailAndPassword(email, password)
-    .catch(err => { authError = translateAuthError(err); authBusy = false; render(); });
+  const usernameKey = normalizeUsername(name);
+  if(!usernameKey){
+    authError = t('nameRequired');
+    authBusy = false; render();
+    return;
+  }
+  const nameRef = firebase.firestore().collection('usernames').doc(usernameKey);
+  try{
+    const existing = await nameRef.get();
+    if(existing.exists){
+      authError = t('nameTaken');
+      authBusy = false; render();
+      return;
+    }
+    const cred = await firebase.auth().createUserWithEmailAndPassword(email, password);
+    const user = cred.user;
+    try{
+      // Reserve the name inside a transaction so two simultaneous sign-ups can't both claim it.
+      await firebase.firestore().runTransaction(async (tx)=>{
+        const snap = await tx.get(nameRef);
+        if(snap.exists) throw new Error('name-taken');
+        tx.set(nameRef, { uid: user.uid });
+      });
+      pendingSignupName = name.trim();
+      try{ await user.updateProfile({ displayName: pendingSignupName }); }catch(e){}
+      // Send the verification link right after the account is fully set up (name reserved),
+      // so we don't waste a send on an account we're about to roll back below.
+      try{ await user.sendEmailVerification(); }catch(e){}
+    }catch(reserveErr){
+      // Someone else grabbed the name in the meantime — undo the just-created account so the
+      // email stays free to retry with a different name, instead of leaving an orphaned account.
+      try{ await user.delete(); }catch(e){}
+      authError = (reserveErr && reserveErr.message === 'name-taken') ? t('nameTaken') : t('authErrGeneric');
+      authBusy = false; render();
+    }
+  }catch(err){
+    authError = translateAuthError(err);
+    authBusy = false; render();
+  }
+}
+async function doResendVerification(){
+  if(!authUser || verifyBusy) return;
+  verifyBusy = true; verifyMsg = '';
+  render();
+  try{
+    await firebase.auth().currentUser.sendEmailVerification();
+    verifyMsg = t('verifyResentMsg');
+  }catch(e){
+    verifyMsg = translateAuthError(e);
+  }
+  verifyBusy = false;
+  render();
+}
+async function doRecheckVerification(){
+  if(!authUser || verifyBusy) return;
+  verifyBusy = true; verifyMsg = '';
+  render();
+  try{
+    await firebase.auth().currentUser.reload();
+    const verified = firebase.auth().currentUser.emailVerified;
+    authUser.emailVerified = verified;
+    verifyMsg = verified ? t('verifyConfirmedMsg') : t('verifyStillNot');
+  }catch(e){
+    verifyMsg = translateAuthError(e);
+  }
+  verifyBusy = false;
+  render();
 }
 function doAuthSignOut(){
   if(!cloudEnabled) return;
+  accountMenuOpen = false;
+  editAccountOpen = false;
+  path = [];
   firebase.auth().signOut();
 }
-
-/* ===== VK ID OneTap (branded login, cosmetic only — does NOT gate data access) =====
-   1) Create an app at https://id.vk.com/about/business/go/accounts (VK ID connection console).
-   2) Add your site's URL (e.g. https://ваш-логин.github.io/) to the app's trusted redirect domains.
-   3) Copy the numeric App ID and paste it below instead of 0. */
-const VK_APP_ID = 0;
-let vkUser = null;
-function initVkOneTap(){
-  if(!VK_APP_ID || typeof VKID === 'undefined') return;
+async function doEditAccountSave(name, surname, birthDate, gender, occupation){
+  if(!authUser) return;
+  const trimmedName = (name || '').trim();
+  if(!trimmedName){
+    editAccountError = t('nameRequired');
+    render();
+    return;
+  }
+  editAccountBusy = true; editAccountError = '';
+  render();
   try{
-    VKID.Config.init({
-      app: VK_APP_ID,
-      redirectUrl: window.location.origin + window.location.pathname,
-      responseMode: VKID.ConfigResponseMode.Callback,
-      source: VKID.ConfigSource.LOWCODE,
-      scope: ''
-    });
-    const container = document.getElementById('vkOneTapContainer');
-    if(!container) return;
-    const oneTap = new VKID.OneTap();
-    oneTap
-      .render({ container, showAlternativeLogin: false })
-      .on(VKID.WidgetEvents.ERROR, ()=>{})
-      .on(VKID.OneTapInternalEvents.LOGIN_SUCCESS, (payload)=>{
-        VKID.Auth.exchangeCode(payload.code, payload.device_id)
-          .then((result)=> VKID.Auth.userInfo(result.access_token))
-          .then((info)=>{
-            vkUser = (info && info.user) ? info.user : info;
-            updateVkContainerVisibility();
-            render();
-          })
-          .catch(()=>{});
-      });
-  }catch(e){}
-}
-function updateVkContainerVisibility(){
-  const c = document.getElementById('vkOneTapContainer');
-  if(!c) return;
-  c.style.display = (vkUser || !VK_APP_ID) ? 'none' : '';
+    const newKey = normalizeUsername(trimmedName);
+    const oldKey = normalizeUsername(authUser.name || '');
+    if(newKey !== oldKey){
+      const nameRef = firebase.firestore().collection('usernames').doc(newKey);
+      const existing = await nameRef.get();
+      if(existing.exists){
+        editAccountError = t('nameTaken');
+        editAccountBusy = false; render();
+        return;
+      }
+      try{
+        // Reserve the new name inside a transaction so two simultaneous renames can't collide.
+        await firebase.firestore().runTransaction(async (tx)=>{
+          const snap = await tx.get(nameRef);
+          if(snap.exists) throw new Error('name-taken');
+          tx.set(nameRef, { uid: authUser.uid });
+        });
+      }catch(reserveErr){
+        editAccountError = (reserveErr && reserveErr.message === 'name-taken') ? t('nameTaken') : t('authErrGeneric');
+        editAccountBusy = false; render();
+        return;
+      }
+      if(oldKey){
+        firebase.firestore().collection('usernames').doc(oldKey).delete().catch(()=>{});
+      }
+      try{ await firebase.auth().currentUser.updateProfile({ displayName: trimmedName }); }catch(e){}
+    }
+    await firebase.firestore().collection('users').doc(authUser.uid).set({
+      name: trimmedName,
+      surname: (surname || '').trim(),
+      birthDate: birthDate || '',
+      gender: gender || '',
+      occupation: (occupation || '').trim(),
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge:true });
+    authUser.name = trimmedName;
+    authUser.surname = (surname || '').trim();
+    authUser.birthDate = birthDate || '';
+    authUser.gender = gender || '';
+    authUser.occupation = (occupation || '').trim();
+    editAccountOpen = false;
+    editAccountBusy = false;
+    render();
+  }catch(err){
+    editAccountError = translateAuthError(err);
+    editAccountBusy = false;
+    render();
+  }
 }
 
 function resolve(p){
@@ -495,7 +901,15 @@ function isLeaf(node){
   return (!node.children || node.children.length===0) && ('done' in node);
 }
 function computePercent(node){
-  if(isLeaf(node)) return node.done ? 100 : 0;
+  if(isLeaf(node)){
+    // A leaf with a checklist fills up according to how many of its checklist lines are ticked
+    // off, instead of the plain done/not-done toggle.
+    if(node.checklist && node.checklist.length){
+      const doneN = node.checklist.filter(i => i.done).length;
+      return Math.round((doneN / node.checklist.length) * 100);
+    }
+    return node.done ? 100 : 0;
+  }
   if(node.children && node.children.length){
     const vals = node.children.map(computePercent);
     return Math.round(vals.reduce((a,b)=>a+b,0)/vals.length);
@@ -504,7 +918,7 @@ function computePercent(node){
 }
 function doneCount(node){
   if(!node.children) return 0;
-  return node.children.filter(c => isLeaf(c) ? c.done : computePercent(c)===100).length;
+  return node.children.filter(c => computePercent(c) === 100).length;
 }
 function barColor(pct){
   if(pct>=70) return "var(--green)";
@@ -527,34 +941,103 @@ function render(){
   let html = `<div class="topbar">
     <h1>${t('appTitle')}</h1>
     <div class="actions">
-      <button id="btnExport">${t('export')}</button>
-      <button id="btnImport">${t('import')}</button>
-      <button id="btnReset">${t('resetAll')}</button>
-      <button id="btnLangRu" class="lang-btn ${lang==='ru'?'active':''}" title="Русский">🇷🇺</button>
-      <button id="btnLangEn" class="lang-btn ${lang==='en'?'active':''}" title="English">🇺🇸</button>
-      <button id="btnProfile" title="${t('profile')}">👤</button>
+      <div class="lang-dropdown">
+        <button id="btnLangToggle" title="${lang==='ru'?'Русский':'English'}">${LANG_FLAGS[lang]}</button>
+        ${langMenuOpen ? `<div class="lang-menu">
+          ${Object.keys(LANG_FLAGS).map(code => `<button class="lang-option ${lang===code?'active':''}" data-lang="${code}" title="${code==='ru'?'Русский':'English'}">${LANG_FLAGS[code]}</button>`).join('')}
+        </div>` : ''}
+      </div>
       ${cloudEnabled ? (authUser
-        ? `<button id="btnAccount" title="${esc(authUser.email)}">👤 ${esc(authUser.email)}</button>`
+        ? `<div class="account-dropdown">
+            <button id="btnAccount" title="${esc(authUser.email)}">👤 ${esc(authUser.name || authUser.email)}</button>
+            ${accountMenuOpen ? `<div class="account-menu">
+              <button id="btnEditAccount">${t('editAccount')}</button>
+              <button id="btnSignOutMenu" class="danger">${t('accountSignOut')}</button>
+            </div>` : ''}
+          </div>`
         : `<button id="btnAccount">🔐 ${t('account')}</button>`) : ''}
-      ${vkUser ? `<span style="font-size:12px;color:var(--muted);align-self:center;">👋 ${esc(vkUser.first_name||'')}</span>` : ''}
     </div>
   </div>`;
 
+  if(cloudEnabled && authUser && !authUser.emailVerified){
+    html += `<div class="verify-banner">
+      <span>${t('verifyBannerText')}</span>
+      <button id="btnResendVerify" ${verifyBusy?'disabled':''}>${t('verifyResend')}</button>
+      <button id="btnRecheckVerify" ${verifyBusy?'disabled':''}>${t('verifyRecheck')}</button>
+      ${verifyMsg ? `<span class="verify-msg">${esc(verifyMsg)}</span>` : ''}
+    </div>`;
+  }
+
   if(cloudEnabled && authPanelOpen && !authUser){
-    html += `<div class="auth-panel">
-      <input type="email" id="authEmail" placeholder="${t('emailPlaceholder')}" autocomplete="email">
-      <input type="password" id="authPassword" placeholder="${t('passwordPlaceholder')}" autocomplete="current-password">
-      <button id="btnAuthSignIn" ${authBusy?'disabled':''}>${t('accountSignIn')}</button>
-      <button id="btnAuthSignUp" ${authBusy?'disabled':''}>${t('accountSignUp')}</button>
-      ${authError ? `<div class="auth-error">${esc(authError)}</div>` : ''}
-      <div class="auth-hint">${t('accountHint')}</div>
+    html += `<div class="auth-modal-overlay" id="authOverlay">
+      <div class="auth-panel">
+        <button class="auth-close" id="btnAuthClose" aria-label="close" title="${t('done')}">✕</button>
+        <input type="email" id="authEmail" placeholder="${t('emailPlaceholder')}" autocomplete="email">
+        <input type="password" id="authPassword" placeholder="${t('passwordPlaceholder')}" autocomplete="current-password">
+        <div class="auth-btn-row">
+          <button id="btnAuthSignIn" ${authBusy?'disabled':''}>${t('accountSignIn')}</button>
+          <button type="button" id="btnForgotPassword" class="auth-link" ${resetBusy?'disabled':''}>${t('forgotPassword')}</button>
+        </div>
+        ${authError ? `<div class="auth-error">${esc(authError)}</div>` : ''}
+        ${resetMsg ? `<div class="auth-hint" style="color:var(--green)">${esc(resetMsg)}</div>` : ''}
+        <div class="auth-hint">${t('accountHint')}</div>
+        <button type="button" id="btnOpenSignup" class="auth-link-center">${t('accountSignUp')}</button>
+      </div>
+    </div>`;
+  }
+
+  if(cloudEnabled && signupPanelOpen && !authUser){
+    html += `<div class="auth-modal-overlay" id="signupOverlay">
+      <div class="auth-panel">
+        <button class="auth-close" id="btnSignupClose" aria-label="close" title="${t('done')}">✕</button>
+        <input type="text" id="authName" placeholder="${t('namePlaceholder')}" autocomplete="username" maxlength="30">
+        <div class="auth-hint" id="nameCheckMsg"></div>
+        <input type="email" id="authEmail" placeholder="${t('emailPlaceholder')}" autocomplete="email">
+        <input type="password" id="authPassword" placeholder="${t('passwordPlaceholder')}" autocomplete="new-password">
+        <div class="auth-hint" id="passwordHintMsg">${t('passwordHintText')}</div>
+        <label class="auth-consent">
+          <input type="checkbox" id="authConsent" ${privacyConsent?'checked':''}>
+          <span>${t('consentLabel')}
+            <details class="auth-consent-details">
+              <summary>${t('consentDetailsLabel')}</summary>
+              ${esc(t('consentText'))}
+            </details>
+          </span>
+        </label>
+        <div class="auth-signup-row">
+          <button id="btnAuthSignUp" ${authBusy?'disabled':''}>${t('accountSignUp')}</button>
+        </div>
+        ${authError ? `<div class="auth-error">${esc(authError)}</div>` : ''}
+        <button type="button" id="btnBackToSignIn" class="auth-link-center">${t('backToSignIn')}</button>
+      </div>
+    </div>`;
+  }
+
+  if(cloudEnabled && editAccountOpen && authUser){
+    html += `<div class="auth-modal-overlay" id="editAccountOverlay">
+      <div class="auth-panel edit-account-panel">
+        <button class="auth-close" id="btnEditAccountClose" aria-label="close" title="${t('done')}">✕</button>
+        <input type="text" id="editName" placeholder="${t('namePlaceholderEdit')}" autocomplete="username" maxlength="30" value="${esc(authUser.name||'')}">
+        <input type="text" id="editSurname" placeholder="${t('surnamePlaceholder')}" autocomplete="family-name" maxlength="30" value="${esc(authUser.surname||'')}">
+        <div class="field-label">${t('birthDateLabel')}</div>
+        <input type="date" id="editBirthDate" value="${esc(authUser.birthDate||'')}">
+        <div class="field-label">${t('genderLabel')}</div>
+        <select id="editGender">
+          <option value="" ${!authUser.gender?'selected':''}>${t('genderUnspecified')}</option>
+          <option value="male" ${authUser.gender==='male'?'selected':''}>${t('genderMale')}</option>
+          <option value="female" ${authUser.gender==='female'?'selected':''}>${t('genderFemale')}</option>
+        </select>
+        <input type="text" id="editOccupation" placeholder="${t('occupationPlaceholder')}" maxlength="60" value="${esc(authUser.occupation||'')}">
+        ${editAccountError ? `<div class="auth-error">${esc(editAccountError)}</div>` : ''}
+        <button id="btnEditAccountSave" ${editAccountBusy?'disabled':''}>${t('saveChanges')}</button>
+      </div>
     </div>`;
   }
 
   html += renderBreadcrumb();
 
   const addSubActive = addSubMode && path.length === 2;
-  const mode = editMode ? 'edit' : deleteMode ? 'delete' : addSubActive ? 'addsub' : null;
+  const mode = editMode ? 'edit' : deleteMode ? 'delete' : addSubActive ? 'addsub' : checklistMode ? 'checklist' : null;
   const protectedCount = protectedCountFor(path.length);
   const hintHTML = editMode
     ? ` <span class="edit-hint">${t('editHint')}</span>`
@@ -562,7 +1045,9 @@ function render(){
       ? ` <span class="edit-hint delete-hint">${t('deleteHint')(protectedCount)}</span>`
       : addSubActive
         ? ` <span class="edit-hint">${t('addSubHint')}</span>`
-        : '';
+        : checklistMode
+          ? ` <span class="edit-hint">${t('checklistHint')}</span>`
+          : '';
 
   if(path.length===0){
     html += `<div class="overall">
@@ -572,9 +1057,11 @@ function render(){
     html += `<div class="section-title-row">
       <div class="section-title">${t('mainGoals')}${hintHTML}</div>
       <div class="add-goal-wrap">
-        <button id="btnAddGoal" ${state.children.length>=10?'disabled':''}>${t('addGoal')}</button>
-        <button id="btnEdit" class="${editMode?'active':''}">${editMode ? t('done') : t('editGoal')}</button>
-        <button id="btnDelete" class="${deleteMode?'active':''}">${deleteMode ? t('done') : t('deleteGoal')}</button>
+        <button id="btnAddGoal" class="icon-btn" title="${t('tipAdd')}" aria-label="${t('tipAdd')}" ${state.children.length>=10?'disabled':''}>+</button>
+        <button id="btnDelete" class="${deleteMode?'active':'icon-btn'}" title="${deleteMode?t('done'):t('tipDelete')}" aria-label="${deleteMode?t('done'):t('tipDelete')}">${deleteMode ? t('done') : '−'}</button>
+        <button id="btnEdit" class="${editMode?'active':'icon-btn'}" title="${editMode?t('done'):t('tipEdit')}" aria-label="${editMode?t('done'):t('tipEdit')}">${editMode ? t('done') : '✏️'}</button>
+        ${state.children.some(isLeaf) ? `<button id="btnChecklist" class="${checklistMode?'active':'icon-btn'}" title="${checklistMode?t('done'):t('tipChecklist')}" aria-label="${checklistMode?t('done'):t('tipChecklist')}">${checklistMode ? t('done') : '📋'}</button>` : ''}
+        <button id="btnReset" class="icon-btn" title="${t('tipReset')}" aria-label="${t('tipReset')}">↺</button>
         <span id="addGoalMsg" class="add-goal-msg">${state.children.length>=10?t('maxN')(10):''}</span>
         <span id="deleteMsg" class="add-goal-msg"></span>
       </div>
@@ -602,10 +1089,11 @@ function render(){
       const childLabel = path.length === 1 ? t('subgoal') : path.length === 2 ? t('goal') : t('item');
       const atLimit = node.children.length >= 10;
       html += `<div class="add-child-row">
-        <button id="btnAddChild" ${atLimit?'disabled':''}>${t('addLabel')}</button>
-        ${path.length === 2 ? `<button id="btnAddSubgoal" class="${addSubMode?'active':''}">${addSubMode ? t('done') : t('addSubgoal')}</button>` : ''}
-        <button id="btnEdit" class="${editMode?'active':''}">${editMode ? t('done') : t('editGoal')}</button>
-        <button id="btnDelete" class="${deleteMode?'active':''}">${deleteMode ? t('done') : t('deleteLabel')}</button>
+        <button id="btnAddChild" class="icon-btn" title="${t('tipAdd')}" aria-label="${t('tipAdd')}" ${atLimit?'disabled':''}>+</button>
+        <button id="btnDelete" class="${deleteMode?'active':'icon-btn'}" title="${deleteMode?t('done'):t('tipDelete')}" aria-label="${deleteMode?t('done'):t('tipDelete')}">${deleteMode ? t('done') : '−'}</button>
+        ${path.length === 2 ? `<button id="btnAddSubgoal" class="${addSubMode?'active':'icon-btn'}" title="${addSubMode?t('done'):t('tipExpand')}" aria-label="${addSubMode?t('done'):t('tipExpand')}">${addSubMode ? t('done') : '🔀'}</button>` : ''}
+        <button id="btnEdit" class="${editMode?'active':'icon-btn'}" title="${editMode?t('done'):t('tipEdit')}" aria-label="${editMode?t('done'):t('tipEdit')}">${editMode ? t('done') : '✏️'}</button>
+        ${node.children.some(isLeaf) ? `<button id="btnChecklist" class="${checklistMode?'active':'icon-btn'}" title="${checklistMode?t('done'):t('tipChecklist')}" aria-label="${checklistMode?t('done'):t('tipChecklist')}">${checklistMode ? t('done') : '📋'}</button>` : ''}
         <span id="addChildMsg" class="add-goal-msg">${atLimit?t('maxN')(10):''}</span>
         <span id="deleteMsg" class="add-goal-msg"></span>
       </div>`;
@@ -620,14 +1108,15 @@ function render(){
       }
     } else {
       html += leafDetailHTML(node);
-      html += `<div class="add-sub"><button id="btnAddSub">${t('splitInto6')}</button></div>`;
+      if(node.checklist){
+        html += checklistHTML(node.checklist);
+      }
     }
   }
 
   html += `<footer>${t('footer')}</footer>`;
   app.innerHTML = html;
   attachHandlers();
-  updateVkContainerVisibility();
 }
 
 function renderBreadcrumb(){
@@ -656,6 +1145,11 @@ function cardModeAttrs(node, idx, mode, protectedCount){
       ? { cls:'selectable', attrs:`data-addsub-idx="${idx}"` }
       : { cls:'locked', attrs:'' };
   }
+  if(mode === 'checklist'){
+    return isLeaf(node)
+      ? { cls:'selectable', attrs:`data-checklist-idx="${idx}"` }
+      : { cls:'locked', attrs:'' };
+  }
   return { cls:'', attrs:`data-nav="${idx}"` };
 }
 function cardModeTitle(node, idx, mode, defaultArrow, protectedCount){
@@ -668,6 +1162,9 @@ function cardModeTitle(node, idx, mode, defaultArrow, protectedCount){
   if(mode === 'addsub'){
     const eligible = !node.children || node.children.length === 0;
     return `<span>${esc(node.name)}</span><span class="arrow">${eligible ? '➕' : '🔒'}</span>`;
+  }
+  if(mode === 'checklist'){
+    return `<span>${esc(node.name)}</span><span class="arrow">${isLeaf(node) ? '📋' : '🔒'}</span>`;
   }
   return `<span>${esc(node.name)}</span><span class="arrow">${defaultArrow}</span>`;
 }
@@ -688,8 +1185,13 @@ function cardOrLeafHTML(node, idx, mode, protectedCount){
   const { cls, attrs } = cardModeAttrs(node, idx, mode, protectedCount);
 
   if(isLeaf(node)){
-    const pct = node.done ? 100 : 0;
-    const titleHTML = cardModeTitle(node, idx, mode, node.done ? '✅' : '❌', protectedCount);
+    // Fills according to checklist completion when a checklist is present (see computePercent),
+    // otherwise the plain done/not-done toggle.
+    const pct = computePercent(node);
+    // Once a checklist has been added to this item, its card shows a checklist icon instead of
+    // the plain done/not-done checkbox mark — clicking it opens the checklist (see [data-nav]).
+    const defaultArrow = node.checklist ? '📋' : (node.done ? '✅' : '❌');
+    const titleHTML = cardModeTitle(node, idx, mode, defaultArrow, protectedCount);
     return `<div class="card ${cls}" ${attrs}>
       <div class="title">${titleHTML}</div>
       ${node.date ? `<div class="sub"><span>${t('due')} ${esc(node.date)}</span></div>` : ''}
@@ -757,20 +1259,13 @@ function wheelHTML(items){
 
   let svg = `<svg viewBox="0 0 ${width} ${height}" width="100%" style="max-width:580px; height:auto; display:block; margin:0 auto;" xmlns:xlink="http://www.w3.org/1999/xlink">`;
   svg += `<defs>${defsInner}</defs>`;
-  for(let lvl = 1; lvl <= 5; lvl++){
-    const r = maxR * lvl / 5;
-    svg += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#2a3348" stroke-width="1"/>`;
-  }
-  if(n > 1){
-    for(let i = 0; i < n; i++){
-      const boundary = i * sectorSpan + sectorSpan / 2;
-      const p = polarToCartesian(cx, cy, maxR, boundary);
-      svg += `<line x1="${cx}" y1="${cy}" x2="${p.x.toFixed(2)}" y2="${p.y.toFixed(2)}" stroke="#2a3348" stroke-width="1"/>`;
-    }
-  }
+  const RING_STEPS = 5;
   items.forEach((item, i) => {
     const pct = computePercent(item);
-    const r = maxR * (pct / 100);
+    // Snap the fill out to the nearest completed ring (round up), so a sector always fully
+    // colors a step instead of stopping partway between two rings.
+    const filledSteps = Math.min(RING_STEPS, Math.ceil(pct / (100 / RING_STEPS)));
+    const r = maxR * (filledSteps / RING_STEPS);
     const center = i * sectorSpan;
     const start = center - sectorSpan / 2, end = center + sectorSpan / 2;
     const color = colors[i % colors.length];
@@ -785,6 +1280,19 @@ function wheelHTML(items){
     }
     svg += `<text font-size="${fontSize}" font-weight="700" fill="#eef2f8"><textPath href="#${arcIds[i]}" xlink:href="#${arcIds[i]}" startOffset="50%" text-anchor="middle">${esc(item.name)}</textPath></text>`;
   });
+  // Grid rings + radial dividers are drawn last, on top of the filled wedges (in a lighter tone
+  // than before), so the fill level always reads clearly against the scale instead of hiding under it.
+  for(let lvl = 1; lvl <= 5; lvl++){
+    const r = maxR * lvl / 5;
+    svg += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#7b879e" stroke-width="1"/>`;
+  }
+  if(n > 1){
+    for(let i = 0; i < n; i++){
+      const boundary = i * sectorSpan + sectorSpan / 2;
+      const p = polarToCartesian(cx, cy, maxR, boundary);
+      svg += `<line x1="${cx}" y1="${cy}" x2="${p.x.toFixed(2)}" y2="${p.y.toFixed(2)}" stroke="#7b879e" stroke-width="1"/>`;
+    }
+  }
   svg += `<circle cx="${cx}" cy="${cy}" r="3" fill="#eef2f8"/>`;
   svg += `</svg>`;
   return svg;
@@ -795,13 +1303,28 @@ function leafDetailHTML(node){
     <div class="chk ${node.done?'done':''}" id="leafToggle">${node.done?'✓':''}</div>
     <div class="leaf-body">
       <div class="leaf-title">${esc(node.name)}</div>
-      <div class="leaf-meta">
-        <span>${t('due')}</span>
-        <input type="date" id="leafDate" value="${esc(node.date||'')}">
-        <button id="btnRename">${t('rename')}</button>
-      </div>
     </div>
   </div>`;
+}
+
+// Lightweight per-item checklist (attached to a leaf/checkbox goal via the 📋 mode button) —
+// separate from the main goal tree, just a free-form list of lines you can tick off.
+function checklistHTML(list){
+  let html = `<div class="checklist-section">
+    <div class="section-title" style="margin-top:20px;">${t('checklistTitle')}</div>`;
+  list.forEach((item, i) => {
+    html += `<div class="checklist-row">
+      <div class="checklist-circle ${item.done?'done':''}" data-checklist-toggle="${i}">${item.done?'✓':''}</div>
+      <span class="checklist-text ${item.done?'done':''}">${esc(item.text)}</span>
+      <button class="checklist-remove" data-checklist-remove="${i}" title="${t('tipDelete')}" aria-label="${t('tipDelete')}">✕</button>
+    </div>`;
+  });
+  html += `<div class="checklist-add-row">
+    <input type="text" id="checklistInput" placeholder="${t('checklistPlaceholder')}" maxlength="80">
+    <button id="btnChecklistAdd" class="icon-btn">+</button>
+  </div>`;
+  html += `</div>`;
+  return html;
 }
 
 function attachHandlers(){
@@ -816,11 +1339,13 @@ function attachHandlers(){
     el.addEventListener('click', ()=>{
       const idx = parseInt(el.dataset.nav,10);
       const node = resolve(path).children[idx];
-      if(isLeaf(node)){
+      if(isLeaf(node) && !node.checklist){
         node.done = !node.done;
         saveState();
         render();
       } else {
+        // Containers navigate in as usual; a leaf that already has a checklist also opens its
+        // page (via the 📋 icon) instead of toggling done inline, so the checklist is reachable.
         path = [...path, idx];
         render();
       }
@@ -943,11 +1468,23 @@ function attachHandlers(){
       render();
     });
   });
+  document.querySelectorAll('[data-checklist-idx]').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      const idx = parseInt(el.dataset.checklistIdx,10);
+      const parent = resolve(path);
+      const node = parent.children[idx];
+      if(!node.checklist) node.checklist = [];
+      checklistMode = false;
+      path = [...path, idx];
+      saveState();
+      render();
+    });
+  });
   const btnEdit = document.getElementById('btnEdit');
   if(btnEdit){
     btnEdit.addEventListener('click', ()=>{
       editMode = !editMode;
-      if(editMode){ deleteMode = false; addSubMode = false; }
+      if(editMode){ deleteMode = false; addSubMode = false; checklistMode = false; }
       render();
     });
   }
@@ -955,7 +1492,7 @@ function attachHandlers(){
   if(btnDelete){
     btnDelete.addEventListener('click', ()=>{
       deleteMode = !deleteMode;
-      if(deleteMode){ editMode = false; addSubMode = false; }
+      if(deleteMode){ editMode = false; addSubMode = false; checklistMode = false; }
       render();
     });
   }
@@ -963,7 +1500,15 @@ function attachHandlers(){
   if(btnAddSubgoal){
     btnAddSubgoal.addEventListener('click', ()=>{
       addSubMode = !addSubMode;
-      if(addSubMode){ editMode = false; deleteMode = false; }
+      if(addSubMode){ editMode = false; deleteMode = false; checklistMode = false; }
+      render();
+    });
+  }
+  const btnChecklist = document.getElementById('btnChecklist');
+  if(btnChecklist){
+    btnChecklist.addEventListener('click', ()=>{
+      checklistMode = !checklistMode;
+      if(checklistMode){ editMode = false; deleteMode = false; addSubMode = false; }
       render();
     });
   }
@@ -976,87 +1521,150 @@ function attachHandlers(){
       render();
     });
   }
-  const leafDate = document.getElementById('leafDate');
-  if(leafDate){
-    leafDate.addEventListener('change', ()=>{
+  document.querySelectorAll('[data-checklist-toggle]').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      const idx = parseInt(el.dataset.checklistToggle,10);
       const node = resolve(path);
-      node.date = leafDate.value;
-      saveState();
-    });
-  }
-  const btnRename = document.getElementById('btnRename');
-  if(btnRename){
-    btnRename.addEventListener('click', ()=>{
-      const node = resolve(path);
-      const v = prompt(t('renamePrompt'), node.name);
-      if(v!==null && v.trim()!==''){ node.name = v.trim(); saveState(); render(); }
-    });
-  }
-  const btnAddSub = document.getElementById('btnAddSub');
-  if(btnAddSub){
-    btnAddSub.addEventListener('click', ()=>{
-      const node = resolve(path);
-      delete node.done;
-      delete node.date;
-      node.children = [1,2,3,4,5,6].map(n => ({ name:`Подшаг ${n}`, date:"", done:false, children:[] }));
+      node.checklist[idx].done = !node.checklist[idx].done;
       saveState();
       render();
     });
-  }
-  document.getElementById('btnExport').addEventListener('click', ()=>{
-    const blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'goal_tracker_backup.json';
-    a.click();
   });
-  document.getElementById('btnImport').addEventListener('click', ()=>{
-    const input = document.createElement('input');
-    input.type = 'file'; input.accept = '.json,application/json';
-    input.addEventListener('change', e=>{
-      const file = e.target.files[0];
-      if(!file) return;
-      const reader = new FileReader();
-      reader.onload = ()=>{
-        try{
-          state = JSON.parse(reader.result);
-          path = [];
-          saveState();
-          render();
-        }catch(err){ alert(t('importError')); }
-      };
-      reader.readAsText(file);
-    });
-    input.click();
-  });
-  document.getElementById('btnReset').addEventListener('click', ()=>{
-    if(confirm(t('resetConfirm'))){
-      const goalWord = capWord('goal');
-      state = { name:"Главная", children: [
-        { name:`${goalWord} 1`, children: emptySteps(capWord('subgoal'), goalWord) }
-      ]};
-      path = [];
+  document.querySelectorAll('[data-checklist-remove]').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      const idx = parseInt(el.dataset.checklistRemove,10);
+      const node = resolve(path);
+      node.checklist.splice(idx,1);
       saveState();
       render();
-    }
+    });
   });
-  const btnProfile = document.getElementById('btnProfile');
-  if(btnProfile){
-    btnProfile.addEventListener('click', ()=>{
-      state = structuredCloneFallback(SEED);
-      path = [];
-      render();
+  const checklistInput = document.getElementById('checklistInput');
+  function addChecklistItem(){
+    if(!checklistInput) return;
+    const v = checklistInput.value.trim();
+    if(!v) return;
+    const node = resolve(path);
+    node.checklist.push({ text:v, done:false });
+    saveState();
+    render();
+  }
+  const btnChecklistAdd = document.getElementById('btnChecklistAdd');
+  if(btnChecklistAdd){
+    btnChecklistAdd.addEventListener('click', addChecklistItem);
+  }
+  if(checklistInput){
+    checklistInput.addEventListener('keydown', (e)=>{
+      if(e.key === 'Enter') addChecklistItem();
+    });
+  }
+  const btnReset = document.getElementById('btnReset');
+  if(btnReset){
+    btnReset.addEventListener('click', ()=>{
+      if(confirm(t('resetConfirm'))){
+        state = emptyTemplate();
+        path = [];
+        saveState();
+        render();
+      }
     });
   }
   const btnAccount = document.getElementById('btnAccount');
   if(btnAccount){
-    btnAccount.addEventListener('click', ()=>{
+    btnAccount.addEventListener('click', (e)=>{
       if(authUser){
-        if(confirm(t('accountSignOutConfirm'))) doAuthSignOut();
+        e.stopPropagation();
+        accountMenuOpen = !accountMenuOpen;
+        render();
         return;
       }
       authPanelOpen = !authPanelOpen;
+      signupPanelOpen = false;
       authError = '';
+      resetMsg = '';
+      render();
+    });
+  }
+  if(accountMenuOpen){
+    document.addEventListener('click', function closeAccountMenu(){
+      accountMenuOpen = false;
+      document.removeEventListener('click', closeAccountMenu);
+      render();
+    }, { once:true });
+  }
+  const btnEditAccount = document.getElementById('btnEditAccount');
+  if(btnEditAccount){
+    btnEditAccount.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      accountMenuOpen = false;
+      editAccountOpen = true;
+      editAccountError = '';
+      render();
+    });
+  }
+  const btnSignOutMenu = document.getElementById('btnSignOutMenu');
+  if(btnSignOutMenu){
+    btnSignOutMenu.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      accountMenuOpen = false;
+      if(confirm(t('accountSignOutConfirm'))) doAuthSignOut();
+      else render();
+    });
+  }
+  const btnResendVerify = document.getElementById('btnResendVerify');
+  if(btnResendVerify){
+    btnResendVerify.addEventListener('click', doResendVerification);
+  }
+  const btnRecheckVerify = document.getElementById('btnRecheckVerify');
+  if(btnRecheckVerify){
+    btnRecheckVerify.addEventListener('click', doRecheckVerification);
+  }
+  const editAccountOverlay = document.getElementById('editAccountOverlay');
+  if(editAccountOverlay){
+    editAccountOverlay.addEventListener('click', (e)=>{
+      if(e.target === editAccountOverlay){
+        editAccountOpen = false;
+        editAccountError = '';
+        render();
+      }
+    });
+  }
+  const btnEditAccountClose = document.getElementById('btnEditAccountClose');
+  if(btnEditAccountClose){
+    btnEditAccountClose.addEventListener('click', ()=>{
+      editAccountOpen = false;
+      editAccountError = '';
+      render();
+    });
+  }
+  const btnEditAccountSave = document.getElementById('btnEditAccountSave');
+  if(btnEditAccountSave){
+    btnEditAccountSave.addEventListener('click', ()=>{
+      const name = document.getElementById('editName').value;
+      const surname = document.getElementById('editSurname').value;
+      const birthDate = document.getElementById('editBirthDate').value;
+      const gender = document.getElementById('editGender').value;
+      const occupation = document.getElementById('editOccupation').value;
+      doEditAccountSave(name, surname, birthDate, gender, occupation);
+    });
+  }
+  const authOverlay = document.getElementById('authOverlay');
+  if(authOverlay){
+    authOverlay.addEventListener('click', (e)=>{
+      if(e.target === authOverlay){
+        authPanelOpen = false;
+        authError = '';
+        resetMsg = '';
+        render();
+      }
+    });
+  }
+  const btnAuthClose = document.getElementById('btnAuthClose');
+  if(btnAuthClose){
+    btnAuthClose.addEventListener('click', ()=>{
+      authPanelOpen = false;
+      authError = '';
+      resetMsg = '';
       render();
     });
   }
@@ -1069,31 +1677,169 @@ function attachHandlers(){
       doAuthSignIn(email, password);
     });
   }
+  const btnForgotPassword = document.getElementById('btnForgotPassword');
+  if(btnForgotPassword){
+    btnForgotPassword.addEventListener('click', ()=>{
+      const email = document.getElementById('authEmail').value;
+      doPasswordReset(email);
+    });
+  }
+  const btnOpenSignup = document.getElementById('btnOpenSignup');
+  if(btnOpenSignup){
+    btnOpenSignup.addEventListener('click', ()=>{
+      authPanelOpen = false;
+      signupPanelOpen = true;
+      authError = '';
+      resetMsg = '';
+      nameCheckStatus = '';
+      privacyConsent = false;
+      render();
+    });
+  }
+  const btnBackToSignIn = document.getElementById('btnBackToSignIn');
+  if(btnBackToSignIn){
+    btnBackToSignIn.addEventListener('click', ()=>{
+      signupPanelOpen = false;
+      authPanelOpen = true;
+      authError = '';
+      render();
+    });
+  }
+  const signupOverlay = document.getElementById('signupOverlay');
+  if(signupOverlay){
+    signupOverlay.addEventListener('click', (e)=>{
+      if(e.target === signupOverlay){
+        signupPanelOpen = false;
+        authError = '';
+        render();
+      }
+    });
+  }
+  const btnSignupClose = document.getElementById('btnSignupClose');
+  if(btnSignupClose){
+    btnSignupClose.addEventListener('click', ()=>{
+      signupPanelOpen = false;
+      authError = '';
+      render();
+    });
+  }
+  const authConsentEl = document.getElementById('authConsent');
+  if(authConsentEl){
+    authConsentEl.addEventListener('change', ()=>{
+      privacyConsent = authConsentEl.checked;
+    });
+  }
+  const authNameEl = document.getElementById('authName');
+  if(authNameEl){
+    authNameEl.addEventListener('input', ()=>{
+      const key = normalizeUsername(authNameEl.value);
+      clearTimeout(nameCheckTimer);
+      const msgEl = document.getElementById('nameCheckMsg');
+      if(!key){
+        nameCheckStatus = '';
+        if(msgEl){ msgEl.textContent = ''; msgEl.classList.remove('valid'); msgEl.style.color = ''; }
+        return;
+      }
+      nameCheckStatus = 'checking';
+      if(msgEl){ msgEl.textContent = t('nameCheckingMsg'); msgEl.classList.remove('valid'); msgEl.style.color = ''; }
+      const myToken = ++nameCheckToken;
+      nameCheckTimer = setTimeout(()=>{
+        if(!cloudEnabled) return;
+        firebase.firestore().collection('usernames').doc(key).get().then(snap=>{
+          if(myToken !== nameCheckToken) return; // user kept typing, this result is stale
+          const currentMsgEl = document.getElementById('nameCheckMsg');
+          if(!currentMsgEl) return; // panel got closed meanwhile
+          if(snap.exists){
+            nameCheckStatus = 'taken';
+            currentMsgEl.textContent = t('nameTaken');
+            currentMsgEl.style.color = 'var(--red)';
+          } else {
+            nameCheckStatus = 'available';
+            currentMsgEl.textContent = t('nameAvailableMsg');
+            currentMsgEl.style.color = 'var(--green)';
+          }
+        }).catch(()=>{
+          if(myToken !== nameCheckToken) return;
+          const currentMsgEl = document.getElementById('nameCheckMsg');
+          if(currentMsgEl){ currentMsgEl.textContent = ''; }
+        });
+      }, 500);
+    });
+  }
   const btnAuthSignUp = document.getElementById('btnAuthSignUp');
   if(btnAuthSignUp){
     btnAuthSignUp.addEventListener('click', ()=>{
-      const email = document.getElementById('authEmail').value.trim();
-      const password = document.getElementById('authPassword').value;
-      if(!email || !password) return;
-      doAuthSignUp(email, password);
+      const nameEl = document.getElementById('authName');
+      const emailEl = document.getElementById('authEmail');
+      const passwordEl = document.getElementById('authPassword');
+      const name = nameEl.value;
+      const email = emailEl.value.trim();
+      const password = passwordEl.value;
+      if(!name.trim() || !email || !password){
+        [nameEl, emailEl, passwordEl].forEach(el=>{
+          if(!el.value.trim()){
+            el.classList.add('input-error');
+            setTimeout(()=>{ el.classList.remove('input-error'); }, 2000);
+          }
+        });
+        return;
+      }
+      if(!isPasswordStrong(password)){
+        passwordEl.classList.add('input-error');
+        setTimeout(()=>{ passwordEl.classList.remove('input-error'); }, 2000);
+        return;
+      }
+      if(!privacyConsent){
+        authError = t('consentRequired');
+        render();
+        return;
+      }
+      doAuthSignUp(email, password, name);
     });
   }
   const authPasswordEl = document.getElementById('authPassword');
   if(authPasswordEl){
     authPasswordEl.addEventListener('keydown', (e)=>{
-      if(e.key === 'Enter') btnAuthSignIn && btnAuthSignIn.click();
+      if(e.key !== 'Enter') return;
+      const signInBtn = document.getElementById('btnAuthSignIn');
+      const signUpBtn = document.getElementById('btnAuthSignUp');
+      if(signInBtn) signInBtn.click();
+      else if(signUpBtn) signUpBtn.click();
+    });
+    authPasswordEl.addEventListener('input', ()=>{
+      const hintEl = document.getElementById('passwordHintMsg');
+      if(!hintEl) return; // sign-in panel has no strength hint
+      hintEl.classList.toggle('valid', isPasswordStrong(authPasswordEl.value));
     });
   }
   function setLang(newLang){
-    if(lang === newLang) return;
+    langMenuOpen = false;
+    if(lang === newLang){ render(); return; }
     lang = newLang;
     try{ localStorage.setItem(LANG_KEY, lang); }catch(e){}
     render();
   }
-  const btnLangRu = document.getElementById('btnLangRu');
-  if(btnLangRu) btnLangRu.addEventListener('click', ()=> setLang('ru'));
-  const btnLangEn = document.getElementById('btnLangEn');
-  if(btnLangEn) btnLangEn.addEventListener('click', ()=> setLang('en'));
+  const btnLangToggle = document.getElementById('btnLangToggle');
+  if(btnLangToggle){
+    btnLangToggle.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      langMenuOpen = !langMenuOpen;
+      render();
+    });
+  }
+  document.querySelectorAll('.lang-option').forEach(el=>{
+    el.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      setLang(el.dataset.lang);
+    });
+  });
+  if(langMenuOpen){
+    document.addEventListener('click', function closeLangMenu(){
+      langMenuOpen = false;
+      document.removeEventListener('click', closeLangMenu);
+      render();
+    }, { once:true });
+  }
 }
 
 render();
@@ -1101,21 +1847,20 @@ render();
 if(cloudEnabled){
   firebase.auth().onAuthStateChanged((user)=>{
     if(user){
-      authUser = { email: user.email, uid: user.uid };
+      authUser = { email: user.email, uid: user.uid, name: user.displayName || '', emailVerified: user.emailVerified };
       authPanelOpen = false;
+      signupPanelOpen = false;
       authError = '';
       authBusy = false;
       startCloudSync(user.uid);
     } else {
       authUser = null;
+      verifyMsg = '';
       stopCloudSync();
     }
     render();
   });
 }
-try{ initVkOneTap(); }catch(e){}
-updateVkContainerVisibility();
-
 // PWA: register the service worker so the app can be installed and used offline.
 // Registration silently no-ops on file:// pages or browsers without support.
 if('serviceWorker' in navigator){
