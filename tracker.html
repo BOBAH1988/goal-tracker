@@ -85,17 +85,17 @@
   .top-menu-dropdown{position:relative; display:inline-flex;}
   .lang-menu{
     position:absolute; top:calc(100% + 4px); right:0; background:var(--card2); border:1px solid var(--accent);
-    border-radius:8px; padding:4px; display:flex; flex-direction:column; gap:2px; z-index:10; min-width:150px;
+    border-radius:8px; padding:4px; display:flex; flex-direction:column; gap:2px; z-index:10; width:max-content;
     box-shadow:0 8px 24px rgba(0,0,0,.35);
   }
   .actions .lang-option{
     background:none; border:1px solid transparent; border-radius:6px; padding:0; font-size:21.7px;
-    line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center; flex:1;
+    line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center; flex:none;
   }
   .actions .lang-option:hover{border-color:var(--accent);}
   .actions .lang-option.active{border-color:var(--accent); box-shadow:0 0 0 1px var(--accent);}
   .actions .menu-item{
-    background:none; border:none; color:var(--text); border-radius:6px; padding:8px 10px; font-size:13px;
+    background:none; border:none; color:var(--text); border-radius:6px; padding:8px 8px; font-size:13px;
     cursor:pointer; text-align:left; white-space:nowrap;
   }
   .actions .menu-item:hover{background:var(--card);}
@@ -107,7 +107,7 @@
   }
   .actions .theme-option:hover{border-color:var(--accent);}
   .actions .theme-option.active{border-color:var(--accent); box-shadow:0 0 0 1px var(--accent);}
-  #btnEdit, #btnDelete, #btnAddSubgoal, #btnChecklist{
+  #btnEdit, #btnDelete, #btnAddSubgoal, #btnChecklist, #btnDeleteChecklist{
     background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:8px;
     padding:6px 12px; font-size:12px; cursor:pointer; white-space:nowrap;
   }
@@ -115,6 +115,7 @@
   #btnEdit.active{background:var(--accent); color:#fff; border-color:var(--accent);}
   #btnDelete:hover{border-color:var(--red); color:var(--red);}
   #btnDelete.active{background:var(--red); color:#fff; border-color:var(--red);}
+  #btnDeleteChecklist:hover{border-color:var(--red); color:var(--red);}
   #btnDelete.active:hover{color:#fff;}
   #btnAddSubgoal:hover{color:var(--text); border-color:var(--accent);}
   #btnAddSubgoal.active{background:var(--accent); color:#fff; border-color:var(--accent);}
@@ -151,6 +152,8 @@
     padding:9px 14px; font-size:12px; cursor:pointer; white-space:nowrap; flex:1;
   }
   .auth-panel button:hover{color:var(--text); border-color:var(--accent);}
+  .auth-panel button.btn-danger{color:var(--red); border-color:var(--red); background:rgba(229,100,90,0.14);}
+  .auth-panel button.btn-danger:hover{background:rgba(229,100,90,0.24); border-color:var(--red);}
   .auth-panel button:disabled{opacity:.5; cursor:not-allowed;}
   .auth-error{color:var(--red); font-size:12px;}
   .auth-hint{color:var(--muted); font-size:12px;}
@@ -241,10 +244,10 @@
   .card .sub{font-size:12px; color:var(--muted); margin-bottom:10px; display:flex; justify-content:space-between;}
   .card .bar{margin-top:2px;}
   .card[data-nav]{touch-action:pan-y;}
-  .card.dragging{
+  .dragging{
     box-shadow:0 14px 28px rgba(0,0,0,.4); opacity:.9; cursor:grabbing; transition:none;
   }
-  .card.drag-over{border-color:var(--accent); box-shadow:0 0 0 2px var(--accent) inset;}
+  .drag-over{border-color:var(--accent); box-shadow:0 0 0 2px var(--accent) inset;}
   .edit-pencil{
     background:var(--card2); border:1px solid var(--border); border-radius:6px; font-size:13px;
     padding:2px 7px; cursor:pointer; line-height:1.4;
@@ -305,7 +308,7 @@
   #btnAddChild:disabled:hover{color:var(--muted); border-color:var(--border);}
   /* Compact "+"/"−" icon style for Add/Delete, used instead of full text labels to save room on
      narrow (phone) screens. */
-  #btnAddGoal.icon-btn, #btnAddChild.icon-btn, #btnDelete.icon-btn, #btnEdit.icon-btn, #btnAddSubgoal.icon-btn, #btnChecklist.icon-btn{
+  #btnAddGoal.icon-btn, #btnAddChild.icon-btn, #btnDelete.icon-btn, #btnEdit.icon-btn, #btnAddSubgoal.icon-btn, #btnChecklist.icon-btn, #btnDeleteChecklist.icon-btn{
     font-size:16px; font-weight:700; line-height:1; padding:5px 13px;
     min-width:32px; display:inline-flex; align-items:center; justify-content:center;
   }
@@ -313,10 +316,11 @@
   #btnAddSubgoal.icon-btn{ font-size:24px; padding:2px; }
   #btnChecklist.icon-btn{ font-size:24px; padding:2px; }
   #btnEdit.icon-btn{ font-size:24px; padding:2px; }
+  #btnDeleteChecklist.icon-btn{ font-size:20px; padding:2px; }
   .checklist-section{margin-top:20px;}
   .checklist-row{
     display:flex; align-items:center; gap:10px; background:var(--card); border:1px solid var(--border);
-    border-radius:10px; padding:9px 12px; margin-bottom:8px;
+    border-radius:10px; padding:9px 12px; margin-bottom:8px; touch-action:pan-y;
   }
   .checklist-circle{
     width:20px; height:20px; border-radius:50%; border:2px solid var(--border); flex:none; cursor:pointer;
@@ -325,6 +329,14 @@
   .checklist-circle.done{background:var(--green); border-color:var(--green); color:#0b0e17; font-weight:700;}
   .checklist-text{flex:1; font-size:14px;}
   .checklist-text.done{color:var(--muted); text-decoration:line-through;}
+  .checklist-edit-input{
+    flex:1; background:var(--card2); border:1px solid var(--accent); color:var(--text); border-radius:6px;
+    padding:5px 8px; font-size:14px; outline:none;
+  }
+  .checklist-edit{
+    background:none; border:none; color:var(--muted); cursor:pointer; font-size:13px; padding:2px 6px; flex:none;
+  }
+  .checklist-edit:hover{color:var(--accent);}
   .checklist-remove{
     background:none; border:none; color:var(--muted); cursor:pointer; font-size:13px; padding:2px 6px; flex:none;
   }
@@ -491,6 +503,11 @@ const STRINGS = {
     checklistHint: '— нажмите на цель с чекбоксом, чтобы добавить к ней чек-лист',
     checklistTitle: 'Чек-лист',
     checklistPlaceholder: 'Новый пункт',
+    tipEditItem: 'Редактировать пункт',
+    tipDeleteChecklist: 'Удалить чек-лист',
+    checklistDeleteConfirm: 'Точно удалить?',
+    confirmYes: 'Да',
+    confirmNo: 'Нет',
     verifyBannerText: 'Подтвердите email — мы отправили письмо со ссылкой на подтверждение.',
     verifyResend: 'Отправить письмо ещё раз',
     verifyRecheck: 'Я подтвердил(а)',
@@ -590,6 +607,11 @@ const STRINGS = {
     checklistHint: '— click a goal with a checkbox to add a checklist to it',
     checklistTitle: 'Checklist',
     checklistPlaceholder: 'New item',
+    tipEditItem: 'Edit item',
+    tipDeleteChecklist: 'Delete checklist',
+    checklistDeleteConfirm: 'Delete this checklist?',
+    confirmYes: 'Yes',
+    confirmNo: 'No',
     verifyBannerText: 'Please verify your email — we sent a confirmation link.',
     verifyResend: 'Resend email',
     verifyRecheck: "I've verified",
@@ -658,9 +680,12 @@ let dragCtx = null;
 let dragJustEnded = false;
 let addSubMode = false;
 let checklistMode = false;
+// Which checklist row (if any) currently has its text open for inline editing (pencil icon).
+let checklistEditIdx = null;
 let installPanelOpen = false;
 let deferredInstallPrompt = null;
 let aboutPanelOpen = false;
+let checklistDeletePanelOpen = false;
 function isMobileDevice(){
   return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 }
@@ -1101,6 +1126,16 @@ function esc(s){
 
 /* ===== Render ===== */
 function render(){
+  // If a card/checklist-row drag is still in progress when render() gets triggered by something
+  // else entirely (e.g. a Firestore cloud-sync snapshot landing mid-gesture — more likely for
+  // goals with subgoals, since their bigger state tree takes a little longer to round-trip,
+  // giving the sync echo more of a chance to land while the user is still holding the card), the
+  // element currently being dragged (positioned via an inline position:fixed, outside the normal
+  // grid flow) is about to be discarded by the innerHTML rebuild below. Clean up its drag state
+  // first, otherwise pointer capture keeps routing move/up events to that now-detached node —
+  // which has no visual effect — and the card that reappears in the freshly rendered grid never
+  // gets un-stuck from its last fixed position, looking like it's frozen floating above everything.
+  if(dragCtx) cancelDrag();
   const app = document.getElementById('app');
   const node = resolve(path);
   const overallPct = computePercent(state);
@@ -1157,6 +1192,18 @@ function render(){
         <button class="auth-close" id="btnAboutClose" aria-label="close" title="${t('done')}">✕</button>
         <h2 style="margin:0 0 4px; font-size:16px;">${t('aboutTitle')}</h2>
         <div class="about-text">${esc(t('aboutText'))}</div>
+      </div>
+    </div>`;
+  }
+
+  if(checklistDeletePanelOpen){
+    html += `<div class="auth-modal-overlay" id="checklistDeleteOverlay">
+      <div class="auth-panel">
+        <p style="margin:0; font-size:14px;">${esc(t('checklistDeleteConfirm'))}</p>
+        <div class="auth-btn-row">
+          <button id="btnChecklistDeleteYes" class="btn-danger">${t('confirmYes')}</button>
+          <button id="btnChecklistDeleteNo">${t('confirmNo')}</button>
+        </div>
       </div>
     </div>`;
   }
@@ -1352,7 +1399,7 @@ function cardModeAttrs(node, idx, mode, protectedCount){
       ? { cls:'selectable', attrs:`data-checklist-idx="${idx}"` }
       : { cls:'locked', attrs:'' };
   }
-  return { cls:'', attrs:`data-nav="${idx}"` };
+  return { cls:'', attrs:`data-nav="${idx}" data-drag-idx="${idx}"` };
 }
 function cardModeTitle(node, idx, mode, defaultArrow, protectedCount){
   if(mode === 'edit'){
@@ -1548,11 +1595,18 @@ function leafDetailHTML(node){
 // separate from the main goal tree, just a free-form list of lines you can tick off.
 function checklistHTML(list){
   let html = `<div class="checklist-section">
-    <div class="section-title" style="margin-top:20px;">${t('checklistTitle')}</div>`;
+    <div class="section-title-row" style="margin-top:20px;">
+      <div class="section-title">${t('checklistTitle')}</div>
+      <button id="btnDeleteChecklist" class="icon-btn" title="${t('tipDeleteChecklist')}" aria-label="${t('tipDeleteChecklist')}">🗑️</button>
+    </div>`;
   list.forEach((item, i) => {
-    html += `<div class="checklist-row">
+    const isEditing = checklistEditIdx === i;
+    html += `<div class="checklist-row" data-drag-idx="${i}">
       <div class="checklist-circle ${item.done?'done':''}" data-checklist-toggle="${i}">${item.done?'✓':''}</div>
-      <span class="checklist-text ${item.done?'done':''}">${esc(item.text)}</span>
+      ${isEditing
+        ? `<input type="text" class="checklist-edit-input" data-checklist-edit-idx="${i}" data-original="${esc(item.text)}" value="${esc(item.text)}" maxlength="80">`
+        : `<span class="checklist-text ${item.done?'done':''}">${esc(item.text)}</span>`}
+      <button class="checklist-edit" data-checklist-edit="${i}" title="${t('tipEditItem')}" aria-label="${t('tipEditItem')}">✏️</button>
       <button class="checklist-remove" data-checklist-remove="${i}" title="${t('tipDelete')}" aria-label="${t('tipDelete')}">✕</button>
     </div>`;
   });
@@ -1571,18 +1625,20 @@ function checklistHTML(list){
 const DRAG_HOLD_MS = 380;
 const DRAG_MOVE_CANCEL_PX = 10;
 
-function attachDragHandlers(){
-  document.querySelectorAll('.grid-goals > [data-nav]').forEach(card=>{
-    card.addEventListener('pointerdown', onDragPointerDown);
+// selector: CSS selector (scoped with a `>` combinator) matching each draggable item, which must
+// carry a `data-drag-idx="N"` attribute. getList: returns the live array those items reorder.
+function attachDragHandlers(selector, getList){
+  document.querySelectorAll(selector).forEach(item=>{
+    item.addEventListener('pointerdown', (e)=> onDragPointerDown(e, selector, getList));
   });
 }
-function onDragPointerDown(e){
+function onDragPointerDown(e, selector, getList){
   if(e.pointerType === 'mouse' && e.button !== 0) return;
-  const card = e.currentTarget;
-  const rect = card.getBoundingClientRect();
+  const item = e.currentTarget;
+  const rect = item.getBoundingClientRect();
   const ctx = {
-    card,
-    idx: parseInt(card.dataset.nav, 10),
+    item, selector, getList,
+    idx: parseInt(item.dataset.dragIdx, 10),
     pointerId: e.pointerId,
     startX: e.clientX, startY: e.clientY,
     originLeft: rect.left, originTop: rect.top,
@@ -1593,23 +1649,23 @@ function onDragPointerDown(e){
   };
   dragCtx = ctx;
   ctx.timer = setTimeout(startDragging, DRAG_HOLD_MS);
-  card.addEventListener('pointermove', onDragPointerMove);
-  card.addEventListener('pointerup', onDragPointerUp);
-  card.addEventListener('pointercancel', onDragPointerCancel);
+  item.addEventListener('pointermove', onDragPointerMove);
+  item.addEventListener('pointerup', onDragPointerUp);
+  item.addEventListener('pointercancel', onDragPointerCancel);
 }
 function startDragging(){
   if(!dragCtx) return;
   const ctx = dragCtx;
   ctx.dragging = true;
-  const card = ctx.card;
-  try{ card.setPointerCapture(ctx.pointerId); }catch(e){}
-  card.classList.add('dragging');
-  card.style.position = 'fixed';
-  card.style.left = ctx.originLeft + 'px';
-  card.style.top = ctx.originTop + 'px';
-  card.style.width = ctx.width + 'px';
-  card.style.zIndex = '50';
-  card.style.pointerEvents = 'none';
+  const item = ctx.item;
+  try{ item.setPointerCapture(ctx.pointerId); }catch(e){}
+  item.classList.add('dragging');
+  item.style.position = 'fixed';
+  item.style.left = ctx.originLeft + 'px';
+  item.style.top = ctx.originTop + 'px';
+  item.style.width = ctx.width + 'px';
+  item.style.zIndex = '50';
+  item.style.pointerEvents = 'none';
   if(navigator.vibrate) navigator.vibrate(15);
 }
 function onDragPointerMove(e){
@@ -1624,14 +1680,14 @@ function onDragPointerMove(e){
     return;
   }
   e.preventDefault();
-  ctx.card.style.left = (ctx.originLeft + dx) + 'px';
-  ctx.card.style.top = (ctx.originTop + dy) + 'px';
+  ctx.item.style.left = (ctx.originLeft + dx) + 'px';
+  ctx.item.style.top = (ctx.originTop + dy) + 'px';
   const under = document.elementFromPoint(e.clientX, e.clientY);
-  const overCard = under ? under.closest('.grid-goals > [data-nav]') : null;
-  document.querySelectorAll('.card.drag-over').forEach(el=>{ if(el !== overCard) el.classList.remove('drag-over'); });
-  if(overCard && overCard !== ctx.card){
-    overCard.classList.add('drag-over');
-    ctx.dropTarget = overCard;
+  const overItem = under ? under.closest(ctx.selector) : null;
+  document.querySelectorAll('.drag-over').forEach(el=>{ if(el !== overItem) el.classList.remove('drag-over'); });
+  if(overItem && overItem !== ctx.item){
+    overItem.classList.add('drag-over');
+    ctx.dropTarget = overItem;
   } else {
     ctx.dropTarget = null;
   }
@@ -1640,7 +1696,7 @@ function onDragPointerUp(e){
   if(!dragCtx || dragCtx.pointerId !== e.pointerId) return;
   const ctx = dragCtx;
   clearTimeout(ctx.timer);
-  cleanupDragListeners(ctx.card);
+  cleanupDragListeners(ctx.item);
   if(ctx.dragging){
     finishDrag(ctx);
   } else {
@@ -1655,30 +1711,30 @@ function cancelDrag(){
   if(!dragCtx) return;
   const ctx = dragCtx;
   clearTimeout(ctx.timer);
-  cleanupDragListeners(ctx.card);
+  cleanupDragListeners(ctx.item);
   if(ctx.dragging){
-    resetCardStyle(ctx.card);
-    document.querySelectorAll('.card.drag-over').forEach(el=>el.classList.remove('drag-over'));
+    resetDragItemStyle(ctx.item);
+    document.querySelectorAll('.drag-over').forEach(el=>el.classList.remove('drag-over'));
   }
   dragCtx = null;
 }
-function resetCardStyle(card){
-  card.classList.remove('dragging');
-  card.style.position = '';
-  card.style.left = '';
-  card.style.top = '';
-  card.style.width = '';
-  card.style.zIndex = '';
-  card.style.pointerEvents = '';
+function resetDragItemStyle(item){
+  item.classList.remove('dragging');
+  item.style.position = '';
+  item.style.left = '';
+  item.style.top = '';
+  item.style.width = '';
+  item.style.zIndex = '';
+  item.style.pointerEvents = '';
 }
-function cleanupDragListeners(card){
-  card.removeEventListener('pointermove', onDragPointerMove);
-  card.removeEventListener('pointerup', onDragPointerUp);
-  card.removeEventListener('pointercancel', onDragPointerCancel);
+function cleanupDragListeners(item){
+  item.removeEventListener('pointermove', onDragPointerMove);
+  item.removeEventListener('pointerup', onDragPointerUp);
+  item.removeEventListener('pointercancel', onDragPointerCancel);
 }
 function finishDrag(ctx){
-  resetCardStyle(ctx.card);
-  document.querySelectorAll('.card.drag-over').forEach(el=>el.classList.remove('drag-over'));
+  resetDragItemStyle(ctx.item);
+  document.querySelectorAll('.drag-over').forEach(el=>el.classList.remove('drag-over'));
   const dropTarget = ctx.dropTarget;
   dragCtx = null;
   dragJustEnded = true;
@@ -1686,9 +1742,9 @@ function finishDrag(ctx){
   // pointer-captured drag), don't leave the very next real tap silently swallowed forever.
   setTimeout(()=>{ dragJustEnded = false; }, 400);
   if(dropTarget){
-    const targetIdx = parseInt(dropTarget.dataset.nav, 10);
+    const targetIdx = parseInt(dropTarget.dataset.dragIdx, 10);
     if(!isNaN(targetIdx) && targetIdx !== ctx.idx){
-      const list = resolve(path).children;
+      const list = ctx.getList();
       const [moved] = list.splice(ctx.idx, 1);
       list.splice(targetIdx, 0, moved);
       saveState();
@@ -1730,7 +1786,8 @@ function attachHandlers(){
       }
     });
   });
-  attachDragHandlers();
+  attachDragHandlers('.grid-goals > [data-drag-idx]', () => resolve(path).children);
+  attachDragHandlers('.checklist-section > [data-drag-idx]', () => resolve(path).checklist);
   document.querySelectorAll('.goal-input').forEach(el=>{
     el.addEventListener('click', (e)=> e.stopPropagation());
     el.addEventListener('input', ()=>{
@@ -1922,6 +1979,68 @@ function attachHandlers(){
       render();
     });
   });
+  const btnDeleteChecklist = document.getElementById('btnDeleteChecklist');
+  if(btnDeleteChecklist){
+    btnDeleteChecklist.addEventListener('click', ()=>{
+      checklistDeletePanelOpen = true;
+      render();
+    });
+  }
+  const checklistDeleteOverlay = document.getElementById('checklistDeleteOverlay');
+  if(checklistDeleteOverlay){
+    checklistDeleteOverlay.addEventListener('click', (e)=>{
+      if(e.target === checklistDeleteOverlay){
+        checklistDeletePanelOpen = false;
+        render();
+      }
+    });
+  }
+  const btnChecklistDeleteYes = document.getElementById('btnChecklistDeleteYes');
+  if(btnChecklistDeleteYes){
+    btnChecklistDeleteYes.addEventListener('click', ()=>{
+      const node = resolve(path);
+      delete node.checklist;
+      // Back to a plain checkbox goal — unchecked (❌) by default, task not yet completed.
+      node.done = false;
+      checklistEditIdx = null;
+      checklistDeletePanelOpen = false;
+      saveState();
+      render();
+    });
+  }
+  const btnChecklistDeleteNo = document.getElementById('btnChecklistDeleteNo');
+  if(btnChecklistDeleteNo){
+    btnChecklistDeleteNo.addEventListener('click', ()=>{
+      checklistDeletePanelOpen = false;
+      render();
+    });
+  }
+  document.querySelectorAll('[data-checklist-edit]').forEach(el=>{
+    el.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      const idx = parseInt(el.dataset.checklistEdit,10);
+      checklistEditIdx = (checklistEditIdx === idx) ? null : idx;
+      render();
+    });
+  });
+  const checklistEditInput = document.querySelector('.checklist-edit-input');
+  if(checklistEditInput){
+    checklistEditInput.addEventListener('click', (e)=> e.stopPropagation());
+    checklistEditInput.addEventListener('blur', ()=>{
+      const idx = parseInt(checklistEditInput.dataset.checklistEditIdx,10);
+      const node = resolve(path);
+      const v = checklistEditInput.value.trim();
+      node.checklist[idx].text = v !== '' ? v : checklistEditInput.dataset.original;
+      checklistEditIdx = null;
+      saveState();
+      render();
+    });
+    checklistEditInput.addEventListener('keydown', (e)=>{
+      if(e.key === 'Enter') checklistEditInput.blur();
+    });
+    checklistEditInput.focus();
+    checklistEditInput.setSelectionRange && checklistEditInput.setSelectionRange(checklistEditInput.value.length, checklistEditInput.value.length);
+  }
   const checklistInput = document.getElementById('checklistInput');
   function addChecklistItem(){
     if(!checklistInput) return;
