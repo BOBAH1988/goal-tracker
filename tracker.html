@@ -245,7 +245,8 @@
   .card .bar{margin-top:2px;}
   .card[data-nav]{touch-action:pan-y;}
   .dragging{
-    box-shadow:0 14px 28px rgba(0,0,0,.4); opacity:.9; cursor:grabbing; transition:none;
+    box-shadow:0 10px 22px rgba(0,0,0,.4); opacity:.85; cursor:grabbing; transform:scale(1.03);
+    z-index:5; position:relative;
   }
   .drag-over{border-color:var(--accent); box-shadow:0 0 0 2px var(--accent) inset;}
   .edit-pencil{
@@ -1635,14 +1636,11 @@ function attachDragHandlers(selector, getList){
 function onDragPointerDown(e, selector, getList){
   if(e.pointerType === 'mouse' && e.button !== 0) return;
   const item = e.currentTarget;
-  const rect = item.getBoundingClientRect();
   const ctx = {
     item, selector, getList,
     idx: parseInt(item.dataset.dragIdx, 10),
     pointerId: e.pointerId,
     startX: e.clientX, startY: e.clientY,
-    originLeft: rect.left, originTop: rect.top,
-    width: rect.width, height: rect.height,
     dragging: false,
     dropTarget: null,
     timer: null
@@ -1653,6 +1651,15 @@ function onDragPointerDown(e, selector, getList){
   item.addEventListener('pointerup', onDragPointerUp);
   item.addEventListener('pointercancel', onDragPointerCancel);
 }
+// Deliberately does NOT move the card via position:fixed / inline left+top. An earlier version
+// picked the card up and made it visually follow the pointer, positioned from a
+// getBoundingClientRect() snapshot taken at pointerdown — but if literally anything rebuilt the
+// DOM before the gesture ended (a Firestore cloud-sync echo landing mid-drag, the page being
+// scrolled, etc.) that snapshot went stale and the card could be left rendered mid-air, detached
+// from the grid it used to belong to. Instead the card simply stays exactly where CSS Grid put
+// it and gets a "picked up" look (dimmed + shadow); the drop target is highlighted as the pointer
+// passes over other cards via elementFromPoint. Nothing is ever repositioned outside the normal
+// document flow, so there is no floating element that can get stuck.
 function startDragging(){
   if(!dragCtx) return;
   const ctx = dragCtx;
@@ -1660,12 +1667,6 @@ function startDragging(){
   const item = ctx.item;
   try{ item.setPointerCapture(ctx.pointerId); }catch(e){}
   item.classList.add('dragging');
-  item.style.position = 'fixed';
-  item.style.left = ctx.originLeft + 'px';
-  item.style.top = ctx.originTop + 'px';
-  item.style.width = ctx.width + 'px';
-  item.style.zIndex = '50';
-  item.style.pointerEvents = 'none';
   if(navigator.vibrate) navigator.vibrate(15);
 }
 function onDragPointerMove(e){
@@ -1680,8 +1681,6 @@ function onDragPointerMove(e){
     return;
   }
   e.preventDefault();
-  ctx.item.style.left = (ctx.originLeft + dx) + 'px';
-  ctx.item.style.top = (ctx.originTop + dy) + 'px';
   const under = document.elementFromPoint(e.clientX, e.clientY);
   const overItem = under ? under.closest(ctx.selector) : null;
   document.querySelectorAll('.drag-over').forEach(el=>{ if(el !== overItem) el.classList.remove('drag-over'); });
@@ -1720,12 +1719,6 @@ function cancelDrag(){
 }
 function resetDragItemStyle(item){
   item.classList.remove('dragging');
-  item.style.position = '';
-  item.style.left = '';
-  item.style.top = '';
-  item.style.width = '';
-  item.style.zIndex = '';
-  item.style.pointerEvents = '';
 }
 function cleanupDragListeners(item){
   item.removeEventListener('pointermove', onDragPointerMove);
