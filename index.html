@@ -86,7 +86,7 @@
   .lang-menu{
     position:absolute; top:calc(100% + 4px); right:0; background:var(--card2); border:1px solid var(--accent);
     border-radius:8px; padding:4px; display:flex; flex-direction:column; gap:2px; z-index:10; width:max-content;
-    box-shadow:0 8px 24px rgba(0,0,0,.35);
+    max-width:calc(100vw - 32px); box-shadow:0 8px 24px rgba(0,0,0,.35);
   }
   .actions .lang-option{
     background:none; border:1px solid transparent; border-radius:6px; padding:0; font-size:21.7px;
@@ -96,7 +96,7 @@
   .actions .lang-option.active{border-color:var(--accent); box-shadow:0 0 0 1px var(--accent);}
   .actions .menu-item{
     background:none; border:none; color:var(--text); border-radius:6px; padding:8px 8px; font-size:13px;
-    cursor:pointer; text-align:left; white-space:nowrap;
+    cursor:pointer; text-align:left; white-space:normal; word-break:break-word;
   }
   .actions .menu-item:hover{background:var(--card);}
   .menu-lang-row{display:flex; gap:4px; justify-content:center; padding:4px 10px 0; margin-top:2px; border-top:1px solid var(--border);}
@@ -182,11 +182,11 @@
   .account-menu{
     position:absolute; top:calc(100% + 4px); right:0; background:var(--card2); border:1px solid var(--accent);
     border-radius:10px; padding:4px; display:flex; flex-direction:column; gap:2px; z-index:10;
-    box-shadow:0 8px 24px rgba(0,0,0,.35);
+    max-width:calc(100vw - 32px); box-shadow:0 8px 24px rgba(0,0,0,.35);
   }
   .account-menu button{
     background:none; border:none; color:var(--text); border-radius:6px; padding:9px 12px; font-size:13px;
-    cursor:pointer; text-align:left; white-space:nowrap;
+    cursor:pointer; text-align:left; white-space:normal; word-break:break-word;
   }
   .account-menu button:hover{background:var(--card);}
   .account-menu button.danger{color:var(--red);}
