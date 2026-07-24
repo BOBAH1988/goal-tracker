@@ -107,12 +107,13 @@
   }
   .actions .theme-option:hover{border-color:var(--accent);}
   .actions .theme-option.active{border-color:var(--accent); box-shadow:0 0 0 1px var(--accent);}
-  #btnEdit, #btnDelete, #btnAddSubgoal, #btnChecklist, #btnDeleteChecklist{
+  #btnEdit, #btnDelete, #btnAddSubgoal, #btnChecklist, #btnDeleteChecklist, #btnShare{
     background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:8px;
     padding:6px 12px; font-size:12px; cursor:pointer; white-space:nowrap;
   }
   #btnEdit:hover{color:var(--text); border-color:var(--accent);}
   #btnEdit.active{background:var(--accent); color:#fff; border-color:var(--accent);}
+  #btnShare:hover{color:var(--text); border-color:var(--accent);}
   #btnDelete:hover{border-color:var(--red); color:var(--red);}
   #btnDelete.active{background:var(--red); color:#fff; border-color:var(--red);}
   #btnDeleteChecklist:hover{border-color:var(--red); color:var(--red);}
@@ -245,8 +246,7 @@
   .card .bar{margin-top:2px;}
   .card[data-nav]{touch-action:pan-y;}
   .dragging{
-    box-shadow:0 10px 22px rgba(0,0,0,.4); opacity:.85; cursor:grabbing; transform:scale(1.03);
-    z-index:5; position:relative;
+    box-shadow:0 10px 22px rgba(0,0,0,.4); opacity:.85; cursor:grabbing;
   }
   .drag-over{border-color:var(--accent); box-shadow:0 0 0 2px var(--accent) inset;}
   .edit-pencil{
@@ -290,6 +290,7 @@
   .section-title{font-size:15px; font-weight:600; color:var(--text); margin:4px 0 12px;}
   .section-title-row{display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:8px;}
   .section-title-row .section-title{margin:0;}
+  .checklist-title-actions{display:flex; align-items:center; gap:8px;}
   .add-goal-wrap{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
   #btnAddGoal{
     background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:8px;
@@ -309,7 +310,7 @@
   #btnAddChild:disabled:hover{color:var(--muted); border-color:var(--border);}
   /* Compact "+"/"−" icon style for Add/Delete, used instead of full text labels to save room on
      narrow (phone) screens. */
-  #btnAddGoal.icon-btn, #btnAddChild.icon-btn, #btnDelete.icon-btn, #btnEdit.icon-btn, #btnAddSubgoal.icon-btn, #btnChecklist.icon-btn, #btnDeleteChecklist.icon-btn{
+  #btnAddGoal.icon-btn, #btnAddChild.icon-btn, #btnDelete.icon-btn, #btnEdit.icon-btn, #btnAddSubgoal.icon-btn, #btnChecklist.icon-btn, #btnDeleteChecklist.icon-btn, #btnShare.icon-btn{
     font-size:16px; font-weight:700; line-height:1; padding:5px 13px;
     min-width:32px; display:inline-flex; align-items:center; justify-content:center;
   }
@@ -318,6 +319,7 @@
   #btnChecklist.icon-btn{ font-size:24px; padding:2px; }
   #btnEdit.icon-btn{ font-size:24px; padding:2px; }
   #btnDeleteChecklist.icon-btn{ font-size:20px; padding:2px; }
+  #btnShare.icon-btn{ font-size:22px; padding:2px; }
   .checklist-section{margin-top:20px;}
   .checklist-row{
     display:flex; align-items:center; gap:10px; background:var(--card); border:1px solid var(--border);
@@ -506,6 +508,7 @@ const STRINGS = {
     checklistPlaceholder: 'Новый пункт',
     tipEditItem: 'Редактировать пункт',
     tipDeleteChecklist: 'Удалить чек-лист',
+    tipShare: 'Поделиться прогрессом',
     checklistDeleteConfirm: 'Точно удалить?',
     confirmYes: 'Да',
     confirmNo: 'Нет',
@@ -610,6 +613,7 @@ const STRINGS = {
     checklistPlaceholder: 'New item',
     tipEditItem: 'Edit item',
     tipDeleteChecklist: 'Delete checklist',
+    tipShare: 'Share progress',
     checklistDeleteConfirm: 'Delete this checklist?',
     confirmYes: 'Yes',
     confirmNo: 'No',
@@ -687,6 +691,10 @@ let installPanelOpen = false;
 let deferredInstallPrompt = null;
 let aboutPanelOpen = false;
 let checklistDeletePanelOpen = false;
+// Timers for the temporary "Максимум 10 целей" toasts (cleared/reset so rapid repeat clicks
+// don't cut the message short or leave two competing hide-timers running).
+let addGoalMsgTimer = null;
+let addChildMsgTimer = null;
 function isMobileDevice(){
   return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 }
@@ -1121,6 +1129,176 @@ function barColor(pct){
   if(pct>=40) return "var(--yellow)";
   return "var(--red)";
 }
+/* ===== Share-progress snapshot (📤 button, next to the pencil icon) =====
+   Rather than literally screenshotting the live page (fragile with gradients/rounded corners/
+   custom fonts, and would've meant pulling in a third-party rasterizer), this redraws a clean
+   summary card straight from the same app state the current page's HTML is built from — same
+   title, same overall/node progress bar, same per-item rows — onto a <canvas>, then downloads it
+   as a PNG. Works identically on every page (root goal list, a subgoal/goal's own list, etc.)
+   because it reads from resolve(path) exactly like render() does. */
+// Resolves a CSS custom property to its actual color value for the *currently active* theme, so
+// the shared image always matches whatever theme (dark/light/pink) the user has selected.
+function cssVar(name){
+  try{
+    return getComputedStyle(document.documentElement).getPropertyValue('--' + name).trim() || '#000000';
+  }catch(e){ return '#000000'; }
+}
+function barColorHex(pct){
+  if(pct>=70) return cssVar('green');
+  if(pct>=40) return cssVar('yellow');
+  return cssVar('red');
+}
+function canvasRoundRect(ctx, x, y, w, h, r){
+  const rr = Math.min(r, w/2, h/2);
+  ctx.beginPath();
+  ctx.moveTo(x+rr, y);
+  ctx.arcTo(x+w, y, x+w, y+h, rr);
+  ctx.arcTo(x+w, y+h, x, y+h, rr);
+  ctx.arcTo(x, y+h, x, y, rr);
+  ctx.arcTo(x, y, x+w, y, rr);
+  ctx.closePath();
+}
+// Trims a string with an ellipsis until it fits maxWidth for the context's current font —
+// mirrors the same "measure for real, don't guess" approach used for the balance-wheel labels.
+function canvasFitText(ctx, str, maxWidth){
+  if(ctx.measureText(str).width <= maxWidth) return str;
+  let s = str;
+  while(s.length > 1 && ctx.measureText(s + '…').width > maxWidth){ s = s.slice(0, -1); }
+  return s + '…';
+}
+// Pure data step (no canvas/DOM) — what the current page's snapshot should contain. Kept separate
+// from the drawing code so the "which page am I on, what goes in the image" logic can be tested
+// on its own.
+function shareSnapshotData(){
+  const node = resolve(path);
+  if(path.length === 0){
+    return {
+      title: t('appTitle').replace(/^\S+\s*/, ''),
+      headerLabel: t('overallProgress'),
+      pct: computePercent(state),
+      items: (state.children || []).map(c => ({ name: c.name, pct: computePercent(c) }))
+    };
+  }
+  // A leaf's own `children` is always empty, so a checklist page needs its rows built from the
+  // checklist items themselves (done -> 100%, not done -> 0%) rather than from child goals.
+  const items = node.checklist
+    ? node.checklist.map(it => ({ name: it.text, pct: it.done ? 100 : 0 }))
+    : (node.children || []).map(c => ({ name: c.name, pct: computePercent(c) }));
+  return {
+    title: t('appTitle').replace(/^\S+\s*/, ''),
+    headerLabel: node.name,
+    pct: computePercent(node),
+    items
+  };
+}
+function buildShareCanvas(){
+  const data = shareSnapshotData();
+  const W = 720, PAD = 28, ROW_H = 52;
+  const headerH = 118;
+  const footerH = 46;
+  const rowsH = Math.max(data.items.length, 1) * ROW_H;
+  const H = headerH + rowsH + footerH;
+  const scale = 2;
+  const canvas = document.createElement('canvas');
+  canvas.width = W * scale;
+  canvas.height = H * scale;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(scale, scale);
+
+  const bg = cssVar('bg'), card = cssVar('card'), text = cssVar('text'), muted = cssVar('muted'),
+        border = cssVar('border'), track = cssVar('track') || bg;
+
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  let y = PAD;
+  ctx.textBaseline = 'top';
+  ctx.fillStyle = muted;
+  ctx.font = '600 13px -apple-system, "Segoe UI", Roboto, sans-serif';
+  ctx.fillText('🎯 ' + data.title, PAD, y);
+  y += 26;
+
+  ctx.font = '700 21px -apple-system, "Segoe UI", Roboto, sans-serif';
+  ctx.fillStyle = text;
+  const pctText = data.pct + '%';
+  const pctColor = barColorHex(data.pct);
+  ctx.fillStyle = pctColor;
+  const pctW = ctx.measureText(pctText).width;
+  ctx.fillStyle = text;
+  const labelMaxW = W - PAD*2 - pctW - 12;
+  ctx.fillText(canvasFitText(ctx, data.headerLabel, labelMaxW), PAD, y);
+  ctx.fillStyle = pctColor;
+  ctx.fillText(pctText, W - PAD - pctW, y);
+  y += 32;
+
+  canvasRoundRect(ctx, PAD, y, W - PAD*2, 10, 5);
+  ctx.fillStyle = track;
+  ctx.fill();
+  canvasRoundRect(ctx, PAD, y, (W - PAD*2) * Math.max(data.pct,0) / 100, 10, 5);
+  ctx.fillStyle = pctColor;
+  ctx.fill();
+  y += 30;
+
+  if(data.items.length === 0){
+    ctx.font = '400 13px -apple-system, "Segoe UI", Roboto, sans-serif';
+    ctx.fillStyle = muted;
+    ctx.fillText(t('emptyState'), PAD, y + 16);
+    y += ROW_H;
+  } else {
+    data.items.forEach(item => {
+      const rowY = y;
+      canvasRoundRect(ctx, PAD, rowY, W - PAD*2, ROW_H - 10, 10);
+      ctx.fillStyle = card;
+      ctx.fill();
+      ctx.strokeStyle = border;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      const innerPad = 14;
+      ctx.font = '600 14px -apple-system, "Segoe UI", Roboto, sans-serif';
+      const itemPctText = item.pct + '%';
+      const itemPctColor = barColorHex(item.pct);
+      const itemPctW = ctx.measureText(itemPctText).width;
+      const nameMaxW = W - PAD*2 - innerPad*2 - itemPctW - 10;
+      ctx.fillStyle = text;
+      ctx.fillText(canvasFitText(ctx, item.name, nameMaxW), PAD + innerPad, rowY + 8);
+      ctx.fillStyle = itemPctColor;
+      ctx.fillText(itemPctText, PAD + (W - PAD*2) - innerPad - itemPctW, rowY + 8);
+
+      const miniBarY = rowY + 30;
+      const miniBarW = W - PAD*2 - innerPad*2;
+      canvasRoundRect(ctx, PAD + innerPad, miniBarY, miniBarW, 6, 3);
+      ctx.fillStyle = track;
+      ctx.fill();
+      canvasRoundRect(ctx, PAD + innerPad, miniBarY, miniBarW * Math.max(item.pct,0) / 100, 6, 3);
+      ctx.fillStyle = itemPctColor;
+      ctx.fill();
+
+      y += ROW_H;
+    });
+  }
+
+  ctx.font = '400 11px -apple-system, "Segoe UI", Roboto, sans-serif';
+  ctx.fillStyle = muted;
+  const dateStr = new Date().toLocaleDateString();
+  ctx.fillText(dateStr, PAD, H - footerH + 16);
+
+  return canvas;
+}
+function doShareImage(){
+  const canvas = buildShareCanvas();
+  canvas.toBlob(blob=>{
+    if(!blob) return;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `goal-tracker-progress-${new Date().toISOString().slice(0,10)}.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, 'image/png');
+}
 function esc(s){
   return (s||"").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 }
@@ -1307,11 +1485,12 @@ function render(){
     html += `<div class="section-title-row">
       <div class="section-title">${t('mainGoals')}${hintHTML}</div>
       <div class="add-goal-wrap">
-        <button id="btnAddGoal" class="icon-btn" title="${t('tipAdd')}" aria-label="${t('tipAdd')}" ${state.children.length>=10?'disabled':''}>+</button>
+        <span id="addGoalMsg" class="add-goal-msg"></span>
+        <button id="btnAddGoal" class="icon-btn" title="${t('tipAdd')}" aria-label="${t('tipAdd')}">+</button>
         <button id="btnDelete" class="${deleteMode?'active':'icon-btn'}" title="${deleteMode?t('done'):t('tipDelete')}" aria-label="${deleteMode?t('done'):t('tipDelete')}">${deleteMode ? t('done') : '−'}</button>
         <button id="btnEdit" class="${editMode?'active':'icon-btn'}" title="${editMode?t('done'):t('tipEdit')}" aria-label="${editMode?t('done'):t('tipEdit')}">${editMode ? t('done') : '✏️'}</button>
         ${state.children.some(isLeaf) ? `<button id="btnChecklist" class="${checklistMode?'active':'icon-btn'}" title="${checklistMode?t('done'):t('tipChecklist')}" aria-label="${checklistMode?t('done'):t('tipChecklist')}">${checklistMode ? t('done') : '📋'}</button>` : ''}
-        <span id="addGoalMsg" class="add-goal-msg">${state.children.length>=10?t('maxN')(10):''}</span>
+        <button id="btnShare" class="icon-btn" title="${t('tipShare')}" aria-label="${t('tipShare')}">📤</button>
         <span id="deleteMsg" class="add-goal-msg"></span>
       </div>
     </div>`;
@@ -1338,12 +1517,13 @@ function render(){
       const childLabel = path.length === 1 ? t('subgoal') : path.length === 2 ? t('goal') : t('item');
       const atLimit = node.children.length >= 10;
       html += `<div class="add-child-row">
-        <button id="btnAddChild" class="icon-btn" title="${t('tipAdd')}" aria-label="${t('tipAdd')}" ${atLimit?'disabled':''}>+</button>
+        <span id="addChildMsg" class="add-goal-msg"></span>
+        <button id="btnAddChild" class="icon-btn" title="${t('tipAdd')}" aria-label="${t('tipAdd')}">+</button>
         <button id="btnDelete" class="${deleteMode?'active':'icon-btn'}" title="${deleteMode?t('done'):t('tipDelete')}" aria-label="${deleteMode?t('done'):t('tipDelete')}">${deleteMode ? t('done') : '−'}</button>
         ${path.length === 2 ? `<button id="btnAddSubgoal" class="${addSubMode?'active':'icon-btn'}" title="${addSubMode?t('done'):t('tipExpand')}" aria-label="${addSubMode?t('done'):t('tipExpand')}">${addSubMode ? t('done') : '🔀'}</button>` : ''}
         <button id="btnEdit" class="${editMode?'active':'icon-btn'}" title="${editMode?t('done'):t('tipEdit')}" aria-label="${editMode?t('done'):t('tipEdit')}">${editMode ? t('done') : '✏️'}</button>
         ${node.children.some(isLeaf) ? `<button id="btnChecklist" class="${checklistMode?'active':'icon-btn'}" title="${checklistMode?t('done'):t('tipChecklist')}" aria-label="${checklistMode?t('done'):t('tipChecklist')}">${checklistMode ? t('done') : '📋'}</button>` : ''}
-        <span id="addChildMsg" class="add-goal-msg">${atLimit?t('maxN')(10):''}</span>
+        <button id="btnShare" class="icon-btn" title="${t('tipShare')}" aria-label="${t('tipShare')}">📤</button>
         <span id="deleteMsg" class="add-goal-msg"></span>
       </div>`;
       if(node.children.length){
@@ -1598,7 +1778,10 @@ function checklistHTML(list){
   let html = `<div class="checklist-section">
     <div class="section-title-row" style="margin-top:20px;">
       <div class="section-title">${t('checklistTitle')}</div>
-      <button id="btnDeleteChecklist" class="icon-btn" title="${t('tipDeleteChecklist')}" aria-label="${t('tipDeleteChecklist')}">🗑️</button>
+      <div class="checklist-title-actions">
+        <button id="btnShare" class="icon-btn" title="${t('tipShare')}" aria-label="${t('tipShare')}">📤</button>
+        <button id="btnDeleteChecklist" class="icon-btn" title="${t('tipDeleteChecklist')}" aria-label="${t('tipDeleteChecklist')}">🗑️</button>
+      </div>
     </div>`;
   list.forEach((item, i) => {
     const isEditing = checklistEditIdx === i;
@@ -1641,6 +1824,7 @@ function onDragPointerDown(e, selector, getList){
     idx: parseInt(item.dataset.dragIdx, 10),
     pointerId: e.pointerId,
     startX: e.clientX, startY: e.clientY,
+    lastClientY: e.clientY,
     dragging: false,
     dropTarget: null,
     timer: null
@@ -1668,6 +1852,27 @@ function startDragging(){
   try{ item.setPointerCapture(ctx.pointerId); }catch(e){}
   item.classList.add('dragging');
   if(navigator.vibrate) navigator.vibrate(15);
+  requestAnimationFrame(autoScrollTick);
+}
+// While actively dragging, if the pointer sits near the top or bottom edge of the viewport,
+// keep nudging the page in that direction. Without this, once dragging starts we call
+// preventDefault() on pointermove (to stop native scrolling from fighting the drag), which meant
+// a row could never be moved to an earlier position that was scrolled off the top of the screen —
+// there was simply no way to reach it. Self-terminates: once dragCtx is cleared or dragging turns
+// false, the next scheduled tick just returns without booking another frame.
+function autoScrollTick(){
+  if(!dragCtx || !dragCtx.dragging) return;
+  const ctx = dragCtx;
+  const EDGE = 70;
+  const MAX_SPEED = 16;
+  const y = ctx.lastClientY;
+  const vh = window.innerHeight;
+  if(y < EDGE){
+    window.scrollBy(0, -MAX_SPEED * (1 - y / EDGE));
+  } else if(y > vh - EDGE){
+    window.scrollBy(0, MAX_SPEED * (1 - (vh - y) / EDGE));
+  }
+  requestAnimationFrame(autoScrollTick);
 }
 function onDragPointerMove(e){
   if(!dragCtx || dragCtx.pointerId !== e.pointerId) return;
@@ -1680,6 +1885,7 @@ function onDragPointerMove(e){
     }
     return;
   }
+  ctx.lastClientY = e.clientY;
   e.preventDefault();
   const under = document.elementFromPoint(e.clientX, e.clientY);
   const overItem = under ? under.closest(ctx.selector) : null;
@@ -1812,7 +2018,11 @@ function attachHandlers(){
     btnAddGoal.addEventListener('click', ()=>{
       const msg = document.getElementById('addGoalMsg');
       if(state.children.length >= 10){
-        if(msg) msg.textContent = t('maxN')(10);
+        if(msg){
+          msg.textContent = t('maxN')(10);
+          clearTimeout(addGoalMsgTimer);
+          addGoalMsgTimer = setTimeout(()=>{ if(msg) msg.textContent = ''; }, 3000);
+        }
         return;
       }
       const goalWord = capWord('goal');
@@ -1830,7 +2040,11 @@ function attachHandlers(){
       const parent = resolve(path);
       const msg = document.getElementById('addChildMsg');
       if(parent.children.length >= 10){
-        if(msg) msg.textContent = t('maxN')(10);
+        if(msg){
+          msg.textContent = t('maxN')(10);
+          clearTimeout(addChildMsgTimer);
+          addChildMsgTimer = setTimeout(()=>{ if(msg) msg.textContent = ''; }, 3000);
+        }
         return;
       }
       let prefix, shapeIsContainer;
@@ -1920,6 +2134,10 @@ function attachHandlers(){
       if(editMode){ deleteMode = false; addSubMode = false; checklistMode = false; }
       render();
     });
+  }
+  const btnShare = document.getElementById('btnShare');
+  if(btnShare){
+    btnShare.addEventListener('click', doShareImage);
   }
   const btnDelete = document.getElementById('btnDelete');
   if(btnDelete){
