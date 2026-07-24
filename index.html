@@ -73,9 +73,12 @@
   html[data-theme="light"] body{ background:linear-gradient(160deg,#f5f7fb,#eef1f7 60%,#f5f7fb); }
   html[data-theme="pink"] body{ background:linear-gradient(160deg,#fff0f5,#ffe4ef 60%,#fff5f9); }
   #app{max-width:920px; margin:0 auto; padding:28px 20px 80px;}
-  .topbar{display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; flex-wrap:wrap; gap:10px;}
+  .topbar{display:flex; align-items:center; margin-bottom:18px; flex-wrap:wrap; gap:10px;}
   .topbar h1{font-size:20px; margin:0; font-weight:600;}
-  .actions{display:flex; gap:8px; flex-wrap:wrap;}
+  /* margin-left:auto (rather than justify-content:space-between on .topbar) so this stays pinned
+     to the right edge even after it wraps onto its own line below a long title on narrow screens —
+     with space-between, a lone wrapped item sits at the START of its line (the left edge) instead. */
+  .actions{display:flex; gap:8px; flex-wrap:wrap; margin-left:auto;}
   .actions button{
     background:var(--card2); color:var(--muted); border:1px solid var(--border); border-radius:8px;
     padding:6px 12px; font-size:12px; cursor:pointer;
