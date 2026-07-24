@@ -240,6 +240,11 @@
   .card .title .arrow{color:var(--muted); font-weight:400;}
   .card .sub{font-size:12px; color:var(--muted); margin-bottom:10px; display:flex; justify-content:space-between;}
   .card .bar{margin-top:2px;}
+  .card[data-nav]{touch-action:pan-y;}
+  .card.dragging{
+    box-shadow:0 14px 28px rgba(0,0,0,.4); opacity:.9; cursor:grabbing; transition:none;
+  }
+  .card.drag-over{border-color:var(--accent); box-shadow:0 0 0 2px var(--accent) inset;}
   .edit-pencil{
     background:var(--card2); border:1px solid var(--border); border-radius:6px; font-size:13px;
     padding:2px 7px; cursor:pointer; line-height:1.4;
@@ -648,6 +653,9 @@ let state = loadState();
 let path = [];
 let editMode = false;
 let deleteMode = false;
+// Press-and-hold drag-to-reorder state (see attachDragHandlers below).
+let dragCtx = null;
+let dragJustEnded = false;
 let addSubMode = false;
 let checklistMode = false;
 let installPanelOpen = false;
@@ -1556,6 +1564,140 @@ function checklistHTML(list){
   return html;
 }
 
+// ===== Drag-to-reorder (press-and-hold on a goal card, then drag it to a new position) =====
+// Uses Pointer Events so the same code path handles mouse and touch. A short hold is required
+// before the drag actually starts, so that a normal tap (toggle/navigate) and a page scroll on
+// touch both still work as before — only a deliberate press-and-hold begins reordering.
+const DRAG_HOLD_MS = 380;
+const DRAG_MOVE_CANCEL_PX = 10;
+
+function attachDragHandlers(){
+  document.querySelectorAll('.grid-goals > [data-nav]').forEach(card=>{
+    card.addEventListener('pointerdown', onDragPointerDown);
+  });
+}
+function onDragPointerDown(e){
+  if(e.pointerType === 'mouse' && e.button !== 0) return;
+  const card = e.currentTarget;
+  const rect = card.getBoundingClientRect();
+  const ctx = {
+    card,
+    idx: parseInt(card.dataset.nav, 10),
+    pointerId: e.pointerId,
+    startX: e.clientX, startY: e.clientY,
+    originLeft: rect.left, originTop: rect.top,
+    width: rect.width, height: rect.height,
+    dragging: false,
+    dropTarget: null,
+    timer: null
+  };
+  dragCtx = ctx;
+  ctx.timer = setTimeout(startDragging, DRAG_HOLD_MS);
+  card.addEventListener('pointermove', onDragPointerMove);
+  card.addEventListener('pointerup', onDragPointerUp);
+  card.addEventListener('pointercancel', onDragPointerCancel);
+}
+function startDragging(){
+  if(!dragCtx) return;
+  const ctx = dragCtx;
+  ctx.dragging = true;
+  const card = ctx.card;
+  try{ card.setPointerCapture(ctx.pointerId); }catch(e){}
+  card.classList.add('dragging');
+  card.style.position = 'fixed';
+  card.style.left = ctx.originLeft + 'px';
+  card.style.top = ctx.originTop + 'px';
+  card.style.width = ctx.width + 'px';
+  card.style.zIndex = '50';
+  card.style.pointerEvents = 'none';
+  if(navigator.vibrate) navigator.vibrate(15);
+}
+function onDragPointerMove(e){
+  if(!dragCtx || dragCtx.pointerId !== e.pointerId) return;
+  const ctx = dragCtx;
+  const dx = e.clientX - ctx.startX;
+  const dy = e.clientY - ctx.startY;
+  if(!ctx.dragging){
+    if(Math.abs(dx) > DRAG_MOVE_CANCEL_PX || Math.abs(dy) > DRAG_MOVE_CANCEL_PX){
+      cancelDrag();
+    }
+    return;
+  }
+  e.preventDefault();
+  ctx.card.style.left = (ctx.originLeft + dx) + 'px';
+  ctx.card.style.top = (ctx.originTop + dy) + 'px';
+  const under = document.elementFromPoint(e.clientX, e.clientY);
+  const overCard = under ? under.closest('.grid-goals > [data-nav]') : null;
+  document.querySelectorAll('.card.drag-over').forEach(el=>{ if(el !== overCard) el.classList.remove('drag-over'); });
+  if(overCard && overCard !== ctx.card){
+    overCard.classList.add('drag-over');
+    ctx.dropTarget = overCard;
+  } else {
+    ctx.dropTarget = null;
+  }
+}
+function onDragPointerUp(e){
+  if(!dragCtx || dragCtx.pointerId !== e.pointerId) return;
+  const ctx = dragCtx;
+  clearTimeout(ctx.timer);
+  cleanupDragListeners(ctx.card);
+  if(ctx.dragging){
+    finishDrag(ctx);
+  } else {
+    dragCtx = null;
+  }
+}
+function onDragPointerCancel(e){
+  if(!dragCtx || dragCtx.pointerId !== e.pointerId) return;
+  cancelDrag();
+}
+function cancelDrag(){
+  if(!dragCtx) return;
+  const ctx = dragCtx;
+  clearTimeout(ctx.timer);
+  cleanupDragListeners(ctx.card);
+  if(ctx.dragging){
+    resetCardStyle(ctx.card);
+    document.querySelectorAll('.card.drag-over').forEach(el=>el.classList.remove('drag-over'));
+  }
+  dragCtx = null;
+}
+function resetCardStyle(card){
+  card.classList.remove('dragging');
+  card.style.position = '';
+  card.style.left = '';
+  card.style.top = '';
+  card.style.width = '';
+  card.style.zIndex = '';
+  card.style.pointerEvents = '';
+}
+function cleanupDragListeners(card){
+  card.removeEventListener('pointermove', onDragPointerMove);
+  card.removeEventListener('pointerup', onDragPointerUp);
+  card.removeEventListener('pointercancel', onDragPointerCancel);
+}
+function finishDrag(ctx){
+  resetCardStyle(ctx.card);
+  document.querySelectorAll('.card.drag-over').forEach(el=>el.classList.remove('drag-over'));
+  const dropTarget = ctx.dropTarget;
+  dragCtx = null;
+  dragJustEnded = true;
+  // Safety net: if no click ever follows (e.g. some browsers don't synthesize one after a
+  // pointer-captured drag), don't leave the very next real tap silently swallowed forever.
+  setTimeout(()=>{ dragJustEnded = false; }, 400);
+  if(dropTarget){
+    const targetIdx = parseInt(dropTarget.dataset.nav, 10);
+    if(!isNaN(targetIdx) && targetIdx !== ctx.idx){
+      const list = resolve(path).children;
+      const [moved] = list.splice(ctx.idx, 1);
+      list.splice(targetIdx, 0, moved);
+      saveState();
+      render();
+      return;
+    }
+  }
+  render();
+}
 function attachHandlers(){
   document.querySelectorAll('[data-crumb]').forEach(el=>{
     el.addEventListener('click', ()=>{
@@ -1565,7 +1707,15 @@ function attachHandlers(){
     });
   });
   document.querySelectorAll('[data-nav]').forEach(el=>{
-    el.addEventListener('click', ()=>{
+    el.addEventListener('click', (e)=>{
+      // A press-and-hold drag just finished on this card (see attachDragHandlers) — swallow the
+      // synthetic click that follows pointerup/touchend so it doesn't also toggle/navigate.
+      if(dragJustEnded){
+        dragJustEnded = false;
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
       const idx = parseInt(el.dataset.nav,10);
       const node = resolve(path).children[idx];
       if(isLeaf(node) && !node.checklist){
@@ -1580,6 +1730,7 @@ function attachHandlers(){
       }
     });
   });
+  attachDragHandlers();
   document.querySelectorAll('.goal-input').forEach(el=>{
     el.addEventListener('click', (e)=> e.stopPropagation());
     el.addEventListener('input', ()=>{
