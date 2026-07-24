@@ -2004,6 +2004,9 @@ function attachHandlers(){
       node.done = false;
       checklistEditIdx = null;
       checklistDeletePanelOpen = false;
+      // Leave this goal's own page and go back to the list it was created from — a plain
+      // checkbox goal (no checklist) isn't meant to have its own page, it's toggled from the card.
+      path = path.slice(0, -1);
       saveState();
       render();
     });
