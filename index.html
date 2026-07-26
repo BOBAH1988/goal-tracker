@@ -79,37 +79,47 @@
      to the right edge even after it wraps onto its own line below a long title on narrow screens —
      with space-between, a lone wrapped item sits at the START of its line (the left edge) instead. */
   .actions{display:flex; gap:8px; flex-wrap:wrap; margin-left:auto;}
-  .actions button{
+  /* Scoped to .topbar (not .actions) because #btnTopMenu/.lang-menu now live in their own
+     .top-menu-dropdown wrapper, a sibling of .actions rather than a descendant of it — .topbar is
+     the nearest ancestor shared by both, so this still styles the account button AND the ☰ button. */
+  .topbar button{
     background:var(--card2); color:var(--muted); border:1px solid var(--border); border-radius:8px;
     padding:6px 12px; font-size:12px; cursor:pointer;
   }
-  .actions button:hover{color:var(--text); border-color:var(--accent);}
+  .topbar button:hover{color:var(--text); border-color:var(--accent);}
   #btnTopMenu{padding:1px 2px !important; font-size:24px !important; line-height:1; display:flex; align-items:center; justify-content:center; border-color:transparent;}
-  .top-menu-dropdown{position:relative; display:inline-flex;}
+  /* z-index:11 keeps the button (and its open dropdown) above .menu-backdrop (z-index:9) once
+     the menu is open — it now sits in the top-left corner instead of inside .actions. */
+  .top-menu-dropdown{position:relative; display:inline-flex; z-index:11;}
   .lang-menu{
-    position:absolute; top:calc(100% + 4px); right:0; background:var(--card2); border:1px solid var(--accent);
+    position:absolute; top:calc(100% + 4px); left:0; background:var(--card2); border:1px solid var(--accent);
     border-radius:8px; padding:4px; display:flex; flex-direction:column; gap:2px; z-index:10; width:max-content;
     max-width:calc(100vw - 32px); box-shadow:0 8px 24px rgba(0,0,0,.35);
   }
-  .actions .lang-option{
+  /* Dims the rest of the page while the ☰ menu is open. Purely visual — the existing
+     document-level click-away listener already closes the menu on any outside click, and since
+     this sits above everything but below the dropdown itself, that click naturally lands on the
+     backdrop (not on a card behind it) and still bubbles up to close the menu as before. */
+  .menu-backdrop{position:fixed; inset:0; background:rgba(6,9,16,0.6); z-index:9;}
+  .topbar .lang-option{
     background:none; border:1px solid transparent; border-radius:6px; padding:0; font-size:21.7px;
     line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center; flex:none;
   }
-  .actions .lang-option:hover{border-color:var(--accent);}
-  .actions .lang-option.active{border-color:var(--accent); box-shadow:0 0 0 1px var(--accent);}
-  .actions .menu-item{
+  .topbar .lang-option:hover{border-color:var(--accent);}
+  .topbar .lang-option.active{border-color:var(--accent); box-shadow:0 0 0 1px var(--accent);}
+  .topbar .menu-item{
     background:none; border:none; color:var(--text); border-radius:6px; padding:8px 8px; font-size:13px;
     cursor:pointer; text-align:left; white-space:normal; word-break:break-word;
   }
-  .actions .menu-item:hover{background:var(--card);}
-  .menu-lang-row{display:flex; gap:4px; justify-content:center; padding:4px 10px 0; margin-top:2px; border-top:1px solid var(--border);}
+  .topbar .menu-item:hover{background:var(--card);}
+  .menu-lang-row{display:flex; gap:4px; justify-content:flex-start; padding:4px 10px 0; margin-top:2px; border-top:1px solid var(--border);}
   .menu-theme-row{display:flex; gap:3px; justify-content:center; padding:4px 10px 0; margin-top:2px; border-top:1px solid var(--border);}
-  .actions .theme-option{
+  .topbar .theme-option{
     background:none; border:1px solid transparent; border-radius:6px; padding:2px; font-size:18.7px;
     line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center;
   }
-  .actions .theme-option:hover{border-color:var(--accent);}
-  .actions .theme-option.active{border-color:var(--accent); box-shadow:0 0 0 1px var(--accent);}
+  .topbar .theme-option:hover{border-color:var(--accent);}
+  .topbar .theme-option.active{border-color:var(--accent); box-shadow:0 0 0 1px var(--accent);}
   #btnEdit, #btnDelete, #btnAddSubgoal, #btnChecklist, #btnDeleteChecklist, #btnShare{
     background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:8px;
     padding:6px 12px; font-size:12px; cursor:pointer; white-space:nowrap;
@@ -181,7 +191,7 @@
   .auth-consent-details{margin-top:4px;}
   .auth-consent-details summary{color:var(--accent); cursor:pointer; display:inline;}
   .auth-consent-details[open] summary{margin-bottom:4px; display:block;}
-  .account-dropdown{position:relative; display:inline-flex;}
+  .account-dropdown{position:relative; display:inline-flex; z-index:11;}
   .account-menu{
     position:absolute; top:calc(100% + 4px); right:0; background:var(--card2); border:1px solid var(--accent);
     border-radius:10px; padding:4px; display:flex; flex-direction:column; gap:2px; z-index:10;
@@ -379,50 +389,83 @@ function emptySteps(subWord, goalWord){
   return [1,2].map(n => ({ name:`${subWord} ${n}`, children: emptyGoals(goalWord) }));
 }
 
-// Sample data shown on the main page before signing in — 4 goal areas with deliberately different
-// progress levels for visual variety: Энергия 75%, Достаток 60%, Взаимоотношения 80%, Навыки 55%.
+// Sample data shown on the main page before signing in — 4 goal areas (kept from the original
+// design), broken into 2-3 relatable subgoals apiece. Most stay a simple two-level example, but
+// "Здоровье" and "Английский язык" additionally show off deeper nesting (goal → subgoal → sub-
+// subgoal → tasks) and two leaves — "Финансовая подушка" and "Новые слова" — show off the
+// checklist feature (a leaf tracked as numbered milestones instead of a single done/not-done),
+// so a first-time visitor sees the full range of what the tracker can do at a glance. Progress per
+// area is deliberately uneven for visual variety on the balance wheel, averaging to an overall
+// ~72% — believable rather than "solved".
 function leafGoals(names, doneFlags){
   return names.map((name, i) => ({ name, date:"", done: !!doneFlags[i], children:[] }));
 }
+function checklistLeaf(name, items, doneFlags){
+  return { name, date:"", done:false, children:[], checklist: items.map((text, i) => ({ text, done: !!doneFlags[i] })) };
+}
 const SEED = { name:"Главная", children: [
   { name:"Энергия", children: [
-    { name:"Физическая форма", children: leafGoals(
-      ["Утренняя зарядка", "Бег 3 раза в неделю", "Питьевой режим 2л в день", "Здоровый сон 8 часов"],
-      [true, true, true, false]
+    { name:"Здоровье", children: [
+      { name:"Физическое состояние", children: leafGoals(
+        ["Полноценный сон 7-8 часов", "Ежегодный чек-ап у врача", "Витамины и минералы"],
+        [true, true, true]
+      ) },
+      { name:"Психологическое состояние", children: leafGoals(
+        ["Отсутствие тревожности", "Позитивный настрой", "Умею отдыхать без чувства вины"],
+        [true, true, false]
+      ) }
+    ]},
+    { name:"Активность и тело", children: leafGoals(
+      ["Тренировки 3 раза в неделю", "10 000 шагов в день", "Растяжка и осанка"],
+      [true, true, false]
     ) },
-    { name:"Здоровое питание", children: leafGoals(
-      ["Отказ от сахара", "Больше овощей в рационе", "Курс витаминов", "Готовка дома"],
-      [true, true, true, false]
+    { name:"Питание", children: leafGoals(
+      ["Больше воды и овощей", "Меньше сахара и фастфуда", "Готовка дома вместо доставки"],
+      [true, true, false]
     ) }
   ]},
   { name:"Достаток", children: [
     { name:"Доход", children: leafGoals(
-      ["Повышение на работе", "Дополнительный источник дохода", "Инвестиции 10% дохода", "Финансовая подушка", "Пассивный доход"],
-      [true, true, true, false, false]
+      ["Повышение на текущей работе", "Дополнительный источник дохода", "Пересмотр зарплаты раз в год"],
+      [true, true, false]
     ) },
-    { name:"Расходы", children: leafGoals(
-      ["Бюджет на месяц", "Учёт трат", "Отказ от импульсивных покупок", "Погашение долгов", "Экономия на подписках"],
-      [true, true, true, false, false]
+    { name:"Накопления", children: [
+      checklistLeaf("Финансовая подушка", ["30 000 ₽", "60 000 ₽", "90 000 ₽", "120 000 ₽", "150 000 ₽"], [true, true, true, false, false]),
+      { name:"Инвестиционный портфель", date:"", done:false, children:[] },
+      { name:"Откладывать 10% с дохода", date:"", done:true, children:[] }
+    ]},
+    { name:"Финансовая грамотность", children: leafGoals(
+      ["Учёт доходов и расходов", "Курс по инвестициям", "Книги про финансы"],
+      [true, true, false]
     ) }
   ]},
   { name:"Взаимоотношения", children: [
     { name:"Семья", children: leafGoals(
-      ["Семейный ужин раз в неделю", "Звонок родителям", "Совместный отдых", "Поддержка партнёра", "Забота о близких"],
-      [true, true, true, false, true]
+      ["Семейный ужин раз в неделю", "Регулярные звонки родителям", "Совместная поездка раз в год"],
+      [true, true, true]
+    ) },
+    { name:"Партнёр", children: leafGoals(
+      ["Свидание раз в неделю", "Слушать и слышать друг друга", "Совместные планы на будущее"],
+      [true, true, true]
     ) },
     { name:"Друзья", children: leafGoals(
-      ["Встречи с друзьями", "Нетворкинг", "Помощь друзьям", "Новые знакомства", "Организация встреч"],
-      [true, true, true, false, true]
+      ["Регулярные встречи", "На связи, а не только в переписке", "Новые знакомства"],
+      [true, true, false]
     ) }
   ]},
   { name:"Навыки", children: [
-    { name:"Профессиональные", children: leafGoals(
-      ["Курс по специальности", "Чтение книг по теме", "Сертификация", "Практика на проекте"],
-      [true, true, false, false]
+    { name:"Английский язык", children: [
+      { name:"Занятия 2 раза в неделю", date:"", done:true, children:[] },
+      { name:"Фильмы и подкасты в оригинале", date:"", done:true, children:[] },
+      checklistLeaf("Новые слова", ["100 слов", "200 слов", "300 слов", "400 слов", "500 слов"], [true, true, true, false, false])
+    ]},
+    { name:"Профессиональный рост", children: leafGoals(
+      ["Курс по специальности", "Чтение по теме каждую неделю", "Нетворкинг и обмен опытом"],
+      [true, true, false]
     ) },
-    { name:"Личностные", children: leafGoals(
-      ["Английский язык", "Публичные выступления", "Тайм-менеджмент", "Медитация", "Чтение художественной литературы"],
-      [true, true, true, false, false]
+    { name:"Личная эффективность", children: leafGoals(
+      ["Планирование дня с вечера", "Меньше соцсетей, больше дела", "Медитация 10 минут"],
+      [true, false, false]
     ) }
   ]}
 ]};
@@ -440,7 +483,6 @@ const LANG_KEY = "goal_tracker_lang";
 const STRINGS = {
   ru: {
     appTitle: '🎯 Трекер целей с колесом баланса',
-    resetAll: 'Сбросить все',
     home: 'Главная',
     overallProgress: 'Общий прогресс',
     mainGoals: 'Главные цели',
@@ -464,7 +506,6 @@ const STRINGS = {
     due: 'Срок:',
     rename: '✏️ Переименовать',
     renamePrompt: 'Новое название шага:',
-    resetConfirm: 'Точно всё сбросить?',
     footer: 'Войдите в аккаунт, чтобы данные сохранились.',
     footerLoggedIn: 'Все данные конфиденциальны, доступ имеете только вы.',
     addSubgoal: 'Развернуть',
@@ -536,6 +577,11 @@ const STRINGS = {
     exportData: 'Скачать данные',
     exportDateLabel: 'Дата экспорта',
     exportChecklistLabel: 'Чек-лист',
+    importData: 'Импорт данных',
+    importConfirm: 'Это заменит все текущие цели данными из файла резервной копии. Продолжить?',
+    importErrorParse: 'Не удалось прочитать файл. Убедитесь, что это файл резервной копии, скачанный через «Скачать данные».',
+    importErrorInvalid: 'Файл не похож на резервную копию Трекера целей.',
+    importSuccessMsg: 'Данные успешно восстановлены из резервной копии.',
     aboutTitle: 'О проекте',
     aboutText: 'Трекер целей — простой способ дойти до цели: шаг за шагом, без давления дедлайнов и лишней сложности.\n\nНикаких обязательных дат, формулировок по SMART и лишних рамок — только цель и путь к ней. Пишете цель → делите на подцели → если подцель всё ещё кажется сложной, делите и её. Так, маленькими шагами, вы видите, как закрываете задачу за задачей и приближаетесь к своей мечте.\n\n— Владимир Соколов',
     menuTitle: 'Меню',
@@ -545,7 +591,6 @@ const STRINGS = {
   },
   en: {
     appTitle: '🎯 Goal Tracker with Balance Wheel',
-    resetAll: 'Reset All',
     home: 'Home',
     overallProgress: 'Overall Progress',
     mainGoals: 'Main Goals',
@@ -569,7 +614,6 @@ const STRINGS = {
     due: 'Due:',
     rename: '✏️ Rename',
     renamePrompt: 'New step name:',
-    resetConfirm: 'Reset everything and keep only 1 goal?',
     footer: 'Sign in to sync it across devices.',
     footerLoggedIn: 'All data is private — only you have access to it.',
     addSubgoal: 'Expand',
@@ -641,6 +685,11 @@ const STRINGS = {
     exportData: 'Download data export',
     exportDateLabel: 'Export date',
     exportChecklistLabel: 'Checklist',
+    importData: 'Import data',
+    importConfirm: 'This will replace all current goals with the data from the backup file. Continue?',
+    importErrorParse: "Couldn't read the file. Make sure it's a backup file downloaded via \"Download data\".",
+    importErrorInvalid: "This file doesn't look like a Goal Tracker backup.",
+    importSuccessMsg: 'Data restored from backup successfully.',
     aboutTitle: 'About',
     aboutText: 'Goal Tracker is a simple way to reach your goals — one small step at a time, without deadline pressure or unnecessary complexity.\n\nNo mandatory dates, no SMART framework, no extra rules — just the goal and the path to it. Write a goal → break it into subgoals → if a subgoal still feels too big, break it down again. That way, in small steps, you watch yourself close one task after another and get closer to your dream.\n\n— Vladimir Sokolov',
     menuTitle: 'Menu',
@@ -796,6 +845,10 @@ let authBusy = false;
 let cloudSyncTimer = null;
 let applyingRemoteUpdate = false;
 let unsubscribeSnapshot = null;
+// True only for the brief window between "just created this account" and "its blank cloud
+// document has been written". Gates the one place a missing Firestore document is allowed to be
+// treated as "safe to create" — see startCloudSync().
+let isFreshSignup = false;
 try{
   if(firebaseConfig.apiKey && firebaseConfig.apiKey.indexOf('ВСТАВЬТЕ') === -1 && typeof firebase !== 'undefined'){
     firebase.initializeApp(firebaseConfig);
@@ -856,9 +909,10 @@ function startCloudSync(uid){
         authUser.occupation = data.occupation || '';
       }
       render();
-    } else {
-      // Brand-new account: always start from a blank template, never from the local demo/sample
-      // data or whatever was sitting unsynced in this browser.
+    } else if(isFreshSignup){
+      // Brand-new account we just created ourselves (doAuthSignUp set this flag right before
+      // calling createUserWithEmailAndPassword): always start from a blank template, never from
+      // the local demo/sample data or whatever was sitting unsynced in this browser.
       const initial = emptyTemplate();
       applyingRemoteUpdate = true;
       state = initial;
@@ -866,6 +920,7 @@ function startCloudSync(uid){
       saveState();
       applyingRemoteUpdate = false;
       if(authUser && pendingSignupName) authUser.name = pendingSignupName;
+      isFreshSignup = false;
       render();
       // Record proof of the personal-data-processing consent given on the sign-up form
       // (152-ФЗ), plus the reserved username, alongside the new account's initial data.
@@ -875,7 +930,19 @@ function startCloudSync(uid){
         consent: { given: !!privacyConsent, at: firebase.firestore.FieldValue.serverTimestamp() },
         name: pendingSignupName || null
       }, { merge:true }).catch(()=>{});
+    } else {
+      // A returning sign-in whose document read came back "not found". This used to be treated
+      // exactly like a brand-new signup and would immediately overwrite Firestore with a blank
+      // template — but a missing-looking read can also happen to an EXISTING account on a
+      // transient hiccup (flaky network, a device/browser with nothing cached yet, a delayed
+      // auth-token refresh, etc.), which silently destroyed real data. Only the isFreshSignup
+      // branch above is allowed to create a document; here we do nothing destructive and just
+      // wait — local data stays untouched until a real snapshot with actual data arrives.
+      console.warn('Cloud sync: no document found for this account (and this is not a fresh sign-up) — leaving local data untouched.');
+      render();
     }
+  }, (err)=>{
+    console.warn('Cloud sync listen error:', err);
   });
 }
 function stopCloudSync(){
@@ -883,6 +950,7 @@ function stopCloudSync(){
 }
 function doAuthSignIn(email, password){
   authBusy = true; authError = '';
+  isFreshSignup = false;
   firebase.auth().signInWithEmailAndPassword(email, password)
     .catch(err => { authError = translateAuthError(err); authBusy = false; render(); });
 }
@@ -926,6 +994,11 @@ async function doAuthSignUp(email, password, name){
       authBusy = false; render();
       return;
     }
+    // Set before createUserWithEmailAndPassword: Firebase fires onAuthStateChanged (which calls
+    // startCloudSync) as soon as that resolves, essentially in parallel with the rest of this
+    // function, so the flag needs to already be true by then — see the isFreshSignup check in
+    // startCloudSync's onSnapshot handler.
+    isFreshSignup = true;
     const cred = await firebase.auth().createUserWithEmailAndPassword(email, password);
     const user = cred.user;
     try{
@@ -943,11 +1016,13 @@ async function doAuthSignUp(email, password, name){
     }catch(reserveErr){
       // Someone else grabbed the name in the meantime — undo the just-created account so the
       // email stays free to retry with a different name, instead of leaving an orphaned account.
+      isFreshSignup = false;
       try{ await user.delete(); }catch(e){}
       authError = (reserveErr && reserveErr.message === 'name-taken') ? t('nameTaken') : t('authErrGeneric');
       authBusy = false; render();
     }
   }catch(err){
+    isFreshSignup = false;
     authError = translateAuthError(err);
     authBusy = false; render();
   }
@@ -984,6 +1059,7 @@ function doAuthSignOut(){
   if(!cloudEnabled) return;
   accountMenuOpen = false;
   editAccountOpen = false;
+  isFreshSignup = false;
   path = [];
   firebase.auth().signOut();
 }
@@ -1076,56 +1152,59 @@ function doneCount(node){
   if(!node.children) return 0;
   return node.children.filter(c => computePercent(c) === 100).length;
 }
-// Plain-text, indented rendering of one node and everything under it — used for the "share your
-// progress with a mentor" data export. Deliberately simple (no special file format) so it opens
-// and reads cleanly anywhere: email body, chat message, text editor.
-function exportNodeLines(node, depth){
-  const indent = '  '.repeat(depth);
-  const lines = [];
-  if(isLeaf(node)){
-    if(node.checklist && node.checklist.length){
-      const pct = computePercent(node);
-      lines.push(`${indent}- ${node.name} — ${pct}%`);
-      node.checklist.forEach(item=>{
-        lines.push(`${indent}    [${item.done ? 'x' : ' '}] ${item.text}`);
-      });
-    } else {
-      lines.push(`${indent}- ${node.name} ${node.done ? '✅' : '❌'}`);
-    }
-    return lines;
-  }
-  if(node.children && node.children.length){
-    lines.push(`${indent}- ${node.name} — ${computePercent(node)}%`);
-    node.children.forEach(child => { lines.push(...exportNodeLines(child, depth + 1)); });
-  } else {
-    lines.push(`${indent}- ${node.name}`);
-  }
-  return lines;
-}
-function buildExportText(){
-  const now = new Date();
-  const dateStr = `${now.toLocaleDateString()} ${now.toLocaleTimeString()}`;
-  const lines = [
-    t('appTitle').replace(/^\S+\s*/, ''),
-    `${t('exportDateLabel')}: ${dateStr}`,
-    '',
-    `${t('overallProgress')}: ${computePercent(state)}%`,
-    ''
-  ];
-  (state.children || []).forEach(child => { lines.push(...exportNodeLines(child, 0)); });
-  return lines.join('\n');
-}
+// A real, lossless backup of the whole goal tree, meant to be restored later via "Импорт данных" —
+// as opposed to the 📤 share-progress image, which is a lossy visual summary for showing someone
+// else your progress, not something meant to be read back in.
 function doExportData(){
-  const text = buildExportText();
-  const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+  const payload = {
+    app: 'goal-tracker-backup',
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    state
+  };
+  const text = JSON.stringify(payload, null, 2);
+  const blob = new Blob([text], { type: 'application/json;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `goal-tracker-export-${new Date().toISOString().slice(0,10)}.txt`;
+  a.download = `goal-tracker-backup-${new Date().toISOString().slice(0,10)}.json`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
+}
+// A valid goal tree is, at minimum, an object with a string `name` and an array `children` —
+// matches both the root state and every container/leaf node inside it.
+function isValidGoalTree(obj){
+  return !!obj && typeof obj === 'object' && typeof obj.name === 'string' && Array.isArray(obj.children);
+}
+function doImportData(file){
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    let parsed;
+    try{
+      parsed = JSON.parse(reader.result);
+    }catch(e){
+      alert(t('importErrorParse'));
+      return;
+    }
+    // Accept both our own backup wrapper ({app, version, state}) and a bare state object, so a
+    // manually-trimmed JSON file still imports.
+    const candidate = (parsed && parsed.state && typeof parsed.state === 'object') ? parsed.state : parsed;
+    if(!isValidGoalTree(candidate)){
+      alert(t('importErrorInvalid'));
+      return;
+    }
+    if(!confirm(t('importConfirm'))) return;
+    state = candidate;
+    path = [];
+    saveState();
+    if(cloudEnabled && authUser) scheduleCloudPush();
+    alert(t('importSuccessMsg'));
+    render();
+  };
+  reader.readAsText(file);
 }
 function barColor(pct){
   if(pct>=70) return "var(--green)";
@@ -1327,6 +1406,24 @@ function render(){
   document.title = t('appTitle');
 
   let html = `<div class="topbar">
+    <div class="top-menu-dropdown">
+      <button id="btnTopMenu" title="${t('menuTitle')}" aria-label="${t('menuTitle')}">☰</button>
+      ${topMenuOpen ? `<div class="lang-menu">
+        <button id="btnHomeMenuItem" class="menu-item">${t('home')}</button>
+        ${(cloudEnabled && authUser) ? `<button id="btnEditAccount" class="menu-item">${t('editAccount')}</button>
+        <button id="btnExportData" class="menu-item">${t('exportData')}</button>
+        <button id="btnImportData" class="menu-item">${t('importData')}</button>
+        <input type="file" id="importFileInput" accept="application/json,.json" style="display:none">` : ''}
+        <button id="btnAboutMenuItem" class="menu-item">${t('aboutTitle')}</button>
+        ${(isMobileDevice() && !isStandalonePwa()) ? `<button id="btnInstallAppMenuItem" class="menu-item">${t('installAppTitle')}</button>` : ''}
+        <div class="menu-lang-row">
+          ${Object.keys(LANG_FLAGS).map(code => `<button class="lang-option ${lang===code?'active':''}" data-lang="${code}" title="${code==='ru'?'Русский':'English'}">${LANG_FLAGS[code]}</button>`).join('')}
+        </div>
+        <div class="menu-theme-row">
+          ${Object.keys(THEME_ICONS).map(code => `<button class="theme-option ${theme===code?'active':''}" data-theme-choice="${code}" title="${t(THEME_TITLES[code])}" aria-label="${t(THEME_TITLES[code])}">${THEME_ICONS[code]}</button>`).join('')}
+        </div>
+      </div>` : ''}
+    </div>
     <h1>${t('appTitle')}</h1>
     <div class="actions">
       ${cloudEnabled ? (authUser
@@ -1337,25 +1434,8 @@ function render(){
             </div>` : ''}
           </div>`
         : `<button id="btnAccount">🔐 ${t('account')}</button>`) : ''}
-      <div class="top-menu-dropdown">
-        <button id="btnTopMenu" title="${t('menuTitle')}" aria-label="${t('menuTitle')}">☰</button>
-        ${topMenuOpen ? `<div class="lang-menu">
-          <button id="btnHomeMenuItem" class="menu-item">${t('home')}</button>
-          ${(cloudEnabled && authUser) ? `<button id="btnEditAccount" class="menu-item">${t('editAccount')}</button>
-          <button id="btnExportData" class="menu-item">${t('exportData')}</button>` : ''}
-          <button id="btnAboutMenuItem" class="menu-item">${t('aboutTitle')}</button>
-          ${(isMobileDevice() && !isStandalonePwa()) ? `<button id="btnInstallAppMenuItem" class="menu-item">${t('installAppTitle')}</button>` : ''}
-          <button id="btnReset" class="menu-item">${t('resetAll')}</button>
-          <div class="menu-lang-row">
-            ${Object.keys(LANG_FLAGS).map(code => `<button class="lang-option ${lang===code?'active':''}" data-lang="${code}" title="${code==='ru'?'Русский':'English'}">${LANG_FLAGS[code]}</button>`).join('')}
-          </div>
-          <div class="menu-theme-row">
-            ${Object.keys(THEME_ICONS).map(code => `<button class="theme-option ${theme===code?'active':''}" data-theme-choice="${code}" title="${t(THEME_TITLES[code])}" aria-label="${t(THEME_TITLES[code])}">${THEME_ICONS[code]}</button>`).join('')}
-          </div>
-        </div>` : ''}
-      </div>
     </div>
-  </div>`;
+  </div>${topMenuOpen ? '<div class="menu-backdrop"></div>' : ''}`;
 
   if(installPanelOpen){
     html += `<div class="auth-modal-overlay" id="installOverlay">
@@ -2277,21 +2357,6 @@ function attachHandlers(){
       if(e.key === 'Enter') addChecklistItem();
     });
   }
-  const btnReset = document.getElementById('btnReset');
-  if(btnReset){
-    btnReset.addEventListener('click', (e)=>{
-      e.stopPropagation();
-      topMenuOpen = false;
-      if(confirm(t('resetConfirm'))){
-        state = emptyTemplate();
-        path = [];
-        saveState();
-        render();
-      } else {
-        render();
-      }
-    });
-  }
   const btnAccount = document.getElementById('btnAccount');
   if(btnAccount){
     btnAccount.addEventListener('click', (e)=>{
@@ -2332,6 +2397,22 @@ function attachHandlers(){
       topMenuOpen = false;
       doExportData();
       render();
+    });
+  }
+  const btnImportData = document.getElementById('btnImportData');
+  const importFileInput = document.getElementById('importFileInput');
+  if(btnImportData && importFileInput){
+    btnImportData.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      importFileInput.click();
+    });
+    importFileInput.addEventListener('change', (e)=>{
+      // Grab the File object before closing the menu — render() rebuilds #app.innerHTML right
+      // after, which discards this <input>, but the already-captured File reference stays valid.
+      const file = e.target.files && e.target.files[0];
+      topMenuOpen = false;
+      render();
+      doImportData(file);
     });
   }
   const btnSignOutMenu = document.getElementById('btnSignOutMenu');
