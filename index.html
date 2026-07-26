@@ -390,13 +390,13 @@ function emptySteps(subWord, goalWord){
 }
 
 // Sample data shown on the main page before signing in — 4 goal areas (kept from the original
-// design), broken into 2-3 relatable subgoals apiece. Most stay a simple two-level example, but
-// "Здоровье" and "Английский язык" additionally show off deeper nesting (goal → subgoal → sub-
-// subgoal → tasks) and two leaves — "Финансовая подушка" and "Новые слова" — show off the
-// checklist feature (a leaf tracked as numbered milestones instead of a single done/not-done),
-// so a first-time visitor sees the full range of what the tracker can do at a glance. Progress per
-// area is deliberately uneven for visual variety on the balance wheel, averaging to an overall
-// ~72% — believable rather than "solved".
+// design), each broken into 4 subgoals for a fuller, more illustrative example. Most subgoals stay
+// a simple two-level list of tasks, but "Здоровье" and "Английский язык" additionally show off
+// deeper nesting (goal → subgoal → sub-subgoal → tasks) and two leaves — "Финансовая подушка" and
+// "Новые слова" — show off the checklist feature (a leaf tracked as numbered milestones instead of
+// a single done/not-done), so a first-time visitor sees the full range of what the tracker can do
+// at a glance. Progress per area is deliberately uneven for visual variety on the balance wheel,
+// averaging to an overall ~71% — believable rather than "solved".
 function leafGoals(names, doneFlags){
   return names.map((name, i) => ({ name, date:"", done: !!doneFlags[i], children:[] }));
 }
@@ -422,6 +422,10 @@ const SEED = { name:"Главная", children: [
     { name:"Питание", children: leafGoals(
       ["Больше воды и овощей", "Меньше сахара и фастфуда", "Готовка дома вместо доставки"],
       [true, true, false]
+    ) },
+    { name:"Восстановление и отдых", children: leafGoals(
+      ["Время без гаджетов вечером", "Хобби для удовольствия", "Полноценные выходные без дел"],
+      [true, true, false]
     ) }
   ]},
   { name:"Достаток", children: [
@@ -437,6 +441,10 @@ const SEED = { name:"Главная", children: [
     { name:"Финансовая грамотность", children: leafGoals(
       ["Учёт доходов и расходов", "Курс по инвестициям", "Книги про финансы"],
       [true, true, false]
+    ) },
+    { name:"Расходы", children: leafGoals(
+      ["Бюджет на месяц", "Отказ от импульсивных покупок", "Учёт всех трат"],
+      [true, true, false]
     ) }
   ]},
   { name:"Взаимоотношения", children: [
@@ -451,6 +459,10 @@ const SEED = { name:"Главная", children: [
     { name:"Друзья", children: leafGoals(
       ["Регулярные встречи", "На связи, а не только в переписке", "Новые знакомства"],
       [true, true, false]
+    ) },
+    { name:"Дети", children: leafGoals(
+      ["Качественное время вместе", "Помощь с учёбой и увлечениями", "Разговоры по душам"],
+      [true, true, true]
     ) }
   ]},
   { name:"Навыки", children: [
@@ -465,6 +477,10 @@ const SEED = { name:"Главная", children: [
     ) },
     { name:"Личная эффективность", children: leafGoals(
       ["Планирование дня с вечера", "Меньше соцсетей, больше дела", "Медитация 10 минут"],
+      [true, false, false]
+    ) },
+    { name:"Хобби и творчество", children: leafGoals(
+      ["Регулярная практика хобби", "Участие в мероприятиях по теме", "Делиться результатом с другими"],
       [true, false, false]
     ) }
   ]}
