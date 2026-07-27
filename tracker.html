@@ -120,21 +120,18 @@
   }
   .topbar .theme-option:hover{border-color:var(--accent);}
   .topbar .theme-option.active{border-color:var(--accent); box-shadow:0 0 0 1px var(--accent);}
-  #btnEdit, #btnDelete, #btnAddSubgoal, #btnChecklist, #btnDeleteChecklist, #btnShare{
+  #btnEdit, #btnDelete, #btnAddSubgoal, #btnDeleteChecklist{
     background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:8px;
     padding:6px 12px; font-size:12px; cursor:pointer; white-space:nowrap;
   }
   #btnEdit:hover{color:var(--text); border-color:var(--accent);}
   #btnEdit.active{background:var(--accent); color:#fff; border-color:var(--accent);}
-  #btnShare:hover{color:var(--text); border-color:var(--accent);}
   #btnDelete:hover{border-color:var(--red); color:var(--red);}
   #btnDelete.active{background:var(--red); color:#fff; border-color:var(--red);}
   #btnDeleteChecklist:hover{border-color:var(--red); color:var(--red);}
   #btnDelete.active:hover{color:#fff;}
   #btnAddSubgoal:hover{color:var(--text); border-color:var(--accent);}
   #btnAddSubgoal.active{background:var(--accent); color:#fff; border-color:var(--accent);}
-  #btnChecklist:hover{color:var(--text); border-color:var(--accent);}
-  #btnChecklist.active{background:var(--accent); color:#fff; border-color:var(--accent);}
   .edit-hint{color:var(--muted); font-weight:400; font-size:12px;}
   .edit-hint.delete-hint{color:var(--red);}
   .auth-modal-overlay{
@@ -292,6 +289,12 @@
     background:none; border:1px solid var(--border); color:var(--muted); border-radius:6px; padding:2px 8px; font-size:12px; cursor:pointer;
   }
   .leaf-meta button:hover{color:var(--text); border-color:var(--accent);}
+  .add-checklist-btn{
+    margin-top:12px; background:var(--accent); color:#fff; border:none; border-radius:10px;
+    padding:10px 16px; font-size:13px; font-weight:600; cursor:pointer; display:inline-flex;
+    align-items:center; gap:6px;
+  }
+  .add-checklist-btn:hover{opacity:.9;}
   .empty-state{color:var(--muted); font-size:13px; padding:20px; text-align:center; border:1px dashed var(--border); border-radius:12px;}
   .add-sub{margin-top:14px;}
   .add-sub button{
@@ -303,7 +306,6 @@
   .section-title{font-size:15px; font-weight:600; color:var(--text); margin:4px 0 12px;}
   .section-title-row{display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:8px;}
   .section-title-row .section-title{margin:0;}
-  .checklist-title-actions{display:flex; align-items:center; gap:8px;}
   .add-goal-wrap{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
   #btnAddGoal{
     background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:8px;
@@ -323,16 +325,14 @@
   #btnAddChild:disabled:hover{color:var(--muted); border-color:var(--border);}
   /* Compact "+"/"−" icon style for Add/Delete, used instead of full text labels to save room on
      narrow (phone) screens. */
-  #btnAddGoal.icon-btn, #btnAddChild.icon-btn, #btnDelete.icon-btn, #btnEdit.icon-btn, #btnAddSubgoal.icon-btn, #btnChecklist.icon-btn, #btnDeleteChecklist.icon-btn, #btnShare.icon-btn{
+  #btnAddGoal.icon-btn, #btnAddChild.icon-btn, #btnDelete.icon-btn, #btnEdit.icon-btn, #btnAddSubgoal.icon-btn, #btnDeleteChecklist.icon-btn{
     font-size:16px; font-weight:700; line-height:1; padding:5px 13px;
     min-width:32px; display:inline-flex; align-items:center; justify-content:center;
   }
   #btnAddGoal.icon-btn, #btnAddChild.icon-btn, #btnDelete.icon-btn{ font-size:18px; }
   #btnAddSubgoal.icon-btn{ font-size:24px; padding:2px; }
-  #btnChecklist.icon-btn{ font-size:24px; padding:2px; }
   #btnEdit.icon-btn{ font-size:24px; padding:2px; }
   #btnDeleteChecklist.icon-btn{ font-size:20px; padding:2px; }
-  #btnShare.icon-btn{ font-size:22px; padding:2px; }
   .checklist-section{margin-top:20px;}
   .checklist-row{
     display:flex; align-items:center; gap:10px; background:var(--card); border:1px solid var(--border);
@@ -499,6 +499,8 @@ const LANG_KEY = "goal_tracker_lang";
 const STRINGS = {
   ru: {
     appTitle: '🎯 Трекер целей с колесом баланса',
+    resetAll: 'Сбросить всё',
+    resetConfirm: 'Точно всё сбросить и начать с чистого листа?',
     home: 'Главная',
     overallProgress: 'Общий прогресс',
     mainGoals: 'Главные цели',
@@ -520,6 +522,7 @@ const STRINGS = {
     emptyState: 'Здесь пока пусто.',
     splitInto6: 'Разбить на 6 подшагов',
     due: 'Срок:',
+    tipClearDate: 'Убрать срок',
     rename: '✏️ Переименовать',
     renamePrompt: 'Новое название шага:',
     footer: 'Войдите в аккаунт, чтобы данные сохранились.',
@@ -563,12 +566,10 @@ const STRINGS = {
     tipReset: 'Сбросить все настройки',
     tipExpand: 'Развернуть цель',
     tipChecklist: 'Добавить чек-лист',
-    checklistHint: '— нажмите на цель с чекбоксом, чтобы добавить к ней чек-лист',
     checklistTitle: 'Чек-лист',
     checklistPlaceholder: 'Новый пункт',
     tipEditItem: 'Редактировать пункт',
     tipDeleteChecklist: 'Удалить чек-лист',
-    tipShare: 'Поделиться прогрессом',
     checklistDeleteConfirm: 'Точно удалить?',
     confirmYes: 'Да',
     confirmNo: 'Нет',
@@ -607,6 +608,8 @@ const STRINGS = {
   },
   en: {
     appTitle: '🎯 Goal Tracker with Balance Wheel',
+    resetAll: 'Reset all',
+    resetConfirm: 'Reset everything and start with a clean slate?',
     home: 'Home',
     overallProgress: 'Overall Progress',
     mainGoals: 'Main Goals',
@@ -628,6 +631,7 @@ const STRINGS = {
     emptyState: 'Nothing here yet.',
     splitInto6: 'Split into 6 steps',
     due: 'Due:',
+    tipClearDate: 'Clear due date',
     rename: '✏️ Rename',
     renamePrompt: 'New step name:',
     footer: 'Sign in to sync it across devices.',
@@ -671,12 +675,10 @@ const STRINGS = {
     tipReset: 'Reset all settings',
     tipExpand: 'Expand goal',
     tipChecklist: 'Add checklist',
-    checklistHint: '— click a goal with a checkbox to add a checklist to it',
     checklistTitle: 'Checklist',
     checklistPlaceholder: 'New item',
     tipEditItem: 'Edit item',
     tipDeleteChecklist: 'Delete checklist',
-    tipShare: 'Share progress',
     checklistDeleteConfirm: 'Delete this checklist?',
     confirmYes: 'Yes',
     confirmNo: 'No',
@@ -752,7 +754,6 @@ let deleteMode = false;
 let dragCtx = null;
 let dragJustEnded = false;
 let addSubMode = false;
-let checklistMode = false;
 // Which checklist row (if any) currently has its text open for inline editing (pencil icon).
 let checklistEditIdx = null;
 let installPanelOpen = false;
@@ -1227,176 +1228,6 @@ function barColor(pct){
   if(pct>=40) return "var(--yellow)";
   return "var(--red)";
 }
-/* ===== Share-progress snapshot (📤 button, next to the pencil icon) =====
-   Rather than literally screenshotting the live page (fragile with gradients/rounded corners/
-   custom fonts, and would've meant pulling in a third-party rasterizer), this redraws a clean
-   summary card straight from the same app state the current page's HTML is built from — same
-   title, same overall/node progress bar, same per-item rows — onto a <canvas>, then downloads it
-   as a PNG. Works identically on every page (root goal list, a subgoal/goal's own list, etc.)
-   because it reads from resolve(path) exactly like render() does. */
-// Resolves a CSS custom property to its actual color value for the *currently active* theme, so
-// the shared image always matches whatever theme (dark/light/pink) the user has selected.
-function cssVar(name){
-  try{
-    return getComputedStyle(document.documentElement).getPropertyValue('--' + name).trim() || '#000000';
-  }catch(e){ return '#000000'; }
-}
-function barColorHex(pct){
-  if(pct>=70) return cssVar('green');
-  if(pct>=40) return cssVar('yellow');
-  return cssVar('red');
-}
-function canvasRoundRect(ctx, x, y, w, h, r){
-  const rr = Math.min(r, w/2, h/2);
-  ctx.beginPath();
-  ctx.moveTo(x+rr, y);
-  ctx.arcTo(x+w, y, x+w, y+h, rr);
-  ctx.arcTo(x+w, y+h, x, y+h, rr);
-  ctx.arcTo(x, y+h, x, y, rr);
-  ctx.arcTo(x, y, x+w, y, rr);
-  ctx.closePath();
-}
-// Trims a string with an ellipsis until it fits maxWidth for the context's current font —
-// mirrors the same "measure for real, don't guess" approach used for the balance-wheel labels.
-function canvasFitText(ctx, str, maxWidth){
-  if(ctx.measureText(str).width <= maxWidth) return str;
-  let s = str;
-  while(s.length > 1 && ctx.measureText(s + '…').width > maxWidth){ s = s.slice(0, -1); }
-  return s + '…';
-}
-// Pure data step (no canvas/DOM) — what the current page's snapshot should contain. Kept separate
-// from the drawing code so the "which page am I on, what goes in the image" logic can be tested
-// on its own.
-function shareSnapshotData(){
-  const node = resolve(path);
-  if(path.length === 0){
-    return {
-      title: t('appTitle').replace(/^\S+\s*/, ''),
-      headerLabel: t('overallProgress'),
-      pct: computePercent(state),
-      items: (state.children || []).map(c => ({ name: c.name, pct: computePercent(c) }))
-    };
-  }
-  // A leaf's own `children` is always empty, so a checklist page needs its rows built from the
-  // checklist items themselves (done -> 100%, not done -> 0%) rather than from child goals.
-  const items = node.checklist
-    ? node.checklist.map(it => ({ name: it.text, pct: it.done ? 100 : 0 }))
-    : (node.children || []).map(c => ({ name: c.name, pct: computePercent(c) }));
-  return {
-    title: t('appTitle').replace(/^\S+\s*/, ''),
-    headerLabel: node.name,
-    pct: computePercent(node),
-    items
-  };
-}
-function buildShareCanvas(){
-  const data = shareSnapshotData();
-  const W = 720, PAD = 28, ROW_H = 52;
-  const headerH = 118;
-  const footerH = 46;
-  const rowsH = Math.max(data.items.length, 1) * ROW_H;
-  const H = headerH + rowsH + footerH;
-  const scale = 2;
-  const canvas = document.createElement('canvas');
-  canvas.width = W * scale;
-  canvas.height = H * scale;
-  const ctx = canvas.getContext('2d');
-  ctx.scale(scale, scale);
-
-  const bg = cssVar('bg'), card = cssVar('card'), text = cssVar('text'), muted = cssVar('muted'),
-        border = cssVar('border'), track = cssVar('track') || bg;
-
-  ctx.fillStyle = bg;
-  ctx.fillRect(0, 0, W, H);
-
-  let y = PAD;
-  ctx.textBaseline = 'top';
-  ctx.fillStyle = muted;
-  ctx.font = '600 13px -apple-system, "Segoe UI", Roboto, sans-serif';
-  ctx.fillText('🎯 ' + data.title, PAD, y);
-  y += 26;
-
-  ctx.font = '700 21px -apple-system, "Segoe UI", Roboto, sans-serif';
-  ctx.fillStyle = text;
-  const pctText = data.pct + '%';
-  const pctColor = barColorHex(data.pct);
-  ctx.fillStyle = pctColor;
-  const pctW = ctx.measureText(pctText).width;
-  ctx.fillStyle = text;
-  const labelMaxW = W - PAD*2 - pctW - 12;
-  ctx.fillText(canvasFitText(ctx, data.headerLabel, labelMaxW), PAD, y);
-  ctx.fillStyle = pctColor;
-  ctx.fillText(pctText, W - PAD - pctW, y);
-  y += 32;
-
-  canvasRoundRect(ctx, PAD, y, W - PAD*2, 10, 5);
-  ctx.fillStyle = track;
-  ctx.fill();
-  canvasRoundRect(ctx, PAD, y, (W - PAD*2) * Math.max(data.pct,0) / 100, 10, 5);
-  ctx.fillStyle = pctColor;
-  ctx.fill();
-  y += 30;
-
-  if(data.items.length === 0){
-    ctx.font = '400 13px -apple-system, "Segoe UI", Roboto, sans-serif';
-    ctx.fillStyle = muted;
-    ctx.fillText(t('emptyState'), PAD, y + 16);
-    y += ROW_H;
-  } else {
-    data.items.forEach(item => {
-      const rowY = y;
-      canvasRoundRect(ctx, PAD, rowY, W - PAD*2, ROW_H - 10, 10);
-      ctx.fillStyle = card;
-      ctx.fill();
-      ctx.strokeStyle = border;
-      ctx.lineWidth = 1;
-      ctx.stroke();
-
-      const innerPad = 14;
-      ctx.font = '600 14px -apple-system, "Segoe UI", Roboto, sans-serif';
-      const itemPctText = item.pct + '%';
-      const itemPctColor = barColorHex(item.pct);
-      const itemPctW = ctx.measureText(itemPctText).width;
-      const nameMaxW = W - PAD*2 - innerPad*2 - itemPctW - 10;
-      ctx.fillStyle = text;
-      ctx.fillText(canvasFitText(ctx, item.name, nameMaxW), PAD + innerPad, rowY + 8);
-      ctx.fillStyle = itemPctColor;
-      ctx.fillText(itemPctText, PAD + (W - PAD*2) - innerPad - itemPctW, rowY + 8);
-
-      const miniBarY = rowY + 30;
-      const miniBarW = W - PAD*2 - innerPad*2;
-      canvasRoundRect(ctx, PAD + innerPad, miniBarY, miniBarW, 6, 3);
-      ctx.fillStyle = track;
-      ctx.fill();
-      canvasRoundRect(ctx, PAD + innerPad, miniBarY, miniBarW * Math.max(item.pct,0) / 100, 6, 3);
-      ctx.fillStyle = itemPctColor;
-      ctx.fill();
-
-      y += ROW_H;
-    });
-  }
-
-  ctx.font = '400 11px -apple-system, "Segoe UI", Roboto, sans-serif';
-  ctx.fillStyle = muted;
-  const dateStr = new Date().toLocaleDateString();
-  ctx.fillText(dateStr, PAD, H - footerH + 16);
-
-  return canvas;
-}
-function doShareImage(){
-  const canvas = buildShareCanvas();
-  canvas.toBlob(blob=>{
-    if(!blob) return;
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `goal-tracker-progress-${new Date().toISOString().slice(0,10)}.png`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }, 'image/png');
-}
 function esc(s){
   return (s||"").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 }
@@ -1432,6 +1263,7 @@ function render(){
         <input type="file" id="importFileInput" accept="application/json,.json" style="display:none">` : ''}
         <button id="btnAboutMenuItem" class="menu-item">${t('aboutTitle')}</button>
         ${(isMobileDevice() && !isStandalonePwa()) ? `<button id="btnInstallAppMenuItem" class="menu-item">${t('installAppTitle')}</button>` : ''}
+        <button id="btnReset" class="menu-item">${t('resetAll')}</button>
         <div class="menu-lang-row">
           ${Object.keys(LANG_FLAGS).map(code => `<button class="lang-option ${lang===code?'active':''}" data-lang="${code}" title="${code==='ru'?'Русский':'English'}">${LANG_FLAGS[code]}</button>`).join('')}
         </div>
@@ -1564,7 +1396,7 @@ function render(){
   html += renderBreadcrumb();
 
   const addSubActive = addSubMode && path.length === 2;
-  const mode = editMode ? 'edit' : deleteMode ? 'delete' : addSubActive ? 'addsub' : checklistMode ? 'checklist' : null;
+  const mode = editMode ? 'edit' : deleteMode ? 'delete' : addSubActive ? 'addsub' : null;
   const protectedCount = protectedCountFor(path.length);
   const hintHTML = editMode
     ? ` <span class="edit-hint">${t('editHint')}</span>`
@@ -1572,9 +1404,7 @@ function render(){
       ? ` <span class="edit-hint delete-hint">${t('deleteHint')(protectedCount)}</span>`
       : addSubActive
         ? ` <span class="edit-hint">${t('addSubHint')}</span>`
-        : checklistMode
-          ? ` <span class="edit-hint">${t('checklistHint')}</span>`
-          : '';
+        : '';
 
   if(path.length===0){
     html += `<div class="overall">
@@ -1588,8 +1418,6 @@ function render(){
         <button id="btnAddGoal" class="icon-btn" title="${t('tipAdd')}" aria-label="${t('tipAdd')}">+</button>
         <button id="btnDelete" class="${deleteMode?'active':'icon-btn'}" title="${deleteMode?t('done'):t('tipDelete')}" aria-label="${deleteMode?t('done'):t('tipDelete')}">${deleteMode ? t('done') : '−'}</button>
         <button id="btnEdit" class="${editMode?'active':'icon-btn'}" title="${editMode?t('done'):t('tipEdit')}" aria-label="${editMode?t('done'):t('tipEdit')}">${editMode ? t('done') : '✏️'}</button>
-        ${state.children.some(isLeaf) ? `<button id="btnChecklist" class="${checklistMode?'active':'icon-btn'}" title="${checklistMode?t('done'):t('tipChecklist')}" aria-label="${checklistMode?t('done'):t('tipChecklist')}">${checklistMode ? t('done') : '📋'}</button>` : ''}
-        <button id="btnShare" class="icon-btn" title="${t('tipShare')}" aria-label="${t('tipShare')}">📤</button>
         <span id="deleteMsg" class="add-goal-msg"></span>
       </div>
     </div>`;
@@ -1621,8 +1449,6 @@ function render(){
         <button id="btnDelete" class="${deleteMode?'active':'icon-btn'}" title="${deleteMode?t('done'):t('tipDelete')}" aria-label="${deleteMode?t('done'):t('tipDelete')}">${deleteMode ? t('done') : '−'}</button>
         ${path.length === 2 ? `<button id="btnAddSubgoal" class="${addSubMode?'active':'icon-btn'}" title="${addSubMode?t('done'):t('tipExpand')}" aria-label="${addSubMode?t('done'):t('tipExpand')}">${addSubMode ? t('done') : '🔀'}</button>` : ''}
         <button id="btnEdit" class="${editMode?'active':'icon-btn'}" title="${editMode?t('done'):t('tipEdit')}" aria-label="${editMode?t('done'):t('tipEdit')}">${editMode ? t('done') : '✏️'}</button>
-        ${node.children.some(isLeaf) ? `<button id="btnChecklist" class="${checklistMode?'active':'icon-btn'}" title="${checklistMode?t('done'):t('tipChecklist')}" aria-label="${checklistMode?t('done'):t('tipChecklist')}">${checklistMode ? t('done') : '📋'}</button>` : ''}
-        <button id="btnShare" class="icon-btn" title="${t('tipShare')}" aria-label="${t('tipShare')}">📤</button>
         <span id="deleteMsg" class="add-goal-msg"></span>
       </div>`;
       if(node.children.length){
@@ -1674,11 +1500,6 @@ function cardModeAttrs(node, idx, mode, protectedCount){
       ? { cls:'selectable', attrs:`data-addsub-idx="${idx}"` }
       : { cls:'locked', attrs:'' };
   }
-  if(mode === 'checklist'){
-    return isLeaf(node)
-      ? { cls:'selectable', attrs:`data-checklist-idx="${idx}"` }
-      : { cls:'locked', attrs:'' };
-  }
   return { cls:'', attrs:`data-nav="${idx}" data-drag-idx="${idx}"` };
 }
 function cardModeTitle(node, idx, mode, defaultArrow, protectedCount){
@@ -1691,9 +1512,6 @@ function cardModeTitle(node, idx, mode, defaultArrow, protectedCount){
   if(mode === 'addsub'){
     const eligible = !node.children || node.children.length === 0;
     return `<span>${esc(node.name)}</span><span class="arrow">${eligible ? '➕' : '🔒'}</span>`;
-  }
-  if(mode === 'checklist'){
-    return `<span>${esc(node.name)}</span><span class="arrow">${isLeaf(node) ? '📋' : '🔒'}</span>`;
   }
   return `<span>${esc(node.name)}</span><span class="arrow">${defaultArrow}</span>`;
 }
@@ -1717,8 +1535,9 @@ function cardOrLeafHTML(node, idx, mode, protectedCount){
     // Fills according to checklist completion when a checklist is present (see computePercent),
     // otherwise the plain done/not-done toggle.
     const pct = computePercent(node);
-    // Once a checklist has been added to this item, its card shows a checklist icon instead of
-    // the plain done/not-done checkbox mark — clicking it opens the checklist (see [data-nav]).
+    // Clicking the card always opens the leaf's own page (see [data-nav]), where done can be
+    // toggled and a due date / checklist can be set. Once a checklist exists, the card shows a
+    // checklist icon instead of the plain done/not-done checkbox mark.
     const defaultArrow = node.checklist ? '📋' : (node.done ? '✅' : '❌');
     const titleHTML = cardModeTitle(node, idx, mode, defaultArrow, protectedCount);
     return `<div class="card ${cls}" ${attrs}>
@@ -1867,20 +1686,23 @@ function leafDetailHTML(node){
     <div class="chk ${node.done?'done':''}" id="leafToggle">${node.done?'✓':''}</div>
     <div class="leaf-body">
       <div class="leaf-title">${esc(node.name)}</div>
+      <div class="leaf-meta">
+        <span>${t('due')}</span>
+        <input type="date" id="leafDateInput" value="${esc(node.date||'')}">
+        ${node.date ? `<button id="btnClearDate" title="${t('tipClearDate')}" aria-label="${t('tipClearDate')}">✕</button>` : ''}
+      </div>
     </div>
-  </div>`;
+  </div>
+  ${!node.checklist ? `<button id="btnAddChecklist" class="add-checklist-btn">📋 ${t('tipChecklist')}</button>` : ''}`;
 }
 
-// Lightweight per-item checklist (attached to a leaf/checkbox goal via the 📋 mode button) —
-// separate from the main goal tree, just a free-form list of lines you can tick off.
+// Lightweight per-item checklist (attached to a leaf/checkbox goal via the "Add checklist" button
+// on its detail page) — separate from the main goal tree, just a free-form list of lines you can tick off.
 function checklistHTML(list){
   let html = `<div class="checklist-section">
     <div class="section-title-row" style="margin-top:20px;">
       <div class="section-title">${t('checklistTitle')}</div>
-      <div class="checklist-title-actions">
-        <button id="btnShare" class="icon-btn" title="${t('tipShare')}" aria-label="${t('tipShare')}">📤</button>
-        <button id="btnDeleteChecklist" class="icon-btn" title="${t('tipDeleteChecklist')}" aria-label="${t('tipDeleteChecklist')}">🗑️</button>
-      </div>
+      <button id="btnDeleteChecklist" class="icon-btn" title="${t('tipDeleteChecklist')}" aria-label="${t('tipDeleteChecklist')}">🗑️</button>
     </div>`;
   list.forEach((item, i) => {
     const isEditing = checklistEditIdx === i;
@@ -2071,17 +1893,11 @@ function attachHandlers(){
         return;
       }
       const idx = parseInt(el.dataset.nav,10);
-      const node = resolve(path).children[idx];
-      if(isLeaf(node) && !node.checklist){
-        node.done = !node.done;
-        saveState();
-        render();
-      } else {
-        // Containers navigate in as usual; a leaf that already has a checklist also opens its
-        // page (via the 📋 icon) instead of toggling done inline, so the checklist is reachable.
-        path = [...path, idx];
-        render();
-      }
+      // Every card — leaf or container — opens its own page on click. For leaves this is what
+      // exposes the done-toggle, due-date input and "add checklist" button (leafDetailHTML);
+      // toggling done no longer happens inline on the card itself.
+      path = [...path, idx];
+      render();
     });
   });
   attachDragHandlers('.grid-goals > [data-drag-idx]', () => resolve(path).children);
@@ -2214,35 +2030,19 @@ function attachHandlers(){
       render();
     });
   });
-  document.querySelectorAll('[data-checklist-idx]').forEach(el=>{
-    el.addEventListener('click', ()=>{
-      const idx = parseInt(el.dataset.checklistIdx,10);
-      const parent = resolve(path);
-      const node = parent.children[idx];
-      if(!node.checklist) node.checklist = [];
-      checklistMode = false;
-      path = [...path, idx];
-      saveState();
-      render();
-    });
-  });
   const btnEdit = document.getElementById('btnEdit');
   if(btnEdit){
     btnEdit.addEventListener('click', ()=>{
       editMode = !editMode;
-      if(editMode){ deleteMode = false; addSubMode = false; checklistMode = false; }
+      if(editMode){ deleteMode = false; addSubMode = false; }
       render();
     });
-  }
-  const btnShare = document.getElementById('btnShare');
-  if(btnShare){
-    btnShare.addEventListener('click', doShareImage);
   }
   const btnDelete = document.getElementById('btnDelete');
   if(btnDelete){
     btnDelete.addEventListener('click', ()=>{
       deleteMode = !deleteMode;
-      if(deleteMode){ editMode = false; addSubMode = false; checklistMode = false; }
+      if(deleteMode){ editMode = false; addSubMode = false; }
       render();
     });
   }
@@ -2250,15 +2050,7 @@ function attachHandlers(){
   if(btnAddSubgoal){
     btnAddSubgoal.addEventListener('click', ()=>{
       addSubMode = !addSubMode;
-      if(addSubMode){ editMode = false; deleteMode = false; checklistMode = false; }
-      render();
-    });
-  }
-  const btnChecklist = document.getElementById('btnChecklist');
-  if(btnChecklist){
-    btnChecklist.addEventListener('click', ()=>{
-      checklistMode = !checklistMode;
-      if(checklistMode){ editMode = false; deleteMode = false; addSubMode = false; }
+      if(addSubMode){ editMode = false; deleteMode = false; }
       render();
     });
   }
@@ -2267,6 +2059,33 @@ function attachHandlers(){
     leafToggle.addEventListener('click', ()=>{
       const node = resolve(path);
       node.done = !node.done;
+      saveState();
+      render();
+    });
+  }
+  const leafDateInput = document.getElementById('leafDateInput');
+  if(leafDateInput){
+    leafDateInput.addEventListener('change', ()=>{
+      const node = resolve(path);
+      node.date = leafDateInput.value || '';
+      saveState();
+      render();
+    });
+  }
+  const btnClearDate = document.getElementById('btnClearDate');
+  if(btnClearDate){
+    btnClearDate.addEventListener('click', ()=>{
+      const node = resolve(path);
+      node.date = '';
+      saveState();
+      render();
+    });
+  }
+  const btnAddChecklist = document.getElementById('btnAddChecklist');
+  if(btnAddChecklist){
+    btnAddChecklist.addEventListener('click', ()=>{
+      const node = resolve(path);
+      node.checklist = [];
       saveState();
       render();
     });
@@ -2699,6 +2518,21 @@ function attachHandlers(){
       e.stopPropagation();
       topMenuOpen = false;
       installPanelOpen = true;
+      render();
+    });
+  }
+  const btnReset = document.getElementById('btnReset');
+  if(btnReset){
+    btnReset.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      topMenuOpen = false;
+      if(confirm(t('resetConfirm'))){
+        // A genuinely blank slate (same shape a brand-new cloud account gets), not the sample
+        // data again — otherwise there'd be no way to actually clear the demo content locally.
+        state = emptyTemplate();
+        path = [];
+        saveState();
+      }
       render();
     });
   }
