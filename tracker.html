@@ -228,6 +228,33 @@
   .overall .row{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:10px;}
   .overall h2{margin:0; font-size:16px; font-weight:600; color:var(--muted);}
   .overall .pct{font-size:28px; font-weight:700;}
+  .priority-block{
+    background:var(--card); border:1px solid var(--border); border-radius:16px; padding:16px 18px; margin-bottom:22px;
+  }
+  .priority-header{display:flex; align-items:center; justify-content:space-between; cursor:pointer; user-select:none;}
+  .priority-header .section-title{margin:0;}
+  .priority-arrow{color:var(--muted); font-size:13px;}
+  .priority-list{margin-top:12px; display:flex; flex-direction:column; gap:8px;}
+  .priority-row{display:flex; align-items:center; gap:12px;}
+  .priority-row .chk{margin-top:0;}
+  .priority-name{flex:1; font-size:14px; line-height:1.4; cursor:pointer; min-width:0; overflow-wrap:break-word; word-break:break-word;}
+  .priority-name:hover{color:var(--accent);}
+  .priority-name.done{color:var(--muted); text-decoration:line-through;}
+  .priority-date{font-size:12px; color:var(--muted); white-space:nowrap; flex-shrink:0;}
+  .priority-remove{
+    background:none; border:none; color:var(--muted); font-size:14px; line-height:1; cursor:pointer;
+    padding:2px; flex-shrink:0;
+  }
+  .priority-remove:hover{color:var(--red);}
+  .leaf-title-row{display:flex; align-items:flex-start; justify-content:space-between; gap:8px;}
+  .leaf-title-row .leaf-title{min-width:0; overflow-wrap:break-word; word-break:break-word;}
+  .star-btn{
+    background:none; border:none; color:var(--muted); font-size:18px; line-height:1; cursor:pointer;
+    padding:0; flex-shrink:0;
+  }
+  .star-btn:hover{color:var(--yellow);}
+  .star-btn.active{color:var(--yellow);}
+  .checklist-star{font-size:15px;}
   .bar{height:10px; border-radius:6px; background:var(--track); overflow:hidden; border:1px solid var(--border);}
   .bar > div{height:100%; border-radius:6px; transition:width .3s ease;}
   .node-header{margin-bottom:18px;}
@@ -237,6 +264,11 @@
   .grid-goals{grid-template-columns:repeat(2,1fr);}
   .grid-hero-first{grid-template-columns:repeat(2,1fr);}
   .grid-hero-first > *:first-child{grid-column:1 / -1;}
+  /* Below this width two fixed columns get too narrow (long goal names force overflow) —
+     drop to a single column per row instead, same as installed PWA / narrow phone screens. */
+  @media (max-width:480px){
+    .grid-goals, .grid-hero-first{grid-template-columns:1fr;}
+  }
   .card{
     background:var(--card); border:1px solid var(--border); border-radius:14px; padding:16px;
     cursor:pointer; transition:border-color .15s, transform .1s;
@@ -251,7 +283,11 @@
   .card.selectable{cursor:pointer; border-color:var(--accent); box-shadow:0 0 0 1px var(--accent); background:rgba(91,140,255,0.14);}
   .card.selectable:hover{border-color:var(--accent); background:rgba(91,140,255,0.24);}
   .card .title{font-size:15px; font-weight:600; margin-bottom:8px; display:flex; justify-content:space-between; gap:8px;}
-  .card .title .arrow{color:var(--muted); font-weight:400;}
+  /* Flex items default to min-width:auto, which refuses to shrink below the text's full
+     (unwrapped) width — with a long goal name that pushes the card wider than its grid column
+     and the whole layout overflows the screen. min-width:0 lets it shrink and wrap instead. */
+  .card .title > span:first-child{min-width:0; overflow-wrap:break-word; word-break:break-word;}
+  .card .title .arrow{color:var(--muted); font-weight:400; flex-shrink:0;}
   .card .sub{font-size:12px; color:var(--muted); margin-bottom:10px; display:flex; justify-content:space-between;}
   .card .bar{margin-top:2px;}
   .card[data-nav]{touch-action:pan-y;}
@@ -266,7 +302,7 @@
   .edit-pencil:hover{border-color:var(--accent);}
   .goal-input{
     background:transparent; border:none; border-bottom:1px dashed var(--red); color:var(--text);
-    font-size:15px; font-weight:600; font-family:inherit; padding:0 0 2px; width:100%; outline:none;
+    font-size:15px; font-weight:600; font-family:inherit; padding:0 0 2px; width:100%; min-width:0; outline:none;
   }
   .goal-input:focus{border-bottom-style:solid; border-bottom-color:var(--red);}
   .leaf-row{
@@ -282,9 +318,14 @@
   .leaf-body{flex:1;}
   .leaf-title{font-size:14px; line-height:1.4;}
   .leaf-meta{display:flex; gap:14px; margin-top:6px; font-size:12px; color:var(--muted); align-items:center; flex-wrap:wrap;}
-  .leaf-meta input[type=date]{
-    background:var(--card2); border:1px solid var(--border); color:var(--text); border-radius:6px; padding:2px 6px; font-size:12px;
+  .date-fields{display:flex; align-items:center; gap:3px;}
+  .date-field{
+    background:var(--card2); border:1px solid var(--border); color:var(--text); border-radius:6px;
+    padding:2px 4px; font-size:12px; font-family:inherit; text-align:center;
   }
+  .date-field-day, .date-field-month{width:34px;}
+  .date-field-year{width:52px;}
+  .date-sep{color:var(--muted);}
   .leaf-meta button, .nav-arrow{
     background:none; border:1px solid var(--border); color:var(--muted); border-radius:6px; padding:2px 8px; font-size:12px; cursor:pointer;
   }
@@ -512,6 +553,10 @@ const STRINGS = {
     deleteHint: n => n === 0 ? '— нажмите на красную карточку, чтобы удалить (можно удалить все)' : n === 1 ? '— нажмите на красную карточку, чтобы удалить (первая всегда защищена)' : `— нажмите на красную карточку, чтобы удалить (первые ${n} всегда защищены)`,
     maxN: n => `Максимум ${n} целей`,
     minN: n => `Минимум ${n}`,
+    priorityTitle: 'Приоритетные цели',
+    priorityEmpty: 'Отметьте цель звёздочкой ☆ на её странице, чтобы она появилась здесь.',
+    tipAddPriority: 'Добавить в приоритет',
+    tipRemovePriority: 'Убрать из приоритета',
     balanceWheel: 'Колесо баланса',
     completedOf: 'выполнено',
     addLabel: 'Добавить',
@@ -522,6 +567,10 @@ const STRINGS = {
     emptyState: 'Здесь пока пусто.',
     splitInto6: 'Разбить на 6 подшагов',
     due: 'Срок:',
+    dateDayPlaceholder: 'ДД',
+    dateMonthPlaceholder: 'ММ',
+    dateYearPlaceholder: 'ГГГГ',
+    dateInPastError: 'Дата не может быть раньше сегодняшней',
     tipClearDate: 'Убрать срок',
     rename: '✏️ Переименовать',
     renamePrompt: 'Новое название шага:',
@@ -621,6 +670,10 @@ const STRINGS = {
     deleteHint: n => n === 0 ? '— click a red card to delete it (you can delete all of them)' : n === 1 ? '— click a red card to delete it (the first one is always protected)' : `— click a red card to delete it (the first ${n} are always protected)`,
     maxN: n => `Maximum ${n} goals`,
     minN: n => `Minimum ${n}`,
+    priorityTitle: 'Priority goals',
+    priorityEmpty: 'Star ☆ a goal on its own page to add it here.',
+    tipAddPriority: 'Add to priority',
+    tipRemovePriority: 'Remove from priority',
     balanceWheel: 'Balance Wheel',
     completedOf: 'done',
     addLabel: 'Add',
@@ -631,6 +684,10 @@ const STRINGS = {
     emptyState: 'Nothing here yet.',
     splitInto6: 'Split into 6 steps',
     due: 'Due:',
+    dateDayPlaceholder: 'DD',
+    dateMonthPlaceholder: 'MM',
+    dateYearPlaceholder: 'YYYY',
+    dateInPastError: "The date can't be earlier than today",
     tipClearDate: 'Clear due date',
     rename: '✏️ Rename',
     renamePrompt: 'New step name:',
@@ -764,6 +821,10 @@ let checklistDeletePanelOpen = false;
 // don't cut the message short or leave two competing hide-timers running).
 let addGoalMsgTimer = null;
 let addChildMsgTimer = null;
+let priorityMsgTimer = null;
+// Snapshot of collectPriorityItems() taken during the most recent render(), so attachHandlers()
+// can look entries up by index without re-walking the tree.
+let lastPriorityItems = [];
 function isMobileDevice(){
   return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 }
@@ -1149,6 +1210,42 @@ function resolve(p){
 function isLeaf(node){
   return (!node.children || node.children.length===0) && ('done' in node);
 }
+// Today's date as an ISO "YYYY-MM-DD" string (local time, not UTC) — comparable directly with the
+// stored due-date strings since both use the same zero-padded format and ISO dates sort/compare
+// lexicographically the same as chronologically.
+function isoToday(){
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth()+1).padStart(2,'0');
+  const d = String(now.getDate()).padStart(2,'0');
+  return `${y}-${m}-${d}`;
+}
+const PRIORITY_MAX = 5;
+// Walks the whole goal tree looking for anything marked with a `priority:true` flag — either a
+// leaf/checkbox goal itself, or an individual line inside a leaf's checklist. The flag lives
+// directly on the node/item object (so it survives save/load for free, same as `done`), which
+// means the entries below hold real references into `state` — mutating `.node.done` or
+// `.item.done` on a returned entry mutates the actual tree, no separate sync step needed.
+function collectPriorityItems(node = state, path = []){
+  let results = [];
+  if(isLeaf(node)){
+    if(node.priority){
+      results.push({ kind:'leaf', node, path });
+    }
+    if(node.checklist){
+      node.checklist.forEach((item, i) => {
+        if(item.priority){
+          results.push({ kind:'checklist', node, item, itemIndex:i, path });
+        }
+      });
+    }
+  } else if(node.children){
+    node.children.forEach((child, i) => {
+      results = results.concat(collectPriorityItems(child, [...path, i]));
+    });
+  }
+  return results;
+}
 function computePercent(node){
   if(isLeaf(node)){
     // A leaf with a checklist fills up according to how many of its checklist lines are ticked
@@ -1410,6 +1507,31 @@ function render(){
     html += `<div class="overall">
       <div class="row"><h2>${t('overallProgress')}</h2><div class="pct" style="color:${barColor(overallPct)}">${overallPct}%</div></div>
       <div class="bar"><div style="width:${overallPct}%; background:${barColor(overallPct)}"></div></div>
+    </div>`;
+    lastPriorityItems = collectPriorityItems();
+    const priorityOpen = !!state.priorityOpen;
+    html += `<div class="priority-block">
+      <div class="priority-header" id="priorityToggle">
+        <span class="section-title">${t('priorityTitle')}</span>
+        <span class="priority-arrow">${priorityOpen ? '▾' : '▸'}</span>
+      </div>
+      ${priorityOpen ? `<div class="priority-list">
+        ${lastPriorityItems.length
+          ? lastPriorityItems.map((entry, i) => {
+              const done = entry.kind === 'leaf' ? entry.node.done : entry.item.done;
+              const name = entry.kind === 'leaf' ? entry.node.name : entry.item.text;
+              // Checklist items don't carry their own due date in this data model — only a plain
+              // leaf/goal does — so the date badge only ever shows for entry.kind === 'leaf'.
+              const date = entry.kind === 'leaf' ? entry.node.date : '';
+              return `<div class="priority-row">
+                <div class="chk ${done?'done':''}" data-priority-toggle="${i}">${done?'✓':''}</div>
+                <span class="priority-name ${done?'done':''}" data-priority-nav="${i}">${esc(name)}</span>
+                ${date ? `<span class="priority-date">${esc(date)}</span>` : ''}
+                <button class="priority-remove" data-priority-remove="${i}" title="${t('tipRemovePriority')}" aria-label="${t('tipRemovePriority')}">✕</button>
+              </div>`;
+            }).join('')
+          : `<div class="empty-state">${t('priorityEmpty')}</div>`}
+      </div>` : ''}
     </div>`;
     html += `<div class="section-title-row">
       <div class="section-title">${t('mainGoals')}${hintHTML}</div>
@@ -1682,15 +1804,31 @@ function adjustWheelLabels(){
 }
 
 function leafDetailHTML(node){
+  // Split out of the ISO "YYYY-MM-DD" string we store. Deliberately rendered as three plain
+  // number inputs instead of a single <input type="date"> — the native date input's segmented
+  // year editor pads an incomplete/partially-retyped year with leading zeros on blur in several
+  // mobile browsers (typing "2022" over an existing year could commit as "0002"). Plain number
+  // fields don't have that segment-auto-complete behavior, so this sidesteps the bug entirely.
+  const [y, m, d] = (node.date || '').split('-');
   return `<div class="leaf-row ${node.done?'done':''}">
     <div class="chk ${node.done?'done':''}" id="leafToggle">${node.done?'✓':''}</div>
     <div class="leaf-body">
-      <div class="leaf-title">${esc(node.name)}</div>
+      <div class="leaf-title-row">
+        <div class="leaf-title">${esc(node.name)}</div>
+        <button id="btnTogglePriority" class="star-btn ${node.priority?'active':''}" title="${node.priority ? t('tipRemovePriority') : t('tipAddPriority')}" aria-label="${node.priority ? t('tipRemovePriority') : t('tipAddPriority')}">${node.priority ? '⭐' : '☆'}</button>
+      </div>
       <div class="leaf-meta">
         <span>${t('due')}</span>
-        <input type="date" id="leafDateInput" value="${esc(node.date||'')}">
+        <div class="date-fields">
+          <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="2" id="leafDay" class="date-field date-field-day" placeholder="${t('dateDayPlaceholder')}" value="${esc(d||'')}">
+          <span class="date-sep">.</span>
+          <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="2" id="leafMonth" class="date-field date-field-month" placeholder="${t('dateMonthPlaceholder')}" value="${esc(m||'')}">
+          <span class="date-sep">.</span>
+          <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="4" id="leafYear" class="date-field date-field-year" placeholder="${t('dateYearPlaceholder')}" value="${esc(y||'')}">
+        </div>
         ${node.date ? `<button id="btnClearDate" title="${t('tipClearDate')}" aria-label="${t('tipClearDate')}">✕</button>` : ''}
       </div>
+      <span id="priorityMsg" class="add-goal-msg"></span>
     </div>
   </div>
   ${!node.checklist ? `<button id="btnAddChecklist" class="add-checklist-btn">📋 ${t('tipChecklist')}</button>` : ''}`;
@@ -1711,6 +1849,7 @@ function checklistHTML(list){
       ${isEditing
         ? `<input type="text" class="checklist-edit-input" data-checklist-edit-idx="${i}" data-original="${esc(item.text)}" value="${esc(item.text)}" maxlength="80">`
         : `<span class="checklist-text ${item.done?'done':''}">${esc(item.text)}</span>`}
+      <button class="star-btn checklist-star ${item.priority?'active':''}" data-checklist-priority="${i}" title="${item.priority ? t('tipRemovePriority') : t('tipAddPriority')}" aria-label="${item.priority ? t('tipRemovePriority') : t('tipAddPriority')}">${item.priority ? '⭐' : '☆'}</button>
       <button class="checklist-edit" data-checklist-edit="${i}" title="${t('tipEditItem')}" aria-label="${t('tipEditItem')}">✏️</button>
       <button class="checklist-remove" data-checklist-remove="${i}" title="${t('tipDelete')}" aria-label="${t('tipDelete')}">✕</button>
     </div>`;
@@ -1900,6 +2039,52 @@ function attachHandlers(){
       render();
     });
   });
+  const priorityToggle = document.getElementById('priorityToggle');
+  if(priorityToggle){
+    priorityToggle.addEventListener('click', ()=>{
+      // Stored on `state` itself (not a bare runtime variable) so it round-trips through
+      // localStorage for everyone, and — for a signed-in account — also syncs to Firestore via
+      // the normal saveState()/scheduleCloudPush() path, so it's remembered across devices too.
+      state.priorityOpen = !state.priorityOpen;
+      saveState();
+      render();
+    });
+  }
+  document.querySelectorAll('[data-priority-toggle]').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      const idx = parseInt(el.dataset.priorityToggle,10);
+      const entry = lastPriorityItems[idx];
+      if(!entry) return;
+      if(entry.kind === 'leaf'){ entry.node.done = !entry.node.done; }
+      else { entry.item.done = !entry.item.done; }
+      saveState();
+      render();
+    });
+  });
+  document.querySelectorAll('[data-priority-nav]').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      const idx = parseInt(el.dataset.priorityNav,10);
+      const entry = lastPriorityItems[idx];
+      if(!entry) return;
+      // Both kinds navigate to the leaf's own page — that's where its checklist (if any) lives.
+      path = entry.path;
+      render();
+    });
+  });
+  document.querySelectorAll('[data-priority-remove]').forEach(el=>{
+    el.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      const idx = parseInt(el.dataset.priorityRemove,10);
+      const entry = lastPriorityItems[idx];
+      if(!entry) return;
+      // Only unmarks it — this just takes the goal/checklist item out of the Priority list,
+      // it doesn't touch or delete the goal itself.
+      if(entry.kind === 'leaf'){ entry.node.priority = false; }
+      else { entry.item.priority = false; }
+      saveState();
+      render();
+    });
+  });
   attachDragHandlers('.grid-goals > [data-drag-idx]', () => resolve(path).children);
   attachDragHandlers('.checklist-section > [data-drag-idx]', () => resolve(path).checklist);
   document.querySelectorAll('.goal-input').forEach(el=>{
@@ -2063,14 +2248,69 @@ function attachHandlers(){
       render();
     });
   }
-  const leafDateInput = document.getElementById('leafDateInput');
-  if(leafDateInput){
-    leafDateInput.addEventListener('change', ()=>{
+  // Day/month/year are three plain text inputs (see leafDetailHTML for why, instead of one
+  // native <input type="date">), digit-only and capped at 2/2/4 characters. We only commit on
+  // 'change' (fires on blur, once the user leaves a field) rather than on every keystroke, so a
+  // render() never interrupts mid-typing. The date is only written back once all three fields
+  // hold a plausible value that isn't in the past; if they're all empty the date is cleared; any
+  // other partial/invalid combination is left alone (no render) so the user can keep editing
+  // without their in-progress fields being wiped out.
+  const leafDay = document.getElementById('leafDay');
+  const leafMonth = document.getElementById('leafMonth');
+  const leafYear = document.getElementById('leafYear');
+  if(leafDay && leafMonth && leafYear){
+    // Belt-and-braces for the maxlength/inputmode attributes above: strips anything non-digit and
+    // hard-truncates, since not every mobile keyboard actually honors inputmode="numeric".
+    // next: element to auto-advance focus into once `max` digits have been typed (day -> month
+    // -> year); null for the year field, which instead blurs itself to exit date editing
+    // entirely, which also fires 'change' and commits the date right away.
+    const digitsOnly = (el, max, next) => {
+      el.addEventListener('input', ()=>{
+        const cleaned = el.value.replace(/\D/g, '').slice(0, max);
+        if(cleaned !== el.value) el.value = cleaned;
+        if(cleaned.length === max){
+          if(next) next.focus();
+          else el.blur();
+        }
+      });
+    };
+    digitsOnly(leafDay, 2, leafMonth);
+    digitsOnly(leafMonth, 2, leafYear);
+    digitsOnly(leafYear, 4, null);
+    const commitLeafDate = ()=>{
+      const dRaw = leafDay.value.trim();
+      const mRaw = leafMonth.value.trim();
+      const yRaw = leafYear.value.trim();
+      if(!dRaw && !mRaw && !yRaw){
+        const node = resolve(path);
+        if(node.date){ node.date = ''; saveState(); render(); }
+        return;
+      }
+      const day = parseInt(dRaw,10);
+      const month = parseInt(mRaw,10);
+      const year = parseInt(yRaw,10);
+      const valid = Number.isInteger(day) && day>=1 && day<=31
+        && Number.isInteger(month) && month>=1 && month<=12
+        && Number.isInteger(year) && year>=1900 && year<=2100;
+      if(!valid) return;
+      const iso = `${String(year).padStart(4,'0')}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+      if(iso < isoToday()){
+        const msg = document.getElementById('priorityMsg');
+        if(msg){
+          msg.textContent = t('dateInPastError');
+          clearTimeout(priorityMsgTimer);
+          priorityMsgTimer = setTimeout(()=>{ if(msg) msg.textContent = ''; }, 3000);
+        }
+        return;
+      }
       const node = resolve(path);
-      node.date = leafDateInput.value || '';
-      saveState();
-      render();
-    });
+      if(node.date !== iso){
+        node.date = iso;
+        saveState();
+        render();
+      }
+    };
+    [leafDay, leafMonth, leafYear].forEach(el => el.addEventListener('change', commitLeafDate));
   }
   const btnClearDate = document.getElementById('btnClearDate');
   if(btnClearDate){
@@ -2090,11 +2330,49 @@ function attachHandlers(){
       render();
     });
   }
+  const btnTogglePriority = document.getElementById('btnTogglePriority');
+  if(btnTogglePriority){
+    btnTogglePriority.addEventListener('click', ()=>{
+      const node = resolve(path);
+      if(!node.priority && collectPriorityItems().length >= PRIORITY_MAX){
+        const msg = document.getElementById('priorityMsg');
+        if(msg){
+          msg.textContent = t('maxN')(PRIORITY_MAX);
+          clearTimeout(priorityMsgTimer);
+          priorityMsgTimer = setTimeout(()=>{ if(msg) msg.textContent = ''; }, 3000);
+        }
+        return;
+      }
+      node.priority = !node.priority;
+      saveState();
+      render();
+    });
+  }
   document.querySelectorAll('[data-checklist-toggle]').forEach(el=>{
     el.addEventListener('click', ()=>{
       const idx = parseInt(el.dataset.checklistToggle,10);
       const node = resolve(path);
       node.checklist[idx].done = !node.checklist[idx].done;
+      saveState();
+      render();
+    });
+  });
+  document.querySelectorAll('[data-checklist-priority]').forEach(el=>{
+    el.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      const idx = parseInt(el.dataset.checklistPriority,10);
+      const node = resolve(path);
+      const item = node.checklist[idx];
+      if(!item.priority && collectPriorityItems().length >= PRIORITY_MAX){
+        const msg = document.getElementById('priorityMsg');
+        if(msg){
+          msg.textContent = t('maxN')(PRIORITY_MAX);
+          clearTimeout(priorityMsgTimer);
+          priorityMsgTimer = setTimeout(()=>{ if(msg) msg.textContent = ''; }, 3000);
+        }
+        return;
+      }
+      item.priority = !item.priority;
       saveState();
       render();
     });
