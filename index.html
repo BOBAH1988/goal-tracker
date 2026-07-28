@@ -1889,8 +1889,10 @@ function checklistHTML(list){
   let html = `<div class="checklist-section">
     <div class="section-title-row" style="margin-top:20px;">
       <div class="section-title">${t('checklistTitle')}</div>
-      <button id="btnMoveChecklist" class="${moveMode?'active':'icon-btn'}" title="${moveMode?t('done'):t('tipMove')}" aria-label="${moveMode?t('done'):t('tipMove')}">${moveMode ? t('done') : '↕'}</button>
-      <button id="btnDeleteChecklist" class="icon-btn" title="${t('tipDeleteChecklist')}" aria-label="${t('tipDeleteChecklist')}">🗑️</button>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <button id="btnMoveChecklist" class="${moveMode?'active':'icon-btn'}" title="${moveMode?t('done'):t('tipMove')}" aria-label="${moveMode?t('done'):t('tipMove')}">${moveMode ? t('done') : '↕'}</button>
+        <button id="btnDeleteChecklist" class="icon-btn" title="${t('tipDeleteChecklist')}" aria-label="${t('tipDeleteChecklist')}">🗑️</button>
+      </div>
     </div>`;
   if(moveMode){
     // Reorder mode: a stripped-down row with just the text and a drag handle. The checkbox,
