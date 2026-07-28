@@ -93,9 +93,9 @@
      the menu is open — it now sits in the top-left corner instead of inside .actions. */
   .top-menu-dropdown{position:relative; display:inline-flex; z-index:11;}
   .lang-menu{
-    position:absolute; top:calc(100% + 4px); left:0; background:var(--card2); border:1px solid var(--accent);
-    border-radius:8px; padding:4px; display:flex; flex-direction:column; gap:2px; z-index:10; width:max-content;
-    max-width:calc(100vw - 32px); box-shadow:0 8px 24px rgba(0,0,0,.35);
+    position:absolute; top:calc(100% + 6px); left:0; background:var(--card2); border:1px solid var(--border);
+    border-radius:12px; padding:6px; display:flex; flex-direction:column; gap:2px; z-index:10; width:max-content;
+    max-width:calc(100vw - 32px); box-shadow:0 12px 28px rgba(0,0,0,.4);
   }
   /* Dims the rest of the page while the ☰ menu is open. Purely visual — the existing
      document-level click-away listener already closes the menu on any outside click, and since
@@ -103,23 +103,25 @@
      backdrop (not on a card behind it) and still bubbles up to close the menu as before. */
   .menu-backdrop{position:fixed; inset:0; background:rgba(6,9,16,0.6); z-index:9;}
   .topbar .lang-option{
-    background:none; border:1px solid transparent; border-radius:6px; padding:0; font-size:21.7px;
+    background:none; border:1px solid transparent; border-radius:8px; padding:4px; font-size:20px;
     line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center; flex:none;
   }
-  .topbar .lang-option:hover{border-color:var(--accent);}
+  .topbar .lang-option:hover{background:var(--card); border-color:var(--border);}
   .topbar .lang-option.active{border-color:var(--accent); box-shadow:0 0 0 1px var(--accent);}
   .topbar .menu-item{
-    background:none; border:none; color:var(--text); border-radius:6px; padding:8px 8px; font-size:13px;
+    background:none; border:none; color:var(--text); border-radius:8px; padding:8px; font-size:13px;
     cursor:pointer; text-align:left; white-space:normal; word-break:break-word;
   }
   .topbar .menu-item:hover{background:var(--card);}
-  .menu-lang-row{display:flex; gap:4px; justify-content:flex-start; padding:4px 10px 0; margin-top:2px; border-top:1px solid var(--border);}
-  .menu-theme-row{display:flex; gap:3px; justify-content:center; padding:4px 10px 0; margin-top:2px; border-top:1px solid var(--border);}
+  /* Same horizontal padding (8px) as .menu-item above, so the flag/theme rows line up flush with
+     the text items instead of sitting slightly indented relative to them. */
+  .menu-lang-row{display:flex; gap:4px; justify-content:flex-start; padding:8px 8px 0; margin-top:4px; border-top:1px solid var(--border);}
+  .menu-theme-row{display:flex; gap:4px; justify-content:flex-start; padding:8px 8px 4px; margin-top:4px; border-top:1px solid var(--border);}
   .topbar .theme-option{
-    background:none; border:1px solid transparent; border-radius:6px; padding:2px; font-size:18.7px;
+    background:none; border:1px solid transparent; border-radius:8px; padding:4px; font-size:18px;
     line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center;
   }
-  .topbar .theme-option:hover{border-color:var(--accent);}
+  .topbar .theme-option:hover{background:var(--card); border-color:var(--border);}
   .topbar .theme-option.active{border-color:var(--accent); box-shadow:0 0 0 1px var(--accent);}
   #btnEdit, #btnDelete, #btnAddSubgoal, #btnDeleteChecklist, #btnMove, #btnMoveChecklist{
     background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:8px;
