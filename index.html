@@ -265,6 +265,10 @@
   }
   .star-btn:hover{color:var(--yellow);}
   .star-btn.active{color:var(--yellow);}
+  /* Archive uses its own color (not the priority star's yellow) so the two toggles read as
+     distinct actions even though they share the same button styling. */
+  #btnArchive:hover{color:var(--accent);}
+  #btnArchive.active{color:var(--accent);}
   .checklist-star{font-size:15px;}
   .bar{height:10px; border-radius:6px; background:var(--track); overflow:hidden; border:1px solid var(--border);}
   .bar > div{height:100%; border-radius:6px; transition:width .3s ease;}
@@ -308,6 +312,11 @@
     -webkit-touch-callout:none;
   }
   .card.movable:hover{border-color:var(--accent);}
+  /* Archived goals stay visible (dimmed, not hidden) — computePercent/doneCount already leave them
+     out of the rating math (see activeChildren), this is just the visual signal to match. */
+  .card.archived{opacity:.45;}
+  .card.archived:hover{opacity:.6;}
+  .leaf-row.archived{opacity:.5;}
   .dragging{
     box-shadow:0 10px 22px rgba(0,0,0,.4); opacity:.85; cursor:grabbing;
   }
@@ -583,6 +592,8 @@ const STRINGS = {
     priorityTitle: 'Приоритетные цели',
     priorityEmpty: 'Отметьте цель звёздочкой ☆ на её странице, чтобы она появилась здесь.',
     tipAddPriority: 'Добавить в приоритет',
+    tipArchive: 'В архив (не учитывается в прогрессе)',
+    tipUnarchive: 'Вернуть из архива',
     tipRemovePriority: 'Убрать из приоритета',
     balanceWheel: 'Колесо баланса',
     completedOf: 'выполнено',
@@ -704,6 +715,8 @@ const STRINGS = {
     priorityTitle: 'Priority goals',
     priorityEmpty: 'Star ☆ a goal on its own page to add it here.',
     tipAddPriority: 'Add to priority',
+    tipArchive: 'Archive (excluded from progress)',
+    tipUnarchive: 'Unarchive',
     tipRemovePriority: 'Remove from priority',
     balanceWheel: 'Balance Wheel',
     completedOf: 'done',
@@ -1285,6 +1298,12 @@ function collectPriorityItems(node = state, path = []){
   }
   return results;
 }
+// Children not marked `archived` — archived goals/subgoals are parked (dimmed, kept in place)
+// but deliberately excluded from every rating computation below, in both directions: they don't
+// drag an unfinished item's percent down, and they don't get to count as "done" either.
+function activeChildren(node){
+  return (node.children || []).filter(c => !c.archived);
+}
 function computePercent(node){
   if(isLeaf(node)){
     // A leaf with a checklist fills up according to how many of its checklist lines are ticked
@@ -1296,14 +1315,16 @@ function computePercent(node){
     return node.done ? 100 : 0;
   }
   if(node.children && node.children.length){
-    const vals = node.children.map(computePercent);
+    const active = activeChildren(node);
+    if(!active.length) return 0;
+    const vals = active.map(computePercent);
     return Math.round(vals.reduce((a,b)=>a+b,0)/vals.length);
   }
   return 0;
 }
 function doneCount(node){
   if(!node.children) return 0;
-  return node.children.filter(c => computePercent(c) === 100).length;
+  return activeChildren(node).filter(c => computePercent(c) === 100).length;
 }
 // A real, lossless backup of the whole goal tree, meant to be restored later via "Импорт данных" —
 // as opposed to the 📤 share-progress image, which is a lossy visual summary for showing someone
@@ -1589,12 +1610,12 @@ function render(){
     state.children.forEach((cat, i) => { html += cardOrLeafHTML(cat, i, mode, protectedCount); });
     html += `</div>`;
     html += `<div class="section-title" style="margin-top:24px;">${t('balanceWheel')}</div>`;
-    html += `<div class="wheel-wrap" id="wheelWrap">${wheelHTML(state.children)}</div>`;
+    html += `<div class="wheel-wrap" id="wheelWrap">${wheelHTML(activeChildren(state))}</div>`;
   } else {
     const pct = computePercent(node);
     const dc = doneCount(node);
     const isContainer = !('done' in node);
-    const metaCountHTML = (isContainer && node.children && node.children.length) ? dc + ' / ' + node.children.length + ' ' + t('completedOf') : '';
+    const metaCountHTML = (isContainer && node.children && node.children.length) ? dc + ' / ' + activeChildren(node).length + ' ' + t('completedOf') : '';
     const metaHintHTML = isContainer ? hintHTML : '';
     html += `<div class="node-header">
       <h2>${esc(node.name)}</h2>
@@ -1621,7 +1642,7 @@ function render(){
         node.children.forEach((child, i) => { html += cardOrLeafHTML(child, i, mode, protectedCount); });
         html += `</div>`;
         html += `<div class="section-title" style="margin-top:24px;">${t('balanceWheel')}</div>`;
-        html += `<div class="wheel-wrap" id="wheelWrap">${wheelHTML(node.children)}</div>`;
+        html += `<div class="wheel-wrap" id="wheelWrap">${wheelHTML(activeChildren(node))}</div>`;
       } else {
         html += `<div class="empty-state">${t('emptyState')}</div>`;
       }
@@ -1701,16 +1722,18 @@ function cardHTML(node, idx, mode, protectedCount){
   const pct = computePercent(node);
   const dc = doneCount(node);
   const { cls, attrs } = cardModeAttrs(node, idx, mode, protectedCount);
+  const finalCls = node.archived ? `${cls} archived`.trim() : cls;
   const titleHTML = cardModeTitle(node, idx, mode, '›', protectedCount);
-  return `<div class="card ${cls}" ${attrs}>
+  return `<div class="card ${finalCls}" ${attrs}>
     <div class="title">${titleHTML}</div>
-    <div class="sub"><span>${dc} / ${node.children.length}</span><span>${pct}%</span></div>
+    <div class="sub"><span>${dc} / ${activeChildren(node).length}</span><span>${pct}%</span></div>
     <div class="bar"><div style="width:${pct}%; background:${barColor(pct)}"></div></div>
   </div>`;
 }
 
 function cardOrLeafHTML(node, idx, mode, protectedCount){
   const { cls, attrs } = cardModeAttrs(node, idx, mode, protectedCount);
+  const finalCls = node.archived ? `${cls} archived`.trim() : cls;
 
   if(isLeaf(node)){
     // Fills according to checklist completion when a checklist is present (see computePercent),
@@ -1719,9 +1742,9 @@ function cardOrLeafHTML(node, idx, mode, protectedCount){
     // Clicking the card always opens the leaf's own page (see [data-nav]), where done can be
     // toggled and a due date / checklist can be set. Once a checklist exists, the card shows a
     // checklist icon instead of the plain done/not-done checkbox mark.
-    const defaultArrow = node.checklist ? '<i class="ti ti-list-check" aria-hidden="true"></i>' : (node.done ? '✅' : '❌');
+    const defaultArrow = node.archived ? '<i class="ti ti-folder" aria-hidden="true"></i>' : (node.checklist ? '<i class="ti ti-list-check" aria-hidden="true"></i>' : (node.done ? '✅' : '❌'));
     const titleHTML = cardModeTitle(node, idx, mode, defaultArrow, protectedCount);
-    return `<div class="card ${cls}" ${attrs}>
+    return `<div class="card ${finalCls}" ${attrs}>
       <div class="title">${titleHTML}</div>
       ${node.date ? `<div class="sub"><span>${t('due')} ${esc(node.date)}</span></div>` : ''}
       <div class="bar"><div style="width:${pct}%; background:${barColor(pct)}"></div></div>
@@ -1730,9 +1753,9 @@ function cardOrLeafHTML(node, idx, mode, protectedCount){
   const pct = computePercent(node);
   const dc = doneCount(node);
   const titleHTML = cardModeTitle(node, idx, mode, '›', protectedCount);
-  return `<div class="card ${cls}" ${attrs}>
+  return `<div class="card ${finalCls}" ${attrs}>
     <div class="title">${titleHTML}</div>
-    <div class="sub"><span>${dc} / ${node.children.length}</span><span>${pct}%</span></div>
+    <div class="sub"><span>${dc} / ${activeChildren(node).length}</span><span>${pct}%</span></div>
     <div class="bar"><div style="width:${pct}%; background:${barColor(pct)}"></div></div>
   </div>`;
 }
@@ -1869,12 +1892,15 @@ function leafDetailHTML(node){
   // mobile browsers (typing "2022" over an existing year could commit as "0002"). Plain number
   // fields don't have that segment-auto-complete behavior, so this sidesteps the bug entirely.
   const [y, m, d] = (node.date || '').split('-');
-  return `<div class="leaf-row ${node.done?'done':''}">
+  return `<div class="leaf-row ${node.done?'done':''} ${node.archived?'archived':''}">
     <div class="chk ${node.done?'done':''}" id="leafToggle">${node.done?'✓':''}</div>
     <div class="leaf-body">
       <div class="leaf-title-row">
         <div class="leaf-title">${esc(node.name)}</div>
-        <button id="btnTogglePriority" class="star-btn ${node.priority?'active':''}" title="${node.priority ? t('tipRemovePriority') : t('tipAddPriority')}" aria-label="${node.priority ? t('tipRemovePriority') : t('tipAddPriority')}">${node.priority ? '⭐' : '☆'}</button>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <button id="btnArchive" class="star-btn ${node.archived?'active':''}" title="${node.archived ? t('tipUnarchive') : t('tipArchive')}" aria-label="${node.archived ? t('tipUnarchive') : t('tipArchive')}"><i class="ti ${node.archived ? 'ti-archive-off' : 'ti-archive'}" aria-hidden="true"></i></button>
+          <button id="btnTogglePriority" class="star-btn ${node.priority?'active':''}" title="${node.priority ? t('tipRemovePriority') : t('tipAddPriority')}" aria-label="${node.priority ? t('tipRemovePriority') : t('tipAddPriority')}">${node.priority ? '⭐' : '☆'}</button>
+        </div>
       </div>
       <div class="leaf-meta">
         <span>${t('due')}</span>
@@ -2182,7 +2208,7 @@ function attachHandlers(){
       const idx = parseInt(el.dataset.goalIdx,10);
       resolve(path).children[idx].name = el.value;
       const wheelWrap = document.getElementById('wheelWrap');
-      if(wheelWrap){ wheelWrap.innerHTML = wheelHTML(resolve(path).children); adjustWheelLabels(); }
+      if(wheelWrap){ wheelWrap.innerHTML = wheelHTML(activeChildren(resolve(path))); adjustWheelLabels(); }
     });
     el.addEventListener('blur', ()=>{
       const idx = parseInt(el.dataset.goalIdx,10);
@@ -2192,7 +2218,7 @@ function attachHandlers(){
       el.value = finalName;
       saveState();
       const wheelWrap = document.getElementById('wheelWrap');
-      if(wheelWrap){ wheelWrap.innerHTML = wheelHTML(resolve(path).children); adjustWheelLabels(); }
+      if(wheelWrap){ wheelWrap.innerHTML = wheelHTML(activeChildren(resolve(path))); adjustWheelLabels(); }
     });
     el.addEventListener('keydown', (e)=>{
       if(e.key === 'Enter'){
@@ -2430,6 +2456,25 @@ function attachHandlers(){
     btnAddChecklist.addEventListener('click', ()=>{
       const node = resolve(path);
       node.checklist = [];
+      saveState();
+      render();
+    });
+  }
+  const btnArchive = document.getElementById('btnArchive');
+  if(btnArchive){
+    btnArchive.addEventListener('click', ()=>{
+      const node = resolve(path);
+      node.archived = !node.archived;
+      if(node.archived && path.length){
+        // Newly archived — sink it to the end of its sibling list so active goals stay on top.
+        const parent = resolve(path.slice(0, -1));
+        const idx = path[path.length - 1];
+        if(parent && parent.children && parent.children[idx] === node){
+          parent.children.splice(idx, 1);
+          parent.children.push(node);
+          path = path.slice(0, -1).concat(parent.children.length - 1);
+        }
+      }
       saveState();
       render();
     });
