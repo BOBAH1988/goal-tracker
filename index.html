@@ -148,6 +148,10 @@
     display:flex; flex-direction:column; gap:10px; width:100%; max-width:340px; position:relative;
     box-shadow:0 20px 60px rgba(0,0,0,.45);
   }
+  /* For panels with long content (the usage instructions) — without this, a modal taller than the
+     viewport just overflows past the screen edge with no way to scroll to the rest of it. */
+  .auth-panel.scrollable{max-height:calc(100vh - 40px); overflow-y:auto;}
+  .auth-panel.wide{max-width:460px;}
   .auth-panel button.auth-close{
     position:absolute; top:8px; right:8px; background:none; border:none; color:var(--muted);
     font-size:18px; cursor:pointer; line-height:1; padding:6px; flex:none;
@@ -598,6 +602,8 @@ const LANG_KEY = "goal_tracker_lang";
 const STRINGS = {
   ru: {
     appTitle: '🎯 Трекер целей с колесом баланса',
+    updateApp: 'Обновить приложение',
+    appUpdatedMsg: 'У вас последняя версия.',
     resetAll: 'Сбросить всё',
     resetConfirm: 'Точно всё сбросить и начать с чистого листа?',
     home: 'Главная',
@@ -719,6 +725,8 @@ const STRINGS = {
     importSuccessMsg: 'Данные успешно восстановлены из резервной копии.',
     aboutTitle: 'О проекте',
     aboutText: 'Трекер целей — простой способ дойти до цели: шаг за шагом, без давления дедлайнов и лишней сложности.\n\nНикаких обязательных дат, формулировок по SMART и лишних рамок — только цель и путь к ней. Пишете цель → делите на подцели → если подцель всё ещё кажется сложной, делите и её. Так, маленькими шагами, вы видите, как закрываете задачу за задачей и приближаетесь к своей мечте.\n\n— Владимир Соколов',
+    instructionsTitle: 'Инструкция',
+    instructionsText: 'ЦЕЛИ И ПОДЦЕЛИ\nНажмите «+» рядом с «Мои цели», чтобы создать первую цель. Откройте её и нажмите «+» ещё раз, чтобы разбить на подцели — так можно дробить сколько угодно уровней вглубь, пока задача не станет по-настоящему простой. У цели без подцелей на её странице есть чек-бокс «выполнено».\n\nЧЕК-ЛИСТ\nВместо простого чек-бокса цель можно превратить в список пунктов — кнопка «Добавить чек-лист» на её странице. Процент выполнения тогда считается по отмеченным пунктам, а не по одному общему флажку.\n\nСРОК ВЫПОЛНЕНИЯ\nНа странице цели можно указать дату (день, месяц, год — поля переключаются сами по мере ввода). Дату раньше сегодняшнего дня система не примет.\n\nПРИОРИТЕТНЫЕ ЦЕЛИ\nЗвёздочка ☆ на странице цели или пункта чек-листа добавляет его в блок «Приоритетные цели» на главном экране — не больше 5 одновременно, чтобы список не превращался в ещё один общий список дел. Так самое важное всегда под рукой, не надо искать его в глубине дерева целей.\n\nАРХИВ\nЗначок архива на странице цели скрывает её (делает бледной) и убирает из расчёта процента выполнения — удобно для целей, которые отложены, но удалять не хочется. Архивная цель автоматически уходит в конец списка.\n\nРЕДАКТИРОВАНИЕ, УДАЛЕНИЕ, ПОРЯДОК\nНад списком целей есть кнопки: карандаш — переименовать, «−» — удалить, «↕» — включить режим перемещения (после этого зажмите и перетащите карточку, чтобы изменить порядок).\n\nКОЛЕСО БАЛАНСА\nВнизу главного экрана — колесо со всеми целями верхнего уровня: наглядно видно, какие сферы жизни в тени, а какие уже хорошо проработаны.\n\nЛИЧНЫЙ КАБИНЕТ И СИНХРОНИЗАЦИЯ\nБез аккаунта тоже можно пользоваться — все данные хранятся прямо в этом браузере. Если нужно видеть свои цели на нескольких устройствах, создайте аккаунт (значок 🔐) — дальше всё синхронизируется само. Если на устройстве уже были несохранённые локальные цели, при входе появится выбор, что оставить — данные без предупреждения никогда не перезаписываются.\n\nРЕЗЕРВНАЯ КОПИЯ\nВ меню (☰) есть «Экспорт данных» — сохраняет файл с полной копией целей, и «Импорт данных» — восстанавливает из такого файла. Полезно делать копию время от времени, даже если вы пользуетесь аккаунтом.\n\nУСТАНОВКА И ОБНОВЛЕНИЕ\nНа телефоне сайт можно добавить на главный экран как отдельное приложение — шаги есть в меню («Установить приложение»). Если после обновления сайта что-то выглядит по-старому, нажмите «Обновить приложение» в меню — иконку с экрана удалять не придётся.\n\nТЕМЫ И ЯЗЫК\nВ меню можно переключить оформление (тёмная, светлая, розовая тема) и язык интерфейса.',
     menuTitle: 'Меню',
     themeDark: 'Тёмная тема',
     themeLight: 'Светлая тема',
@@ -726,6 +734,8 @@ const STRINGS = {
   },
   en: {
     appTitle: '🎯 Goal Tracker with Balance Wheel',
+    updateApp: 'Update app',
+    appUpdatedMsg: "You're on the latest version.",
     resetAll: 'Reset all',
     resetConfirm: 'Reset everything and start with a clean slate?',
     home: 'Home',
@@ -847,6 +857,8 @@ const STRINGS = {
     importSuccessMsg: 'Data restored from backup successfully.',
     aboutTitle: 'About',
     aboutText: 'Goal Tracker is a simple way to reach your goals — one small step at a time, without deadline pressure or unnecessary complexity.\n\nNo mandatory dates, no SMART framework, no extra rules — just the goal and the path to it. Write a goal → break it into subgoals → if a subgoal still feels too big, break it down again. That way, in small steps, you watch yourself close one task after another and get closer to your dream.\n\n— Vladimir Sokolov',
+    instructionsTitle: 'Instructions',
+    instructionsText: 'GOALS AND SUBGOALS\nTap "+" next to "My goals" to create your first goal. Open it and tap "+" again to break it into subgoals — you can nest as many levels as you like, until a task feels genuinely simple. A goal with no subgoals has a "done" checkbox on its own page.\n\nCHECKLIST\nInstead of a single checkbox, a goal can become a list of items — the "Add checklist" button on its page. Its completion percentage is then based on checked items, not one overall flag.\n\nDUE DATE\nA goal’s page lets you set a date (day, month, year — the fields advance automatically as you type). A date earlier than today won’t be accepted.\n\nPRIORITY GOALS\nThe ☆ star on a goal’s page or a checklist item adds it to the "Priority goals" block on the home screen — capped at 5 at a time, so it never turns into just another to-do list. That keeps the most important things within reach without digging through the whole tree.\n\nARCHIVE\nThe archive icon on a goal’s page dims it and excludes it from every completion percentage — handy for goals you’re pausing but don’t want to delete. An archived goal automatically moves to the end of its list.\n\nEDITING, DELETING, REORDERING\nAbove the goal list: the pencil renames, "−" deletes, and "↕" turns on move mode (press and drag a card to reorder once it’s on).\n\nBALANCE WHEEL\nAt the bottom of the home screen, the wheel shows every top-level goal at a glance — which areas of life are lagging and which are already in good shape.\n\nACCOUNT AND SYNC\nYou don’t need an account — everything is stored right in this browser. To see your goals on more than one device, create an account (the 🔐 icon) and it syncs automatically from then on. If a device already had unsaved local goals, signing in shows a choice of what to keep — data is never overwritten without asking first.\n\nBACKUP\nThe menu (☰) has "Export data", which saves a file with a full copy of your goals, and "Import data", which restores from one. Worth doing now and then even if you use an account.\n\nINSTALLING AND UPDATING\nOn a phone, the site can be added to the home screen as its own app — steps are in the menu ("Install app"). If something looks out of date after a site update, tap "Update app" in the menu — no need to remove the home-screen icon.\n\nTHEMES AND LANGUAGE\nThe menu also switches the look (dark, light, pink) and the interface language.',
     menuTitle: 'Menu',
     themeDark: 'Dark theme',
     themeLight: 'Light theme',
@@ -883,6 +895,10 @@ function capWord(key){
 
 /* ===== State ===== */
 const STORAGE_KEY = "goal_tracker_state_v7";
+// Set right before doHardUpdate() reloads the page, so the fresh load can show a one-time
+// "update complete" confirmation — a plain in-page message would otherwise vanish along with the
+// old page the instant reload() fires.
+const APP_UPDATED_KEY = "goal_tracker_just_updated";
 let state = loadState();
 let path = [];
 let editMode = false;
@@ -908,6 +924,7 @@ let checklistEditIdx = null;
 let installPanelOpen = false;
 let deferredInstallPrompt = null;
 let aboutPanelOpen = false;
+let instructionsPanelOpen = false;
 let checklistDeletePanelOpen = false;
 // Timers for the temporary "Максимум 10 целей" toasts (cleared/reset so rapid repeat clicks
 // don't cut the message short or leave two competing hide-timers running).
@@ -1345,6 +1362,21 @@ function resolve(p){
   for(const i of p) node = node.children[i];
   return node;
 }
+// If `path` points somewhere that no longer exists in the current tree — most commonly because a
+// remote edit (another signed-in device, or the sync-conflict resolution) just deleted or replaced
+// the very node this device was sitting on — trims `path` back to the deepest ancestor that's
+// still real. Without this, resolve(path) hits `undefined.children` and render() throws, leaving
+// the page stuck until a manual reload. Called at the top of render(), before resolve(path).
+function validatePath(){
+  let node = state;
+  for(let i = 0; i < path.length; i++){
+    if(!node.children || !node.children[path[i]]){
+      path = path.slice(0, i);
+      return;
+    }
+    node = node.children[path[i]];
+  }
+}
 function isLeaf(node){
   return (!node.children || node.children.length===0) && ('done' in node);
 }
@@ -1366,6 +1398,10 @@ const PRIORITY_MAX = 5;
 // `.item.done` on a returned entry mutates the actual tree, no separate sync step needed.
 function collectPriorityItems(node = state, path = []){
   let results = [];
+  // An archived leaf (and anything inside its checklist) is meant to be fully out of the way —
+  // dimmed, excluded from every percentage — so it shouldn't keep surfacing in the Priority list
+  // just because it was starred before being archived.
+  if(node.archived) return results;
   if(isLeaf(node)){
     if(node.priority){
       results.push({ kind:'leaf', node, path });
@@ -1487,6 +1523,7 @@ function render(){
   // which has no visual effect — and the card that reappears in the freshly rendered grid never
   // gets un-stuck from its last fixed position, looking like it's frozen floating above everything.
   if(dragCtx) cancelDrag();
+  validatePath();
   const app = document.getElementById('app');
   const node = resolve(path);
   const overallPct = computePercent(state);
@@ -1505,7 +1542,9 @@ function render(){
         <button id="btnImportData" class="menu-item">${t('importData')}</button>
         <input type="file" id="importFileInput" accept="application/json,.json" style="display:none">` : ''}
         <button id="btnAboutMenuItem" class="menu-item">${t('aboutTitle')}</button>
+        <button id="btnInstructionsMenuItem" class="menu-item">${t('instructionsTitle')}</button>
         ${(isMobileDevice() && !isStandalonePwa()) ? `<button id="btnInstallAppMenuItem" class="menu-item">${t('installAppTitle')}</button>` : ''}
+        <button id="btnUpdateApp" class="menu-item">${t('updateApp')}</button>
         <button id="btnReset" class="menu-item">${t('resetAll')}</button>
         <div class="menu-lang-row">
           ${Object.keys(LANG_FLAGS).map(code => `<button class="lang-option ${lang===code?'active':''}" data-lang="${code}" title="${code==='ru'?'Русский':'English'}">${LANG_FLAGS[code]}</button>`).join('')}
@@ -1545,6 +1584,16 @@ function render(){
         <button class="auth-close" id="btnAboutClose" aria-label="close" title="${t('done')}">✕</button>
         <h2 style="margin:0 0 4px; font-size:16px;">${t('aboutTitle')}</h2>
         <div class="about-text">${esc(t('aboutText'))}</div>
+      </div>
+    </div>`;
+  }
+
+  if(instructionsPanelOpen){
+    html += `<div class="auth-modal-overlay" id="instructionsOverlay">
+      <div class="auth-panel scrollable wide">
+        <button class="auth-close" id="btnInstructionsClose" aria-label="close" title="${t('done')}">✕</button>
+        <h2 style="margin:0 0 4px; font-size:16px;">${t('instructionsTitle')}</h2>
+        <div class="about-text">${esc(t('instructionsText'))}</div>
       </div>
     </div>`;
   }
@@ -3062,6 +3111,15 @@ function attachHandlers(){
       render();
     });
   }
+  const btnInstructionsMenuItem = document.getElementById('btnInstructionsMenuItem');
+  if(btnInstructionsMenuItem){
+    btnInstructionsMenuItem.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      topMenuOpen = false;
+      instructionsPanelOpen = true;
+      render();
+    });
+  }
   document.querySelectorAll('.lang-option').forEach(el=>{
     el.addEventListener('click', (e)=>{
       e.stopPropagation();
@@ -3088,6 +3146,14 @@ function attachHandlers(){
       topMenuOpen = false;
       installPanelOpen = true;
       render();
+    });
+  }
+  const btnUpdateApp = document.getElementById('btnUpdateApp');
+  if(btnUpdateApp){
+    btnUpdateApp.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      topMenuOpen = false;
+      doHardUpdate();
     });
   }
   const btnReset = document.getElementById('btnReset');
@@ -3148,10 +3214,26 @@ function attachHandlers(){
       }
     });
   }
+  const instructionsOverlay = document.getElementById('instructionsOverlay');
+  if(instructionsOverlay){
+    instructionsOverlay.addEventListener('click', (e)=>{
+      if(e.target === instructionsOverlay){
+        instructionsPanelOpen = false;
+        render();
+      }
+    });
+  }
   const btnAboutClose = document.getElementById('btnAboutClose');
   if(btnAboutClose){
     btnAboutClose.addEventListener('click', ()=>{
       aboutPanelOpen = false;
+      render();
+    });
+  }
+  const btnInstructionsClose = document.getElementById('btnInstructionsClose');
+  if(btnInstructionsClose){
+    btnInstructionsClose.addEventListener('click', ()=>{
+      instructionsPanelOpen = false;
       render();
     });
   }
@@ -3193,6 +3275,33 @@ if('serviceWorker' in navigator){
     navigator.serviceWorker.register('./sw.js').catch(()=>{});
   });
 }
+// "Обновить приложение" in the menu — lets someone on an installed PWA pull the latest version
+// without deleting and re-adding the home-screen icon. Clears the service worker's cached assets
+// and unregisters it (so the next fetch has nothing stale to serve from) before reloading; the
+// confirmation message is shown on the page that comes back up, via APP_UPDATED_KEY, since any
+// on-screen message here would just disappear along with this page the instant reload() runs.
+async function doHardUpdate(){
+  try{ localStorage.setItem(APP_UPDATED_KEY, '1'); }catch(e){}
+  try{
+    if('caches' in window){
+      const keys = await caches.keys();
+      await Promise.all(keys.map(k => caches.delete(k)));
+    }
+  }catch(e){}
+  try{
+    if('serviceWorker' in navigator){
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map(r => r.unregister()));
+    }
+  }catch(e){}
+  window.location.reload();
+}
+try{
+  if(localStorage.getItem(APP_UPDATED_KEY)){
+    localStorage.removeItem(APP_UPDATED_KEY);
+    alert(t('appUpdatedMsg'));
+  }
+}catch(e){}
 // Captures Chrome/Android's native install prompt so the "Установить сейчас" button in the
 // install-instructions modal can trigger it directly instead of only showing manual steps.
 window.addEventListener('beforeinstallprompt', (e)=>{
