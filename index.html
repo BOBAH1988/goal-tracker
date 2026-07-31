@@ -283,6 +283,14 @@
      drop to a single column per row instead, same as installed PWA / narrow phone screens. */
   @media (max-width:480px){
     .grid-goals, .grid-hero-first{grid-template-columns:1fr;}
+    /* Narrow/PWA screens: menu + account button used to fall onto their own separate lines below
+       the title (source order: menu, h1, actions), stacking three rows and looking cramped. Instead
+       keep the two buttons together on the top row (flex-wrap still applies, but `order` reshuffles
+       who's on it) and push the title to its own centered row underneath. */
+    .top-menu-dropdown{order:1;}
+    .actions{order:2;}
+    .topbar h1{order:3; width:100%; text-align:center; margin-top:2px; font-size:17px;}
+    .account-dropdown #btnAccount{max-width:44vw; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   }
   .card{
     background:var(--card); border:1px solid var(--border); border-radius:14px; padding:16px;
