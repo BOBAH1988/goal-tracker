@@ -662,6 +662,11 @@ const STRINGS = {
     checklistDeleteConfirm: 'Точно удалить?',
     confirmYes: 'Да',
     confirmNo: 'Нет',
+    syncConflictTitle: 'На этом устройстве есть несохранённые данные',
+    syncConflictText: 'Данные в этом браузере отличаются от данных в вашем аккаунте. Если продолжить с данными аккаунта, несохранённые данные с этого устройства будут потеряны. Выберите, что оставить, или сначала сохраните резервную копию.',
+    syncConflictUseCloud: 'Использовать данные аккаунта',
+    syncConflictUseLocal: 'Оставить данные с этого устройства',
+    syncConflictExport: 'Скачать резервную копию сначала',
     verifyBannerText: 'Подтвердите email — мы отправили письмо со ссылкой на подтверждение.',
     verifyResend: 'Отправить письмо ещё раз',
     verifyRecheck: 'Я подтвердил(а)',
@@ -785,6 +790,11 @@ const STRINGS = {
     checklistDeleteConfirm: 'Delete this checklist?',
     confirmYes: 'Yes',
     confirmNo: 'No',
+    syncConflictTitle: 'This device has unsaved data',
+    syncConflictText: "The data in this browser is different from the data in your account. Continuing with the account data will lose the unsaved data on this device. Choose which to keep, or download a backup first.",
+    syncConflictUseCloud: 'Use account data',
+    syncConflictUseLocal: 'Keep this device\'s data',
+    syncConflictExport: 'Download a backup first',
     verifyBannerText: 'Please verify your email — we sent a confirmation link.',
     verifyResend: 'Resend email',
     verifyRecheck: "I've verified",
@@ -979,6 +989,28 @@ let unsubscribeSnapshot = null;
 // document has been written". Gates the one place a missing Firestore document is allowed to be
 // treated as "safe to create" — see startCloudSync().
 let isFreshSignup = false;
+// Snapshot of `state` taken the instant a user signs in, BEFORE the first cloud document is
+// pulled down — this is what protects unsynced local edits (made while logged out) from being
+// silently clobbered by whatever is already sitting in that account's Firestore document. See
+// startCloudSync()'s conflict check and the syncConflict modal below.
+let preSyncLocalState = null;
+// Non-null while the "local data differs from account data" modal is on screen: {local, cloud}.
+// Set by startCloudSync() when it detects a real conflict instead of auto-applying either side.
+let syncConflict = null;
+// A state is worth protecting (i.e. worth interrupting sign-in for) only if it's neither the
+// untouched demo tree nor the blank per-account starting template — those have nothing a user
+// would miss. Comparing against the CURRENT language's emptyTemplate() is a best-effort match
+// (the template text depends on `lang`), but false positives here just mean an extra confirmation
+// click, never silent data loss, so erring toward "protect it" is the safe default.
+function isProtectableState(s){
+  if(!s) return false;
+  try{
+    const json = JSON.stringify(s);
+    if(json === JSON.stringify(SEED)) return false;
+    if(json === JSON.stringify(emptyTemplate())) return false;
+  }catch(e){ return true; }
+  return true;
+}
 try{
   if(firebaseConfig.apiKey && firebaseConfig.apiKey.indexOf('ВСТАВЬТЕ') === -1 && typeof firebase !== 'undefined'){
     firebase.initializeApp(firebaseConfig);
@@ -1026,6 +1058,20 @@ function startCloudSync(uid){
     if(doc.exists){
       const data = doc.data();
       if(data && data.state){
+        // Guard against silently overwriting real local edits made while logged out: only runs
+        // once, right after sign-in (preSyncLocalState is cleared as soon as it's been checked
+        // once, so it never blocks a later legitimate real-time update from another device).
+        if(preSyncLocalState){
+          const localSnapshot = preSyncLocalState;
+          preSyncLocalState = null;
+          let differs = true;
+          try{ differs = JSON.stringify(localSnapshot) !== JSON.stringify(data.state); }catch(e){}
+          if(differs && isProtectableState(localSnapshot)){
+            syncConflict = { local: localSnapshot, cloud: data.state };
+            render();
+            return;
+          }
+        }
         applyingRemoteUpdate = true;
         state = data.state;
         saveState();
@@ -1471,6 +1517,20 @@ function render(){
           <button id="btnChecklistDeleteYes" class="btn-danger">${t('confirmYes')}</button>
           <button id="btnChecklistDeleteNo">${t('confirmNo')}</button>
         </div>
+      </div>
+    </div>`;
+  }
+
+  if(syncConflict){
+    html += `<div class="auth-modal-overlay" id="syncConflictOverlay">
+      <div class="auth-panel">
+        <h2 style="margin:0 0 4px; font-size:16px;">${t('syncConflictTitle')}</h2>
+        <p style="margin:0; font-size:14px;">${esc(t('syncConflictText'))}</p>
+        <div class="auth-btn-row">
+          <button id="btnSyncConflictUseCloud">${t('syncConflictUseCloud')}</button>
+          <button id="btnSyncConflictUseLocal" class="btn-danger">${t('syncConflictUseLocal')}</button>
+        </div>
+        <button type="button" id="btnSyncConflictExport" class="auth-link-center">${t('syncConflictExport')}</button>
       </div>
     </div>`;
   }
@@ -2574,6 +2634,41 @@ function attachHandlers(){
       render();
     });
   }
+  const btnSyncConflictUseCloud = document.getElementById('btnSyncConflictUseCloud');
+  if(btnSyncConflictUseCloud){
+    btnSyncConflictUseCloud.addEventListener('click', ()=>{
+      if(!syncConflict) return;
+      applyingRemoteUpdate = true;
+      state = syncConflict.cloud;
+      path = [];
+      saveState();
+      applyingRemoteUpdate = false;
+      syncConflict = null;
+      render();
+    });
+  }
+  const btnSyncConflictUseLocal = document.getElementById('btnSyncConflictUseLocal');
+  if(btnSyncConflictUseLocal){
+    btnSyncConflictUseLocal.addEventListener('click', ()=>{
+      if(!syncConflict) return;
+      // `state` is still the local version (never touched by the conflict) — just push it up,
+      // overwriting the stale account document.
+      state = syncConflict.local;
+      syncConflict = null;
+      saveState();
+      render();
+    });
+  }
+  const btnSyncConflictExport = document.getElementById('btnSyncConflictExport');
+  if(btnSyncConflictExport){
+    btnSyncConflictExport.addEventListener('click', ()=>{
+      if(!syncConflict) return;
+      const before = state;
+      state = syncConflict.local;
+      doExportData();
+      state = before;
+    });
+  }
   document.querySelectorAll('[data-checklist-edit]').forEach(el=>{
     el.addEventListener('click', (e)=>{
       e.stopPropagation();
@@ -3020,6 +3115,8 @@ render();
 if(cloudEnabled){
   firebase.auth().onAuthStateChanged((user)=>{
     if(user){
+      // Captured BEFORE the first cloud document arrives — see startCloudSync()'s conflict check.
+      preSyncLocalState = state;
       authUser = { email: user.email, uid: user.uid, name: user.displayName || '', emailVerified: user.emailVerified };
       authPanelOpen = false;
       signupPanelOpen = false;
@@ -3029,6 +3126,8 @@ if(cloudEnabled){
     } else {
       authUser = null;
       verifyMsg = '';
+      preSyncLocalState = null;
+      syncConflict = null;
       stopCloudSync();
     }
     render();
