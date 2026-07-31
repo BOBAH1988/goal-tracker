@@ -188,9 +188,13 @@
     background:none; border:none; color:var(--accent); font-size:12px; padding:0;
     cursor:pointer; text-align:right; align-self:auto;
   }
-  .auth-link-center{
+  /* Scoped to .auth-panel (raising specificity above the plain ".auth-panel button" rule, which
+     sets white-space:nowrap for every button in a panel) — without this override, a longer link
+     like "Скачать резервную копию сначала" refuses to wrap and its last word spills off the edge
+     of a narrow (PWA) screen instead of wrapping onto a second line. */
+  .auth-panel .auth-link-center{
     background:none; border:none; color:var(--accent); font-size:12px; padding:4px 0;
-    cursor:pointer; text-align:center; width:100%; flex:none;
+    cursor:pointer; text-align:center; width:100%; flex:none; white-space:normal; line-height:1.4;
   }
   .auth-link:disabled{opacity:.5; cursor:not-allowed;}
   .auth-consent{display:flex; align-items:flex-start; gap:8px; font-size:12px; color:var(--muted); cursor:pointer; line-height:1.4;}
@@ -251,7 +255,14 @@
   .priority-header .section-title{margin:0;}
   .priority-arrow{color:var(--muted); font-size:13px;}
   .priority-list{margin-top:12px; display:flex; flex-direction:column; gap:8px;}
-  .priority-row{display:flex; align-items:center; gap:12px;}
+  /* Without this, iOS/PWA taps on the checkbox and name go through the browser's default
+     double-tap-zoom disambiguation delay (~300ms) before the click actually fires — by then the
+     row's own re-render from a nearby interaction may already have shifted layout slightly, so the
+     delayed click can land on the wrong row, or fire a second time on the same box and immediately
+     re-toggle it back off. `.card[data-nav]` already uses the pan-y variant of this fix for the
+     goal cards; priority rows have no drag gesture to preserve, so manipulation (which drops
+     double-tap-zoom but keeps ordinary scrolling) is enough here. */
+  .priority-row{display:flex; align-items:center; gap:12px; touch-action:manipulation;}
   .priority-row .chk{margin-top:0;}
   .priority-name{flex:1; font-size:14px; line-height:1.4; cursor:pointer; min-width:0; overflow-wrap:break-word; word-break:break-word;}
   .priority-name:hover{color:var(--accent);}
@@ -879,6 +890,12 @@ let deleteMode = false;
 // Press-and-hold drag-to-reorder state (see attachDragHandlers below).
 let dragCtx = null;
 let dragJustEnded = false;
+// Belt-and-braces against a duplicate "ghost" click some mobile browsers still fire for the same
+// physical tap (see the touch-action fix on .priority-row) — if the exact same checkbox somehow
+// gets two click events, the second one within this window is ignored instead of toggling done
+// right back to what it was.
+let lastPriorityToggleKey = null;
+let lastPriorityToggleTime = 0;
 let addSubMode = false;
 // Explicit "reorder" mode, toggled by a dedicated button (next to Delete) instead of press-and-
 // hold always being live on every card/row during normal browsing — see cardModeAttrs/checklistHTML
@@ -1002,10 +1019,16 @@ let unsubscribeSnapshot = null;
 // document has been written". Gates the one place a missing Firestore document is allowed to be
 // treated as "safe to create" — see startCloudSync().
 let isFreshSignup = false;
-// Snapshot of `state` taken the instant a user signs in, BEFORE the first cloud document is
-// pulled down — this is what protects unsynced local edits (made while logged out) from being
-// silently clobbered by whatever is already sitting in that account's Firestore document. See
-// startCloudSync()'s conflict check and the syncConflict modal below.
+// True only for the brief window between an interactive "Sign in" click and Firebase confirming
+// it — as opposed to Firebase silently restoring an already-authenticated session on a normal
+// page load/reload, which fires the exact same onAuthStateChanged callback with a user present.
+// Only the interactive case should ever be treated as "might conflict with local data" — a plain
+// reload of an already-synced session has nothing to compare that's worth interrupting for.
+let justSignedIn = false;
+// Snapshot of `state` taken the instant an interactive sign-in succeeds, BEFORE the first cloud
+// document is pulled down — this is what protects unsynced local edits (made while logged out)
+// from being silently clobbered by whatever is already sitting in that account's Firestore
+// document. See startCloudSync()'s conflict check and the syncConflict modal below.
 let preSyncLocalState = null;
 // Non-null while the "local data differs from account data" modal is on screen: {local, cloud}.
 // Set by startCloudSync() when it detects a real conflict instead of auto-applying either side.
@@ -1140,8 +1163,12 @@ function stopCloudSync(){
 function doAuthSignIn(email, password){
   authBusy = true; authError = '';
   isFreshSignup = false;
+  // Marks this as an interactive sign-in (as opposed to Firebase silently restoring an already
+  // logged-in session on page load/reload) — see the justSignedIn check in onAuthStateChanged,
+  // which is what the sync-conflict prompt should only ever fire for.
+  justSignedIn = true;
   firebase.auth().signInWithEmailAndPassword(email, password)
-    .catch(err => { authError = translateAuthError(err); authBusy = false; render(); });
+    .catch(err => { authError = translateAuthError(err); authBusy = false; justSignedIn = false; render(); });
 }
 async function doPasswordReset(email){
   const trimmed = (email || '').trim();
@@ -2243,6 +2270,13 @@ function attachHandlers(){
       const idx = parseInt(el.dataset.priorityToggle,10);
       const entry = lastPriorityItems[idx];
       if(!entry) return;
+      // Identify the entry by its underlying object, not just idx, so this still catches a
+      // duplicate ghost click even if the list happened to change shape between the two events.
+      const key = entry.kind === 'leaf' ? entry.node : entry.item;
+      const now = Date.now();
+      if(lastPriorityToggleKey === key && (now - lastPriorityToggleTime) < 400) return;
+      lastPriorityToggleKey = key;
+      lastPriorityToggleTime = now;
       if(entry.kind === 'leaf'){ entry.node.done = !entry.node.done; }
       else { entry.item.done = !entry.item.done; }
       saveState();
@@ -3128,8 +3162,14 @@ render();
 if(cloudEnabled){
   firebase.auth().onAuthStateChanged((user)=>{
     if(user){
-      // Captured BEFORE the first cloud document arrives — see startCloudSync()'s conflict check.
-      preSyncLocalState = state;
+      // Only capture a pre-sync snapshot (and therefore only risk showing the conflict modal)
+      // for an interactive sign-in — this same callback also fires on every normal page load/
+      // reload when Firebase silently restores an already-logged-in session, and that routine
+      // case should just sync automatically with no prompt at all.
+      if(justSignedIn){
+        preSyncLocalState = state;
+        justSignedIn = false;
+      }
       authUser = { email: user.email, uid: user.uid, name: user.displayName || '', emailVerified: user.emailVerified };
       authPanelOpen = false;
       signupPanelOpen = false;
