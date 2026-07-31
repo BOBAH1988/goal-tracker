@@ -161,6 +161,11 @@
   .auth-panel input.input-error{border-color:var(--red); box-shadow:0 0 0 1px var(--red);}
   .auth-panel .auth-btn-row{display:flex; align-items:center; justify-content:space-evenly; gap:8px;}
   .auth-panel .auth-btn-row button{flex:none;}
+  /* For buttons whose label is too long to sit side-by-side without overflowing a narrow (PWA)
+     screen — e.g. the sync-conflict resolution buttons — stack full-width instead of forcing a
+     nowrap row that spills past the panel/viewport edge. */
+  .auth-panel .auth-btn-col{display:flex; flex-direction:column; gap:8px;}
+  .auth-panel .auth-btn-col button{flex:none; width:100%; white-space:normal; text-align:center; line-height:1.4;}
   .auth-signup-row{display:flex; justify-content:center;}
   .auth-signup-row button{flex:none; min-width:160px;}
   .auth-panel button{
@@ -1534,7 +1539,7 @@ function render(){
       <div class="auth-panel">
         <h2 style="margin:0 0 4px; font-size:16px;">${t('syncConflictTitle')}</h2>
         <p style="margin:0; font-size:14px;">${esc(t('syncConflictText'))}</p>
-        <div class="auth-btn-row">
+        <div class="auth-btn-col">
           <button id="btnSyncConflictUseCloud">${t('syncConflictUseCloud')}</button>
           <button id="btnSyncConflictUseLocal" class="btn-danger">${t('syncConflictUseLocal')}</button>
         </div>
