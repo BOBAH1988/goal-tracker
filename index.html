@@ -246,6 +246,25 @@
     padding:5px 12px; font-size:13px; cursor:pointer; white-space:nowrap; flex-shrink:0;
   }
   .back-btn:hover{border-color:var(--accent);}
+  .relocate-source-name{font-size:13px; color:var(--muted);}
+  .relocate-breadcrumb{display:flex; gap:6px; align-items:center; flex-wrap:wrap; font-size:13px; color:var(--muted); padding:8px 0; border-top:1px solid var(--border); border-bottom:1px solid var(--border);}
+  .relocate-breadcrumb .relocate-crumb{cursor:pointer; padding:3px 6px; border-radius:6px;}
+  .relocate-breadcrumb .relocate-crumb:hover{background:var(--card2); color:var(--text);}
+  .relocate-breadcrumb .sep{opacity:.4;}
+  .relocate-list{display:flex; flex-direction:column; gap:6px; max-height:240px; overflow-y:auto;}
+  /* Scoped to .auth-panel (raising specificity above the plain ".auth-panel button" rule, which
+     otherwise forces white-space:nowrap + flex:1 on every button in a panel) so long goal names
+     wrap onto a second line instead of spilling off the edge — same pattern as .auth-link-center. */
+  .auth-panel .relocate-row{
+    background:var(--card2); border:1px solid var(--border); color:var(--text); border-radius:8px;
+    padding:9px 12px; font-size:13px; cursor:pointer; text-align:left; white-space:normal; flex:none; width:100%;
+  }
+  .auth-panel .relocate-row:hover{border-color:var(--accent); color:var(--accent);}
+  .auth-panel .relocate-here-btn{
+    background:var(--accent); border:1px solid var(--accent); color:#fff; font-weight:600;
+    white-space:normal; flex:none; width:100%;
+  }
+  .auth-panel .relocate-here-btn:hover{opacity:.9; border-color:var(--accent);}
   .overall{
     background:var(--card); border:1px solid var(--border); border-radius:16px; padding:20px 22px; margin-bottom:22px;
   }
@@ -648,6 +667,13 @@ const STRINGS = {
     addSubHint: '— нажмите на цель без подцелей, чтобы добавить к ней 2 подцели-чекбокса',
     tipMove: 'Изменить порядок',
     moveHint: '— зажмите карточку и перетащите её на новое место',
+    tipRelocate: 'Переместить в другую цель',
+    relocateHint: '— выберите карточку, чтобы перенести её в другую цель или подцель',
+    relocateTitle: 'Куда перенести?',
+    relocateMoving: 'Переносим:',
+    relocateEmptyState: 'Здесь нет подходящих целей — тут можно только оставить перенесённый пункт.',
+    relocateHereBtn: dest => `Переместить сюда — «${dest}»`,
+    relocateMaxError: 'В этой цели уже максимум пунктов — перенос невозможен.',
     account: 'Аккаунт',
     emailPlaceholder: 'Email',
     passwordPlaceholder: 'Пароль',
@@ -780,6 +806,13 @@ const STRINGS = {
     addSubHint: '— click a goal with no subgoals yet to add 2 checkbox subgoals to it',
     tipMove: 'Reorder',
     moveHint: '— press and hold a card, then drag it to a new spot',
+    tipRelocate: 'Move to another goal',
+    relocateHint: '— pick a card to move it to a different goal or subgoal',
+    relocateTitle: 'Move where?',
+    relocateMoving: 'Moving:',
+    relocateEmptyState: "There's nothing to navigate into here — you can only drop the item at this level.",
+    relocateHereBtn: dest => `Move here — "${dest}"`,
+    relocateMaxError: "That goal is already full — can't move it there.",
     account: 'Account',
     emailPlaceholder: 'Email',
     passwordPlaceholder: 'Password',
@@ -919,6 +952,17 @@ let addSubMode = false;
 // meant to open a goal (or to hold down a checklist row's edit/delete/star button) from ever being
 // misread as the start of a drag.
 let moveMode = false;
+// "Relocate" mode: unlike moveMode (which only reorders within the same sibling list), this lets
+// picking a card send it to become a child of a DIFFERENT container anywhere else in the tree.
+// Tapping a card while this is on doesn't reorder it in place — it opens the destination-picker
+// modal below (see relocateSourcePath/relocatePickerPath) for that specific card.
+let relocateMode = false;
+// Path of the node currently being relocated — non-null while the destination-picker modal is
+// open. Set the instant a card is tapped in relocate mode; cleared when the picker closes/confirms.
+let relocateSourcePath = null;
+// Where the destination picker is currently browsing, relative to `state` (starts at the root —
+// an empty path lets "move here" target the top level itself).
+let relocatePickerPath = [];
 // Which checklist row (if any) currently has its text open for inline editing (pencil icon).
 let checklistEditIdx = null;
 let installPanelOpen = false;
@@ -1511,6 +1555,49 @@ function esc(s){
   return (s||"").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 }
 
+// Destination-picker modal shown while relocateSourcePath is set (see relocateMode). Lets the
+// user drill down into any container and drop the source node there as a new child — the source
+// itself, and anything already inside it, is filtered out of every list here so it's never
+// possible to move a node into its own subtree.
+function relocatePickerHTML(){
+  const sourceNode = resolve(relocateSourcePath);
+  if(!sourceNode) return '';
+  let pickerNode = state;
+  let valid = true;
+  for(const i of relocatePickerPath){
+    if(!pickerNode.children || !pickerNode.children[i]){ valid = false; break; }
+    pickerNode = pickerNode.children[i];
+  }
+  if(!valid){ relocatePickerPath = []; pickerNode = state; }
+  const children = pickerNode.children || [];
+  const eligible = children
+    .map((c, i) => ({ c, i }))
+    .filter(({ c }) => c !== sourceNode && !isLeaf(c));
+  const destName = relocatePickerPath.length === 0 ? t('home') : esc(pickerNode.name);
+
+  let crumbNode = state;
+  let crumbs = [`<span class="relocate-crumb" data-relocate-crumb="0">${t('home')}</span>`];
+  relocatePickerPath.forEach((i, idx) => {
+    crumbNode = crumbNode.children[i];
+    crumbs.push(`<span class="sep">›</span><span class="relocate-crumb" data-relocate-crumb="${idx+1}">${esc(crumbNode.name)}</span>`);
+  });
+
+  return `<div class="auth-modal-overlay" id="relocateOverlay">
+    <div class="auth-panel scrollable wide">
+      <button class="auth-close" id="btnRelocateClose" aria-label="close" title="${t('done')}">✕</button>
+      <h2 style="margin:0 0 4px; font-size:16px;">${t('relocateTitle')}</h2>
+      <div class="relocate-source-name">${t('relocateMoving')} «${esc(sourceNode.name)}»</div>
+      <div class="relocate-breadcrumb">${crumbs.join('')}</div>
+      <div class="relocate-list">
+        ${eligible.length
+          ? eligible.map(({ c, i }) => `<button type="button" class="relocate-row" data-relocate-nav="${i}">${esc(c.name)} ›</button>`).join('')
+          : `<div class="empty-state">${t('relocateEmptyState')}</div>`}
+      </div>
+      <button type="button" id="btnRelocateHere" class="relocate-here-btn">${t('relocateHereBtn')(destName)}</button>
+    </div>
+  </div>`;
+}
+
 /* ===== Render ===== */
 function render(){
   // If a card/checklist-row drag is still in progress when render() gets triggered by something
@@ -1624,6 +1711,10 @@ function render(){
     </div>`;
   }
 
+  if(relocateSourcePath){
+    html += relocatePickerHTML();
+  }
+
   if(cloudEnabled && authUser && !authUser.emailVerified){
     html += `<div class="verify-banner">
       <span>${t('verifyBannerText')}</span>
@@ -1702,7 +1793,7 @@ function render(){
   html += renderBreadcrumb();
 
   const addSubActive = addSubMode && path.length === 2;
-  const mode = editMode ? 'edit' : deleteMode ? 'delete' : addSubActive ? 'addsub' : moveMode ? 'move' : null;
+  const mode = editMode ? 'edit' : deleteMode ? 'delete' : addSubActive ? 'addsub' : moveMode ? 'move' : relocateMode ? 'relocate' : null;
   const protectedCount = protectedCountFor(path.length);
   const hintHTML = editMode
     ? ` <span class="edit-hint">${t('editHint')}</span>`
@@ -1712,7 +1803,9 @@ function render(){
         ? ` <span class="edit-hint">${t('addSubHint')}</span>`
         : moveMode
           ? ` <span class="edit-hint">${t('moveHint')}</span>`
-          : '';
+          : relocateMode
+            ? ` <span class="edit-hint">${t('relocateHint')}</span>`
+            : '';
 
   if(path.length===0){
     html += `<div class="overall">
@@ -1751,6 +1844,7 @@ function render(){
         <button id="btnAddGoal" class="icon-btn" title="${t('tipAdd')}" aria-label="${t('tipAdd')}">+</button>
         <button id="btnDelete" class="${deleteMode?'active':'icon-btn'}" title="${deleteMode?t('done'):t('tipDelete')}" aria-label="${deleteMode?t('done'):t('tipDelete')}">${deleteMode ? t('done') : '−'}</button>
         <button id="btnMove" class="${moveMode?'active':'icon-btn'}" title="${moveMode?t('done'):t('tipMove')}" aria-label="${moveMode?t('done'):t('tipMove')}">${moveMode ? t('done') : '↕'}</button>
+        <button id="btnRelocate" class="${relocateMode?'active':'icon-btn'}" title="${relocateMode?t('done'):t('tipRelocate')}" aria-label="${relocateMode?t('done'):t('tipRelocate')}">${relocateMode ? t('done') : '<i class="ti ti-folder-symlink" aria-hidden="true"></i>'}</button>
         <button id="btnEdit" class="${editMode?'active':'icon-btn'}" title="${editMode?t('done'):t('tipEdit')}" aria-label="${editMode?t('done'):t('tipEdit')}">${editMode ? t('done') : '<i class="ti ti-edit" aria-hidden="true"></i>'}</button>
         <span id="deleteMsg" class="add-goal-msg"></span>
       </div>
@@ -1782,6 +1876,7 @@ function render(){
         <button id="btnAddChild" class="icon-btn" title="${t('tipAdd')}" aria-label="${t('tipAdd')}">+</button>
         <button id="btnDelete" class="${deleteMode?'active':'icon-btn'}" title="${deleteMode?t('done'):t('tipDelete')}" aria-label="${deleteMode?t('done'):t('tipDelete')}">${deleteMode ? t('done') : '−'}</button>
         <button id="btnMove" class="${moveMode?'active':'icon-btn'}" title="${moveMode?t('done'):t('tipMove')}" aria-label="${moveMode?t('done'):t('tipMove')}">${moveMode ? t('done') : '↕'}</button>
+        <button id="btnRelocate" class="${relocateMode?'active':'icon-btn'}" title="${relocateMode?t('done'):t('tipRelocate')}" aria-label="${relocateMode?t('done'):t('tipRelocate')}">${relocateMode ? t('done') : '<i class="ti ti-folder-symlink" aria-hidden="true"></i>'}</button>
         ${path.length === 2 ? `<button id="btnAddSubgoal" class="${addSubMode?'active':'icon-btn'}" title="${addSubMode?t('done'):t('tipExpand')}" aria-label="${addSubMode?t('done'):t('tipExpand')}">${addSubMode ? t('done') : '<i class="ti ti-sitemap" aria-hidden="true"></i>'}</button>` : ''}
         <button id="btnEdit" class="${editMode?'active':'icon-btn'}" title="${editMode?t('done'):t('tipEdit')}" aria-label="${editMode?t('done'):t('tipEdit')}">${editMode ? t('done') : '<i class="ti ti-edit" aria-hidden="true"></i>'}</button>
         <span id="deleteMsg" class="add-goal-msg"></span>
@@ -1848,6 +1943,11 @@ function cardModeAttrs(node, idx, mode, protectedCount){
     // keeps this from colliding with normal browsing taps outside of this mode.
     return { cls:'movable', attrs:`data-drag-idx="${idx}"` };
   }
+  if(mode === 'relocate'){
+    // Any card can be sent elsewhere, protected or not — relocating doesn't touch the item
+    // itself, just where it lives, so there's nothing here worth protecting against.
+    return { cls:'selectable', attrs:`data-relocate-idx="${idx}"` };
+  }
   return { cls:'', attrs:`data-nav="${idx}"` };
 }
 function cardModeTitle(node, idx, mode, defaultArrow, protectedCount){
@@ -1863,6 +1963,9 @@ function cardModeTitle(node, idx, mode, defaultArrow, protectedCount){
   }
   if(mode === 'move'){
     return `<span>${esc(node.name)}</span><span class="arrow">⠿</span>`;
+  }
+  if(mode === 'relocate'){
+    return `<span>${esc(node.name)}</span><span class="arrow"><i class="ti ti-folder-symlink" aria-hidden="true"></i></span>`;
   }
   return `<span>${esc(node.name)}</span><span class="arrow">${defaultArrow}</span>`;
 }
@@ -2104,10 +2207,10 @@ function checklistHTML(list){
         <button class="checklist-remove" data-checklist-remove="${i}" title="${t('tipDelete')}" aria-label="${t('tipDelete')}">✕</button>
       </div>`;
     });
-    html += `<div class="checklist-add-row">
-      <input type="text" id="checklistInput" placeholder="${t('checklistPlaceholder')}" maxlength="80">
-      <button id="btnChecklistAdd" class="icon-btn">+</button>
-    </div>`;
+    html += `<form id="checklistAddForm" class="checklist-add-row">
+      <input type="text" id="checklistInput" placeholder="${t('checklistPlaceholder')}" maxlength="80" enterkeyhint="done">
+      <button id="btnChecklistAdd" class="icon-btn" type="submit">+</button>
+    </form>`;
   }
   html += `</div>`;
   return html;
@@ -2490,7 +2593,7 @@ function attachHandlers(){
   if(btnEdit){
     btnEdit.addEventListener('click', ()=>{
       editMode = !editMode;
-      if(editMode){ deleteMode = false; addSubMode = false; moveMode = false; }
+      if(editMode){ deleteMode = false; addSubMode = false; moveMode = false; relocateMode = false; }
       render();
     });
   }
@@ -2498,7 +2601,7 @@ function attachHandlers(){
   if(btnDelete){
     btnDelete.addEventListener('click', ()=>{
       deleteMode = !deleteMode;
-      if(deleteMode){ editMode = false; addSubMode = false; moveMode = false; }
+      if(deleteMode){ editMode = false; addSubMode = false; moveMode = false; relocateMode = false; }
       render();
     });
   }
@@ -2506,7 +2609,7 @@ function attachHandlers(){
   if(btnMove){
     btnMove.addEventListener('click', ()=>{
       moveMode = !moveMode;
-      if(moveMode){ editMode = false; deleteMode = false; addSubMode = false; }
+      if(moveMode){ editMode = false; deleteMode = false; addSubMode = false; relocateMode = false; }
       render();
     });
   }
@@ -2521,7 +2624,106 @@ function attachHandlers(){
   if(btnAddSubgoal){
     btnAddSubgoal.addEventListener('click', ()=>{
       addSubMode = !addSubMode;
-      if(addSubMode){ editMode = false; deleteMode = false; moveMode = false; }
+      if(addSubMode){ editMode = false; deleteMode = false; moveMode = false; relocateMode = false; }
+      render();
+    });
+  }
+  const btnRelocate = document.getElementById('btnRelocate');
+  if(btnRelocate){
+    btnRelocate.addEventListener('click', ()=>{
+      relocateMode = !relocateMode;
+      if(relocateMode){ editMode = false; deleteMode = false; addSubMode = false; moveMode = false; }
+      render();
+    });
+  }
+  document.querySelectorAll('[data-relocate-idx]').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      const idx = parseInt(el.dataset.relocateIdx,10);
+      relocateMode = false;
+      relocateSourcePath = [...path, idx];
+      relocatePickerPath = [];
+      render();
+    });
+  });
+  const relocateOverlay = document.getElementById('relocateOverlay');
+  if(relocateOverlay){
+    relocateOverlay.addEventListener('click', (e)=>{
+      if(e.target === relocateOverlay){
+        relocateSourcePath = null;
+        render();
+      }
+    });
+  }
+  const btnRelocateClose = document.getElementById('btnRelocateClose');
+  if(btnRelocateClose){
+    btnRelocateClose.addEventListener('click', ()=>{
+      relocateSourcePath = null;
+      render();
+    });
+  }
+  document.querySelectorAll('[data-relocate-nav]').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      const idx = parseInt(el.dataset.relocateNav,10);
+      relocatePickerPath = [...relocatePickerPath, idx];
+      render();
+    });
+  });
+  document.querySelectorAll('[data-relocate-crumb]').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      const depth = parseInt(el.dataset.relocateCrumb,10);
+      relocatePickerPath = relocatePickerPath.slice(0, depth);
+      render();
+    });
+  });
+  const btnRelocateHere = document.getElementById('btnRelocateHere');
+  if(btnRelocateHere){
+    btnRelocateHere.addEventListener('click', ()=>{
+      if(!relocateSourcePath || relocateSourcePath.length === 0) return;
+      const sourceNode = resolve(relocateSourcePath);
+      const sourceParent = resolve(relocateSourcePath.slice(0, -1));
+      const sourceIdx = relocateSourcePath[relocateSourcePath.length - 1];
+      if(!sourceNode || !sourceParent || !sourceParent.children || sourceParent.children[sourceIdx] !== sourceNode){
+        // Something changed underneath the picker (a remote edit, most likely) — bail out
+        // quietly rather than risk moving/duplicating the wrong node.
+        relocateSourcePath = null;
+        render();
+        return;
+      }
+      let destNode = state;
+      let destValid = true;
+      for(const i of relocatePickerPath){
+        if(!destNode.children || !destNode.children[i]){ destValid = false; break; }
+        destNode = destNode.children[i];
+      }
+      if(!destValid || destNode === sourceNode){
+        relocateSourcePath = null;
+        render();
+        return;
+      }
+      if(!destNode.children) destNode.children = [];
+      if(destNode.children.length >= 10){
+        alert(t('relocateMaxError'));
+        return;
+      }
+      const sourceParentPath = relocateSourcePath.slice(0, -1);
+      sourceParent.children.splice(sourceIdx, 1);
+      destNode.children.push(sourceNode);
+      // A container left with zero children collapses back into a plain leaf, same rule the
+      // delete flow already follows — otherwise it'd sit there as a permanently empty "0/0" card.
+      if(sourceParent.children.length === 0 && sourceParentPath.length >= 1){
+        sourceParent.done = false;
+        if(!('date' in sourceParent)) sourceParent.date = '';
+        sourceParent.children = [];
+        // Same reasoning as the delete flow: if we were sitting on that now-collapsed container's
+        // own page (its Add/Edit/Delete toolbar no longer applies once it's a leaf), step back up
+        // one level instead of stranding the view on a page that doesn't match what's now there.
+        if(JSON.stringify(path) === JSON.stringify(sourceParentPath)){
+          path = path.slice(0, -1);
+        }
+      }
+      relocateSourcePath = null;
+      relocatePickerPath = [];
+      saveState();
       render();
     });
   }
@@ -2801,13 +3003,17 @@ function attachHandlers(){
     saveState();
     render();
   }
-  const btnChecklistAdd = document.getElementById('btnChecklistAdd');
-  if(btnChecklistAdd){
-    btnChecklistAdd.addEventListener('click', addChecklistItem);
-  }
-  if(checklistInput){
-    checklistInput.addEventListener('keydown', (e)=>{
-      if(e.key === 'Enter') addChecklistItem();
+  // Wrapped in a real <form> (see checklistHTML) and handled via 'submit' rather than a bare
+  // 'keydown'+Enter listener on the input — on Android/PWA keyboards the confirm key is often a
+  // "✓"/"Done"/"Go" action rather than a literal Enter, and not every keyboard reliably fires a
+  // matching Enter keydown for that. A <form>'s submit event, in contrast, is what every mobile
+  // keyboard's confirm action is built to trigger, so this catches it either way — and covers a
+  // tap on the "+" button (a submit-type button inside the form) through the same single path.
+  const checklistAddForm = document.getElementById('checklistAddForm');
+  if(checklistAddForm){
+    checklistAddForm.addEventListener('submit', (e)=>{
+      e.preventDefault();
+      addChecklistItem();
     });
   }
   const btnAccount = document.getElementById('btnAccount');
