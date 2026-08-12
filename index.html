@@ -123,7 +123,7 @@
   }
   .topbar .theme-option:hover{background:var(--card); border-color:var(--border);}
   .topbar .theme-option.active{border-color:var(--accent); box-shadow:0 0 0 1px var(--accent);}
-  #btnEdit, #btnDelete, #btnAddSubgoal, #btnDeleteChecklist, #btnMove, #btnMoveChecklist{
+  #btnEdit, #btnDelete, #btnAddSubgoal, #btnDeleteChecklist, #btnMove, #btnMoveChecklist, #btnRelocate, #btnChecklistAdd, .add-child-row #btnArchive, .add-goal-wrap #btnArchive{
     background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:8px;
     padding:6px 12px; font-size:12px; cursor:pointer; white-space:nowrap;
   }
@@ -137,6 +137,10 @@
   #btnMove.active, #btnMoveChecklist.active{background:var(--accent); color:#fff; border-color:var(--accent);}
   #btnAddSubgoal:hover{color:var(--text); border-color:var(--accent);}
   #btnAddSubgoal.active{background:var(--accent); color:#fff; border-color:var(--accent);}
+  #btnRelocate:hover{color:var(--text); border-color:var(--accent);}
+  #btnRelocate.active{background:var(--accent); color:#fff; border-color:var(--accent);}
+  .add-child-row #btnArchive:hover, .add-goal-wrap #btnArchive:hover{color:var(--text); border-color:var(--accent);}
+  .add-child-row #btnArchive.active, .add-goal-wrap #btnArchive.active{background:var(--accent); color:#fff; border-color:var(--accent);}
   .edit-hint{color:var(--muted); font-weight:400; font-size:12px;}
   .edit-hint.delete-hint{color:var(--red);}
   .auth-modal-overlay{
@@ -159,7 +163,7 @@
   .auth-panel button.auth-close:hover{color:var(--text);}
   .auth-panel input{
     background:var(--card2); border:1px solid var(--border); color:var(--text); border-radius:8px;
-    padding:9px 10px; font-size:13px; outline:none; width:100%;
+    padding:9px 10px; font-size:16px; outline:none; width:100%;
   }
   .auth-panel input:focus{border-color:var(--accent);}
   .auth-panel input.input-error{border-color:var(--red); box-shadow:0 0 0 1px var(--red);}
@@ -234,7 +238,7 @@
   .field-label{color:var(--muted); font-size:12px; margin-bottom:-4px;}
   .auth-panel select{
     background:var(--card2); border:1px solid var(--border); color:var(--text); border-radius:8px;
-    padding:9px 10px; font-size:13px; outline:none; width:100%;
+    padding:9px 10px; font-size:16px; outline:none; width:100%;
   }
   .breadcrumb-row{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:16px;}
   .breadcrumb{display:flex; gap:6px; align-items:center; flex-wrap:wrap; font-size:13px; color:var(--muted);}
@@ -375,7 +379,7 @@
   .edit-pencil:hover{border-color:var(--accent);}
   .goal-input{
     background:transparent; border:none; border-bottom:1px dashed var(--red); color:var(--text);
-    font-size:15px; font-weight:600; font-family:inherit; padding:0 0 2px; width:100%; min-width:0; outline:none;
+    font-size:16px; font-weight:600; font-family:inherit; padding:0 0 2px; width:100%; min-width:0; outline:none;
   }
   .goal-input:focus{border-bottom-style:solid; border-bottom-color:var(--red);}
   .leaf-row{
@@ -394,10 +398,10 @@
   .date-fields{display:flex; align-items:center; gap:3px;}
   .date-field{
     background:var(--card2); border:1px solid var(--border); color:var(--text); border-radius:6px;
-    padding:2px 4px; font-size:12px; font-family:inherit; text-align:center;
+    padding:4px; font-size:16px; font-family:inherit; text-align:center;
   }
-  .date-field-day, .date-field-month{width:34px;}
-  .date-field-year{width:52px;}
+  .date-field-day, .date-field-month{width:38px;}
+  .date-field-year{width:58px;}
   .date-sep{color:var(--muted);}
   .leaf-meta button, .nav-arrow{
     background:none; border:1px solid var(--border); color:var(--muted); border-radius:6px; padding:2px 8px; font-size:12px; cursor:pointer;
@@ -435,18 +439,21 @@
     padding:6px 12px; font-size:12px; cursor:pointer; white-space:nowrap;
   }
   #btnAddChild:hover{color:var(--text); border-color:var(--accent);}
+  #btnChecklistAdd:hover{color:var(--text); border-color:var(--accent);}
   #btnAddChild:disabled{opacity:.5; cursor:not-allowed;}
   #btnAddChild:disabled:hover{color:var(--muted); border-color:var(--border);}
   /* Compact "+"/"−" icon style for Add/Delete, used instead of full text labels to save room on
      narrow (phone) screens. */
-  #btnAddGoal.icon-btn, #btnAddChild.icon-btn, #btnDelete.icon-btn, #btnEdit.icon-btn, #btnAddSubgoal.icon-btn, #btnDeleteChecklist.icon-btn, #btnMove.icon-btn, #btnMoveChecklist.icon-btn{
+  #btnAddGoal.icon-btn, #btnAddChild.icon-btn, #btnDelete.icon-btn, #btnEdit.icon-btn, #btnAddSubgoal.icon-btn, #btnDeleteChecklist.icon-btn, #btnMove.icon-btn, #btnMoveChecklist.icon-btn, #btnRelocate.icon-btn, #btnChecklistAdd.icon-btn, .add-child-row #btnArchive.icon-btn, .add-goal-wrap #btnArchive.icon-btn{
     font-size:16px; font-weight:700; line-height:1; padding:5px 13px;
     min-width:32px; display:inline-flex; align-items:center; justify-content:center;
   }
-  #btnAddGoal.icon-btn, #btnAddChild.icon-btn, #btnDelete.icon-btn{ font-size:18px; }
+  #btnAddGoal.icon-btn, #btnAddChild.icon-btn, #btnDelete.icon-btn, #btnChecklistAdd.icon-btn{ font-size:18px; }
   #btnAddSubgoal.icon-btn{ font-size:24px; padding:2px; }
   #btnEdit.icon-btn{ font-size:24px; padding:2px; }
   #btnDeleteChecklist.icon-btn{ font-size:20px; padding:2px; }
+  #btnRelocate.icon-btn{ font-size:18px; padding:4px; }
+  .add-child-row #btnArchive.icon-btn, .add-goal-wrap #btnArchive.icon-btn{ font-size:24px; padding:2px; }
   #btnMove.icon-btn, #btnMoveChecklist.icon-btn{ font-size:18px; padding:4px; }
   .checklist-section{margin-top:20px;}
   .checklist-row.movable{
@@ -469,7 +476,7 @@
   .checklist-text.done{color:var(--muted); text-decoration:line-through;}
   .checklist-edit-input{
     flex:1; background:var(--card2); border:1px solid var(--accent); color:var(--text); border-radius:6px;
-    padding:5px 8px; font-size:14px; outline:none;
+    padding:5px 8px; font-size:16px; outline:none;
   }
   .checklist-edit{
     background:none; border:none; color:var(--muted); cursor:pointer; font-size:13px; padding:2px 6px; flex:none;
@@ -482,7 +489,7 @@
   .checklist-add-row{display:flex; gap:8px; margin-top:4px;}
   .checklist-add-row input{
     flex:1; background:var(--card2); border:1px solid var(--border); color:var(--text); border-radius:8px;
-    padding:8px 10px; font-size:13px; outline:none;
+    padding:8px 10px; font-size:16px; outline:none;
   }
   .checklist-add-row input:focus{border-color:var(--accent);}
   .wheel-wrap{background:var(--card); border:1px solid var(--border); border-radius:16px; padding:7px 22px; text-align:center;}
@@ -623,8 +630,6 @@ const STRINGS = {
     appTitle: '🎯 Трекер целей с колесом баланса',
     updateApp: 'Обновить приложение',
     appUpdatedMsg: 'У вас последняя версия.',
-    resetAll: 'Сбросить всё',
-    resetConfirm: 'Точно всё сбросить и начать с чистого листа?',
     home: 'Главная',
     back: 'Назад',
     tipBack: 'На уровень выше',
@@ -762,8 +767,6 @@ const STRINGS = {
     appTitle: '🎯 Goal Tracker with Balance Wheel',
     updateApp: 'Update app',
     appUpdatedMsg: "You're on the latest version.",
-    resetAll: 'Reset all',
-    resetConfirm: 'Reset everything and start with a clean slate?',
     home: 'Home',
     back: 'Back',
     tipBack: 'Go up one level',
@@ -1632,7 +1635,6 @@ function render(){
         <button id="btnInstructionsMenuItem" class="menu-item">${t('instructionsTitle')}</button>
         ${(isMobileDevice() && !isStandalonePwa()) ? `<button id="btnInstallAppMenuItem" class="menu-item">${t('installAppTitle')}</button>` : ''}
         <button id="btnUpdateApp" class="menu-item">${t('updateApp')}</button>
-        <button id="btnReset" class="menu-item">${t('resetAll')}</button>
         <div class="menu-lang-row">
           ${Object.keys(LANG_FLAGS).map(code => `<button class="lang-option ${lang===code?'active':''}" data-lang="${code}" title="${code==='ru'?'Русский':'English'}">${LANG_FLAGS[code]}</button>`).join('')}
         </div>
@@ -1879,6 +1881,7 @@ function render(){
         <button id="btnRelocate" class="${relocateMode?'active':'icon-btn'}" title="${relocateMode?t('done'):t('tipRelocate')}" aria-label="${relocateMode?t('done'):t('tipRelocate')}">${relocateMode ? t('done') : '<i class="ti ti-folder-symlink" aria-hidden="true"></i>'}</button>
         ${path.length === 2 ? `<button id="btnAddSubgoal" class="${addSubMode?'active':'icon-btn'}" title="${addSubMode?t('done'):t('tipExpand')}" aria-label="${addSubMode?t('done'):t('tipExpand')}">${addSubMode ? t('done') : '<i class="ti ti-sitemap" aria-hidden="true"></i>'}</button>` : ''}
         <button id="btnEdit" class="${editMode?'active':'icon-btn'}" title="${editMode?t('done'):t('tipEdit')}" aria-label="${editMode?t('done'):t('tipEdit')}">${editMode ? t('done') : '<i class="ti ti-edit" aria-hidden="true"></i>'}</button>
+        <button id="btnArchive" class="${node.archived?'active':'icon-btn'}" title="${node.archived ? t('tipUnarchive') : t('tipArchive')}" aria-label="${node.archived ? t('tipUnarchive') : t('tipArchive')}"><i class="ti ${node.archived ? 'ti-archive-off' : 'ti-archive'}" aria-hidden="true"></i></button>
         <span id="deleteMsg" class="add-goal-msg"></span>
       </div>`;
       if(node.children.length){
@@ -2200,7 +2203,7 @@ function checklistHTML(list){
       html += `<div class="checklist-row">
         <div class="checklist-circle ${item.done?'done':''}" data-checklist-toggle="${i}">${item.done?'✓':''}</div>
         ${isEditing
-          ? `<input type="text" class="checklist-edit-input" data-checklist-edit-idx="${i}" data-original="${esc(item.text)}" value="${esc(item.text)}" maxlength="80">`
+          ? `<form class="checklist-edit-form" style="display:contents"><input type="text" class="checklist-edit-input" data-checklist-edit-idx="${i}" data-original="${esc(item.text)}" value="${esc(item.text)}" maxlength="80" enterkeyhint="done"></form>`
           : `<span class="checklist-text ${item.done?'done':''}">${esc(item.text)}</span>`}
         <button class="star-btn checklist-star ${item.priority?'active':''}" data-checklist-priority="${i}" title="${item.priority ? t('tipRemovePriority') : t('tipAddPriority')}" aria-label="${item.priority ? t('tipRemovePriority') : t('tipAddPriority')}">${item.priority ? '⭐' : '☆'}</button>
         <button class="checklist-edit" data-checklist-edit="${i}" title="${t('tipEditItem')}" aria-label="${t('tipEditItem')}"><i class="ti ti-edit" aria-hidden="true"></i></button>
@@ -2221,7 +2224,12 @@ function checklistHTML(list){
 // before the drag actually starts, so that a normal tap (toggle/navigate) and a page scroll on
 // touch both still work as before — only a deliberate press-and-hold begins reordering.
 const DRAG_HOLD_MS = 380;
-const DRAG_MOVE_CANCEL_PX = 10;
+// How far the pointer may drift during the hold-to-start window before it's read as "this is a
+// scroll, not a hold" and the drag attempt is cancelled. 10px used to be tight enough that normal
+// hand tremor while holding a touchscreen still routinely tripped it, making the gesture feel like
+// it randomly refused to start — 18px keeps the scroll-vs-hold disambiguation while giving real
+// presses enough slack to register.
+const DRAG_MOVE_CANCEL_PX = 18;
 
 // selector: CSS selector (scoped with a `>` combinator) matching each draggable item, which must
 // carry a `data-drag-idx="N"` attribute. getList: returns the live array those items reorder.
@@ -2244,7 +2252,7 @@ function onDragPointerDown(e, selector, getList){
     idx: parseInt(item.dataset.dragIdx, 10),
     pointerId: e.pointerId,
     startX: e.clientX, startY: e.clientY,
-    lastClientY: e.clientY,
+    lastClientX: e.clientX, lastClientY: e.clientY,
     dragging: false,
     dropTarget: null,
     timer: null
@@ -2274,6 +2282,23 @@ function startDragging(){
   if(navigator.vibrate) navigator.vibrate(15);
   requestAnimationFrame(autoScrollTick);
 }
+// Re-reads whatever is currently under the pointer's last known position and updates the
+// drag-over highlight / ctx.dropTarget accordingly. Shared by onDragPointerMove (pointer actually
+// moving) and autoScrollTick (page scrolling underneath a pointer that's holding still near an
+// edge) — without also calling this from the scroll tick, holding still while the list auto-
+// scrolled left the highlighted target stuck on whatever card happened to be under the finger
+// before the scroll started, so dropping could land the card somewhere the user never pointed at.
+function updateDropTarget(ctx){
+  const under = document.elementFromPoint(ctx.lastClientX, ctx.lastClientY);
+  const overItem = under ? under.closest(ctx.selector) : null;
+  document.querySelectorAll('.drag-over').forEach(el=>{ if(el !== overItem) el.classList.remove('drag-over'); });
+  if(overItem && overItem !== ctx.item){
+    overItem.classList.add('drag-over');
+    ctx.dropTarget = overItem;
+  } else {
+    ctx.dropTarget = null;
+  }
+}
 // While actively dragging, if the pointer sits near the top or bottom edge of the viewport,
 // keep nudging the page in that direction. Without this, once dragging starts we call
 // preventDefault() on pointermove (to stop native scrolling from fighting the drag), which meant
@@ -2287,11 +2312,17 @@ function autoScrollTick(){
   const MAX_SPEED = 16;
   const y = ctx.lastClientY;
   const vh = window.innerHeight;
+  let scrolled = false;
   if(y < EDGE){
     window.scrollBy(0, -MAX_SPEED * (1 - y / EDGE));
+    scrolled = true;
   } else if(y > vh - EDGE){
     window.scrollBy(0, MAX_SPEED * (1 - (vh - y) / EDGE));
+    scrolled = true;
   }
+  // The pointer itself hasn't moved (no pointermove fires while the finger holds still), but the
+  // content underneath it just shifted, so what's "under the pointer" needs recomputing here too.
+  if(scrolled) updateDropTarget(ctx);
   requestAnimationFrame(autoScrollTick);
 }
 function onDragPointerMove(e){
@@ -2305,17 +2336,10 @@ function onDragPointerMove(e){
     }
     return;
   }
+  ctx.lastClientX = e.clientX;
   ctx.lastClientY = e.clientY;
   e.preventDefault();
-  const under = document.elementFromPoint(e.clientX, e.clientY);
-  const overItem = under ? under.closest(ctx.selector) : null;
-  document.querySelectorAll('.drag-over').forEach(el=>{ if(el !== overItem) el.classList.remove('drag-over'); });
-  if(overItem && overItem !== ctx.item){
-    overItem.classList.add('drag-over');
-    ctx.dropTarget = overItem;
-  } else {
-    ctx.dropTarget = null;
-  }
+  updateDropTarget(ctx);
 }
 function onDragPointerUp(e){
   if(!dragCtx || dragCtx.pointerId !== e.pointerId) return;
@@ -2987,9 +3011,18 @@ function attachHandlers(){
       saveState();
       render();
     });
-    checklistEditInput.addEventListener('keydown', (e)=>{
-      if(e.key === 'Enter') checklistEditInput.blur();
-    });
+    // Wrapped in a real <form> (see checklistHTML) and confirmed via 'submit' rather than a bare
+    // keydown+Enter check — same reasoning as the "add item" form: on Android/PWA keyboards the
+    // confirm key is often a "✓"/"Done"/"Go" action that doesn't reliably fire a matching Enter
+    // keydown, so a plain keydown listener could leave the edit sitting open, unsaved, even though
+    // the user tapped the keyboard's confirm key.
+    const checklistEditForm = document.querySelector('.checklist-edit-form');
+    if(checklistEditForm){
+      checklistEditForm.addEventListener('submit', (e)=>{
+        e.preventDefault();
+        checklistEditInput.blur();
+      });
+    }
     checklistEditInput.focus();
     checklistEditInput.setSelectionRange && checklistEditInput.setSelectionRange(checklistEditInput.value.length, checklistEditInput.value.length);
   }
@@ -3360,21 +3393,6 @@ function attachHandlers(){
       e.stopPropagation();
       topMenuOpen = false;
       doHardUpdate();
-    });
-  }
-  const btnReset = document.getElementById('btnReset');
-  if(btnReset){
-    btnReset.addEventListener('click', (e)=>{
-      e.stopPropagation();
-      topMenuOpen = false;
-      if(confirm(t('resetConfirm'))){
-        // A genuinely blank slate (same shape a brand-new cloud account gets), not the sample
-        // data again — otherwise there'd be no way to actually clear the demo content locally.
-        state = emptyTemplate();
-        path = [];
-        saveState();
-      }
-      render();
     });
   }
   const installOverlay = document.getElementById('installOverlay');
