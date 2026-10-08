@@ -42,6 +42,7 @@
 }
 </script>
 <style>
+  /* ===== Design tokens: base colors + light/pink themes ===== */
   :root{
     --bg:#0f1420; --card:#1a2233; --card2:#20293d; --text:#eef2f8; --muted:#8a93a6;
     --green:#3ecf8e; --yellow:#f2b84b; --red:#e5645a; --accent:#5b8cff; --border:#2a3348; --track:#0c1120;
@@ -66,6 +67,7 @@
   }
   html[data-theme="light"]{ background:#f5f7fb; }
   html[data-theme="pink"]{ background:#fff0f5; }
+  /* ===== Page shell ===== */
   body{
     margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
     background:linear-gradient(160deg,#0b0e17,#141b2c 60%,#0f1420); color:var(--text); min-height:100vh;
@@ -74,6 +76,7 @@
   html[data-theme="light"] body{ background:linear-gradient(160deg,#f5f7fb,#eef1f7 60%,#f5f7fb); }
   html[data-theme="pink"] body{ background:linear-gradient(160deg,#fff0f5,#ffe4ef 60%,#fff5f9); }
   #app{max-width:920px; margin:0 auto; padding:28px 20px 80px;}
+  /* ===== Topbar: menus, language & theme switchers ===== */
   .topbar{display:flex; align-items:center; margin-bottom:18px; flex-wrap:wrap; gap:10px;}
   .topbar h1{font-size:20px; margin:0; font-weight:600;}
   /* margin-left:auto (rather than justify-content:space-between on .topbar) so this stays pinned
@@ -123,6 +126,7 @@
   }
   .topbar .theme-option:hover{background:var(--card); border-color:var(--border);}
   .topbar .theme-option.active{border-color:var(--accent); box-shadow:0 0 0 1px var(--accent);}
+  /* ===== Action buttons (edit/delete/move/relocate/archive) ===== */
   #btnEdit, #btnDelete, #btnAddSubgoal, #btnDeleteChecklist, #btnMove, #btnMoveChecklist, #btnRelocate, #btnChecklistAdd, .add-child-row #btnArchive, .add-goal-wrap #btnArchive{
     background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:8px;
     padding:6px 12px; font-size:12px; cursor:pointer; white-space:nowrap;
@@ -143,6 +147,7 @@
   .add-child-row #btnArchive.active, .add-goal-wrap #btnArchive.active{background:var(--accent); color:#fff; border-color:var(--accent);}
   .edit-hint{color:var(--muted); font-weight:400; font-size:12px;}
   .edit-hint.delete-hint{color:var(--red);}
+  /* ===== Modal overlays & panels (auth, install, about, confirm) ===== */
   .auth-modal-overlay{
     position:fixed; inset:0; background:rgba(6,9,16,0.6); display:flex; align-items:center;
     justify-content:center; padding:20px; z-index:50;
@@ -240,6 +245,7 @@
     background:var(--card2); border:1px solid var(--border); color:var(--text); border-radius:8px;
     padding:9px 10px; font-size:16px; outline:none; width:100%;
   }
+  /* ===== Breadcrumb & relocate picker ===== */
   .breadcrumb-row{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:16px;}
   .breadcrumb{display:flex; gap:6px; align-items:center; flex-wrap:wrap; font-size:13px; color:var(--muted);}
   .breadcrumb span.crumb{cursor:pointer; padding:3px 8px; border-radius:6px;}
@@ -269,6 +275,7 @@
     white-space:normal; flex:none; width:100%;
   }
   .auth-panel .relocate-here-btn:hover{opacity:.9; border-color:var(--accent);}
+  /* ===== Home: overall progress & priority block ===== */
   .overall{
     background:var(--card); border:1px solid var(--border); border-radius:16px; padding:20px 22px; margin-bottom:22px;
   }
@@ -300,6 +307,7 @@
     padding:2px; flex-shrink:0;
   }
   .priority-remove:hover{color:var(--red);}
+  /* ===== Leaf detail: title, stars, bars, node header ===== */
   .leaf-title-row{display:flex; align-items:flex-start; justify-content:space-between; gap:8px;}
   .leaf-title-row .leaf-title{min-width:0; overflow-wrap:break-word; word-break:break-word;}
   .star-btn{
@@ -318,6 +326,7 @@
   .node-header{margin-bottom:18px;}
   .node-header h2{font-size:22px; margin:0 0 6px;}
   .node-header .meta{color:var(--muted); font-size:13px; margin-bottom:10px;}
+  /* ===== Cards grid & drag states ===== */
   .grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:14px;}
   .grid-goals{grid-template-columns:repeat(2,1fr);}
   .grid-hero-first{grid-template-columns:repeat(2,1fr);}
@@ -377,6 +386,7 @@
     padding:2px 7px; cursor:pointer; line-height:1.4;
   }
   .edit-pencil:hover{border-color:var(--accent);}
+  /* ===== Leaf rows: inline edit, checkbox, due dates ===== */
   .goal-input{
     background:transparent; border:none; border-bottom:1px dashed var(--red); color:var(--text);
     font-size:16px; font-weight:600; font-family:inherit; padding:0 0 2px; width:100%; min-width:0; outline:none;
@@ -413,6 +423,7 @@
     align-items:center; gap:6px;
   }
   .add-checklist-btn:hover{opacity:.9;}
+  /* ===== Sections: empty state, titles, add-rows ===== */
   .empty-state{color:var(--muted); font-size:13px; padding:20px; text-align:center; border:1px dashed var(--border); border-radius:12px;}
   .add-sub{margin-top:14px;}
   .add-sub button{
@@ -455,6 +466,7 @@
   #btnRelocate.icon-btn{ font-size:18px; padding:4px; }
   .add-child-row #btnArchive.icon-btn, .add-goal-wrap #btnArchive.icon-btn{ font-size:24px; padding:2px; }
   #btnMove.icon-btn, #btnMoveChecklist.icon-btn{ font-size:18px; padding:4px; }
+  /* ===== Checklist rows ===== */
   .checklist-section{margin-top:20px;}
   .checklist-row.movable{
     cursor:grab;
@@ -492,6 +504,7 @@
     padding:8px 10px; font-size:16px; outline:none;
   }
   .checklist-add-row input:focus{border-color:var(--accent);}
+  /* ===== Balance wheel ===== */
   .wheel-wrap{background:var(--card); border:1px solid var(--border); border-radius:16px; padding:7px 22px; text-align:center;}
 </style>
 </head>
@@ -512,7 +525,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.0.8';
+const APP_VERSION = '1.0.9';
 /* ===== Seed data (transcribed from the Excel table) =====
    emptyGoals/emptySteps take the noun to use for auto-generated names, so items added later via
    the UI can be named in whichever language is active at the time (default: Russian for the
