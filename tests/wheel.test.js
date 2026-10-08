@@ -89,6 +89,29 @@ test('deep nesting: done leaf + half-ticked checklist share one sector', () => {
   assert.equal(wheelPercent(container([container([inner])], { total: 1 })), 75);
 });
 
+test('expand (leaf→container): no double-count on fresh convert, sticky on re-expand', () => {
+  const { wheelTotal, setWheelTotal, ensureWheelTotals, countWheelLeaves } = t.app;
+  // Mirrors the data-addsub-idx handler: capture prevTotal BEFORE the backfill.
+  const expand = (node, sphere) => {
+    node.children = [
+      { name: 's1', date: '', done: false, children: [] },
+      { name: 's2', date: '', done: false, children: [] },
+    ];
+    delete node.done; delete node.date;
+    const prevTotal = wheelTotal(node);
+    ensureWheelTotals(sphere);
+    const freshLeaves = countWheelLeaves(node, false);
+    setWheelTotal(node, prevTotal > 0 ? prevTotal + freshLeaves : freshLeaves);
+    return node;
+  };
+  const node = leaf(false);
+  const sphere = container([node], { total: 1 });
+  expand(node, sphere);
+  assert.equal(wheelTotal(node), 2, 'fresh convert: total = live leaves, not 4');
+  expand(node, sphere);
+  assert.equal(wheelTotal(node), 4, 're-expand: sticky trace survives (2 old + 2 new)');
+});
+
 test('percent is clamped to 0..100', () => {
   assert.equal(wheelPercent(container(leaves(3, 0), { total: 2 })), 0, 'incomplete > total → 0');
   assert.equal(wheelPercent(container([], { total: 0 })), 100);
