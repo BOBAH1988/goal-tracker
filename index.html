@@ -512,7 +512,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.0.7';
+const APP_VERSION = '1.0.8';
 /* ===== Seed data (transcribed from the Excel table) =====
    emptyGoals/emptySteps take the noun to use for auto-generated names, so items added later via
    the UI can be named in whichever language is active at the time (default: Russian for the
@@ -1831,7 +1831,288 @@ function render(){
   document.documentElement.setAttribute('data-theme', theme);
   document.title = t('appTitle');
 
-  let html = `<div class="topbar">
+  let html = topbarHTML();
+
+  html += systemPanelsHTML();
+
+  html += statusPanelsHTML();
+
+  html += authPanelsHTML();
+
+  html += renderBreadcrumb();
+
+  const addSubActive = addSubMode && path.length === 2;
+  const mode = editMode ? 'edit' : deleteMode ? 'delete' : addSubActive ? 'addsub' : moveMode ? 'move' : relocateMode ? 'relocate' : null;
+  const protectedCount = protectedCountFor(path.length);
+  const hintHTML = editMode
+    ? ` <span class="edit-hint">${t('editHint')}</span>`
+    : deleteMode
+      ? ` <span class="edit-hint delete-hint">${t('deleteHint')(protectedCount)}</span>`
+      : addSubActive
+        ? ` <span class="edit-hint">${t('addSubHint')}</span>`
+        : moveMode
+          ? ` <span class="edit-hint">${t('moveHint')}</span>`
+          : relocateMode
+            ? ` <span class="edit-hint">${t('relocateHint')}</span>`
+            : '';
+
+  if(path.length===0){
+    html += homeViewHTML(overallPct, hintHTML, mode, protectedCount);
+  } else {
+    html += nodeViewHTML(node, mode, protectedCount, hintHTML);
+  }
+
+  html += footerHTML();
+  app.innerHTML = html;
+  attachHandlers();
+  adjustWheelLabels();
+}
+
+function nodeViewHTML(node, mode, protectedCount, hintHTML){
+  let html = '';
+  const pct = computePercent(node);
+  const dc = doneCount(node);
+  const isContainer = !('done' in node);
+  const metaCountHTML = (isContainer && node.children && node.children.length) ? dc + ' / ' + activeChildren(node).length + ' ' + t('completedOf') : '';
+  const metaHintHTML = isContainer ? hintHTML : '';
+  html += `<div class="node-header">
+    <h2>${esc(node.name)}</h2>
+    <div class="meta">${metaCountHTML}${metaHintHTML}</div>
+    <div class="bar"><div style="width:${pct}%; background:${barColor(pct)}"></div></div>
+  </div>`;
+
+  if(isContainer){
+    // Container page (subgoal/goal/deeper level): always show the Add/Edit/Delete row,
+    // even when there are currently 0 children — every non-home level can be emptied out.
+    const childLabel = path.length === 1 ? t('subgoal') : path.length === 2 ? t('goal') : t('item');
+    const atLimit = node.children.length >= 10;
+    html += `<div class="add-child-row">
+      <span id="addChildMsg" class="add-goal-msg"></span>
+      <button id="btnAddChild" class="icon-btn" title="${t('tipAdd')}" aria-label="${t('tipAdd')}">+</button>
+      <button id="btnDelete" class="${deleteMode?'active':'icon-btn'}" title="${deleteMode?t('done'):t('tipDelete')}" aria-label="${deleteMode?t('done'):t('tipDelete')}">${deleteMode ? t('done') : '−'}</button>
+      <button id="btnMove" class="${moveMode?'active':'icon-btn'}" title="${moveMode?t('done'):t('tipMove')}" aria-label="${moveMode?t('done'):t('tipMove')}">${moveMode ? t('done') : '↕'}</button>
+      <button id="btnRelocate" class="${relocateMode?'active':'icon-btn'}" title="${relocateMode?t('done'):t('tipRelocate')}" aria-label="${relocateMode?t('done'):t('tipRelocate')}">${relocateMode ? t('done') : '<i class="ti ti-folder-symlink" aria-hidden="true"></i>'}</button>
+      ${path.length === 2 ? `<button id="btnAddSubgoal" class="${addSubMode?'active':'icon-btn'}" title="${addSubMode?t('done'):t('tipExpand')}" aria-label="${addSubMode?t('done'):t('tipExpand')}">${addSubMode ? t('done') : '<i class="ti ti-sitemap" aria-hidden="true"></i>'}</button>` : ''}
+      <button id="btnEdit" class="${editMode?'active':'icon-btn'}" title="${editMode?t('done'):t('tipEdit')}" aria-label="${editMode?t('done'):t('tipEdit')}">${editMode ? t('done') : '<i class="ti ti-edit" aria-hidden="true"></i>'}</button>
+      <button id="btnArchive" class="${node.archived?'active':'icon-btn'}" title="${node.archived ? t('tipUnarchive') : t('tipArchive')}" aria-label="${node.archived ? t('tipUnarchive') : t('tipArchive')}"><i class="ti ${node.archived ? 'ti-archive-off' : 'ti-archive'}" aria-hidden="true"></i></button>
+      <span id="deleteMsg" class="add-goal-msg"></span>
+    </div>`;
+    if(node.children.length){
+      html += `<div class="grid grid-goals">`;
+      node.children.forEach((child, i) => { html += cardOrLeafHTML(child, i, mode, protectedCount); });
+      html += `</div>`;
+      html += `<div class="section-title" style="margin-top:24px;">${t('balanceWheel')}</div>`;
+      html += `<div class="wheel-wrap" id="wheelWrap">${wheelHTML(activeChildren(node))}</div>`;
+    } else {
+      html += `<div class="empty-state">${t('emptyState')}</div>`;
+    }
+  } else {
+    html += leafDetailHTML(node);
+    if(node.checklist){
+      html += checklistHTML(node.checklist);
+    }
+  }
+  return html;
+}
+
+function homeViewHTML(overallPct, hintHTML, mode, protectedCount){
+  let html = '';
+  html += `<div class="overall">
+    <div class="row"><h2>${t('overallProgress')}</h2><div class="pct" style="color:${barColor(overallPct)}">${overallPct}%</div></div>
+    <div class="bar"><div style="width:${overallPct}%; background:${barColor(overallPct)}"></div></div>
+  </div>`;
+  lastPriorityItems = collectPriorityItems();
+  const priorityOpen = !!state.priorityOpen;
+  html += `<div class="priority-block">
+    <div class="priority-header" id="priorityToggle">
+      <span class="section-title">${t('priorityTitle')}</span>
+      <span class="priority-arrow">${priorityOpen ? '▾' : '▸'}</span>
+    </div>
+    ${priorityOpen ? `<div class="priority-list">
+      ${lastPriorityItems.length
+        ? lastPriorityItems.map((entry, i) => {
+            const done = entry.kind === 'leaf' ? entry.node.done : entry.item.done;
+            const name = entry.kind === 'leaf' ? entry.node.name : entry.item.text;
+            // Checklist items don't carry their own due date in this data model — only a plain
+            // leaf/goal does — so the date badge only ever shows for entry.kind === 'leaf'.
+            const date = entry.kind === 'leaf' ? entry.node.date : '';
+            return `<div class="priority-row">
+              <div class="chk ${done?'done':''}" data-priority-toggle="${i}">${done?'✓':''}</div>
+              <span class="priority-name ${done?'done':''}" data-priority-nav="${i}">${esc(name)}</span>
+              ${date ? `<span class="priority-date">${esc(date)}</span>` : ''}
+              <button class="priority-remove" data-priority-remove="${i}" title="${t('tipRemovePriority')}" aria-label="${t('tipRemovePriority')}">✕</button>
+            </div>`;
+          }).join('')
+        : `<div class="empty-state">${t('priorityEmpty')}</div>`}
+    </div>` : ''}
+  </div>`;
+  html += `<div class="section-title-row">
+    <div class="section-title">${t('mainGoals')}${hintHTML}</div>
+    <div class="add-goal-wrap">
+      <span id="addGoalMsg" class="add-goal-msg"></span>
+      <button id="btnAddGoal" class="icon-btn" title="${t('tipAdd')}" aria-label="${t('tipAdd')}">+</button>
+      <button id="btnDelete" class="${deleteMode?'active':'icon-btn'}" title="${deleteMode?t('done'):t('tipDelete')}" aria-label="${deleteMode?t('done'):t('tipDelete')}">${deleteMode ? t('done') : '−'}</button>
+      <button id="btnMove" class="${moveMode?'active':'icon-btn'}" title="${moveMode?t('done'):t('tipMove')}" aria-label="${moveMode?t('done'):t('tipMove')}">${moveMode ? t('done') : '↕'}</button>
+      <button id="btnRelocate" class="${relocateMode?'active':'icon-btn'}" title="${relocateMode?t('done'):t('tipRelocate')}" aria-label="${relocateMode?t('done'):t('tipRelocate')}">${relocateMode ? t('done') : '<i class="ti ti-folder-symlink" aria-hidden="true"></i>'}</button>
+      <button id="btnEdit" class="${editMode?'active':'icon-btn'}" title="${editMode?t('done'):t('tipEdit')}" aria-label="${editMode?t('done'):t('tipEdit')}">${editMode ? t('done') : '<i class="ti ti-edit" aria-hidden="true"></i>'}</button>
+      <span id="deleteMsg" class="add-goal-msg"></span>
+    </div>
+  </div>`;
+  html += `<div class="grid grid-goals">`;
+  state.children.forEach((cat, i) => { html += cardOrLeafHTML(cat, i, mode, protectedCount); });
+  html += `</div>`;
+  html += `<div class="section-title" style="margin-top:24px;">${t('balanceWheel')}</div>`;
+  html += `<div class="wheel-wrap" id="wheelWrap">${wheelHTML(activeChildren(state))}</div>`;
+  return html;
+}
+
+function authPanelsHTML(){
+  let html = '';
+  if(cloudEnabled && authPanelOpen && !authUser){
+    html += `<div class="auth-modal-overlay" id="authOverlay">
+      <div class="auth-panel">
+        <button class="auth-close" id="btnAuthClose" aria-label="close" title="${t('done')}">✕</button>
+        <input type="email" id="authEmail" placeholder="${t('emailPlaceholder')}" autocomplete="email">
+        <input type="password" id="authPassword" placeholder="${t('passwordPlaceholder')}" autocomplete="current-password">
+        <div class="auth-btn-row">
+          <button id="btnAuthSignIn" ${authBusy?'disabled':''}>${t('accountSignIn')}</button>
+          <button type="button" id="btnForgotPassword" class="auth-link" ${resetBusy?'disabled':''}>${t('forgotPassword')}</button>
+        </div>
+        ${authError ? `<div class="auth-error">${esc(authError)}</div>` : ''}
+        ${resetMsg ? `<div class="auth-hint" style="color:var(--green)">${esc(resetMsg)}</div>` : ''}
+        <div class="auth-hint">${t('accountHint')}</div>
+        <button type="button" id="btnOpenSignup" class="auth-link-center">${t('accountSignUp')}</button>
+      </div>
+    </div>`;
+  }
+  if(cloudEnabled && signupPanelOpen && !authUser){
+    html += `<div class="auth-modal-overlay" id="signupOverlay">
+      <div class="auth-panel">
+        <button class="auth-close" id="btnSignupClose" aria-label="close" title="${t('done')}">✕</button>
+        <input type="text" id="authName" placeholder="${t('namePlaceholder')}" autocomplete="username" maxlength="30">
+        <div class="auth-hint" id="nameCheckMsg"></div>
+        <input type="email" id="authEmail" placeholder="${t('emailPlaceholder')}" autocomplete="email">
+        <input type="password" id="authPassword" placeholder="${t('passwordPlaceholder')}" autocomplete="new-password">
+        <div class="auth-hint" id="passwordHintMsg">${t('passwordHintText')}</div>
+        <label class="auth-consent">
+          <input type="checkbox" id="authConsent" ${privacyConsent?'checked':''}>
+          <span>${t('consentLabel')}
+            <details class="auth-consent-details">
+              <summary>${t('consentDetailsLabel')}</summary>
+              ${esc(t('consentText'))}
+            </details>
+          </span>
+        </label>
+        <div class="auth-signup-row">
+          <button id="btnAuthSignUp" ${authBusy?'disabled':''}>${t('accountSignUp')}</button>
+        </div>
+        ${authError ? `<div class="auth-error">${esc(authError)}</div>` : ''}
+        <button type="button" id="btnBackToSignIn" class="auth-link-center">${t('backToSignIn')}</button>
+      </div>
+    </div>`;
+  }
+  if(cloudEnabled && editAccountOpen && authUser){
+    html += `<div class="auth-modal-overlay" id="editAccountOverlay">
+      <div class="auth-panel edit-account-panel">
+        <button class="auth-close" id="btnEditAccountClose" aria-label="close" title="${t('done')}">✕</button>
+        <input type="text" id="editName" placeholder="${t('namePlaceholderEdit')}" autocomplete="username" maxlength="30" value="${esc(authUser.name||'')}">
+        <input type="text" id="editSurname" placeholder="${t('surnamePlaceholder')}" autocomplete="family-name" maxlength="30" value="${esc(authUser.surname||'')}">
+        <div class="field-label">${t('birthDateLabel')}</div>
+        <input type="date" id="editBirthDate" value="${esc(authUser.birthDate||'')}">
+        <div class="field-label">${t('genderLabel')}</div>
+        <select id="editGender">
+          <option value="" ${!authUser.gender?'selected':''}>${t('genderUnspecified')}</option>
+          <option value="male" ${authUser.gender==='male'?'selected':''}>${t('genderMale')}</option>
+          <option value="female" ${authUser.gender==='female'?'selected':''}>${t('genderFemale')}</option>
+        </select>
+        <input type="text" id="editOccupation" placeholder="${t('occupationPlaceholder')}" maxlength="60" value="${esc(authUser.occupation||'')}">
+        ${editAccountError ? `<div class="auth-error">${esc(editAccountError)}</div>` : ''}
+        <button id="btnEditAccountSave" ${editAccountBusy?'disabled':''}>${t('saveChanges')}</button>
+      </div>
+    </div>`;
+  }
+  return html;
+}
+
+function footerHTML(){
+  return `<footer>${authUser ? t('footerLoggedIn') : t('footer')} · v${APP_VERSION}</footer>`;
+}
+
+function statusPanelsHTML(){
+  let html = '';
+  if(syncConflict){
+    html += `<div class="auth-modal-overlay" id="syncConflictOverlay">
+      <div class="auth-panel">
+        <h2 style="margin:0 0 4px; font-size:16px;">${t('syncConflictTitle')}</h2>
+        <p style="margin:0; font-size:14px;">${esc(t('syncConflictText'))}</p>
+        <div class="auth-btn-col">
+          <button id="btnSyncConflictUseCloud">${t('syncConflictUseCloud')}</button>
+          <button id="btnSyncConflictUseLocal" class="btn-danger">${t('syncConflictUseLocal')}</button>
+        </div>
+        <button type="button" id="btnSyncConflictExport" class="auth-link-center">${t('syncConflictExport')}</button>
+      </div>
+    </div>`;
+  }
+  if(relocateSourcePath){
+    html += relocatePickerHTML();
+  }
+  if(cloudEnabled && authUser && !authUser.emailVerified){
+    html += `<div class="verify-banner">
+      <span>${t('verifyBannerText')}</span>
+      <button id="btnResendVerify" ${verifyBusy?'disabled':''}>${t('verifyResend')}</button>
+      <button id="btnRecheckVerify" ${verifyBusy?'disabled':''}>${t('verifyRecheck')}</button>
+      ${verifyMsg ? `<span class="verify-msg">${esc(verifyMsg)}</span>` : ''}
+    </div>`;
+  }
+  return html;
+}
+
+function systemPanelsHTML(){
+  let html = '';
+  if(installPanelOpen){
+    html += `<div class="auth-modal-overlay" id="installOverlay">
+      <div class="auth-panel">
+        <button class="auth-close" id="btnInstallClose" aria-label="close" title="${t('done')}">✕</button>
+        <h2 style="margin:0 0 4px; font-size:16px;">${t('installAppTitle')}</h2>
+        <div class="install-steps">${isIOSDevice() ? t('installStepsIOS') : t('installStepsAndroid')}</div>
+        ${(deferredInstallPrompt && !isIOSDevice()) ? `<button id="btnInstallNow">${t('installNowBtn')}</button>` : ''}
+      </div>
+    </div>`;
+  }
+  if(aboutPanelOpen){
+    html += `<div class="auth-modal-overlay" id="aboutOverlay">
+      <div class="auth-panel">
+        <button class="auth-close" id="btnAboutClose" aria-label="close" title="${t('done')}">✕</button>
+        <h2 style="margin:0 0 4px; font-size:16px;">${t('aboutTitle')}</h2>
+        <div class="about-text">${esc(t('aboutText'))}</div>
+      </div>
+    </div>`;
+  }
+  if(instructionsPanelOpen){
+    html += `<div class="auth-modal-overlay" id="instructionsOverlay">
+      <div class="auth-panel scrollable wide">
+        <button class="auth-close" id="btnInstructionsClose" aria-label="close" title="${t('done')}">✕</button>
+        <h2 style="margin:0 0 4px; font-size:16px;">${t('instructionsTitle')}</h2>
+        <div class="about-text">${esc(t('instructionsText'))}</div>
+      </div>
+    </div>`;
+  }
+  if(checklistDeletePanelOpen){
+    html += `<div class="auth-modal-overlay" id="checklistDeleteOverlay">
+      <div class="auth-panel">
+        <p style="margin:0; font-size:14px;">${esc(t('checklistDeleteConfirm'))}</p>
+        <div class="auth-btn-row">
+          <button id="btnChecklistDeleteYes" class="btn-danger">${t('confirmYes')}</button>
+          <button id="btnChecklistDeleteNo">${t('confirmNo')}</button>
+        </div>
+      </div>
+    </div>`;
+  }
+  return html;
+}
+
+function topbarHTML(){
+  return `<div class="topbar">
     <div class="top-menu-dropdown">
       <button id="btnTopMenu" title="${t('menuTitle')}" aria-label="${t('menuTitle')}">☰</button>
       ${topMenuOpen ? `<div class="lang-menu">
@@ -1864,256 +2145,6 @@ function render(){
         : `<button id="btnAccount">🔐 ${t('account')}</button>`) : ''}
     </div>
   </div>${topMenuOpen ? '<div class="menu-backdrop"></div>' : ''}`;
-
-  if(installPanelOpen){
-    html += `<div class="auth-modal-overlay" id="installOverlay">
-      <div class="auth-panel">
-        <button class="auth-close" id="btnInstallClose" aria-label="close" title="${t('done')}">✕</button>
-        <h2 style="margin:0 0 4px; font-size:16px;">${t('installAppTitle')}</h2>
-        <div class="install-steps">${isIOSDevice() ? t('installStepsIOS') : t('installStepsAndroid')}</div>
-        ${(deferredInstallPrompt && !isIOSDevice()) ? `<button id="btnInstallNow">${t('installNowBtn')}</button>` : ''}
-      </div>
-    </div>`;
-  }
-
-  if(aboutPanelOpen){
-    html += `<div class="auth-modal-overlay" id="aboutOverlay">
-      <div class="auth-panel">
-        <button class="auth-close" id="btnAboutClose" aria-label="close" title="${t('done')}">✕</button>
-        <h2 style="margin:0 0 4px; font-size:16px;">${t('aboutTitle')}</h2>
-        <div class="about-text">${esc(t('aboutText'))}</div>
-      </div>
-    </div>`;
-  }
-
-  if(instructionsPanelOpen){
-    html += `<div class="auth-modal-overlay" id="instructionsOverlay">
-      <div class="auth-panel scrollable wide">
-        <button class="auth-close" id="btnInstructionsClose" aria-label="close" title="${t('done')}">✕</button>
-        <h2 style="margin:0 0 4px; font-size:16px;">${t('instructionsTitle')}</h2>
-        <div class="about-text">${esc(t('instructionsText'))}</div>
-      </div>
-    </div>`;
-  }
-
-  if(checklistDeletePanelOpen){
-    html += `<div class="auth-modal-overlay" id="checklistDeleteOverlay">
-      <div class="auth-panel">
-        <p style="margin:0; font-size:14px;">${esc(t('checklistDeleteConfirm'))}</p>
-        <div class="auth-btn-row">
-          <button id="btnChecklistDeleteYes" class="btn-danger">${t('confirmYes')}</button>
-          <button id="btnChecklistDeleteNo">${t('confirmNo')}</button>
-        </div>
-      </div>
-    </div>`;
-  }
-
-  if(syncConflict){
-    html += `<div class="auth-modal-overlay" id="syncConflictOverlay">
-      <div class="auth-panel">
-        <h2 style="margin:0 0 4px; font-size:16px;">${t('syncConflictTitle')}</h2>
-        <p style="margin:0; font-size:14px;">${esc(t('syncConflictText'))}</p>
-        <div class="auth-btn-col">
-          <button id="btnSyncConflictUseCloud">${t('syncConflictUseCloud')}</button>
-          <button id="btnSyncConflictUseLocal" class="btn-danger">${t('syncConflictUseLocal')}</button>
-        </div>
-        <button type="button" id="btnSyncConflictExport" class="auth-link-center">${t('syncConflictExport')}</button>
-      </div>
-    </div>`;
-  }
-
-  if(relocateSourcePath){
-    html += relocatePickerHTML();
-  }
-
-  if(cloudEnabled && authUser && !authUser.emailVerified){
-    html += `<div class="verify-banner">
-      <span>${t('verifyBannerText')}</span>
-      <button id="btnResendVerify" ${verifyBusy?'disabled':''}>${t('verifyResend')}</button>
-      <button id="btnRecheckVerify" ${verifyBusy?'disabled':''}>${t('verifyRecheck')}</button>
-      ${verifyMsg ? `<span class="verify-msg">${esc(verifyMsg)}</span>` : ''}
-    </div>`;
-  }
-
-  if(cloudEnabled && authPanelOpen && !authUser){
-    html += `<div class="auth-modal-overlay" id="authOverlay">
-      <div class="auth-panel">
-        <button class="auth-close" id="btnAuthClose" aria-label="close" title="${t('done')}">✕</button>
-        <input type="email" id="authEmail" placeholder="${t('emailPlaceholder')}" autocomplete="email">
-        <input type="password" id="authPassword" placeholder="${t('passwordPlaceholder')}" autocomplete="current-password">
-        <div class="auth-btn-row">
-          <button id="btnAuthSignIn" ${authBusy?'disabled':''}>${t('accountSignIn')}</button>
-          <button type="button" id="btnForgotPassword" class="auth-link" ${resetBusy?'disabled':''}>${t('forgotPassword')}</button>
-        </div>
-        ${authError ? `<div class="auth-error">${esc(authError)}</div>` : ''}
-        ${resetMsg ? `<div class="auth-hint" style="color:var(--green)">${esc(resetMsg)}</div>` : ''}
-        <div class="auth-hint">${t('accountHint')}</div>
-        <button type="button" id="btnOpenSignup" class="auth-link-center">${t('accountSignUp')}</button>
-      </div>
-    </div>`;
-  }
-
-  if(cloudEnabled && signupPanelOpen && !authUser){
-    html += `<div class="auth-modal-overlay" id="signupOverlay">
-      <div class="auth-panel">
-        <button class="auth-close" id="btnSignupClose" aria-label="close" title="${t('done')}">✕</button>
-        <input type="text" id="authName" placeholder="${t('namePlaceholder')}" autocomplete="username" maxlength="30">
-        <div class="auth-hint" id="nameCheckMsg"></div>
-        <input type="email" id="authEmail" placeholder="${t('emailPlaceholder')}" autocomplete="email">
-        <input type="password" id="authPassword" placeholder="${t('passwordPlaceholder')}" autocomplete="new-password">
-        <div class="auth-hint" id="passwordHintMsg">${t('passwordHintText')}</div>
-        <label class="auth-consent">
-          <input type="checkbox" id="authConsent" ${privacyConsent?'checked':''}>
-          <span>${t('consentLabel')}
-            <details class="auth-consent-details">
-              <summary>${t('consentDetailsLabel')}</summary>
-              ${esc(t('consentText'))}
-            </details>
-          </span>
-        </label>
-        <div class="auth-signup-row">
-          <button id="btnAuthSignUp" ${authBusy?'disabled':''}>${t('accountSignUp')}</button>
-        </div>
-        ${authError ? `<div class="auth-error">${esc(authError)}</div>` : ''}
-        <button type="button" id="btnBackToSignIn" class="auth-link-center">${t('backToSignIn')}</button>
-      </div>
-    </div>`;
-  }
-
-  if(cloudEnabled && editAccountOpen && authUser){
-    html += `<div class="auth-modal-overlay" id="editAccountOverlay">
-      <div class="auth-panel edit-account-panel">
-        <button class="auth-close" id="btnEditAccountClose" aria-label="close" title="${t('done')}">✕</button>
-        <input type="text" id="editName" placeholder="${t('namePlaceholderEdit')}" autocomplete="username" maxlength="30" value="${esc(authUser.name||'')}">
-        <input type="text" id="editSurname" placeholder="${t('surnamePlaceholder')}" autocomplete="family-name" maxlength="30" value="${esc(authUser.surname||'')}">
-        <div class="field-label">${t('birthDateLabel')}</div>
-        <input type="date" id="editBirthDate" value="${esc(authUser.birthDate||'')}">
-        <div class="field-label">${t('genderLabel')}</div>
-        <select id="editGender">
-          <option value="" ${!authUser.gender?'selected':''}>${t('genderUnspecified')}</option>
-          <option value="male" ${authUser.gender==='male'?'selected':''}>${t('genderMale')}</option>
-          <option value="female" ${authUser.gender==='female'?'selected':''}>${t('genderFemale')}</option>
-        </select>
-        <input type="text" id="editOccupation" placeholder="${t('occupationPlaceholder')}" maxlength="60" value="${esc(authUser.occupation||'')}">
-        ${editAccountError ? `<div class="auth-error">${esc(editAccountError)}</div>` : ''}
-        <button id="btnEditAccountSave" ${editAccountBusy?'disabled':''}>${t('saveChanges')}</button>
-      </div>
-    </div>`;
-  }
-
-  html += renderBreadcrumb();
-
-  const addSubActive = addSubMode && path.length === 2;
-  const mode = editMode ? 'edit' : deleteMode ? 'delete' : addSubActive ? 'addsub' : moveMode ? 'move' : relocateMode ? 'relocate' : null;
-  const protectedCount = protectedCountFor(path.length);
-  const hintHTML = editMode
-    ? ` <span class="edit-hint">${t('editHint')}</span>`
-    : deleteMode
-      ? ` <span class="edit-hint delete-hint">${t('deleteHint')(protectedCount)}</span>`
-      : addSubActive
-        ? ` <span class="edit-hint">${t('addSubHint')}</span>`
-        : moveMode
-          ? ` <span class="edit-hint">${t('moveHint')}</span>`
-          : relocateMode
-            ? ` <span class="edit-hint">${t('relocateHint')}</span>`
-            : '';
-
-  if(path.length===0){
-    html += `<div class="overall">
-      <div class="row"><h2>${t('overallProgress')}</h2><div class="pct" style="color:${barColor(overallPct)}">${overallPct}%</div></div>
-      <div class="bar"><div style="width:${overallPct}%; background:${barColor(overallPct)}"></div></div>
-    </div>`;
-    lastPriorityItems = collectPriorityItems();
-    const priorityOpen = !!state.priorityOpen;
-    html += `<div class="priority-block">
-      <div class="priority-header" id="priorityToggle">
-        <span class="section-title">${t('priorityTitle')}</span>
-        <span class="priority-arrow">${priorityOpen ? '▾' : '▸'}</span>
-      </div>
-      ${priorityOpen ? `<div class="priority-list">
-        ${lastPriorityItems.length
-          ? lastPriorityItems.map((entry, i) => {
-              const done = entry.kind === 'leaf' ? entry.node.done : entry.item.done;
-              const name = entry.kind === 'leaf' ? entry.node.name : entry.item.text;
-              // Checklist items don't carry their own due date in this data model — only a plain
-              // leaf/goal does — so the date badge only ever shows for entry.kind === 'leaf'.
-              const date = entry.kind === 'leaf' ? entry.node.date : '';
-              return `<div class="priority-row">
-                <div class="chk ${done?'done':''}" data-priority-toggle="${i}">${done?'✓':''}</div>
-                <span class="priority-name ${done?'done':''}" data-priority-nav="${i}">${esc(name)}</span>
-                ${date ? `<span class="priority-date">${esc(date)}</span>` : ''}
-                <button class="priority-remove" data-priority-remove="${i}" title="${t('tipRemovePriority')}" aria-label="${t('tipRemovePriority')}">✕</button>
-              </div>`;
-            }).join('')
-          : `<div class="empty-state">${t('priorityEmpty')}</div>`}
-      </div>` : ''}
-    </div>`;
-    html += `<div class="section-title-row">
-      <div class="section-title">${t('mainGoals')}${hintHTML}</div>
-      <div class="add-goal-wrap">
-        <span id="addGoalMsg" class="add-goal-msg"></span>
-        <button id="btnAddGoal" class="icon-btn" title="${t('tipAdd')}" aria-label="${t('tipAdd')}">+</button>
-        <button id="btnDelete" class="${deleteMode?'active':'icon-btn'}" title="${deleteMode?t('done'):t('tipDelete')}" aria-label="${deleteMode?t('done'):t('tipDelete')}">${deleteMode ? t('done') : '−'}</button>
-        <button id="btnMove" class="${moveMode?'active':'icon-btn'}" title="${moveMode?t('done'):t('tipMove')}" aria-label="${moveMode?t('done'):t('tipMove')}">${moveMode ? t('done') : '↕'}</button>
-        <button id="btnRelocate" class="${relocateMode?'active':'icon-btn'}" title="${relocateMode?t('done'):t('tipRelocate')}" aria-label="${relocateMode?t('done'):t('tipRelocate')}">${relocateMode ? t('done') : '<i class="ti ti-folder-symlink" aria-hidden="true"></i>'}</button>
-        <button id="btnEdit" class="${editMode?'active':'icon-btn'}" title="${editMode?t('done'):t('tipEdit')}" aria-label="${editMode?t('done'):t('tipEdit')}">${editMode ? t('done') : '<i class="ti ti-edit" aria-hidden="true"></i>'}</button>
-        <span id="deleteMsg" class="add-goal-msg"></span>
-      </div>
-    </div>`;
-    html += `<div class="grid grid-goals">`;
-    state.children.forEach((cat, i) => { html += cardOrLeafHTML(cat, i, mode, protectedCount); });
-    html += `</div>`;
-    html += `<div class="section-title" style="margin-top:24px;">${t('balanceWheel')}</div>`;
-    html += `<div class="wheel-wrap" id="wheelWrap">${wheelHTML(activeChildren(state))}</div>`;
-  } else {
-    const pct = computePercent(node);
-    const dc = doneCount(node);
-    const isContainer = !('done' in node);
-    const metaCountHTML = (isContainer && node.children && node.children.length) ? dc + ' / ' + activeChildren(node).length + ' ' + t('completedOf') : '';
-    const metaHintHTML = isContainer ? hintHTML : '';
-    html += `<div class="node-header">
-      <h2>${esc(node.name)}</h2>
-      <div class="meta">${metaCountHTML}${metaHintHTML}</div>
-      <div class="bar"><div style="width:${pct}%; background:${barColor(pct)}"></div></div>
-    </div>`;
-
-    if(isContainer){
-      // Container page (subgoal/goal/deeper level): always show the Add/Edit/Delete row,
-      // even when there are currently 0 children — every non-home level can be emptied out.
-      const childLabel = path.length === 1 ? t('subgoal') : path.length === 2 ? t('goal') : t('item');
-      const atLimit = node.children.length >= 10;
-      html += `<div class="add-child-row">
-        <span id="addChildMsg" class="add-goal-msg"></span>
-        <button id="btnAddChild" class="icon-btn" title="${t('tipAdd')}" aria-label="${t('tipAdd')}">+</button>
-        <button id="btnDelete" class="${deleteMode?'active':'icon-btn'}" title="${deleteMode?t('done'):t('tipDelete')}" aria-label="${deleteMode?t('done'):t('tipDelete')}">${deleteMode ? t('done') : '−'}</button>
-        <button id="btnMove" class="${moveMode?'active':'icon-btn'}" title="${moveMode?t('done'):t('tipMove')}" aria-label="${moveMode?t('done'):t('tipMove')}">${moveMode ? t('done') : '↕'}</button>
-        <button id="btnRelocate" class="${relocateMode?'active':'icon-btn'}" title="${relocateMode?t('done'):t('tipRelocate')}" aria-label="${relocateMode?t('done'):t('tipRelocate')}">${relocateMode ? t('done') : '<i class="ti ti-folder-symlink" aria-hidden="true"></i>'}</button>
-        ${path.length === 2 ? `<button id="btnAddSubgoal" class="${addSubMode?'active':'icon-btn'}" title="${addSubMode?t('done'):t('tipExpand')}" aria-label="${addSubMode?t('done'):t('tipExpand')}">${addSubMode ? t('done') : '<i class="ti ti-sitemap" aria-hidden="true"></i>'}</button>` : ''}
-        <button id="btnEdit" class="${editMode?'active':'icon-btn'}" title="${editMode?t('done'):t('tipEdit')}" aria-label="${editMode?t('done'):t('tipEdit')}">${editMode ? t('done') : '<i class="ti ti-edit" aria-hidden="true"></i>'}</button>
-        <button id="btnArchive" class="${node.archived?'active':'icon-btn'}" title="${node.archived ? t('tipUnarchive') : t('tipArchive')}" aria-label="${node.archived ? t('tipUnarchive') : t('tipArchive')}"><i class="ti ${node.archived ? 'ti-archive-off' : 'ti-archive'}" aria-hidden="true"></i></button>
-        <span id="deleteMsg" class="add-goal-msg"></span>
-      </div>`;
-      if(node.children.length){
-        html += `<div class="grid grid-goals">`;
-        node.children.forEach((child, i) => { html += cardOrLeafHTML(child, i, mode, protectedCount); });
-        html += `</div>`;
-        html += `<div class="section-title" style="margin-top:24px;">${t('balanceWheel')}</div>`;
-        html += `<div class="wheel-wrap" id="wheelWrap">${wheelHTML(activeChildren(node))}</div>`;
-      } else {
-        html += `<div class="empty-state">${t('emptyState')}</div>`;
-      }
-    } else {
-      html += leafDetailHTML(node);
-      if(node.checklist){
-        html += checklistHTML(node.checklist);
-      }
-    }
-  }
-
-  html += `<footer>${authUser ? t('footerLoggedIn') : t('footer')} · v${APP_VERSION}</footer>`;
-  app.innerHTML = html;
-  attachHandlers();
-  adjustWheelLabels();
 }
 
 function renderBreadcrumb(){
