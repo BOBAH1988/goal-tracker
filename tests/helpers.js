@@ -88,6 +88,9 @@ function boot() {
     title: '',
     createElement: () => makeElementStub(),
     body: makeElementStub(),
+    // Top-menu handlers bind a document-level click listener while the menu is open.
+    addEventListener() {},
+    removeEventListener() {},
   };
   const window = {
     addEventListener() {},
