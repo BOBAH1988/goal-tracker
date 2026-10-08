@@ -31,6 +31,7 @@ function inlineScript(html) {
 // renames/removes any of these, boot throws a ReferenceError — an intentional loud failure.
 const EXPORT_SRC = `
 ;globalThis.__APP__ = {
+  APP_VERSION,
   computePercent, doneCount, isLeaf, activeChildren,
   wheelPercent, wheelFilledSteps, countWheelLeaves, countWheelDone, wheelLeafFraction, isWheelLeafDone,
   ensureWheelTotals, bumpWheelTotals, wheelTotal, setWheelTotal,
