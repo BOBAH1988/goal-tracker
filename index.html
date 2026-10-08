@@ -2166,9 +2166,9 @@ function wheelHTML(items){
     // (sticky totalGoalsAdded minus current incomplete leaves). Card percents elsewhere
     // intentionally keep the old computePercent() averaging.
     const pct = wheelPercent(item);
-    // Snap the fill out to the nearest completed ring (round up), so a sector always fully
-    // colors a step instead of stopping partway between two rings.
-    const filledSteps = Math.min(RING_STEPS, Math.ceil(pct / (100 / RING_STEPS)));
+    // Snap the fill down to completed whole tens (round down), so a sector only fully
+    // colors a ring step it actually reached: 92% fills 9 of 10 rings, 100% fills all 10.
+    const filledSteps = Math.min(RING_STEPS, Math.floor(pct / (100 / RING_STEPS)));
     const r = maxR * (filledSteps / RING_STEPS);
     const center = i * sectorSpan;
     const start = center - sectorSpan / 2, end = center + sectorSpan / 2;
