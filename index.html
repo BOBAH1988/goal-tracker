@@ -2128,6 +2128,13 @@ function arcPath(cx, cy, r, angleA, angleB){
 // Sector i is centered at angle i*(360/n), 0 = top, increasing = clockwise. For sectors whose
 // center falls in the upper half (-90..90) the curved label arc runs in increasing-angle order;
 // for the lower half it's reversed — both keep the text upright (see arcPath comment).
+// Maps a wheel percent to filled ring steps (10 rings = whole tens, always rounded DOWN:
+// 92% fills 9 rings, only a true 100% fills all 10). A standalone function (not inline math)
+// so tests can pin the rule and regressions can't silently reintroduce rounding up.
+function wheelFilledSteps(pct){
+  const RING_STEPS = 10;
+  return Math.min(RING_STEPS, Math.floor(pct / (100 / RING_STEPS)));
+}
 function wheelHTML(items){
   const n = items.length;
   if(!n) return '';
@@ -2166,9 +2173,8 @@ function wheelHTML(items){
     // (sticky totalGoalsAdded minus current incomplete leaves). Card percents elsewhere
     // intentionally keep the old computePercent() averaging.
     const pct = wheelPercent(item);
-    // Snap the fill down to completed whole tens (round down), so a sector only fully
-    // colors a ring step it actually reached: 92% fills 9 of 10 rings, 100% fills all 10.
-    const filledSteps = Math.min(RING_STEPS, Math.floor(pct / (100 / RING_STEPS)));
+    // Whole tens, rounded down: 92% fills 9 of 10 rings, only 100% fills all 10.
+    const filledSteps = wheelFilledSteps(pct);
     const r = maxR * (filledSteps / RING_STEPS);
     const center = i * sectorSpan;
     const start = center - sectorSpan / 2, end = center + sectorSpan / 2;
