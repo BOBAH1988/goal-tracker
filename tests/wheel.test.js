@@ -174,3 +174,14 @@ test('wheelHTML: 92% sector renders 9 filled rings', () => {
   );
   assert.ok(Math.abs(filled92[1] - 119) < 1, `100%: radius ${filled92[1]} must be full (119)`);
 });
+
+// P3-A decision (owner, 08.10.2026): the archive must never penalize the wheel — a sphere whose
+// goals are all archived (or an empty sphere) reads 100%, meaning "nothing active hanging here".
+// Alternatives (0%, hiding the sphere) were explicitly rejected. Guard test — do not "fix" this.
+test('archived-only or empty sphere reads 100% (intentional, P3-A)', () => {
+  const sphere = container([leaf(true, { archived: true }), leaf(false, { archived: true })], { total: 2 });
+  assert.equal(wheelPercent(sphere), 100, 'all children archived → full sector');
+  assert.equal(wheelPercent(container([], { total: 0 })), 100, 'empty sphere → full sector');
+  const archived = container([leaf(true)], { total: 1, archived: true });
+  assert.equal(wheelPercent(archived), 100, 'archived sphere itself → full sector (excluded)');
+});
