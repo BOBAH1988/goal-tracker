@@ -126,4 +126,4 @@ function container(kids, opts = {}) {
   return node;
 }
 
-module.exports = { boot, readProjectFile, inlineScript, leaf, container, ROOT };
+module.exports = { boot, readProjectFile, inlineScript, leaf, container, ROOT, EXPORT_SRC };
