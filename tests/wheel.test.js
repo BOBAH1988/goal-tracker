@@ -8,7 +8,7 @@ const { boot, leaf, container } = require('./helpers');
 
 const t = boot();
 const {
-  wheelPercent, wheelFilledSteps, countWheelLeaves, isWheelLeafDone,
+  wheelPercent, wheelFilledSteps, countWheelLeaves, countWheelDone, wheelLeafFraction, isWheelLeafDone,
   ensureWheelTotals, bumpWheelTotals, setWheelTotal,
 } = t.app;
 
@@ -58,13 +58,35 @@ test('archived goals are fully excluded from load', () => {
   assert.equal(countWheelLeaves(archivedContainer, false), 0);
 });
 
-test('checklist leaf: partial = open load, full = done; items are never units', () => {
+test('checklist leaf: fractional credit; items are never units', () => {
   const partial = leaf(false, { checklist: [{ text: 'a', done: true }, { text: 'b', done: false }] });
   const full = leaf(false, { checklist: [{ text: 'a', done: true }, { text: 'b', done: true }] });
   assert.equal(isWheelLeafDone(partial), false);
   assert.equal(isWheelLeafDone(full), true);
-  assert.equal(wheelPercent(container([partial], { total: 1 })), 0);
+  assert.equal(wheelLeafFraction(partial), 0.5);
+  assert.equal(wheelLeafFraction(full), 1);
+  assert.equal(countWheelDone(container([partial], { total: 1 })), 0.5);
+  // 1/2 checklist = half open load → 50, not the old all-or-nothing 0.
+  assert.equal(wheelPercent(container([partial], { total: 1 })), 50);
   assert.equal(wheelPercent(container([full], { total: 1 })), 100);
+  // Leaf-level sectors mirror card progress.
+  assert.equal(wheelPercent(partial), 50);
+});
+
+test('deep nesting: done leaf + half-ticked checklist share one sector', () => {
+  const doneLeaf = leaf(true);
+  const cl = leaf(false, {
+    checklist: [
+      { text: 'a', done: true }, { text: 'b', done: true },
+      { text: 'c', done: false }, { text: 'd', done: false },
+    ],
+  });
+  const inner = container([doneLeaf, cl], { total: 2 });
+  const sphere = container([container([inner])], { total: 2 });
+  // 1 + 0.5 done of 2 → 75.
+  assert.equal(wheelPercent(sphere), 75);
+  // A stale sticky total below the live leaf count must not sink the sector to 0.
+  assert.equal(wheelPercent(container([container([inner])], { total: 1 })), 75);
 });
 
 test('percent is clamped to 0..100', () => {

@@ -32,7 +32,7 @@ function inlineScript(html) {
 const EXPORT_SRC = `
 ;globalThis.__APP__ = {
   computePercent, doneCount, isLeaf, activeChildren,
-  wheelPercent, wheelFilledSteps, countWheelLeaves, isWheelLeafDone,
+  wheelPercent, wheelFilledSteps, countWheelLeaves, countWheelDone, wheelLeafFraction, isWheelLeafDone,
   ensureWheelTotals, bumpWheelTotals, wheelTotal, setWheelTotal,
   isValidGoalTree, barColor, esc, isoToday,
   normalizeUsername, isPasswordStrong,

@@ -1508,6 +1508,28 @@ function countWheelLeaves(node, doneOnly){
   (node.children || []).forEach(c => { n += countWheelLeaves(c, doneOnly); });
   return n;
 }
+// Fractional credit of a single leaf for the balance wheel: a plain leaf is 1
+// when its done flag is set, else 0; a checklist leaf contributes
+// doneItems/totalItems (so 2/4 = 0.5) instead of all-or-nothing. An empty or
+// missing checklist falls back to the plain done flag.
+function wheelLeafFraction(node){
+  if(node.checklist && node.checklist.length){
+    const doneN = node.checklist.filter(i => i.done).length;
+    return doneN / node.checklist.length;
+  }
+  return node.done ? 1 : 0;
+}
+// Sum of fractional credits over all active (non-archived) leaves under
+// `node`, at any nesting depth. Totals (leaf units) stay integer — only the
+// done side is fractional, so a half-ticked checklist moves its sector
+// halfway instead of reading as fully open.
+function countWheelDone(node){
+  if(!node || node.archived) return 0;
+  if(isLeaf(node)) return wheelLeafFraction(node);
+  let n = 0;
+  (node.children || []).forEach(c => { n += countWheelDone(c); });
+  return n;
+}
 // Sticky "ever added" counter for the balance wheel, stored on each container node itself
 // (inside the normal state tree, so it saves/loads/syncs for free with everything else).
 // Never decreases on delete/archive — that is what lets a deleted done-goal keep its sector
@@ -1530,15 +1552,24 @@ function ensureWheelTotals(node){
   }
   (node.children || []).forEach(ensureWheelTotals);
 }
-// percent = 100% * (1 - activeIncompleteGoals / totalGoalsAdded), clamped to 0..100.
-// total = 0 (nothing ever added) or incomplete = 0 (nothing open) → 100% (full sector).
+// percent = 100% * (1 - fractionalIncomplete / max(totalGoalsAdded, activeLeaves)),
+// clamped to 0..100. Incomplete is fractional: an open plain leaf contributes 1,
+// a 2/4 checklist contributes 0.5 of open load. The sticky "ever added" total is
+// preserved (deleting a done goal keeps its sector filled), while max() guards
+// against a stale total smaller than the live leaf count (e.g. a leaf turning
+// into a checklist, or an add path that missed its bump): such a total would
+// otherwise push a healthy sphere down toward 0%. total = 0 (nothing ever
+// added) → 100%.
 function wheelPercent(item){
   if(!item || item.archived) return 100;
-  if(isLeaf(item)) return isWheelLeafDone(item) ? 100 : 0;
+  // A lone leaf sector shows its own fill: plain checkbox 100/0, checklist by
+  // ticked items — the same number its card progress shows.
+  if(isLeaf(item)) return computePercent(item);
   ensureWheelTotals(item);
-  const total = wheelTotal(item);
+  const active = countWheelLeaves(item, false);
+  const total = Math.max(wheelTotal(item), active);
   if(total <= 0) return 100;
-  const incomplete = countWheelLeaves(item, false) - countWheelLeaves(item, true);
+  const incomplete = Math.max(0, active - countWheelDone(item));
   const pct = Math.round(100 * (1 - incomplete / total));
   return Math.max(0, Math.min(100, pct));
 }
