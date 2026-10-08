@@ -44,6 +44,83 @@ test('saveState/loadState round-trip preserves the sticky wheel totals', () => {
   assert.equal(loaded.children[0].children.length, 2);
 });
 
+test('resolve: broken path returns null instead of throwing', () => {
+  const t = boot();
+  t.app.setState({ name: 'root', children: [container([leaf(true)], { total: 1 })] });
+  assert.equal(t.app.resolve([0, 0]).done, true, 'valid path still resolves');
+  assert.equal(t.app.resolve([0, 5]), null, 'missing child index');
+  assert.equal(t.app.resolve([9]), null, 'missing root index');
+  assert.equal(t.app.resolve(null), null, 'null path (relocate source cleared)');
+  assert.equal(t.app.resolve([]).name, 'root', 'empty path = root');
+});
+
+test('sanitizeGoalTree: deep corruption is pruned, not fatal', () => {
+  const t = boot();
+  const tree = {
+    name: 'root',
+    children: [
+      { name: 'ok', children: [{ name: 'broken', children: {} }, null, { nope: 1 }, 'junk'] },
+      'junk',
+      42,
+    ],
+  };
+  t.app.sanitizeGoalTree(tree);
+  assert.equal(tree.children.length, 1, 'non-node root children dropped');
+  const ok = tree.children[0];
+  assert.equal(ok.children.length, 1, 'only the real child survives');
+  assert.deepEqual(Array.from(ok.children[0].children), [], 'non-array children coerced to []');
+  const cl = { name: 'l', children: [], done: false, checklist: 'not-an-array' };
+  t.app.sanitizeGoalTree({ name: 'r', children: [cl] });
+  assert.ok(!('checklist' in cl), 'non-array checklist removed');
+  const cl2 = { name: 'l', children: [], done: false, checklist: [{ text: 7, done: 1 }, null] };
+  t.app.sanitizeGoalTree({ name: 'r', children: [cl2] });
+  assert.equal(cl2.checklist.length, 1, 'non-object checklist lines dropped');
+  assert.equal(cl2.checklist[0].text, '7', 'text coerced to string');
+  assert.equal(cl2.checklist[0].done, true, 'done coerced to boolean');
+});
+
+test('loadState: corrupt deep node heals instead of breaking render', () => {
+  const t = boot();
+  const bad = { name: 'root', children: [{ name: 'x', children: {} }, 'junk'] };
+  t.localStorage.setItem(t.app.STORAGE_KEY, JSON.stringify(bad));
+  const loaded = t.app.loadState();
+  assert.ok(t.app.isValidGoalTree(loaded), 'loaded tree passes the gate');
+  assert.equal(loaded.children.length, 1, 'junk sibling dropped');
+  assert.deepEqual(Array.from(loaded.children[0].children), [], 'broken children healed to []');
+});
+
+test('relocateDestPath: pre-splice walk with same-parent index shift', () => {
+  const t = boot();
+  const a = container([leaf(false)], { name: 'A', total: 1 });
+  const b = container([leaf(false)], { name: 'B', total: 1 });
+  t.app.setState({ name: 'root', children: [a, b] });
+  // Move A (idx 0) into B: B is at idx 1 pre-splice, lands at 0 after the removal.
+  assert.deepEqual(Array.from(t.app.relocateDestPath([1], b, [], 0)), [0]);
+  // Move B (idx 1) into A: A stays at 0 — no shift.
+  assert.deepEqual(Array.from(t.app.relocateDestPath([0], a, [], 1)), [0]);
+  // Deeper: source is a root child (idx 0), dest is a container inside the next root child —
+  // the shift applies to the first index only, deeper indices of the destination subtree stay.
+  const inner = container([leaf(false)], { name: 'D', total: 1 });
+  const holder = container([inner], { name: 'B2', total: 1 });
+  t.app.setState({ name: 'root', children: [a, holder] });
+  assert.deepEqual(Array.from(t.app.relocateDestPath([1, 0], inner, [], 0)), [0, 0]);
+  // Dest path that no longer resolves to destNode (stale after a remote edit) → null.
+  assert.equal(t.app.relocateDestPath([1], a, [], 0), null, 'resolved node != destNode');
+  assert.equal(t.app.relocateDestPath([9], b, [], 0), null, 'index out of range');
+});
+
+test('removeChecklistItem: middle keeps list, last line collapses to plain leaf', () => {
+  const t = boot();
+  const n = leaf(false, { checklist: [{ text: 'a', done: true }, { text: 'b', done: false }] });
+  assert.equal(t.app.removeChecklistItem(n, 0), false, 'lines remain → no collapse');
+  assert.equal(n.checklist.length, 1);
+  assert.equal(n.checklist[0].text, 'b');
+  assert.equal(t.app.removeChecklistItem(n, 0), true, 'last line → collapse reported');
+  assert.ok(!('checklist' in n), 'phantom [] never exists');
+  assert.equal(n.done, false, 'collapses to an unchecked plain checkbox');
+  assert.equal(t.app.removeChecklistItem(n, 0), false, 'no checklist → no-op');
+});
+
 test('collectPriorityItems: skips archived subtrees', () => {
   const t = boot();
   const open = leaf(false, { priority: true });
