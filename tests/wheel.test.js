@@ -112,6 +112,18 @@ test('expand (leaf→container): no double-count on fresh convert, sticky on re-
   assert.equal(wheelTotal(node), 4, 're-expand: sticky trace survives (2 old + 2 new)');
 });
 
+test('sanitizeEmptyChecklists: phantom [] collapses to a plain leaf', () => {
+  const { sanitizeEmptyChecklists } = t.app;
+  const ghost = leaf(false, { checklist: [] });
+  const tree = container([ghost, container([leaf(false, { checklist: [] })])]);
+  sanitizeEmptyChecklists(tree);
+  assert.ok(!('checklist' in ghost), 'empty checklist removed');
+  assert.equal(ghost.done, false, 'falls back to unchecked checkbox');
+  assert.equal(wheelPercent(ghost), 0, 'plain open leaf reads 0 with something to do');
+  const innerGhost = tree.children[1].children[0];
+  assert.ok(!('checklist' in innerGhost), 'nested ghosts heal too');
+});
+
 test('percent is clamped to 0..100', () => {
   assert.equal(wheelPercent(container(leaves(3, 0), { total: 2 })), 0, 'incomplete > total → 0');
   assert.equal(wheelPercent(container([], { total: 0 })), 100);

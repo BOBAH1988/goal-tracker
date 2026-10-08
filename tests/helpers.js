@@ -34,7 +34,7 @@ const EXPORT_SRC = `
   APP_VERSION,
   computePercent, doneCount, isLeaf, activeChildren,
   wheelPercent, wheelFilledSteps, countWheelLeaves, countWheelDone, wheelLeafFraction, isWheelLeafDone,
-  ensureWheelTotals, bumpWheelTotals, wheelTotal, setWheelTotal,
+  ensureWheelTotals, bumpWheelTotals, wheelTotal, setWheelTotal, sanitizeEmptyChecklists,
   isValidGoalTree, barColor, esc, isoToday,
   normalizeUsername, isPasswordStrong,
   polarToCartesian, wedgePath, arcPath, wheelHTML,
