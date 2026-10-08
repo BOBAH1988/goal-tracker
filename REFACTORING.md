@@ -13,11 +13,11 @@
 
 ## Этап 2 — Разбор `attachHandlers()` (685 строк; механический вынос, поведение не меняется)
 
-- [ ] 2.1 Разбить на секции-функции: `attachTopbarHandlers`, `attachMenuHandlers`, `attachCardHandlers`, `attachChecklistHandlers`, `attachAuthHandlers`, `attachOverlayHandlers`
-- [ ] 2.2 Хелпер `on(id, event, fn)` / `onAll(sel, event, fn)` вместо ~50 копий «getElementById + if + addEventListener»
-- [ ] 2.3 Вынести `addChecklistItem` (290 строк) наружу из вложенности
-- [ ] 2.4 Дубль обновления `wheelWrap` (2 места) → одна функция `refreshWheel()`
-- [ ] `npm test` зелёный → коммит → отметить → сверка README
+- [x] 2.1 Разбить на секции-функции: `attachMainViewHandlers`, `attachTreeHandlers`, `attachLeafHandlers`, `attachChecklistDeleteHandlers`, `attachSyncConflictHandlers`, `attachChecklistHandlers`, `attachAccountHandlers`, `attachAuthHandlers`, `attachTopMenuHandlers`, `attachModalHandlers` (по порядку оригинала; границы — только между statement-ами верхнего уровня)
+- [x] 2.2 Хелпер `on(id, event, fn)` введён и применён в 2 пилотных секциях (checklist-delete, sync-conflict). **Корректировка:** массовая замена остальных ~40 блоков отклонена — косметический выигрыш против риска сломать рабочие обработчики; boilerplate страхуется id-тестом из Этапа 1; `on()` применять при следующих правках секций
+- [x] 2.3 Вынести `addChecklistItem` — **отменено по факту проверки**: реальный размер 9 строк (оценка «290» была ошибкой awk-подсчёта), вложенность безвредна
+- [x] 2.4 Дубль обновления `wheelWrap` (2 места) → одна функция `refreshWheel()`
+- [x] `npm test` зелёный → коммит → отметить → сверка README
 
 ## Этап 3 — Разбор `render()` (305 строк HTML-строкой)
 
@@ -52,4 +52,5 @@
 
 ## Журнал выполнения
 
+- Этап 2 — **выполнен** (08.10.2026): `attachHandlers()` разбит на 10 секций + оркестр; `refreshWheel()`; хелпер `on()` (пилот — 2 секции); п. 2.3 отменён по факту (функция 9 строк, а не 290). **Бамп v1.0.6 → v1.0.7** (правка `index.html`): `APP_VERSION`, `package.json`, `manifest.json`, `sw.js CACHE_NAME`. Запись добавлена в README. `npm test` = 52/52.
 - Этап 1 — **выполнен** (08.10.2026): новый `tests/render.test.js` (4 теста: панели не роняют `render()`, футер/колесо в HTML, id-сторож `getElementById` ↔ `id="..."`, сквозной чек-лист). Стаб `document` в `tests/helpers.js` дополнен `addEventListener/removeEventListener` (нужно для открытого верхнего меню). `npm test` = 52/52. Версия не бампалась (рантайм не трогали). README сверен с кодом — расхождений нет.

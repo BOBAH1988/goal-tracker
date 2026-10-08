@@ -512,7 +512,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.0.6';
+const APP_VERSION = '1.0.7';
 /* ===== Seed data (transcribed from the Excel table) =====
    emptyGoals/emptySteps take the noun to use for auto-generated names, so items added later via
    the UI can be named in whichever language is active at the time (default: Russian for the
@@ -2615,7 +2615,33 @@ function finishDrag(ctx){
   }
   render();
 }
+// getElementById + null-guard + addEventListener in one call — the boilerplate every section
+// used to repeat by hand. Pilot adoption (stage 2): use it when a section gets rewritten.
+function on(id, event, fn){
+  const el = document.getElementById(id);
+  if(el) el.addEventListener(event, fn);
+}
+/* Handlers are bound per section (stage 2 of the refactoring plan): this orchestrator just
+   runs the section binders in the original order — behaviour must stay byte-for-byte equal. */
+// Re-render just the wheel after an inline card rename: a full render() would destroy the
+// <input> mid-edit, but the wheel must still reflect the fresh name right away.
+function refreshWheel(){
+  const wheelWrap = document.getElementById('wheelWrap');
+  if(wheelWrap){ wheelWrap.innerHTML = wheelHTML(activeChildren(resolve(path))); adjustWheelLabels(); }
+}
 function attachHandlers(){
+  attachMainViewHandlers();
+  attachTreeHandlers();
+  attachLeafHandlers();
+  attachChecklistDeleteHandlers();
+  attachSyncConflictHandlers();
+  attachChecklistHandlers();
+  attachAccountHandlers();
+  attachAuthHandlers();
+  attachTopMenuHandlers();
+  attachModalHandlers();
+}
+function attachMainViewHandlers(){
   document.querySelectorAll('[data-crumb]').forEach(el=>{
     el.addEventListener('click', ()=>{
       const c = parseInt(el.dataset.crumb,10);
@@ -2708,8 +2734,7 @@ function attachHandlers(){
     el.addEventListener('input', ()=>{
       const idx = parseInt(el.dataset.goalIdx,10);
       resolve(path).children[idx].name = el.value;
-      const wheelWrap = document.getElementById('wheelWrap');
-      if(wheelWrap){ wheelWrap.innerHTML = wheelHTML(activeChildren(resolve(path))); adjustWheelLabels(); }
+      refreshWheel();
     });
     el.addEventListener('blur', ()=>{
       const idx = parseInt(el.dataset.goalIdx,10);
@@ -2718,8 +2743,7 @@ function attachHandlers(){
       resolve(path).children[idx].name = finalName;
       el.value = finalName;
       saveState();
-      const wheelWrap = document.getElementById('wheelWrap');
-      if(wheelWrap){ wheelWrap.innerHTML = wheelHTML(activeChildren(resolve(path))); adjustWheelLabels(); }
+      refreshWheel();
     });
     el.addEventListener('keydown', (e)=>{
       if(e.key === 'Enter'){
@@ -2729,6 +2753,9 @@ function attachHandlers(){
       }
     });
   });
+}
+
+function attachTreeHandlers(){
   const btnAddGoal = document.getElementById('btnAddGoal');
   if(btnAddGoal){
     btnAddGoal.addEventListener('click', ()=>{
@@ -3018,6 +3045,9 @@ function attachHandlers(){
       render();
     });
   }
+}
+
+function attachLeafHandlers(){
   const leafToggle = document.getElementById('leafToggle');
   if(leafToggle){
     leafToggle.addEventListener('click', ()=>{
@@ -3189,13 +3219,14 @@ function attachHandlers(){
       render();
     });
   });
-  const btnDeleteChecklist = document.getElementById('btnDeleteChecklist');
-  if(btnDeleteChecklist){
-    btnDeleteChecklist.addEventListener('click', ()=>{
-      checklistDeletePanelOpen = true;
-      render();
-    });
-  }
+}
+
+function attachChecklistDeleteHandlers(){
+  on('btnDeleteChecklist', 'click', ()=>{
+    checklistDeletePanelOpen = true;
+    render();
+  });
+  // Kept as a local binding (not on()): the handler compares e.target against this exact node.
   const checklistDeleteOverlay = document.getElementById('checklistDeleteOverlay');
   if(checklistDeleteOverlay){
     checklistDeleteOverlay.addEventListener('click', (e)=>{
@@ -3205,65 +3236,56 @@ function attachHandlers(){
       }
     });
   }
-  const btnChecklistDeleteYes = document.getElementById('btnChecklistDeleteYes');
-  if(btnChecklistDeleteYes){
-    btnChecklistDeleteYes.addEventListener('click', ()=>{
-      const node = resolve(path);
-      delete node.checklist;
-      // Back to a plain checkbox goal — unchecked (❌) by default, task not yet completed.
-      node.done = false;
-      checklistEditIdx = null;
-      checklistDeletePanelOpen = false;
-      // Leave this goal's own page and go back to the list it was created from — a plain
-      // checkbox goal (no checklist) isn't meant to have its own page, it's toggled from the card.
-      path = path.slice(0, -1);
-      saveState();
-      render();
-    });
-  }
-  const btnChecklistDeleteNo = document.getElementById('btnChecklistDeleteNo');
-  if(btnChecklistDeleteNo){
-    btnChecklistDeleteNo.addEventListener('click', ()=>{
-      checklistDeletePanelOpen = false;
-      render();
-    });
-  }
-  const btnSyncConflictUseCloud = document.getElementById('btnSyncConflictUseCloud');
-  if(btnSyncConflictUseCloud){
-    btnSyncConflictUseCloud.addEventListener('click', ()=>{
-      if(!syncConflict) return;
-      applyingRemoteUpdate = true;
-      state = syncConflict.cloud;
-      if(isValidGoalTree(state)){ sanitizeGoalTree(state); sanitizeEmptyChecklists(state); ensureWheelTotals(state); }
-      path = [];
-      saveState();
-      applyingRemoteUpdate = false;
-      syncConflict = null;
-      render();
-    });
-  }
-  const btnSyncConflictUseLocal = document.getElementById('btnSyncConflictUseLocal');
-  if(btnSyncConflictUseLocal){
-    btnSyncConflictUseLocal.addEventListener('click', ()=>{
-      if(!syncConflict) return;
-      // `state` is still the local version (never touched by the conflict) — just push it up,
-      // overwriting the stale account document.
-      state = syncConflict.local;
-      syncConflict = null;
-      saveState();
-      render();
-    });
-  }
-  const btnSyncConflictExport = document.getElementById('btnSyncConflictExport');
-  if(btnSyncConflictExport){
-    btnSyncConflictExport.addEventListener('click', ()=>{
-      if(!syncConflict) return;
-      const before = state;
-      state = syncConflict.local;
-      doExportData();
-      state = before;
-    });
-  }
+  on('btnChecklistDeleteYes', 'click', ()=>{
+    const node = resolve(path);
+    delete node.checklist;
+    // Back to a plain checkbox goal — unchecked (❌) by default, task not yet completed.
+    node.done = false;
+    checklistEditIdx = null;
+    checklistDeletePanelOpen = false;
+    // Leave this goal's own page and go back to the list it was created from — a plain
+    // checkbox goal (no checklist) isn't meant to have its own page, it's toggled from the card.
+    path = path.slice(0, -1);
+    saveState();
+    render();
+  });
+  on('btnChecklistDeleteNo', 'click', ()=>{
+    checklistDeletePanelOpen = false;
+    render();
+  });
+}
+
+function attachSyncConflictHandlers(){
+  on('btnSyncConflictUseCloud', 'click', ()=>{
+    if(!syncConflict) return;
+    applyingRemoteUpdate = true;
+    state = syncConflict.cloud;
+    if(isValidGoalTree(state)){ sanitizeGoalTree(state); sanitizeEmptyChecklists(state); ensureWheelTotals(state); }
+    path = [];
+    saveState();
+    applyingRemoteUpdate = false;
+    syncConflict = null;
+    render();
+  });
+  on('btnSyncConflictUseLocal', 'click', ()=>{
+    if(!syncConflict) return;
+    // `state` is still the local version (never touched by the conflict) — just push it up,
+    // overwriting the stale account document.
+    state = syncConflict.local;
+    syncConflict = null;
+    saveState();
+    render();
+  });
+  on('btnSyncConflictExport', 'click', ()=>{
+    if(!syncConflict) return;
+    const before = state;
+    state = syncConflict.local;
+    doExportData();
+    state = before;
+  });
+}
+
+function attachChecklistHandlers(){
   document.querySelectorAll('[data-checklist-edit]').forEach(el=>{
     el.addEventListener('click', (e)=>{
       e.stopPropagation();
@@ -3322,6 +3344,9 @@ function attachHandlers(){
       addChecklistItem();
     });
   }
+}
+
+function attachAccountHandlers(){
   const btnAccount = document.getElementById('btnAccount');
   if(btnAccount){
     btnAccount.addEventListener('click', (e)=>{
@@ -3426,6 +3451,9 @@ function attachHandlers(){
       doEditAccountSave(name, surname, birthDate, gender, occupation);
     });
   }
+}
+
+function attachAuthHandlers(){
   const authOverlay = document.getElementById('authOverlay');
   if(authOverlay){
     authOverlay.addEventListener('click', (e)=>{
@@ -3590,6 +3618,9 @@ function attachHandlers(){
       hintEl.classList.toggle('valid', isPasswordStrong(authPasswordEl.value));
     });
   }
+}
+
+function attachTopMenuHandlers(){
   function setLang(newLang){
     topMenuOpen = false;
     if(lang === newLang){ render(); return; }
@@ -3668,6 +3699,9 @@ function attachHandlers(){
       doHardUpdate();
     });
   }
+}
+
+function attachModalHandlers(){
   const installOverlay = document.getElementById('installOverlay');
   if(installOverlay){
     installOverlay.addEventListener('click', (e)=>{
