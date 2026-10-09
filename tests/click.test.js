@@ -398,3 +398,29 @@ test('topbar search button opens the search panel without opening the menu', () 
   assert.ok(t.document.getElementById('searchInput'), 'search input must be focused-ready');
 });
 
+// ===== Reset to defaults (menu: «Сбросить на стандартные») =====
+test('reset button: confirms, then wipes localStorage and reloads', () => {
+  const t = bootDom();
+  t.app.setState({ name: 'root', children: [leaf(true, { name: 'Готово' })] });
+  t.app.saveState();
+  assert.ok(t.window.localStorage.getItem(t.app.STORAGE_KEY), 'state must be saved before reset');
+
+  // Stub confirm → true. reload() throws in jsdom, but localStorage.removeItem runs before it.
+  t.window.confirm = () => true;
+  t.click('#btnTopMenu');
+  try { t.click('#btnResetData'); } catch(e) {}
+  assert.ok(!t.window.localStorage.getItem(t.app.STORAGE_KEY), 'localStorage must be wiped after reset');
+});
+
+test('reset button: on cancel nothing is wiped', () => {
+  const t = bootDom();
+  t.app.setState({ name: 'root', children: [leaf(false, { name: 'Цель' })] });
+  t.app.saveState();
+  const before = t.window.localStorage.getItem(t.app.STORAGE_KEY);
+
+  t.window.confirm = () => false;
+  t.click('#btnTopMenu');
+  t.click('#btnResetData');
+  assert.equal(t.window.localStorage.getItem(t.app.STORAGE_KEY), before, 'localStorage must be untouched on cancel');
+});
+
