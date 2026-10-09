@@ -475,3 +475,40 @@ test('today block: collapses and remembers state across reload', () => {
   assert.ok(t2.document.querySelector('[data-today-toggle="0"]'), 'items must reappear when expanded');
 });
 
+// ===== Today block: action button (trash ↔ green check), checkbox strike-through =====
+test('today block: action button toggles trash/check by text, checkbox strikes through', () => {
+  const t = bootDom();
+  t.app.setState({
+    name: 'root', children: [leaf(false, { name: 'Цель' })],
+    today: [{text:'Готово',done:false},{text:'',done:true},{text:'Третье',done:false}],
+  });
+  t.window.render();
+
+  // Item 0 has text → button shows green checkmark; item 1 empty → trash.
+  const btn0 = t.document.querySelector('[data-today-action="0"]');
+  const btn1 = t.document.querySelector('[data-today-action="1"]');
+  assert.ok(btn0 && btn1, 'action buttons must exist');
+  assert.match(btn0.innerHTML, /ti-check/, 'checkmark must show when text is non-empty');
+  assert.match(btn1.innerHTML, /ti-trash/, 'trash must show when text is empty');
+
+  // Item 1 is done=true → input has .done class (strikethrough).
+  const input1 = t.document.querySelector('[data-today-edit="1"]');
+  assert.ok(input1.classList.contains('done'), 'done item input must carry .done class for strikethrough');
+
+  // Typing empty→ text → button icon switches to checkmark, state updates.
+  input1.value = 'Новое';
+  input1.dispatchEvent(new t.window.Event('input', { bubbles: true }));
+  assert.match(btn1.innerHTML, /ti-check/, 'button must flip to checkmark after typing');
+  assert.equal(t.app.getState().today[1].text, 'Новое', 'typed text must land in state');
+
+  // Click the checkmark → saves and re-renders.
+  btn1.click();
+  assert.equal(t.app.getState().today[1].text, 'Новое', 'checkmark click must persist text');
+
+  // Checkbox toggle → done flips, strikethrough applies after re-render.
+  const chk = t.document.querySelector('[data-today-toggle="2"]');
+  chk.click();
+  assert.equal(t.app.getState().today[2].done, true, 'checkbox must flip done');
+  assert.ok(t.document.querySelector('[data-today-edit="2"]').classList.contains('done'), 'done input must get .done class after toggle');
+});
+
