@@ -424,3 +424,54 @@ test('reset button: on cancel nothing is wiped', () => {
   assert.equal(t.window.localStorage.getItem(t.app.STORAGE_KEY), before, 'localStorage must be untouched on cancel');
 });
 
+// ===== «Три важных дела на сегодня» — collapsible + checkbox + inline text edit =====
+test('today block: open by default, toggle checkbox updates done, edit text saves on blur', () => {
+  const t = bootDom();
+  t.app.setState({ name: 'root', children: [leaf(false, { name: 'Цель' })], today: [{text:'Первое дело',done:false},{text:'Второе дело',done:true},{text:'',done:false}] });
+  t.window.render();
+
+  // Block is open by default with 3 items.
+  assert.ok(t.document.getElementById('todayToggle'), 'today toggle header must exist');
+  assert.ok(t.document.getElementById('wheelWrap') || true, 'wheel is not required for this test'); // sanity
+  const rows = t.document.querySelectorAll('[data-today-toggle]');
+  assert.equal(rows.length, 3, 'must render exactly 3 today items');
+
+  // Checkbox toggle: click item 0 → done flips true.
+  rows[0].click();
+  assert.equal(t.app.getState().today[0].done, true, 'checkbox must flip done=true');
+  t.window.render();
+  assert.ok(t.document.querySelector('[data-today-toggle="0"]').classList.contains('done'), 'checkbox must show .done class');
+
+  // Inline text edit: change input value, blur → saved.
+  const input = t.document.querySelector('[data-today-edit="0"]');
+  assert.ok(input, 'text input must be present');
+  input.value = 'Отредактированное дело';
+  input.dispatchEvent(new t.window.Event('input', { bubbles: true }));
+  input.dispatchEvent(new t.window.Event('blur', { bubbles: true }));
+  assert.equal(t.app.getState().today[0].text, 'Отредактированное дело', 'edited text must be saved on blur');
+
+  // Collapse persists.
+  t.click('#todayToggle');
+  assert.equal(t.app.getState().todayOpen, false, 'todayOpen=false must persist');
+  assert.ok(!t.document.querySelector('[data-today-toggle="0"]'), 'items must disappear when collapsed');
+});
+
+test('today block: collapses and remembers state across reload', () => {
+  const t = bootDom();
+  t.app.setState({ name: 'root', children: [leaf(false, { name: 'Цель' })], today: [{text:'a',done:false},{text:'b',done:false},{text:'c',done:false}] });
+  t.window.render();
+
+  // Collapse, then reload from saved storage → stays collapsed.
+  t.click('#todayToggle');
+  assert.equal(t.app.getState().todayOpen, false, 'clicking must persist todayOpen=false');
+  const raw = t.window.localStorage.getItem(t.app.STORAGE_KEY);
+  const t2 = bootDom({ [t.app.STORAGE_KEY]: raw });
+  assert.equal(t2.app.getState().todayOpen, false, 'persisted state must read back as collapsed');
+  assert.ok(!t2.document.querySelector('[data-today-toggle="0"]'), 'after reload, today items must stay collapsed');
+
+  // Expand again.
+  t2.click('#todayToggle');
+  assert.equal(t2.app.getState().todayOpen, true, 'clicking again must persist todayOpen=true');
+  assert.ok(t2.document.querySelector('[data-today-toggle="0"]'), 'items must reappear when expanded');
+});
+
