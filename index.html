@@ -197,6 +197,17 @@
   .install-steps li{margin-bottom:8px;}
   .install-steps li:last-child{margin-bottom:0;}
   .about-text{color:var(--text); font-size:13px; line-height:1.6; white-space:pre-line;}
+  /* Global search results: a vertical stack of tappable rows inside the search panel. Scoped under
+     .auth-panel so it wins over the generic `.auth-panel button` rule (specificity 0,2,0 > 0,1,1). */
+  .search-results{display:flex; flex-direction:column; gap:6px; margin-top:2px;}
+  .auth-panel .search-result{
+    background:var(--card2); border:1px solid var(--border); color:var(--text); border-radius:8px;
+    padding:9px 10px; font-size:13px; cursor:pointer; text-align:left; line-height:1.3;
+    flex:none; white-space:normal;
+  }
+  .auth-panel .search-result:hover{border-color:var(--accent);}
+  .auth-panel .search-result.archived{opacity:.5;}
+  .search-kind{color:var(--muted); margin-right:6px;}
   .auth-link{
     background:none; border:none; color:var(--accent); font-size:12px; padding:0;
     cursor:pointer; text-align:right; align-self:auto;
@@ -535,7 +546,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.0.13';
+const APP_VERSION = '1.0.14';
 /* ===== Seed data (transcribed from the Excel table) =====
    emptyGoals/emptySteps take the noun to use for auto-generated names, so items added later via
    the UI can be named in whichever language is active at the time (default: Russian for the
@@ -676,6 +687,11 @@ const STRINGS = {
     minN: n => `Минимум ${n}`,
     deletedMsg: 'Цель удалена',
     undoBtn: 'Отменить',
+    searchMenuItem: 'Поиск целей',
+    searchTitle: 'Поиск',
+    searchPlaceholder: 'Название цели или пункта…',
+    searchHint: 'Введите часть названия — ищем по всем целям и пунктам чек-листов.',
+    searchNoResults: 'Ничего не найдено',
     priorityTitle: 'Приоритетные цели',
     priorityEmpty: 'Отметьте цель звёздочкой ☆ на её странице, чтобы она появилась здесь.',
     tipAddPriority: 'Добавить в приоритет',
@@ -815,6 +831,11 @@ const STRINGS = {
     minN: n => `Minimum ${n}`,
     deletedMsg: 'Goal deleted',
     undoBtn: 'Undo',
+    searchMenuItem: 'Search goals',
+    searchTitle: 'Search',
+    searchPlaceholder: 'Goal or item name…',
+    searchHint: 'Type part of a name — searching across all goals and checklist items.',
+    searchNoResults: 'Nothing found',
     priorityTitle: 'Priority goals',
     priorityEmpty: 'Star ☆ a goal on its own page to add it here.',
     tipAddPriority: 'Add to priority',
@@ -1001,6 +1022,10 @@ let relocateSourcePath = null;
 // Where the destination picker is currently browsing, relative to `state` (starts at the root —
 // an empty path lets "move here" target the top level itself).
 let relocatePickerPath = [];
+// Global search panel (opened from the top menu). Results are recomputed on each keystroke and
+// injected straight into the results container (no full render — that would drop the input focus).
+// Each result is { kind:'goal'|'checklist', name, path, archived } — path is the nav target.
+let searchPanelOpen = false;
 // Which checklist row (if any) currently has its text open for inline editing (pencil icon).
 let checklistEditIdx = null;
 let installPanelOpen = false;
@@ -1538,6 +1563,50 @@ function collectPriorityItems(node = state, path = []){
     });
   }
   return results;
+}
+// Global search: walk the whole tree (mirroring collectPriorityItems' recursion) and collect every
+// goal whose name matches, plus every checklist item whose text matches. Archived goals are still
+// findable here (search is about finding things, not about progress) but flagged so the UI can dim
+// them. Case-insensitive substring match on the trimmed query; empty query → no results.
+function runSearch(query, node = state, path = []){
+  const q = String(query || '').trim().toLowerCase();
+  if(!q) return [];
+  let results = [];
+  // Skip the synthetic root — the user never navigates to it by name.
+  if(path.length > 0 && node.name && node.name.toLowerCase().includes(q)){
+    results.push({ kind:'goal', name:node.name, path:[...path], archived:!!node.archived });
+  }
+  if(isLeaf(node) && node.checklist){
+    node.checklist.forEach((item, i) => {
+      if(item.text && item.text.toLowerCase().includes(q)){
+        // Navigate to the owning leaf; the checklist is shown on its page.
+        results.push({ kind:'checklist', name:item.text, path:[...path], itemIndex:i, archived:!!node.archived });
+      }
+    });
+  }
+  if(node.children){
+    node.children.forEach((child, i) => {
+      results = results.concat(runSearch(q, child, [...path, i]));
+    });
+  }
+  return results;
+}
+// Live search renderer: writes result rows into the already-mounted #searchResults container WITHOUT
+// a full render(), so the search <input> keeps focus and caret while typing. Each row is a tappable
+// goal/checklist hit carrying its index in the (recomputed) result list; clicking one navigates to
+// its path (wired in attachModalHandlers). Archived hits are kept findable but flagged to be dimmed.
+function renderSearchResults(query){
+  const box = document.getElementById('searchResults');
+  if(!box) return;
+  const results = runSearch(query);
+  if(!results.length){
+    box.innerHTML = `<div style="color:var(--muted); font-size:13px; padding:8px 2px;">${esc(t('searchNoResults'))}</div>`;
+    return;
+  }
+  box.innerHTML = results.map((r, i) => {
+    const kind = r.kind === 'checklist' ? '☑' : '◎';
+    return `<button type="button" class="search-result${r.archived ? ' archived' : ''}" data-result-idx="${i}"><span class="search-kind">${kind}</span>${esc(r.name)}</button>`;
+  }).join('');
 }
 // Children not marked `archived` — archived goals/subgoals are parked (dimmed, kept in place)
 // but deliberately excluded from every rating computation below, in both directions: they don't
@@ -2141,6 +2210,17 @@ function systemPanelsHTML(){
       </div>
     </div>`;
   }
+  if(searchPanelOpen){
+    html += `<div class="auth-modal-overlay" id="searchOverlay">
+      <div class="auth-panel">
+        <button class="auth-close" id="btnSearchClose" aria-label="close" title="${t('done')}">✕</button>
+        <h2 style="margin:0 0 4px; font-size:16px;">${t('searchTitle')}</h2>
+        <input type="text" id="searchInput" autocomplete="off" placeholder="${t('searchPlaceholder')}" style="width:100%; padding:10px 12px; border-radius:8px; border:1px solid var(--border); background:var(--card2); color:var(--text); font-size:14px; box-sizing:border-box;">
+        <div style="color:var(--muted); font-size:12px; margin:6px 0 8px;">${t('searchHint')}</div>
+        <div class="search-results" id="searchResults"></div>
+      </div>
+    </div>`;
+  }
   return html;
 }
 
@@ -2154,6 +2234,7 @@ function topbarHTML(){
         <button id="btnExportData" class="menu-item">${t('exportData')}</button>
         <button id="btnImportData" class="menu-item">${t('importData')}</button>
         <input type="file" id="importFileInput" accept="application/json,.json" style="display:none">` : ''}
+        <button id="btnSearchMenuItem" class="menu-item">${t('searchMenuItem')}</button>
         <button id="btnAboutMenuItem" class="menu-item">${t('aboutTitle')}</button>
         <button id="btnInstructionsMenuItem" class="menu-item">${t('instructionsTitle')}</button>
         ${(isMobileDevice() && !isStandalonePwa()) ? `<button id="btnInstallAppMenuItem" class="menu-item">${t('installAppTitle')}</button>` : ''}
@@ -3767,6 +3848,18 @@ function attachTopMenuHandlers(){
       render();
     });
   }
+  const btnSearchMenuItem = document.getElementById('btnSearchMenuItem');
+  if(btnSearchMenuItem){
+    btnSearchMenuItem.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      topMenuOpen = false;
+      searchPanelOpen = true;
+      render();
+      // Focus the field after render() so the keyboard is up and typing lands straight in it.
+      const si = document.getElementById('searchInput');
+      if(si) si.focus();
+    });
+  }
   document.querySelectorAll('.lang-option').forEach(el=>{
     el.addEventListener('click', (e)=>{
       e.stopPropagation();
@@ -3869,6 +3962,42 @@ function attachModalHandlers(){
   if(btnInstructionsClose){
     btnInstructionsClose.addEventListener('click', ()=>{
       instructionsPanelOpen = false;
+      render();
+    });
+  }
+  // Global search panel: close on backdrop/✕, live-filter on input, navigate on result tap.
+  const searchOverlay = document.getElementById('searchOverlay');
+  if(searchOverlay){
+    searchOverlay.addEventListener('click', (e)=>{
+      if(e.target === searchOverlay){
+        searchPanelOpen = false;
+        render();
+      }
+    });
+  }
+  const btnSearchClose = document.getElementById('btnSearchClose');
+  if(btnSearchClose){
+    btnSearchClose.addEventListener('click', ()=>{
+      searchPanelOpen = false;
+      render();
+    });
+  }
+  const searchInput = document.getElementById('searchInput');
+  if(searchInput){
+    searchInput.addEventListener('input', (e)=>{
+      renderSearchResults(e.target.value);
+    });
+  }
+  const searchResults = document.getElementById('searchResults');
+  if(searchResults){
+    searchResults.addEventListener('click', (e)=>{
+      const row = e.target.closest('.search-result');
+      if(!row) return;
+      const results = runSearch(searchInput ? searchInput.value : '');
+      const hit = results[Number(row.dataset.resultIdx)];
+      if(!hit) return;
+      path = hit.path;
+      searchPanelOpen = false;
       render();
     });
   }

@@ -13,7 +13,7 @@ const { boot, readProjectFile } = require('./helpers');
    in prod must fail this guard (typeof check below), not silently skip the render path. */
 const PANEL_FLAGS = [
   'topMenuOpen', 'installPanelOpen', 'aboutPanelOpen', 'instructionsPanelOpen',
-  'checklistDeletePanelOpen', 'authPanelOpen', 'signupPanelOpen',
+  'checklistDeletePanelOpen', 'searchPanelOpen', 'authPanelOpen', 'signupPanelOpen',
   'accountMenuOpen', 'editAccountOpen',
 ];
 

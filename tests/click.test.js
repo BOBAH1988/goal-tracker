@@ -271,3 +271,61 @@ test('delete shows an undo toast; clicking Undo restores the deleted goal', () =
   assert.equal(t.app.getState().children[1].name, 'Удалить', 'the restored sphere keeps its name');
   assert.ok(!t.document.querySelector('.undo-toast'), 'the toast must be gone after Undo');
 });
+
+// ===== Global search (opened from the top menu; live results without losing input focus) =====
+test('global search: opens from menu, finds a goal by name and navigates to it', () => {
+  const t = bootDom();
+  t.app.setState({
+    name: 'root',
+    children: [
+      leaf(false, { name: 'Выучить Go', checklist: [{ text: 'пройти туториал', done: false }] }),
+      leaf(false, { name: 'Больше спорта' }),
+    ],
+  });
+  t.window.render();
+
+  // Open the top menu, then launch the search panel.
+  t.click('#btnTopMenu');
+  t.click('#btnSearchMenuItem');
+  assert.ok(t.document.getElementById('searchOverlay'), 'search overlay must open from the menu');
+  const input = t.document.getElementById('searchInput');
+  assert.ok(input, 'search input must be present');
+
+  // Typing re-renders results without a full render() (focus stays in the field).
+  input.value = 'спорт';
+  input.dispatchEvent(new t.window.Event('input', { bubbles: true }));
+  const rows = t.document.querySelectorAll('#searchResults .search-result');
+  assert.equal(rows.length, 1, 'exactly one goal must match «спорт»');
+  assert.ok(rows[0].textContent.includes('Больше спорта'), 'the matching goal must be shown');
+
+  // Tapping the result navigates to its path and closes the panel.
+  rows[0].click();
+  assert.deepEqual(Array.from(t.app.getPath()), [1], 'must navigate to the matched sphere');
+  assert.ok(!t.document.getElementById('searchOverlay'), 'panel must close after picking a hit');
+});
+
+test('global search: matches checklist item text and reports empty for no match', () => {
+  const t = bootDom();
+  t.app.setState({
+    name: 'root',
+    children: [leaf(false, { name: 'Выучить Go', checklist: [{ text: 'пройти туториал', done: false }] })],
+  });
+  t.window.render();
+
+  t.click('#btnTopMenu');
+  t.click('#btnSearchMenuItem');
+  const input = t.document.getElementById('searchInput');
+  const box = t.document.getElementById('searchResults');
+
+  // A checklist item's text is findable and navigates to its owning leaf.
+  input.value = 'туториал';
+  input.dispatchEvent(new t.window.Event('input', { bubbles: true }));
+  assert.equal(box.querySelectorAll('.search-result').length, 1, 'checklist item must be findable');
+
+  // A query that matches nothing shows the empty state, not a stale row.
+  input.value = 'щщщ';
+  input.dispatchEvent(new t.window.Event('input', { bubbles: true }));
+  assert.equal(box.querySelectorAll('.search-result').length, 0, 'no rows for a non-match');
+  assert.match(box.textContent, /Ничего не найдено/, 'empty state must be rendered');
+});
+
