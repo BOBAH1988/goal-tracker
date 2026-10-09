@@ -521,7 +521,7 @@ test('today block: shows quote row with refresh button, clicking refresh updates
   t.app.setState({
     name: 'root', children: [leaf(false, { name: 'Цель' })],
     today: [{text:'',done:false},{text:'',done:false},{text:'',done:false}],
-    quoteText: ''
+    quoteText: 'Тестовая цитата для проверки.'
   });
   t.window.render();
 
@@ -531,14 +531,16 @@ test('today block: shows quote row with refresh button, clicking refresh updates
   assert.ok(quoteInput, 'quote display input must exist in today block');
   assert.ok(refreshBtn, 'quote refresh button must exist in today block');
 
-  // When QUOTES is empty (test env), the input shows the placeholder text.
-  assert.ok(quoteInput.value.length > 0, 'quote input must have some text content');
+  // Input shows the quote text from state.
+  assert.match(quoteInput.value, /Тестовая цитата/, 'quote input must show state.quoteText');
 
-  // Clicking refresh does not crash and calls saveState.
+  // Clicking refresh updates state with a new quote from fallback array.
   refreshBtn.click();
-  assert.doesNotThrow(() => {}, 'refresh click must not throw');
+  const newText = t.app.getState().quoteText;
+  assert.ok(newText, 'refresh must set a new quoteText in state');
+  assert.notEqual(newText, 'Тестовая цитата для проверки.', 'refresh must pick a different quote');
 
-  // State is preserved after re-render (quoteText may stay empty in test env).
+  // Quote row survives re-render.
   t.window.render();
   assert.ok(t.document.querySelector('[data-quote-display]'), 'quote row must survive re-render');
 });

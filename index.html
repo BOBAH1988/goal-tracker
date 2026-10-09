@@ -576,7 +576,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.0.23';
+const APP_VERSION = '1.0.24';
 /* ===== Seed data (transcribed from the Excel table) =====
    emptyGoals/emptySteps take the noun to use for auto-generated names, so items added later via
    the UI can be named in whichever language is active at the time (default: Russian for the
@@ -691,8 +691,30 @@ const SEED = { name:"Главная", children: [
 };
 
 /* Мотивирующие цитаты (500 штук). В продакшене подгружаются из quotes.js;
-   в тестовой среде (vm без внешних скриптов) fallback на пустой массив. */
-const QUOTES = (typeof MOTIV_QUOTES !== 'undefined' && MOTIV_QUOTES.length) ? MOTIV_QUOTES : [];
+   fallback на небольшую выборку на случай, если scripts.js не загрузился
+   (например, file:// протокол в Chrome блокирует внешние скрипты). */
+const QUOTES = (typeof MOTIV_QUOTES !== 'undefined' && MOTIV_QUOTES.length) ? MOTIV_QUOTES : [
+  'Если хочешь перемен — будь тем, кто их создает.',
+  'Время не ждёт — действуй сейчас.',
+  'Каждый новый день — новая возможность.',
+  'Верь в себя и в свои способности.',
+  'Успех — это сумма малых усилий, повторяемых каждый день.',
+  'Цели без действия — лишь мечты.',
+  'Сделай сегодня то, что завтра сделают другие.',
+  'Не бойся медленного начала — бойся стояния на месте.',
+  'Твоя цель — движение вперёд, а не идеал.',
+  'Каждый шаг приближает к цели.',
+  'Смелость — это не отсутствие страха, а преодоление его.',
+  'Действуй, даже если боишься.',
+  'Каждый день приносит рост.',
+  'Лучше поздно, чем никогда.',
+  'Ты можешь больше, чем думаешь.',
+  'Труд — путь к силе.',
+  'Не сравнивай путь с другими — каждый свой.',
+  'Сегодня — лучше, чем завтра.',
+  'Маленькие шаги приводят к большим результатам.',
+  'Вера в процесс, а не в результат.'
+];
 
 // Blank starting point for a brand-new personal account — identical shape to what "Сброс" produces.
 function emptyTemplate(){
@@ -2118,7 +2140,7 @@ function homeViewHTML(overallPct, hintHTML, mode, protectedCount){
           </div>`;
         }).join('')}
          <div class="priority-row quote-row">
-           <input type="text" class="quote-input" data-quote-display readonly value="${esc(state.quoteText || t('quoteRefresh'))}" placeholder="${t('quoteRefresh')}">
+           <input type="text" class="quote-input" data-quote-display readonly value="${state.quoteText ? esc(state.quoteText) : ''}" placeholder="${t('quoteRefresh')}">
            <button class="quote-btn" data-quote-refresh title="${t('quoteRefresh')}" aria-label="${t('quoteRefresh')}">
              <i class="ti ti-refresh" aria-hidden="true"></i>
            </button>
