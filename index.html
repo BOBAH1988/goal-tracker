@@ -444,6 +444,16 @@
   #btnAddGoal:disabled{opacity:.5; cursor:not-allowed;}
   #btnAddGoal:disabled:hover{color:var(--muted); border-color:var(--border);}
   .add-goal-msg{color:var(--red); font-size:12px; white-space:nowrap;}
+  /* Undo-delete toast. Lives in document.body (outside #app), centered at the bottom, so
+     render()'s innerHTML rebuild never destroys it mid-flight. */
+  .undo-toast{
+    position:fixed; left:50%; bottom:20px; transform:translateX(-50%); z-index:3000;
+    display:flex; align-items:center; gap:14px;
+    background:var(--card2); color:var(--text); border:1px solid var(--border);
+    border-radius:12px; padding:10px 16px; font-size:14px;
+    box-shadow:0 8px 24px rgba(0,0,0,.35);
+  }
+  .undo-toast button{background:none; border:none; color:var(--accent); font-weight:600; font-size:14px; cursor:pointer; padding:0;}
   .add-child-row{display:flex; justify-content:flex-end; align-items:center; gap:10px; margin:-8px 0 8px; flex-wrap:wrap;}
   #btnAddChild{
     background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:8px;
@@ -525,7 +535,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.0.12';
+const APP_VERSION = '1.0.13';
 /* ===== Seed data (transcribed from the Excel table) =====
    emptyGoals/emptySteps take the noun to use for auto-generated names, so items added later via
    the UI can be named in whichever language is active at the time (default: Russian for the
@@ -664,6 +674,8 @@ const STRINGS = {
     deleteHint: n => n === 0 ? '— нажмите на красную карточку, чтобы удалить (можно удалить все)' : n === 1 ? '— нажмите на красную карточку, чтобы удалить (первая всегда защищена)' : `— нажмите на красную карточку, чтобы удалить (первые ${n} всегда защищены)`,
     maxN: n => `Максимум ${n} целей`,
     minN: n => `Минимум ${n}`,
+    deletedMsg: 'Цель удалена',
+    undoBtn: 'Отменить',
     priorityTitle: 'Приоритетные цели',
     priorityEmpty: 'Отметьте цель звёздочкой ☆ на её странице, чтобы она появилась здесь.',
     tipAddPriority: 'Добавить в приоритет',
@@ -801,6 +813,8 @@ const STRINGS = {
     deleteHint: n => n === 0 ? '— click a red card to delete it (you can delete all of them)' : n === 1 ? '— click a red card to delete it (the first one is always protected)' : `— click a red card to delete it (the first ${n} are always protected)`,
     maxN: n => `Maximum ${n} goals`,
     minN: n => `Minimum ${n}`,
+    deletedMsg: 'Goal deleted',
+    undoBtn: 'Undo',
     priorityTitle: 'Priority goals',
     priorityEmpty: 'Star ☆ a goal on its own page to add it here.',
     tipAddPriority: 'Add to priority',
@@ -999,6 +1013,14 @@ let checklistDeletePanelOpen = false;
 let addGoalMsgTimer = null;
 let addChildMsgTimer = null;
 let priorityMsgTimer = null;
+// Undo-delete toast. undoSnapshot holds a {state, path} copy taken right before a card is
+// deleted, so the deletion (which may also collapse the parent into a leaf and step `path`
+// up) can be rolled back within a few seconds. The toast lives in document.body — outside
+// #app — so render()'s innerHTML rebuild never destroys it, and it is managed imperatively
+// (direct element reference, never getElementById) so it can't trip the id-watchdog guard.
+let undoSnapshot = null;
+let undoToastTimer = null;
+let undoToastEl = null;
 // Snapshot of collectPriorityItems() taken during the most recent render(), so attachHandlers()
 // can look entries up by index without re-walking the tree.
 let lastPriorityItems = [];
@@ -2663,6 +2685,41 @@ function on(id, event, fn){
   const el = document.getElementById(id);
   if(el) el.addEventListener(event, fn);
 }
+// Undo-delete toast (imperative — see undoToastEl comment in the State section). Builds a
+// self-contained element into document.body, so it survives render()'s innerHTML rebuild;
+// deliberately avoids getElementById so the id-watchdog test never sees a dangling id.
+function showUndoToast(){
+  clearTimeout(undoToastTimer);
+  hideUndoToast(); // drop any previous toast so rapid deletes don't stack two toasts
+  const toast = document.createElement('div');
+  toast.className = 'undo-toast';
+  const label = document.createElement('span');
+  label.textContent = t('deletedMsg');
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.textContent = t('undoBtn');
+  btn.addEventListener('click', ()=>{
+    if(undoSnapshot){
+      state = undoSnapshot.state;
+      path = undoSnapshot.path;
+      undoSnapshot = null;
+      saveState();
+    }
+    hideUndoToast();
+    render();
+  });
+  toast.appendChild(label);
+  toast.appendChild(btn);
+  document.body.appendChild(toast);
+  undoToastEl = toast;
+  // Auto-dismiss after 5s; a manual Undo or a fresh delete clears it earlier.
+  undoToastTimer = setTimeout(hideUndoToast, 5000);
+}
+function hideUndoToast(){
+  clearTimeout(undoToastTimer);
+  undoToastTimer = null;
+  if(undoToastEl){ undoToastEl.remove(); undoToastEl = null; }
+}
 /* Handlers are bound per section (stage 2 of the refactoring plan): this orchestrator just
    runs the section binders in the original order — behaviour must stay byte-for-byte equal. */
 // Re-render just the wheel after an inline card rename: a full render() would destroy the
@@ -2882,6 +2939,10 @@ function attachTreeHandlers(){
         if(msg) msg.textContent = t('minN')(min);
         return;
       }
+      // Snapshot the whole {state, path} right before mutating: deletion can also collapse an
+      // emptied container into a leaf and step `path` up, so a single deep copy rolls all of it
+      // back at once via the Undo toast.
+      undoSnapshot = { state: structuredCloneFallback(state), path: path.slice() };
       parent.children.splice(idx,1);
       // Any container (main goal, subgoal, goal, or deeper) that loses its last remaining child
       // shouldn't sit there as an empty "0/0" container — turn it back into a plain checkbox item
@@ -2900,6 +2961,7 @@ function attachTreeHandlers(){
       deleteMode = false;
       saveState();
       render();
+      showUndoToast();
     });
   });
   document.querySelectorAll('[data-addsub-idx]').forEach(el=>{

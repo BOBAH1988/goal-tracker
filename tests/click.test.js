@@ -247,3 +247,27 @@ test('theme switcher changes the root data-theme attribute', () => {
   assert.ok(!t.document.querySelector('.lang-menu'), 'menu must close');
   assert.equal(root.getAttribute('data-theme'), choice.dataset.themeChoice, 'root data-theme must update');
 });
+
+// ===== Undo-delete toast (lives in document.body, survives render()'s innerHTML rebuild) =====
+test('delete shows an undo toast; clicking Undo restores the deleted goal', () => {
+  const t = bootDom();
+  // Two spheres so deleting one stays above the home floor (min 1) and doesn't collapse anything.
+  t.app.setState({ name: 'root', children: [leaf(false, { name: 'Оставить' }), leaf(false, { name: 'Удалить' })] });
+  t.window.render();
+  assert.equal(t.app.getState().children.length, 2, 'seed must have two spheres');
+  // Delete mode is two-step: arm it, then click the red card.
+  t.click('#btnDelete');
+  const redCard = t.document.querySelector('[data-delete-idx="1"]');
+  assert.ok(redCard, 'delete mode must expose a red card for the second sphere');
+  redCard.click();
+  assert.equal(t.app.getState().children.length, 1, 'the second sphere must be deleted');
+  // The toast is appended to document.body (outside #app), so it survives the re-render.
+  const toast = t.document.querySelector('.undo-toast');
+  assert.ok(toast, 'an undo toast must appear after a delete');
+  const undoBtn = toast.querySelector('button');
+  assert.ok(undoBtn, 'the toast must carry an Undo button');
+  undoBtn.click();
+  assert.equal(t.app.getState().children.length, 2, 'Undo must restore the deleted sphere');
+  assert.equal(t.app.getState().children[1].name, 'Удалить', 'the restored sphere keeps its name');
+  assert.ok(!t.document.querySelector('.undo-toast'), 'the toast must be gone after Undo');
+});
