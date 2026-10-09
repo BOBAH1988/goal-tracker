@@ -3,13 +3,14 @@
 //
 // Версия кэша = версия приложения (см. APP_VERSION в index.html): каждый бамп версии
 // гарантированно сносит старый кэш у всех, кто уже установил приложение, и тянет свежие файлы.
-const CACHE_NAME = 'goal-tracker-v1.0.22';
+const CACHE_NAME = 'goal-tracker-v1.0.23';
 const ASSETS = [
   './',
   './index.html',
   './manifest.json',
   './icon-192.png',
-  './icon-512.png'
+  './icon-512.png',
+  './quotes.js'
 ];
 
 self.addEventListener('install', (event) => {

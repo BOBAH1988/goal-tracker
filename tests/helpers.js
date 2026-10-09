@@ -42,7 +42,7 @@ const EXPORT_SRC = `
   emptyTemplate, emptyGoals, emptySteps, leafGoals, checklistLeaf,
   protectedCountFor, minChildrenFor, collectPriorityItems,
   resolve, validatePath, loadState, saveState,
-  STRINGS, SEED, LANG_KEY, STORAGE_KEY,
+   STRINGS, SEED, LANG_KEY, STORAGE_KEY, QUOTES,
   getState: () => state,
   setState: (v) => { state = v; },
   getPath: () => path,

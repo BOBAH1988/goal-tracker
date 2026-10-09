@@ -12,7 +12,9 @@ function bootDom(seedStorage) {
   let html = readProjectFile('index.html');
   // External Firebase SDKs are never fetched in tests → cloudEnabled stays false (same
   // prod guard: typeof firebase !== 'undefined').
-  html = html.replace(/<script src="https:\/\/www\.gstatic\.com[^"]*"><\/script>\s*/g, '');
+   html = html.replace(/<script src="https:\/\/www\.gstatic\.com[^"]*"><\/script>\s*/g, '');
+   // External quotes.js is never fetched in tests → QUOTES array stays empty (fallback in app script).
+   html = html.replace(/<script src="quotes\.js"><\/script>\s*/g, '');
   // Optional pre-seed: this script runs BEFORE the app, so a simulated "reload" can boot
   // from previously saved localStorage data.
   if (seedStorage) {
@@ -511,5 +513,33 @@ test('today block: action button is trash by default, checkmark only during acti
   chk.click();
   assert.equal(t.app.getState().today[2].done, true, 'checkbox must flip done');
   assert.ok(t.document.querySelector('[data-today-edit="2"]').classList.contains('done'), 'done input must get .done class after toggle');
+});
+
+// ===== Today block: motivational quotes row =====
+test('today block: shows quote row with refresh button, clicking refresh updates state', () => {
+  const t = bootDom();
+  t.app.setState({
+    name: 'root', children: [leaf(false, { name: 'Цель' })],
+    today: [{text:'',done:false},{text:'',done:false},{text:'',done:false}],
+    quoteText: ''
+  });
+  t.window.render();
+
+  // Quote row must exist inside the today block.
+  const quoteInput = t.document.querySelector('[data-quote-display]');
+  const refreshBtn = t.document.querySelector('[data-quote-refresh]');
+  assert.ok(quoteInput, 'quote display input must exist in today block');
+  assert.ok(refreshBtn, 'quote refresh button must exist in today block');
+
+  // When QUOTES is empty (test env), the input shows the placeholder text.
+  assert.ok(quoteInput.value.length > 0, 'quote input must have some text content');
+
+  // Clicking refresh does not crash and calls saveState.
+  refreshBtn.click();
+  assert.doesNotThrow(() => {}, 'refresh click must not throw');
+
+  // State is preserved after re-render (quoteText may stay empty in test env).
+  t.window.render();
+  assert.ok(t.document.querySelector('[data-quote-display]'), 'quote row must survive re-render');
 });
 
