@@ -446,6 +446,9 @@
   .section-title{font-size:15px; font-weight:600; color:var(--text); margin:4px 0 12px;}
   .section-title-row{display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:8px;}
   .section-title-row .section-title{margin:0;}
+  /* Collapsing "Главные цели" / "Main goals" — the arrow toggles the grid below. */
+  #mainGoalsToggle{cursor:pointer; user-select:none;}
+  #mainGoalsToggle .main-goals-arrow{color:var(--muted); font-size:13px; margin-right:6px;}
   .add-goal-wrap{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
   #btnAddGoal{
     background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:8px;
@@ -476,7 +479,7 @@
   #btnAddChild:disabled:hover{color:var(--muted); border-color:var(--border);}
   /* Compact "+"/"−" icon style for Add/Delete, used instead of full text labels to save room on
      narrow (phone) screens. */
-  #btnAddGoal.icon-btn, #btnAddChild.icon-btn, #btnDelete.icon-btn, #btnEdit.icon-btn, #btnAddSubgoal.icon-btn, #btnDeleteChecklist.icon-btn, #btnMove.icon-btn, #btnMoveChecklist.icon-btn, #btnRelocate.icon-btn, #btnChecklistAdd.icon-btn, .add-child-row #btnArchive.icon-btn, .add-goal-wrap #btnArchive.icon-btn{
+  #btnAddGoal.icon-btn, #btnAddChild.icon-btn, #btnDelete.icon-btn, #btnEdit.icon-btn, #btnAddSubgoal.icon-btn, #btnDeleteChecklist.icon-btn, #btnMove.icon-btn, #btnMoveChecklist.icon-btn, #btnRelocate.icon-btn, #btnChecklistAdd.icon-btn, .add-child-row #btnArchive.icon-btn, .add-goal-wrap #btnArchive.icon-btn, #btnSearch.icon-btn{
     font-size:16px; font-weight:700; line-height:1; padding:5px 13px;
     min-width:32px; display:inline-flex; align-items:center; justify-content:center;
   }
@@ -546,7 +549,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.0.14';
+const APP_VERSION = '1.0.15';
 /* ===== Seed data (transcribed from the Excel table) =====
    emptyGoals/emptySteps take the noun to use for auto-generated names, so items added later via
    the UI can be named in whichever language is active at the time (default: Russian for the
@@ -692,6 +695,7 @@ const STRINGS = {
     searchPlaceholder: 'Название цели или пункта…',
     searchHint: 'Введите часть названия — ищем по всем целям и пунктам чек-листов.',
     searchNoResults: 'Ничего не найдено',
+    search: 'Поиск',
     priorityTitle: 'Приоритетные цели',
     priorityEmpty: 'Отметьте цель звёздочкой ☆ на её странице, чтобы она появилась здесь.',
     tipAddPriority: 'Добавить в приоритет',
@@ -836,6 +840,7 @@ const STRINGS = {
     searchPlaceholder: 'Goal or item name…',
     searchHint: 'Type part of a name — searching across all goals and checklist items.',
     searchNoResults: 'Nothing found',
+    search: 'Search',
     priorityTitle: 'Priority goals',
     priorityEmpty: 'Star ☆ a goal on its own page to add it here.',
     tipAddPriority: 'Add to priority',
@@ -993,6 +998,10 @@ const STORAGE_KEY = "goal_tracker_state_v7";
 const APP_UPDATED_KEY = "goal_tracker_just_updated";
 let state = loadState();
 let path = [];
+// Collapsing the main goals list saves vertical space on the home screen;
+  // the toggle state persists in localStorage (and syncs to the cloud when logged in).
+  // Defaults to OPEN (true) on first run — only an explicit false in storage collapses it.
+  let mainGoalsOpen = state.mainGoalsOpen !== false;
 let editMode = false;
 let deleteMode = false;
 // Press-and-hold drag-to-reorder state (see attachDragHandlers below).
@@ -2049,7 +2058,10 @@ function homeViewHTML(overallPct, hintHTML, mode, protectedCount){
     </div>` : ''}
   </div>`;
   html += `<div class="section-title-row">
-    <div class="section-title">${t('mainGoals')}${hintHTML}</div>
+    <div class="section-title" id="mainGoalsToggle">
+      <span class="main-goals-arrow">${mainGoalsOpen ? '▾' : '▸'}</span>
+      ${t('mainGoals')}${hintHTML}
+    </div>
     <div class="add-goal-wrap">
       <span id="addGoalMsg" class="add-goal-msg"></span>
       <button id="btnAddGoal" class="icon-btn" title="${t('tipAdd')}" aria-label="${t('tipAdd')}">+</button>
@@ -2060,9 +2072,11 @@ function homeViewHTML(overallPct, hintHTML, mode, protectedCount){
       <span id="deleteMsg" class="add-goal-msg"></span>
     </div>
   </div>`;
-  html += `<div class="grid grid-goals">`;
-  state.children.forEach((cat, i) => { html += cardOrLeafHTML(cat, i, mode, protectedCount); });
-  html += `</div>`;
+  if(mainGoalsOpen){
+    html += `<div class="grid grid-goals">`;
+    state.children.forEach((cat, i) => { html += cardOrLeafHTML(cat, i, mode, protectedCount); });
+    html += `</div>`;
+  }
   html += `<div class="section-title" style="margin-top:24px;">${t('balanceWheel')}</div>`;
   html += `<div class="wheel-wrap" id="wheelWrap">${wheelHTML(activeChildren(state))}</div>`;
   return html;
@@ -2249,6 +2263,7 @@ function topbarHTML(){
     </div>
     <h1>${t('appTitle')}</h1>
     <div class="actions">
+      <button id="btnSearch" class="icon-btn" title="${t('search')}" aria-label="${t('search')}"><i class="ti ti-search" aria-hidden="true"></i></button>
       ${cloudEnabled ? (authUser
         ? `<div class="account-dropdown">
             <button id="btnAccount" title="${esc(authUser.email)}">${esc(authUser.name || authUser.email)}</button>
@@ -2854,6 +2869,15 @@ function attachMainViewHandlers(){
       render();
     });
   });
+  const mainGoalsToggle = document.getElementById('mainGoalsToggle');
+  if(mainGoalsToggle){
+    mainGoalsToggle.addEventListener('click', ()=>{
+      mainGoalsOpen = !mainGoalsOpen;
+      state.mainGoalsOpen = mainGoalsOpen;
+      saveState();
+      render();
+    });
+  }
   const priorityToggle = document.getElementById('priorityToggle');
   if(priorityToggle){
     priorityToggle.addEventListener('click', ()=>{
@@ -3851,6 +3875,18 @@ function attachTopMenuHandlers(){
   const btnSearchMenuItem = document.getElementById('btnSearchMenuItem');
   if(btnSearchMenuItem){
     btnSearchMenuItem.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      topMenuOpen = false;
+      searchPanelOpen = true;
+      render();
+      // Focus the field after render() so the keyboard is up and typing lands straight in it.
+      const si = document.getElementById('searchInput');
+      if(si) si.focus();
+    });
+  }
+  const btnSearch = document.getElementById('btnSearch');
+  if(btnSearch){
+    btnSearch.addEventListener('click', (e)=>{
       e.stopPropagation();
       topMenuOpen = false;
       searchPanelOpen = true;

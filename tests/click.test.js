@@ -329,3 +329,44 @@ test('global search: matches checklist item text and reports empty for no match'
   assert.match(box.textContent, /Ничего не найдено/, 'empty state must be rendered');
 });
 
+// ===== Main goals collapsible («Главные цели» — open by default, click collapses, state saved) =====
+test('main goals list: open by default, click collapses and persists across reload', () => {
+  const t = bootDom();
+  t.app.setState({ name: 'root', children: [leaf(false, { name: 'Цель 1' }), leaf(false, { name: 'Цель 2' })] });
+  t.window.render();
+  // By default the grid is open: cards are visible.
+  assert.ok(t.document.querySelector('.grid-goals'), 'main goals grid must be visible by default (open)');
+  assert.ok(t.document.querySelector('.grid-goals').children.length > 0, 'cards must render when open');
+  // Arrow points down when expanded.
+  assert.equal(t.document.querySelector('.main-goals-arrow').textContent, '▾', 'arrow must point down when open');
+
+  // Click the toggle → collapses.
+  t.click('#mainGoalsToggle');
+  assert.equal(t.app.getState().mainGoalsOpen, false, 'clicking must persist mainGoalsOpen=false in state');
+  assert.ok(!t.document.querySelector('.grid-goals'), 'grid must disappear when collapsed');
+  assert.equal(t.document.querySelector('.main-goals-arrow').textContent, '▸', 'arrow must point right when collapsed');
+
+  // Reload from saved storage → stays collapsed.
+  const raw = t.window.localStorage.getItem(t.app.STORAGE_KEY);
+  assert.ok(raw && raw.includes('"mainGoalsOpen":false'), 'collapsed state must be serialized to localStorage');
+  const t2 = bootDom({ [t.app.STORAGE_KEY]: raw });
+  assert.equal(t2.app.getState().mainGoalsOpen, false, 'persisted state must read back as collapsed');
+  assert.ok(!t2.document.querySelector('.grid-goals'), 'after reload, main goals must stay collapsed');
+
+  // Click again → expands.
+  t2.click('#mainGoalsToggle');
+  assert.equal(t2.app.getState().mainGoalsOpen, true, 'clicking again must persist mainGoalsOpen=true');
+  assert.ok(t2.document.querySelector('.grid-goals'), 'grid must reappear when expanded');
+});
+
+// ===== Search topbar button (quick-launch shortcut added alongside the menu item) =====
+test('topbar search button opens the search panel without opening the menu', () => {
+  const t = bootDom();
+  assert.ok(t.document.getElementById('btnSearch'), 'topbar must show a search button');
+  assert.ok(!t.document.getElementById('searchOverlay'), 'panel must start closed');
+  t.click('#btnSearch');
+  assert.ok(t.document.getElementById('searchOverlay'), 'clicking the topbar button must open the search panel');
+  assert.ok(!t.document.querySelector('.lang-menu'), 'top menu must not be open at the same time');
+  assert.ok(t.document.getElementById('searchInput'), 'search input must be focused-ready');
+});
+
