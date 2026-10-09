@@ -476,7 +476,7 @@ test('today block: collapses and remembers state across reload', () => {
 });
 
 // ===== Today block: action button (trash ↔ green check), checkbox strike-through =====
-test('today block: action button toggles trash/check by text, checkbox strikes through', () => {
+test('today block: action button is trash by default, checkmark only during active input', () => {
   const t = bootDom();
   t.app.setState({
     name: 'root', children: [leaf(false, { name: 'Цель' })],
@@ -484,25 +484,26 @@ test('today block: action button toggles trash/check by text, checkbox strikes t
   });
   t.window.render();
 
-  // Item 0 has text → button shows green checkmark; item 1 empty → trash.
+  // By default (no focus) all buttons show trash — even item 0 which has text.
   const btn0 = t.document.querySelector('[data-today-action="0"]');
   const btn1 = t.document.querySelector('[data-today-action="1"]');
   assert.ok(btn0 && btn1, 'action buttons must exist');
-  assert.match(btn0.innerHTML, /ti-check/, 'checkmark must show when text is non-empty');
-  assert.match(btn1.innerHTML, /ti-trash/, 'trash must show when text is empty');
+  assert.match(btn0.innerHTML, /ti-trash/, 'trash must show by default, even when text exists');
+  assert.match(btn1.innerHTML, /ti-trash/, 'trash must show for empty item');
 
   // Item 1 is done=true → input has .done class (strikethrough).
   const input1 = t.document.querySelector('[data-today-edit="1"]');
   assert.ok(input1.classList.contains('done'), 'done item input must carry .done class for strikethrough');
 
-  // Typing empty→ text → button icon switches to checkmark, state updates.
+  // Focus an empty input + type → button flips to checkmark.
+  input1.focus();
   input1.value = 'Новое';
   input1.dispatchEvent(new t.window.Event('input', { bubbles: true }));
-  assert.match(btn1.innerHTML, /ti-check/, 'button must flip to checkmark after typing');
+  assert.match(btn1.innerHTML, /ti-check/, 'button must flip to checkmark during active input with text');
   assert.equal(t.app.getState().today[1].text, 'Новое', 'typed text must land in state');
 
-  // Click the checkmark → saves and re-renders.
-  btn1.click();
+  // Click the checkmark (mousedown) → saves and re-renders; button reverts to trash.
+  btn1.dispatchEvent(new t.window.Event('mousedown', { bubbles: true }));
   assert.equal(t.app.getState().today[1].text, 'Новое', 'checkmark click must persist text');
 
   // Checkbox toggle → done flips, strikethrough applies after re-render.

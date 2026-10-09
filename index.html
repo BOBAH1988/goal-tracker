@@ -2086,9 +2086,9 @@ function homeViewHTML(overallPct, hintHTML, mode, protectedCount){
          return `<div class="priority-row">
            <div class="chk ${item.done?'done':''}" data-today-toggle="${i}">${item.done?'✓':''}</div>
            <input type="text" class="today-input ${item.done?'done':''}" data-today-edit="${i}" value="${esc(item.text || '')}" placeholder="${t('todayPlaceholder')}">
-           <button class="today-action" data-today-action="${i}" title="${item.text ? t('todayDone') : t('todayClear')}" aria-label="${item.text ? t('todayDone') : t('todayClear')}">
-             ${item.text ? '<i class="ti ti-check" aria-hidden="true"></i>' : '<i class="ti ti-trash" aria-hidden="true"></i>'}
-           </button>
+            <button class="today-action" data-today-action="${i}" title="${t('todayClear')}" aria-label="${t('todayClear')}">
+              <i class="ti ti-trash" aria-hidden="true"></i>
+            </button>
          </div>`;
        }).join('')}
      </div>` : ''}
@@ -2918,6 +2918,75 @@ function attachMainViewHandlers(){
       render();
     });
   }
+  // Syncs the today action button icon for the row containing the given input element:
+  // green checkmark only when actively editing (focused + has text), trash otherwise.
+  function syncTodayAction(input){
+    const btn = input.parentNode.querySelector('[data-today-action]');
+    if(!btn) return;
+     const hasText = input.value.trim() !== '';
+    const isActive = input.classList.contains('editing');
+    if(hasText && isActive){
+      btn.classList.add('has-text');
+      btn.innerHTML = '<i class="ti ti-check" aria-hidden="true"></i>';
+      btn.title = t('todayDone');
+      btn.setAttribute('aria-label', t('todayDone'));
+    }else{
+      btn.classList.remove('has-text');
+      btn.innerHTML = '<i class="ti ti-trash" aria-hidden="true"></i>';
+      btn.title = t('todayClear');
+      btn.setAttribute('aria-label', t('todayClear'));
+    }
+  }
+  document.querySelectorAll('[data-today-edit]').forEach(el=>{
+    el.addEventListener('click', (e)=> e.stopPropagation());
+    el.addEventListener('input', ()=>{
+      const idx = parseInt(el.dataset.todayEdit,10);
+      if(!Array.isArray(state.today) || idx >= state.today.length) return;
+      state.today[idx].text = el.value;
+      syncTodayAction(el);
+    });
+     el.addEventListener('focus', ()=>{ el.classList.add('editing'); syncTodayAction(el); });
+    el.addEventListener('blur', ()=>{
+      if(!Array.isArray(state.today)) return;
+      el.classList.remove('editing');
+      syncTodayAction(el);
+      saveState();
+    });
+    el.addEventListener('keydown', (e)=>{
+      if(e.key === 'Enter'){
+        const idx = parseInt(el.dataset.todayEdit,10);
+        if(!Array.isArray(state.today) || idx >= state.today.length) return;
+        state.today[idx].text = el.value;
+        saveState();
+        el.blur();
+        render();
+      }
+    });
+  });
+  document.querySelectorAll('[data-today-action]').forEach(el=>{
+    el.addEventListener('mousedown', (e)=>{
+      e.preventDefault();
+      e.stopPropagation();
+      const idx = parseInt(el.dataset.todayAction,10);
+      const input = el.parentNode.querySelector('[data-today-edit="'+idx+'"]');
+      if(!input) return;
+      const hasText = input.value.trim() !== '';
+      const isActive = input.classList.contains('editing');
+      if(hasText && isActive){
+        // Green checkmark (active input with text) → finalize.
+        if(!Array.isArray(state.today) || idx >= state.today.length) return;
+        state.today[idx].text = input.value;
+        saveState();
+        render();
+      }else{
+        // Trash → clear text and focus for re-entry.
+        if(Array.isArray(state.today) && idx < state.today.length){ state.today[idx].text = ''; }
+        input.value = '';
+        input.focus();
+        syncTodayAction(input);
+      }
+    });
+  });
   document.querySelectorAll('[data-nav]').forEach(el=>{
     el.addEventListener('click', (e)=>{
       // A press-and-hold drag just finished on this card (see attachDragHandlers) — swallow the
@@ -2973,51 +3042,6 @@ function attachMainViewHandlers(){
       state.today[idx].done = !state.today[idx].done;
       saveState();
       render();
-    });
-  });
-  document.querySelectorAll('[data-today-edit]').forEach(el=>{
-    el.addEventListener('click', (e)=> e.stopPropagation());
-    el.addEventListener('input', ()=>{
-      const idx = parseInt(el.dataset.todayEdit,10);
-      if(!Array.isArray(state.today) || idx >= state.today.length) return;
-      state.today[idx].text = el.value;
-      // Toggle the action button icon: trash → green checkmark when text is non-empty.
-      const btn = el.parentNode.querySelector('[data-today-action="'+idx+'"]');
-      if(btn){
-        const hasText = el.value.trim() !== '';
-        btn.classList.toggle('has-text', hasText);
-        btn.innerHTML = hasText ? '<i class="ti ti-check" aria-hidden="true"></i>' : '<i class="ti ti-trash" aria-hidden="true"></i>';
-        btn.title = hasText ? t('todayDone') : t('todayClear');
-        btn.setAttribute('aria-label', hasText ? t('todayDone') : t('todayClear'));
-      }
-    });
-    el.addEventListener('blur', ()=>{
-      if(!Array.isArray(state.today)) return;
-      saveState();
-    });
-    el.addEventListener('keydown', (e)=>{
-      if(e.key === 'Enter'){ el.blur(); }
-    });
-  });
-  document.querySelectorAll('[data-today-action]').forEach(el=>{
-    el.addEventListener('click', (e)=>{
-      e.stopPropagation();
-      const idx = parseInt(el.dataset.todayAction,10);
-      const row = el.parentNode;
-      const input = row.querySelector('[data-today-edit="'+idx+'"]');
-      if(!input) return;
-      if(input.value.trim() !== ''){
-        // Green checkmark → finalize text.
-        if(!Array.isArray(state.today) || idx >= state.today.length) return;
-        state.today[idx].text = input.value;
-        saveState();
-        render();
-      }else{
-        // Trash → clear and focus for re-entry.
-        if(Array.isArray(state.today) && idx < state.today.length){ state.today[idx].text = ''; }
-        input.value = '';
-        input.focus();
-      }
     });
   });
   const todayToggle = document.getElementById('todayToggle');
