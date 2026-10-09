@@ -449,6 +449,8 @@
   /* Collapsing "Главные цели" / "Main goals" — the arrow toggles the grid below. */
   #mainGoalsToggle{cursor:pointer; user-select:none;}
   #mainGoalsToggle .main-goals-arrow{color:var(--muted); font-size:13px; margin-right:6px;}
+  #wheelToggle{cursor:pointer; user-select:none;}
+  #wheelToggle .wheel-arrow{color:var(--muted); font-size:13px; margin-right:6px;}
   .add-goal-wrap{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
   #btnAddGoal{
     background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:8px;
@@ -549,7 +551,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.0.16';
+const APP_VERSION = '1.0.17';
 /* ===== Seed data (transcribed from the Excel table) =====
    emptyGoals/emptySteps take the noun to use for auto-generated names, so items added later via
    the UI can be named in whichever language is active at the time (default: Russian for the
@@ -1002,6 +1004,7 @@ let path = [];
   // the toggle state persists in localStorage (and syncs to the cloud when logged in).
   // Defaults to OPEN (true) on first run — only an explicit false in storage collapses it.
   let mainGoalsOpen = state.mainGoalsOpen !== false;
+  let wheelOpen = state.wheelOpen !== false;
 let editMode = false;
 let deleteMode = false;
 // Press-and-hold drag-to-reorder state (see attachDragHandlers below).
@@ -2077,8 +2080,13 @@ function homeViewHTML(overallPct, hintHTML, mode, protectedCount){
     state.children.forEach((cat, i) => { html += cardOrLeafHTML(cat, i, mode, protectedCount); });
     html += `</div>`;
   }
-  html += `<div class="section-title" style="margin-top:24px;">${t('balanceWheel')}</div>`;
-  html += `<div class="wheel-wrap" id="wheelWrap">${wheelHTML(activeChildren(state))}</div>`;
+   html += `<div class="section-title" id="wheelToggle" style="margin-top:24px;">
+      <span class="wheel-arrow">${wheelOpen ? '▾' : '▸'}</span>
+      ${t('balanceWheel')}
+    </div>`;
+    if(wheelOpen){
+      html += `<div class="wheel-wrap" id="wheelWrap">${wheelHTML(activeChildren(state))}</div>`;
+    }
   return html;
 }
 
@@ -2885,6 +2893,15 @@ function attachMainViewHandlers(){
       // localStorage for everyone, and — for a signed-in account — also syncs to Firestore via
       // the normal saveState()/scheduleCloudPush() path, so it's remembered across devices too.
       state.priorityOpen = !state.priorityOpen;
+      saveState();
+      render();
+    });
+  }
+  const wheelToggle = document.getElementById('wheelToggle');
+  if(wheelToggle){
+    wheelToggle.addEventListener('click', ()=>{
+      wheelOpen = !wheelOpen;
+      state.wheelOpen = wheelOpen;
       saveState();
       render();
     });

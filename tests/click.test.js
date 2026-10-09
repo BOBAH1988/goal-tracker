@@ -359,6 +359,34 @@ test('main goals list: open by default, click collapses and persists across relo
   assert.ok(t2.document.querySelector('.grid-goals'), 'grid must reappear when expanded');
 });
 
+// ===== Balance wheel collapsible («Колесо баланса» — open by default, click collapses, state saved) =====
+test('balance wheel: open by default, click collapses and persists across reload', () => {
+  const t = bootDom();
+  t.app.setState({ name: 'root', children: [leaf(false, { name: 'Цель 1' }), leaf(false, { name: 'Цель 2' })] });
+  t.window.render();
+  // By default the wheel is visible.
+  assert.ok(t.document.getElementById('wheelWrap'), 'balance wheel must be visible by default (open)');
+  assert.equal(t.document.querySelector('.wheel-arrow').textContent, '▾', 'arrow must point down when open');
+
+  // Click the toggle → collapses.
+  t.click('#wheelToggle');
+  assert.equal(t.app.getState().wheelOpen, false, 'clicking must persist wheelOpen=false in state');
+  assert.ok(!t.document.getElementById('wheelWrap'), 'wheel must disappear when collapsed');
+  assert.equal(t.document.querySelector('.wheel-arrow').textContent, '▸', 'arrow must point right when collapsed');
+
+  // Reload from saved storage → stays collapsed.
+  const raw = t.window.localStorage.getItem(t.app.STORAGE_KEY);
+  assert.ok(raw && raw.includes('"wheelOpen":false'), 'collapsed state must be serialized to localStorage');
+  const t2 = bootDom({ [t.app.STORAGE_KEY]: raw });
+  assert.equal(t2.app.getState().wheelOpen, false, 'persisted state must read back as collapsed');
+  assert.ok(!t2.document.getElementById('wheelWrap'), 'after reload, wheel must stay collapsed');
+
+  // Click again → expands.
+  t2.click('#wheelToggle');
+  assert.equal(t2.app.getState().wheelOpen, true, 'clicking again must persist wheelOpen=true');
+  assert.ok(t2.document.getElementById('wheelWrap'), 'wheel must reappear when expanded');
+});
+
 // ===== Search topbar button (quick-launch shortcut added alongside the menu item) =====
 test('topbar search button opens the search panel without opening the menu', () => {
   const t = bootDom();
