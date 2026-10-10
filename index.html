@@ -652,14 +652,29 @@
     padding:8px 10px; font-size:13px; color:var(--text);
     white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
   }
-  /* Corner actions: 44px targets so thumbs can hit them comfortably on a phone. */
-  .wish-actions{position:absolute; top:6px; right:6px; display:flex; gap:6px;}
-  .wish-action{
-    width:44px; height:44px; padding:0; display:flex; align-items:center; justify-content:center;
-    border:none; border-radius:10px; background:rgba(6,9,16,.55); color:#fff;
-    font-size:18px; cursor:pointer;
+  /* Corner action buttons were removed from cards — the header card manager
+     (#btnWishManage + #wishManageOverlay) is the single place to edit/delete pictures. */
+  /* Card manager list (header button) — replaces per-card action buttons. */
+  .wish-manage-list{margin-top:10px; display:flex; flex-direction:column; gap:6px;}
+  .wish-manage-row{
+    display:flex; align-items:center; gap:10px;
+    background:var(--card2); border:1px solid var(--border); border-radius:10px; padding:6px 8px;
   }
-  .wish-action:hover{background:rgba(6,9,16,.75);}
+  .wish-manage-thumb{
+    flex:none; width:36px; height:36px; border-radius:8px; object-fit:cover;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .wish-manage-caption{
+    flex:1; min-width:0; font-size:13px; color:var(--text);
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .wish-manage-btn{
+    flex:none; width:36px; height:36px; min-width:36px; padding:0;
+    display:inline-flex; align-items:center; justify-content:center;
+    background:var(--card2); color:var(--muted);
+  }
+  .wish-manage-btn:hover{color:var(--text); border-color:var(--accent);}
+  [data-wish-manage-del].wish-manage-btn:hover{color:var(--red); border-color:var(--red);}
   .wish-form{
     background:var(--card); border:1px solid var(--border); border-radius:12px;
     padding:14px; display:flex; flex-direction:column; gap:10px; margin-bottom:12px;
@@ -803,7 +818,7 @@
     background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:8px;
     padding:6px 12px; font-size:12px; cursor:pointer; white-space:nowrap;
   }
-  #btnAddGoal:hover, #btnWishAdd:hover, #btnGoodTodayAdd:hover{color:var(--text); border-color:var(--accent);}
+  #btnAddGoal:hover, #btnWishAdd:hover, #btnWishManage:hover, #btnGoodTodayAdd:hover{color:var(--text); border-color:var(--accent);}
   #btnAddGoal:disabled{opacity:.5; cursor:not-allowed;}
   #btnAddGoal:disabled:hover{color:var(--muted); border-color:var(--border);}
   .add-goal-msg{color:var(--red); font-size:12px; white-space:nowrap;}
@@ -828,7 +843,7 @@
   #btnAddChild:disabled:hover{color:var(--muted); border-color:var(--border);}
   /* Compact "+"/"−" icon style for Add/Delete, used instead of full text labels to save room on
      narrow (phone) screens. */
-   #btnAddGoal.icon-btn, #btnWishAdd.icon-btn, #btnAddChild.icon-btn, #btnDelete.icon-btn, #btnEdit.icon-btn, #btnAddSubgoal.icon-btn, #btnDeleteChecklist.icon-btn, #btnMove.icon-btn, #btnMoveChecklist.icon-btn, #btnRelocate.icon-btn, #btnChecklistAdd.icon-btn, #btnFilter.icon-btn, .add-child-row #btnArchive.icon-btn, .add-goal-wrap #btnArchive.icon-btn, #btnSearch.icon-btn, #btnGoodTodayHistory.icon-btn, #btnGoodTodayAdd.icon-btn, #btnGoodTodayHistoryPagePrevBottom.icon-btn, #btnGoodTodayHistoryPageNextBottom.icon-btn{
+   #btnAddGoal.icon-btn, #btnWishAdd.icon-btn, #btnWishManage.icon-btn, #btnAddChild.icon-btn, #btnDelete.icon-btn, #btnEdit.icon-btn, #btnAddSubgoal.icon-btn, #btnDeleteChecklist.icon-btn, #btnMove.icon-btn, #btnMoveChecklist.icon-btn, #btnRelocate.icon-btn, #btnChecklistAdd.icon-btn, #btnFilter.icon-btn, .add-child-row #btnArchive.icon-btn, .add-goal-wrap #btnArchive.icon-btn, #btnSearch.icon-btn, #btnGoodTodayHistory.icon-btn, #btnGoodTodayAdd.icon-btn, #btnGoodTodayHistoryPagePrevBottom.icon-btn, #btnGoodTodayHistoryPageNextBottom.icon-btn{
     font-size:16px; font-weight:700; line-height:1; padding:5px 13px;
     min-width:32px; display:inline-flex; align-items:center; justify-content:center;
   }
@@ -906,7 +921,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.1.34';
+const APP_VERSION = '1.1.35';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -1275,6 +1290,8 @@ const STRINGS = {
     wishNeedImage: 'Сначала выберите изображение.',
     wishImageError: 'Не удалось прочитать изображение — попробуйте другой файл.',
     wishEditTitle: 'Редактировать подпись',
+    wishManage: 'Управление картинками',
+    wishManageTitle: 'Картинки',
     wishEditTip: 'Редактировать подпись',
     wishDeleteTip: 'Удалить карточку',
     wishDeleteConfirm: 'Удалить эту карточку?',
@@ -1498,6 +1515,8 @@ const STRINGS = {
     wishNeedImage: 'Choose an image first.',
     wishImageError: "Couldn't read the image — try a different file.",
     wishEditTitle: 'Edit caption',
+    wishManage: 'Manage pictures',
+    wishManageTitle: 'Pictures',
     wishEditTip: 'Edit caption',
     wishDeleteTip: 'Delete card',
     wishDeleteConfirm: 'Delete this card?',
@@ -1610,6 +1629,7 @@ let wishCropZoom = 1;         // 1..4 multiplier over the base (frame-covering) 
 let wishCropOx = 0;           // horizontal pan in WISH_IMG_SIZE units (clamped by cropMetrics)
 let wishCropOy = 0;           // vertical pan in WISH_IMG_SIZE units
 let wishEditIdx = null;       // index of the card whose caption is being edited
+let wishManageOpen = false;   // card manager overlay (list of cards: edit / delete) is open
 let wishLightboxIdx = null;       // index of the card enlarged in the lightbox
 // «Хорошее сегодня» journal module — fully independent of the goal tree / wheel / priorities.
 // goodTodayEntriesOpen is persisted (like wishMapOpen); the rest are transient render flags
@@ -3072,12 +3092,13 @@ function homeViewHTML(overallPct, hintHTML, mode, protectedCount){
     }
     // «Карта желаний» — optional vision board directly under the wheel. Fully independent:
     // cards live in state.wishMap only and never feed the wheel, ratings or any totals.
-    html += `<div class="section-title-row" style="margin-top:24px;">
-      <div class="section-title" id="wishToggle">
-        <span class="wheel-arrow">${wishMapOpen ? '▾' : '▸'}</span>${t('wishMapTitle')}
-      </div>
-      ${(wishAddOpen || (Array.isArray(state.wishMap) && state.wishMap.length >= WISH_MAX_CARDS)) ? '' : `<button id="btnWishAdd" class="icon-btn" data-tip="${t('wishAdd')}" aria-label="${t('wishAdd')}">+</button>`}
-    </div>`;
+     html += `<div class="section-title-row" style="margin-top:24px;">
+       <div class="section-title" id="wishToggle">
+         <span class="wheel-arrow">${wishMapOpen ? '▾' : '▸'}</span>${t('wishMapTitle')}
+       </div>
+       ${(wishAddOpen || (Array.isArray(state.wishMap) && state.wishMap.length >= WISH_MAX_CARDS)) ? '' : `<button id="btnWishAdd" class="icon-btn" data-tip="${t('wishAdd')}" aria-label="${t('wishAdd')}">+</button>`}
+       ${(wishAddOpen || !(Array.isArray(state.wishMap) && state.wishMap.length)) ? '' : `<button id="btnWishManage" class="icon-btn" data-tip="${t('wishManage')}" aria-label="${t('wishManage')}"><i class="ti ti-pencil" aria-hidden="true"></i></button>`}
+     </div>`;
      if(wishMapOpen){
        html += wishMapSectionHTML();
      }
@@ -3371,10 +3392,6 @@ function wishMapSectionHTML(){
           : `<div class="wish-img wish-img-pending">${esc(t('wishImagePending'))}</div>`}
         <div class="wish-caption">${esc(c.title || '')}</div>
         ${c.isUserPhoto ? `<span class="wish-you-badge">${esc(t('wishYouBadge'))}</span>` : ''}
-        <div class="wish-actions">
-          <button class="wish-action" type="button" data-wish-edit="${i}" title="${t('wishEditTip')}" aria-label="${t('wishEditTip')}"><i class="ti ti-pencil" aria-hidden="true"></i></button>
-          <button class="wish-action" type="button" data-wish-del="${i}" title="${t('wishDeleteTip')}" aria-label="${t('wishDeleteTip')}"><i class="ti ti-trash" aria-hidden="true"></i></button>
-        </div>
       </div>`;
     }).join('') + `</div>`;
     // At the cap: no add button anywhere, just a calm explanation (add it or replace one).
@@ -3409,6 +3426,31 @@ function wishMapSectionHTML(){
         <div class="wish-btn-row">
           <button id="btnWishEditSave" type="button" class="wish-primary">${t('wishSave')}</button>
           <button id="btnWishEditCancel" type="button">${t('wishCancel')}</button>
+        </div>
+      </div>
+    </div>`;
+  }
+  // Card manager: one list of all pictures (edit / delete), opened from the header — keeps the
+  // board itself clean instead of duplicating action buttons on every card.
+  if(wishManageOpen && cards.length){
+    const manageOrder = wishMapDisplayOrder(cards);
+    html += `<div class="auth-modal-overlay" id="wishManageOverlay">
+      <div class="auth-panel">
+        <button class="auth-close" id="btnWishManageClose" type="button" title="${t('done')}" aria-label="${t('done')}">✕</button>
+        <div class="wish-edit-title">${t('wishManageTitle')}</div>
+        <div class="wish-manage-list">
+          ${manageOrder.map(i => {
+            const c = cards[i];
+            const rowThumb = (typeof c.src === 'string' && c.src)
+              ? `<img class="wish-manage-thumb" src="${esc(c.src)}" alt="">`
+              : `<div class="wish-manage-thumb wish-img-pending"></div>`;
+            return `<div class="wish-manage-row">
+              ${rowThumb}
+              <span class="wish-manage-caption">${esc(c.title || '')}</span>
+              <button type="button" class="icon-btn wish-manage-btn" data-wish-manage-edit="${i}" data-tip="${t('wishEditTip')}" aria-label="${t('wishEditTip')}"><i class="ti ti-pencil" aria-hidden="true"></i></button>
+              <button type="button" class="icon-btn wish-manage-btn" data-wish-manage-del="${i}" data-tip="${t('wishDeleteTip')}" aria-label="${t('wishDeleteTip')}"><i class="ti ti-trash" aria-hidden="true"></i></button>
+            </div>`;
+          }).join('')}
         </div>
       </div>
     </div>`;
@@ -4249,7 +4291,7 @@ function attachWishMapHandlers(){
   on('wishToggle', 'click', ()=>{
     wishMapOpen = !wishMapOpen;
     state.wishMapOpen = wishMapOpen;
-    if(!wishMapOpen){ closeAddForm(); closeCrop(); wishEditIdx = null; wishLightboxIdx = null; }
+    if(!wishMapOpen){ closeAddForm(); closeCrop(); wishEditIdx = null; wishLightboxIdx = null; wishManageOpen = false; }
     saveState();
     render();
   });
@@ -4257,8 +4299,8 @@ function attachWishMapHandlers(){
   // collapsed header with no way to see it. At the cap it does nothing: the button is
   // hidden and the board shows the calm limit note instead.
   const expandForForm = ()=>{ wishMapOpen = true; state.wishMapOpen = true; };
-  on('btnWishAdd', 'click', ()=>{ if(atLimit()) return; closeAddForm(); expandForForm(); wishAddOpen = true; saveState(); render(); });
-  on('btnWishAddEmpty', 'click', ()=>{ if(atLimit()) return; closeAddForm(); expandForForm(); wishAddOpen = true; saveState(); render(); });
+  on('btnWishAdd', 'click', ()=>{ if(atLimit()) return; closeAddForm(); expandForForm(); wishManageOpen = false; wishAddOpen = true; saveState(); render(); });
+  on('btnWishAddEmpty', 'click', ()=>{ if(atLimit()) return; closeAddForm(); expandForForm(); wishManageOpen = false; wishAddOpen = true; saveState(); render(); });
   const fileInput = document.getElementById('wishFile');
   if(fileInput){
     fileInput.addEventListener('change', ()=>{
@@ -4361,15 +4403,26 @@ function attachWishMapHandlers(){
   on('btnWishCancel', 'click', ()=>{ closeAddForm(); render(); });
   document.querySelectorAll('[data-wish-open]').forEach(el=>{
     el.addEventListener('click', (e)=>{
-      if(e.target && e.target.closest && e.target.closest('[data-wish-edit],[data-wish-del]')) return;
       wishLightboxIdx = parseInt(el.dataset.wishOpen, 10);
       render();
     });
   });
-  document.querySelectorAll('[data-wish-edit]').forEach(el=>{
-    el.addEventListener('click', (e)=>{
-      e.stopPropagation();
-      wishEditIdx = parseInt(el.dataset.wishEdit, 10);
+  // Card manager (header): one list of all pictures — pick one to edit or delete.
+  on('btnWishManage', 'click', ()=>{
+    wishManageOpen = !wishManageOpen;
+    render();
+  });
+  on('btnWishManageClose', 'click', ()=>{ wishManageOpen = false; render(); });
+  const wishManageOverlay = document.getElementById('wishManageOverlay');
+  if(wishManageOverlay){
+    wishManageOverlay.addEventListener('click', (e)=>{
+      if(e.target === wishManageOverlay){ wishManageOpen = false; render(); }
+    });
+  }
+  document.querySelectorAll('[data-wish-manage-edit]').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      wishManageOpen = false;
+      wishEditIdx = parseInt(el.dataset.wishManageEdit, 10);
       render();
       const input = document.getElementById('wishEditInput');
       if(input && input.setSelectionRange){
@@ -4378,15 +4431,15 @@ function attachWishMapHandlers(){
       }
     });
   });
-  document.querySelectorAll('[data-wish-del]').forEach(el=>{
-    el.addEventListener('click', (e)=>{
-      e.stopPropagation();
-      const idx = parseInt(el.dataset.wishDel, 10);
+  document.querySelectorAll('[data-wish-manage-del]').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      const idx = parseInt(el.dataset.wishManageDel, 10);
       const card = wishCardAt(idx);
       if(!card) return;
       if(!confirm(t('wishDeleteConfirm'))) return;
       state.wishMap.splice(idx, 1);
       deleteWishImageFile(card); // best-effort Storage cleanup, never blocks the UI
+      wishManageOpen = false;
       saveState();
       render();
     });

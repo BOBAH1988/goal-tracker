@@ -686,6 +686,49 @@ test('goals sort: same filter works on a subgoal page, not just the home screen'
 
 // ===== Wish map («Карта желаний») — optional vision board under the balance wheel =====
 
+test('wish map: header card manager replaces per-card edit/delete buttons', () => {
+  const t = bootDom();
+  t.app.setState(Object.assign(t.app.getState(), {
+    wishMap: [
+      { src: 'data:image/jpeg;base64,AAA', caption: 'Море' },
+      { src: 'data:image/jpeg;base64,BBB', caption: 'Горы' },
+    ],
+  }));
+  t.window.render();
+  // Cards no longer carry their own action buttons.
+  assert.ok(t.document.querySelectorAll('.wish-card').length === 2, 'both cards render');
+  assert.ok(!t.document.querySelector('[data-wish-edit]'), 'cards must not carry an edit button');
+  assert.ok(!t.document.querySelector('[data-wish-del]'), 'cards must not carry a delete button');
+  assert.ok(!t.document.querySelector('.wish-actions'), 'the corner action group is gone');
+  // The header «+» and the manager button sit together.
+  assert.ok(t.document.getElementById('btnWishAdd'), 'the add button stays in the header');
+  assert.ok(t.document.getElementById('btnWishManage'), 'the manager button lives next to it');
+  // Opening the manager lists every card with its caption.
+  t.click('#btnWishManage');
+  const overlay = t.document.getElementById('wishManageOverlay');
+  assert.ok(overlay, 'the manager overlay must open');
+  const rows = t.document.querySelectorAll('.wish-manage-row');
+  assert.equal(rows.length, 2, 'every card gets a row');
+  assert.match(t.document.getElementById('app').innerHTML, /Море/, 'captions are listed');
+  assert.equal(t.document.querySelectorAll('[data-wish-manage-edit]').length, 2, 'each row can be edited');
+  assert.equal(t.document.querySelectorAll('[data-wish-manage-del]').length, 2, 'each row can be deleted');
+  // ✕ closes the manager without touching any card.
+  t.click('#btnWishManageClose');
+  assert.ok(!t.document.getElementById('wishManageOverlay'), 'close button dismisses the manager');
+  assert.equal(t.app.getState().wishMap.length, 2, 'closing must not delete anything');
+  // Adding a new card closes the manager so the form is not blocked by the list.
+  t.click('#btnWishManage');
+  t.click('#btnWishAdd');
+  assert.ok(t.document.getElementById('wishFile'), 'the add form opens');
+  assert.ok(!t.document.getElementById('wishManageOverlay'), 'opening the add form closes the manager');
+  // Collapsing the section closes the manager too (no hidden overlay lingers).
+  t.click('#btnWishCancel');
+  t.click('#btnWishManage');
+  assert.ok(t.document.getElementById('wishManageOverlay'), 'manager reopened');
+  t.click('#wishToggle');
+  assert.ok(!t.document.getElementById('wishManageOverlay'), 'collapsing the section closes the manager');
+});
+
 test('wish map: empty state offers the add button; Save without an image is refused', () => {
   const t = bootDom();
   assert.match(t.document.getElementById('app').innerHTML, /Карта желаний/, 'the board title must be on the home screen');
@@ -717,20 +760,25 @@ test('wish map: card opens the lightbox, caption edits persist, delete asks firs
   assert.ok(t.document.getElementById('wishLightbox'), 'tapping a card must enlarge the image');
   t.click('#btnWishLightboxClose');
   assert.ok(!t.document.getElementById('wishLightbox'), '✕ must close the lightbox');
-  // Pencil → caption dialog; saving writes through to state and localStorage.
-  t.click('[data-wish-edit="0"]');
+  // Header manager button → list of pictures; pencil opens the caption dialog.
+  t.click('#btnWishManage');
+  assert.ok(t.document.getElementById('wishManageOverlay'), 'manager button must open the card list');
+  t.click('[data-wish-manage-edit="0"]');
   assert.ok(t.document.getElementById('wishEditOverlay'), 'pencil must open the caption dialog');
   t.document.getElementById('wishEditInput').value = 'Южное побережье';
   t.click('#btnWishEditSave');
   assert.equal(t.app.getState().wishMap[0].title, 'Южное побережье', 'new caption must persist in state');
   const raw = t.window.localStorage.getItem(t.app.STORAGE_KEY);
   assert.ok(raw && raw.includes('Южное побережье'), 'caption must round-trip through localStorage');
-  // Trash → confirmation; declining keeps the card, confirming removes it.
+  // Trash in the manager → confirmation; declining keeps the card (and the list open),
+  // confirming removes it.
   t.window.confirm = () => false;
-  t.click('[data-wish-del="0"]');
+  t.click('#btnWishManage');
+  t.click('[data-wish-manage-del="0"]');
   assert.equal(t.app.getState().wishMap.length, 1, 'declined delete must keep the card');
+  assert.ok(t.document.getElementById('wishManageOverlay'), 'declined delete keeps the manager open');
   t.window.confirm = () => true;
-  t.click('[data-wish-del="0"]');
+  t.click('[data-wish-manage-del="0"]');
   assert.equal(t.app.getState().wishMap.length, 0, 'confirmed delete must remove the card');
   assert.ok(t.document.getElementById('btnWishAddEmpty'), 'board falls back to the empty state');
 });
@@ -809,7 +857,8 @@ test('wish map: «Это моё фото» is locked while another card holds th
   t.window.render();
   assert.equal(t.document.querySelectorAll('.wish-you-badge').length, 1, 'exactly one «Я» badge renders');
   // A second card cannot steal the mark: its editor checkbox is disabled with a hint.
-  t.click('[data-wish-edit="1"]');
+  t.click('#btnWishManage');
+  t.click('[data-wish-manage-edit="1"]');
   const editBox = t.document.getElementById('wishEditIsUserPhoto');
   assert.ok(editBox, 'the editor must carry the checkbox');
   assert.ok(editBox.disabled, 'the checkbox is disabled while another card is marked');
