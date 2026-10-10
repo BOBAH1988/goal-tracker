@@ -762,4 +762,17 @@ test('wish map: cards never touch the wheel math and ride along in the backup im
   assert.ok(t.document.querySelector('.wish-card'), 'restored card must render on the board');
 });
 
+test('wish map: section collapses like the wheel and the choice persists', () => {
+  const t = bootDom();
+  assert.ok(t.document.getElementById('btnWishAddEmpty'), 'open by default — empty state visible');
+  t.click('#wishToggle');
+  assert.equal(t.app.getState().wishMapOpen, false, 'clicking the title must persist wishMapOpen=false');
+  assert.ok(!t.document.querySelector('.wish-grid'), 'the card grid must disappear when collapsed');
+  assert.ok(!t.document.querySelector('.wish-form'), 'the add form must not survive a collapse');
+  assert.ok(t.document.getElementById('btnWishAdd'), 'the «+» button must stay in the collapsed header');
+  t.click('#wishToggle');
+  assert.equal(t.app.getState().wishMapOpen, true, 'clicking again must persist wishMapOpen=true');
+  assert.ok(t.document.getElementById('btnWishAddEmpty'), 'empty state must come back when expanded');
+});
+
 

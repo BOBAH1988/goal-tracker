@@ -608,8 +608,8 @@
   /* Collapsing "Главные цели" / "Main goals" — the arrow toggles the grid below. */
   #mainGoalsToggle{cursor:pointer; user-select:none;}
   #mainGoalsToggle .main-goals-arrow{color:var(--muted); font-size:13px; margin-right:6px;}
-  #wheelToggle{cursor:pointer; user-select:none;}
-  #wheelToggle .wheel-arrow{color:var(--muted); font-size:13px; margin-right:6px;}
+  #wheelToggle,#wishToggle{cursor:pointer; user-select:none;}
+  #wheelToggle .wheel-arrow,#wishToggle .wheel-arrow{color:var(--muted); font-size:13px; margin-right:6px;}
   .add-goal-wrap{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
   #btnAddGoal{
     background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:8px;
@@ -712,7 +712,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.1.7';
+const APP_VERSION = '1.1.8';
 /* ===== Seed data (transcribed from the Excel table) =====
    emptyGoals/emptySteps take the noun to use for auto-generated names, so items added later via
    the UI can be named in whichever language is active at the time (default: Russian for the
@@ -1288,6 +1288,8 @@ let relocatePickerPath = [];
 // «Карта желаний» (vision board) — transient dialog state. The cards themselves live in
 // state.wishMap (persisted + backed up with everything else); these flags only say which
 // dialog is open right now and reset on reload, like the other panel flags above.
+// Collapse state of the section itself — persisted like wheelOpen/mainGoalsOpen (default: open).
+let wishMapOpen = state.wishMapOpen !== false;
 let wishAddOpen = false;      // add-card form (file picker + caption) is open
 let wishDraftSrc = null;      // dataURL of the picked image, pending Save
 let wishCaptionDraft = '';    // caption typed into the add form (survives re-renders)
@@ -2432,10 +2434,14 @@ function homeViewHTML(overallPct, hintHTML, mode, protectedCount){
     // «Карта желаний» — optional vision board directly under the wheel. Fully independent:
     // cards live in state.wishMap only and never feed the wheel, ratings or any totals.
     html += `<div class="section-title-row" style="margin-top:24px;">
-      <div class="section-title">${t('wishMapTitle')}</div>
+      <div class="section-title" id="wishToggle">
+        <span class="wheel-arrow">${wishMapOpen ? '▾' : '▸'}</span>${t('wishMapTitle')}
+      </div>
       ${wishAddOpen ? '' : `<button id="btnWishAdd" class="icon-btn" data-tip="${t('wishAdd')}" aria-label="${t('wishAdd')}">+</button>`}
     </div>`;
-    html += wishMapSectionHTML();
+    if(wishMapOpen){
+      html += wishMapSectionHTML();
+    }
   return html;
 }
 
@@ -3311,8 +3317,20 @@ function attachWishMapHandlers(){
   const closeAddForm = ()=>{
     wishAddOpen = false; wishDraftSrc = null; wishFormError = ''; wishCaptionDraft = '';
   };
-  on('btnWishAdd', 'click', ()=>{ closeAddForm(); wishAddOpen = true; render(); });
-  on('btnWishAddEmpty', 'click', ()=>{ closeAddForm(); wishAddOpen = true; render(); });
+  // Section toggle — same behaviour as the wheel: clicking the title flips it and the choice
+  // persists in state. Collapsing also closes any wish dialog so no hidden overlay lingers.
+  on('wishToggle', 'click', ()=>{
+    wishMapOpen = !wishMapOpen;
+    state.wishMapOpen = wishMapOpen;
+    if(!wishMapOpen){ closeAddForm(); wishEditIdx = null; wishLightboxIdx = null; }
+    saveState();
+    render();
+  });
+  // The «+» always expands the section first — otherwise the form would open behind a
+  // collapsed header with no way to see it.
+  const expandForForm = ()=>{ wishMapOpen = true; state.wishMapOpen = true; };
+  on('btnWishAdd', 'click', ()=>{ closeAddForm(); expandForForm(); wishAddOpen = true; saveState(); render(); });
+  on('btnWishAddEmpty', 'click', ()=>{ closeAddForm(); expandForForm(); wishAddOpen = true; saveState(); render(); });
   const fileInput = document.getElementById('wishFile');
   if(fileInput){
     fileInput.addEventListener('change', ()=>{
