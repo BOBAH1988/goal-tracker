@@ -934,7 +934,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.1.42';
+const APP_VERSION = '1.1.43';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -1137,6 +1137,7 @@ const STRINGS = {
     goodTodayEntriesTitle: 'Хорошее сегодня',
     goodTodayEntriesSubtitle: 'Что было хорошего сегодня?',
     goodTodayEntriesAdd: 'Новая запись',
+    goodTodayEntriesCollapse: 'Свернуть',
     goodTodayEntriesPlaceholder: 'Запишите главное…',
     goodTodayEntriesSave: 'Сохранить',
     goodTodayEntriesCancel: 'Отмена',
@@ -1366,6 +1367,7 @@ const STRINGS = {
     goodTodayEntriesTitle: 'Good Today',
     goodTodayEntriesSubtitle: 'What was good today?',
     goodTodayEntriesAdd: 'New entry',
+    goodTodayEntriesCollapse: 'Collapse',
     goodTodayEntriesPlaceholder: 'Write the highlight…',
     goodTodayEntriesSave: 'Save',
     goodTodayEntriesCancel: 'Cancel',
@@ -3171,10 +3173,15 @@ function goodTodaySectionHTML(){
     ${entries.length > 0 ? `<button id="btnGoodTodayHistory" class="icon-btn" data-tip="${t('goodTodayEntriesHistory')}" aria-label="${t('goodTodayEntriesHistory')}"><i class="ti ti-history" aria-hidden="true"></i></button>` : ''}
   </div>`;
   if(goodTodayEntriesOpen){
-    // Subtitle row: «Что было хорошего сегодня?» + «+» button that expands the entry form.
+    // Subtitle row: «Что было хорошего сегодня?» plus the expand/collapse button.
+    // While the form is open the «+» becomes a «−» — the user can always back out before typing.
+    // In edit mode the toggle stays a «−» too, so the collapse path never disappears.
+    const formExpanded = goodTodayFormOpen || isEditing;
     html += `<div class="good-today-subtitle-row">
       <span class="good-today-subtitle">${t('goodTodayEntriesSubtitle')}</span>
-      <button id="btnGoodTodayAdd" type="button" class="icon-btn" data-tip="${t('goodTodayEntriesAdd')}" aria-label="${t('goodTodayEntriesAdd')}">+</button>
+      <button id="btnGoodTodayAdd" type="button" class="icon-btn"
+        data-tip="${formExpanded ? t('goodTodayEntriesCollapse') : t('goodTodayEntriesAdd')}"
+        aria-label="${formExpanded ? t('goodTodayEntriesCollapse') : t('goodTodayEntriesAdd')}">${formExpanded ? '−' : '+'}</button>
     </div>`;
     if(goodTodayFormOpen || isEditing){
       html += `<textarea id="goodTodayTextarea" class="good-today-textarea" maxlength="500"
@@ -4602,6 +4609,17 @@ function attachGoodTodayHandlers(){
   }
   // '+' expands the entry form (collapsed by default so it never eats the screen).
   on('btnGoodTodayAdd', 'click', ()=>{
+    // While the form is expanded the same button acts as a «−»: collapse it and drop the draft,
+    // so the user can back out without typing anything. In edit mode collapsing also exits the
+    // edit (the explicit «Отмена» does exactly the same, just with a clearer label).
+    if(goodTodayFormOpen || goodTodayEditId !== null){
+      goodTodayFormOpen = false;
+      goodTodayEditId = null;
+      goodTodayDraftText = '';
+      goodTodayCharError = '';
+      render();
+      return;
+    }
     goodTodayFormOpen = true;
     goodTodayCharError = '';
     render();

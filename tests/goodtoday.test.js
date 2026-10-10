@@ -676,3 +676,32 @@ test('goodTodaySectionHTML: weekly history paints the block title exactly once',
   // And exactly one section-title-row wraps the weekly block.
   assert.equal((html.match(/id="goodTodayWeekToggle"/g) || []).length, 1, 'one toggle id only');
 });
+
+test('goodTodaySectionHTML: «+» becomes «−» while the entry form is open', () => {
+  const t = boot();
+  t.app.setState({ name: 'root', children: [], goodTodayEntries: [] });
+  // Collapsed: «+», no textarea.
+  vm.runInContext('goodTodayFormOpen = false; goodTodayEditId = null;', t.ctx);
+  const closed = vm.runInContext('goodTodaySectionHTML()', t.ctx);
+  assert.ok(closed.includes('>+</button>'), 'the collapsed form shows a «+»');
+  assert.ok(!closed.includes('id="goodTodayTextarea"'), 'no textarea while collapsed');
+  // Open: «−» and the textarea.
+  vm.runInContext('goodTodayFormOpen = true; goodTodayEditId = null;', t.ctx);
+  const open = vm.runInContext('goodTodaySectionHTML()', t.ctx);
+  assert.ok(open.includes('>−</button>'), 'the open form shows a «−»');
+  assert.ok(open.includes('id="goodTodayTextarea"'), 'textarea shows while open');
+  assert.ok(!open.includes('>+</button>'), 'the «+» is gone while the form is open');
+});
+
+test('goodTodaySectionHTML: «−» also replaces «+» while editing an entry', () => {
+  const t = boot();
+  t.app.setState({
+    name: 'root', children: [],
+    goodTodayEntries: [{ id: 'e1', date: '2026-10-05', text: 'A' }],
+  });
+  // Editing keeps the form visible, so the toggle must stay a «−» (no dead «+»).
+  vm.runInContext('goodTodayFormOpen = false; goodTodayEditId = "e1"; goodTodayDraftText = "A";', t.ctx);
+  const html = vm.runInContext('goodTodaySectionHTML()', t.ctx);
+  assert.ok(html.includes('>−</button>'), 'edit mode shows a «−», not a «+»');
+  assert.ok(html.includes('id="goodTodayTextarea"'), 'edit mode keeps the textarea');
+});

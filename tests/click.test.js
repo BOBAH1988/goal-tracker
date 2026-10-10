@@ -959,3 +959,25 @@ test('Победы за неделю: history saves a brand new report for the s
   t.click('#btnGoodTodayWeekHistorySave');
   assert.equal(t.app.getState().goodTodayWeekReflections.length, 2, 'a new report is created');
 });
+
+test('Хорошее сегодня: «+» opens the form and «−» collapses it again', () => {
+  const t = bootDom();
+  t.app.setState(Object.assign(t.app.getState(), { goodTodayEntries: [] }));
+  t.window.render();
+  // Collapsed: «+» only, no textarea.
+  assert.ok(t.document.getElementById('btnGoodTodayAdd'), 'the add button is present');
+  assert.ok(!t.document.getElementById('goodTodayTextarea'), 'no textarea before opening');
+  // «+» opens the form and focus lands in the textarea.
+  t.click('#btnGoodTodayAdd');
+  assert.ok(t.document.getElementById('goodTodayTextarea'), 'the form opens on «+»');
+  assert.equal(t.document.getElementById('btnGoodTodayAdd').textContent, '−', 'the button flips to «−»');
+  // Typing a draft and pressing «−» must discard it and collapse — no save, no prompt.
+  t.document.getElementById('goodTodayTextarea').value = 'передумал';
+  t.click('#btnGoodTodayAdd');
+  assert.ok(!t.document.getElementById('goodTodayTextarea'), 'the form collapses on «−»');
+  assert.equal(t.app.getState().goodTodayEntries.length, 0, 'nothing is saved');
+  assert.equal(t.document.getElementById('btnGoodTodayAdd').textContent, '+', 'the button flips back to «+»');
+  // Reopening must start from a blank draft (the abandoned text is gone).
+  t.click('#btnGoodTodayAdd');
+  assert.equal(t.document.getElementById('goodTodayTextarea').value, '', 'the abandoned draft is discarded');
+});
