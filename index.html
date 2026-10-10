@@ -468,6 +468,24 @@
   footer{color:var(--muted); font-size:11px; text-align:center; margin-top:4px; opacity:.7;}
   .cat-label{font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin:2px 0 10px;}
   .section-title{font-size:15px; font-weight:600; color:var(--text); margin:4px 0 12px;}
+  /* Custom tooltip bubble for [data-tip] elements (the "Главные цели" action buttons).
+     Replaces the browser's native title tooltip, which is slow, plain-styled and never shows on
+     touch devices / installed PWA. The label comes from the data-tip attribute; on hover or
+     keyboard focus a small bubble fades in above the control. */
+  [data-tip]{position:relative;}
+  [data-tip]:hover::after, [data-tip]:focus-visible::after{
+    content:attr(data-tip);
+    position:absolute; left:50%; bottom:calc(100% + 8px); transform:translateX(-50%);
+    background:var(--card2); color:var(--text); border:1px solid var(--border);
+    font-size:12px; font-weight:500; line-height:1.3; padding:5px 10px; border-radius:8px;
+    white-space:nowrap; pointer-events:none; z-index:1000;
+    box-shadow:0 6px 18px rgba(0,0,0,.3);
+  }
+  [data-tip]:hover::before, [data-tip]:focus-visible::before{
+    content:''; position:absolute; left:50%; bottom:calc(100% + 2px); transform:translateX(-50%);
+    border:6px solid transparent; border-top-color:var(--border);
+    pointer-events:none; z-index:1000;
+  }
   .section-title-row{display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:8px;}
   .section-title-row .section-title{margin:0;}
   /* Collapsing "Главные цели" / "Main goals" — the arrow toggles the grid below. */
@@ -576,7 +594,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.0.30';
+const APP_VERSION = '1.0.31';
 /* ===== Seed data (transcribed from the Excel table) =====
    emptyGoals/emptySteps take the noun to use for auto-generated names, so items added later via
    the UI can be named in whichever language is active at the time (default: Russian for the
@@ -2179,11 +2197,11 @@ function homeViewHTML(overallPct, hintHTML, mode, protectedCount){
     </div>
     <div class="add-goal-wrap">
       <span id="addGoalMsg" class="add-goal-msg"></span>
-      <button id="btnAddGoal" class="icon-btn" title="${t('tipAdd')}" aria-label="${t('tipAdd')}">+</button>
-      <button id="btnDelete" class="${deleteMode?'active':'icon-btn'}" title="${deleteMode?t('done'):t('tipDelete')}" aria-label="${deleteMode?t('done'):t('tipDelete')}">${deleteMode ? t('done') : '−'}</button>
-      <button id="btnMove" class="${moveMode?'active':'icon-btn'}" title="${moveMode?t('done'):t('tipMove')}" aria-label="${moveMode?t('done'):t('tipMove')}">${moveMode ? t('done') : '↕'}</button>
-      <button id="btnRelocate" class="${relocateMode?'active':'icon-btn'}" title="${relocateMode?t('done'):t('tipRelocate')}" aria-label="${relocateMode?t('done'):t('tipRelocate')}">${relocateMode ? t('done') : '<i class="ti ti-folder-symlink" aria-hidden="true"></i>'}</button>
-      <button id="btnEdit" class="${editMode?'active':'icon-btn'}" title="${editMode?t('done'):t('tipEdit')}" aria-label="${editMode?t('done'):t('tipEdit')}">${editMode ? t('done') : '<i class="ti ti-edit" aria-hidden="true"></i>'}</button>
+      <button id="btnAddGoal" class="icon-btn" data-tip="${t('tipAdd')}" aria-label="${t('tipAdd')}">+</button>
+      <button id="btnDelete" class="${deleteMode?'active':'icon-btn'}" data-tip="${deleteMode?t('done'):t('tipDelete')}" aria-label="${deleteMode?t('done'):t('tipDelete')}">${deleteMode ? t('done') : '−'}</button>
+      <button id="btnMove" class="${moveMode?'active':'icon-btn'}" data-tip="${moveMode?t('done'):t('tipMove')}" aria-label="${moveMode?t('done'):t('tipMove')}">${moveMode ? t('done') : '↕'}</button>
+      <button id="btnRelocate" class="${relocateMode?'active':'icon-btn'}" data-tip="${relocateMode?t('done'):t('tipRelocate')}" aria-label="${relocateMode?t('done'):t('tipRelocate')}">${relocateMode ? t('done') : '<i class="ti ti-folder-symlink" aria-hidden="true"></i>'}</button>
+      <button id="btnEdit" class="${editMode?'active':'icon-btn'}" data-tip="${editMode?t('done'):t('tipEdit')}" aria-label="${editMode?t('done'):t('tipEdit')}">${editMode ? t('done') : '<i class="ti ti-edit" aria-hidden="true"></i>'}</button>
       <span id="deleteMsg" class="add-goal-msg"></span>
     </div>
   </div>`;

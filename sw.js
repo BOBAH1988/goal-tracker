@@ -3,7 +3,7 @@
 //
 // Версия кэша = версия приложения (см. APP_VERSION в index.html): каждый бамп версии
 // гарантированно сносит старый кэш у всех, кто уже установил приложение, и тянет свежие файлы.
-const CACHE_NAME = 'goal-tracker-v1.0.30';
+const CACHE_NAME = 'goal-tracker-v1.0.31';
 const ASSETS = [
   './',
   './index.html',
