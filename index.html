@@ -106,7 +106,8 @@
   /* ===== Topbar: menus, language & theme switchers ===== */
   .topbar{display:flex; align-items:center; margin-bottom:18px; flex-wrap:wrap; gap:10px;}
   .app-title-wrap{display:flex; flex-direction:column; gap:0; line-height:1.2;}
-  .topbar h1{font-size:20px; margin:0; font-weight:600;}
+  .topbar h1{font-size:20px; margin:0; font-weight:600; display:flex; align-items:center; gap:8px;}
+  .app-logo{width:26px; height:26px; border-radius:50%; flex:none; display:block;}
   .app-subtitle{font-size:12px; color:var(--muted); font-weight:400;}
   /* margin-left:auto (rather than justify-content:space-between on .topbar) so this stays pinned
      to the right edge even after it wraps onto its own line below a long title on narrow screens —
@@ -376,8 +377,61 @@
      distinct actions even though they share the same button styling. */
   #btnArchive:hover{color:var(--accent);}
   #btnArchive.active{color:var(--accent);}
-  .checklist-star{font-size:15px;}
-  .bar{height:10px; border-radius:6px; background:var(--track); overflow:hidden; border:1px solid var(--border);}
+   .checklist-star{font-size:15px;}
+   /* «Хорошее сегодня» journal section — shares the card look with .priority-block but has its own
+      header (subtitle + char-counter) and a taller textarea. */
+   .good-today-section{
+     background:var(--card); border:1px solid var(--border); border-radius:16px; padding:16px 18px; margin-bottom:22px;
+   }
+   .good-today-header{
+     display:flex; align-items:center; cursor:pointer; user-select:none; margin-bottom:10px;
+   }
+   .good-today-arrow{color:var(--muted); font-size:13px; margin-right:6px;}
+   .good-today-header .section-title{margin:0; flex:1;}
+   .good-today-header .good-today-actions{
+     display:flex; align-items:center; gap:6px; opacity:.7; transition:opacity .15s;
+   }
+   .good-today-header:hover .good-today-actions{opacity:1;}
+   .good-today-subtitle{color:var(--muted); font-size:13px; margin:0 0 10px;}
+   .good-today-textarea{
+     width:100%; min-height:72px; resize:vertical;
+     background:var(--card2); border:1px solid var(--border); border-radius:10px;
+     padding:10px 12px; font-size:14px; line-height:1.4; color:var(--text);
+     font-family:inherit; box-sizing:border-box;
+   }
+   .good-today-textarea:focus{outline:2px solid var(--accent); outline-offset:1px; border-color:var(--accent);}
+   .good-today-textarea:disabled{background:rgba(0,0,0,.05); opacity:.6;}
+   .good-today-char-count{color:var(--muted); font-size:12px; text-align:right; margin-top:6px;}
+   .good-today-char-count.error{color:var(--red);}
+   .good-today-btn-row{
+     display:flex; align-items:center; gap:10px; margin-top:10px;
+   }
+   .good-today-history-view{
+     margin-top:14px; border-top:1px solid var(--border); padding-top:14px;
+   }
+   .good-today-history-groups{display:flex; flex-direction:column; gap:12px;}
+   .good-today-history-group{border-bottom:1px solid var(--border); padding-bottom:10px;}
+   .good-today-history-group:last-child{border-bottom:none; padding-bottom:0;}
+   .good-today-history-week{font-size:12px; font-weight:600; color:var(--muted); margin-bottom:6px;}
+   .good-today-history-items{display:flex; flex-direction:column; gap:6px;}
+   .good-today-history-item{
+     font-size:13px; line-height:1.4; color:var(--text);
+     border:1px solid var(--border); border-radius:8px; padding:8px 10px;
+     background:var(--card2); cursor:pointer;
+   }
+   .good-today-history-item:hover{background:rgba(0,0,0,.03);}
+   .good-today-history-empty{color:var(--muted); font-size:13px; text-align:center; padding:20px;}
+   .good-today-entry-date{color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.04em; margin-bottom:4px;}
+   .good-today-entry-text{font-size:14px; line-height:1.4; word-break:break-word;}
+   .good-today-last-entry{margin-top:10px; font-size:13px; color:var(--muted);}
+   .good-today-last-entry .good-today-last-text{color:var(--text); display:inline;}
+   .good-today-week-label{color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.04em;}
+   /* Pre-existing «Сегодня хорошее» mood badge (v1.1.18) — compact inline badge on the today block. */
+   .good-today{display:inline-flex; align-items:center; gap:4px; padding:2px 8px; border-radius:8px; font-size:12px; font-weight:500; margin-top:8px;}
+   .good-today-good{background:rgba(46,160,67,.12); color:var(--green);}
+   .good-today-bad{background:rgba(255,86,92,.12); color:var(--red);}
+   .good-today-icon{font-size:13px;}
+   .bar{height:10px; border-radius:6px; background:var(--track); overflow:hidden; border:1px solid var(--border);}
   .bar > div{height:100%; border-radius:6px; transition:width .3s ease;}
   .node-header{margin-bottom:18px;}
   .node-header h2{font-size:22px; margin:0 0 6px;}
@@ -397,7 +451,9 @@
        who's on it) and push the title to its own centered row underneath. */
     .top-menu-dropdown{order:1;}
     .actions{order:2;}
-    .topbar h1{order:3; width:100%; text-align:center; margin-top:2px; font-size:17px;}
+    .topbar h1{order:3; width:100%; justify-content:center; margin-top:2px; font-size:17px;}
+    .app-title-wrap{align-items:center;}
+    .app-subtitle{text-align:center;}
     .account-dropdown #btnAccount{max-width:44vw; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   }
   .card{
@@ -779,7 +835,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.1.17';
+const APP_VERSION = '1.1.19';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -941,7 +997,7 @@ function emptyTemplate(){
 const LANG_KEY = "goal_tracker_lang";
 const STRINGS = {
   ru: {
-    appTitle: '🎯 Только важное',
+    appTitle: 'Только важное',
     appSubtitle: 'Твой путь к счастливой жизни.',
     updateReadyTitle: 'Доступно обновление',
     updateReadyText: 'Загружена новая версия приложения. Обновить сейчас?',
@@ -973,6 +1029,30 @@ const STRINGS = {
     todayPlaceholder: 'Важное дело',
     todayClear: 'Очистить',
     todayDone: 'Готово',
+    goodTodayGood: "Сегодня хорошее",
+    goodTodayBad: "День хороший",
+    goodTodayEntriesTitle: 'Хорошее сегодня',
+    goodTodayEntriesSubtitle: 'Что было хорошего сегодня?',
+    goodTodayEntriesPlaceholder: 'Запишите главное…',
+    goodTodayEntriesSave: 'Сохранить',
+    goodTodayEntriesCancel: 'Отмена',
+    goodTodayEntriesEdit: 'Изменить',
+    goodTodayEntriesDelete: 'Удалить',
+    goodTodayEntriesCharCount: '{n} из 500 символов',
+    goodTodayEntriesLastEntry: 'Последняя запись',
+    goodTodayEntriesAddMore: 'Ещё одна запись',
+    goodTodayEntriesHistory: 'История',
+    goodTodayEntriesHistoryEmpty: 'Записей пока нет',
+    goodTodayEntriesDeleteConfirm: 'Точка входа. Удалить запись навсегда?',
+    goodTodayEntriesEditTitle: 'Редактирование записи',
+    goodTodayWeekPauseTitle: 'Небольшая пауза',
+    goodTodayWeekPauseQ1: 'Что я ценю в этот момент?',
+    goodTodayWeekPauseQ2: 'Чем я расту за эту неделю?',
+    goodTodayWeekPauseQ3: 'Что хочу продолжить следующей неделей?',
+    goodTodayWeekPauseSave: 'Сохранить рефлексию',
+    goodTodayWeekPauseSkip: 'Пропустить на этой неделе',
+    goodTodayWeekPauseSaved: 'Рефлексия сохранена',
+    goodTodayWeekLabel: 'Рефлексия недели',
     quoteTitle: 'Мотивация на сегодня',
     quoteRefresh: 'Обновить цитату',
     tipArchive: 'В архив (не учитывается в прогрессе)',
@@ -1124,7 +1204,7 @@ const STRINGS = {
     wishImagePending: 'Изображение загрузится при появлении сети'
   },
   en: {
-    appTitle: '🎯 Only What Matters',
+    appTitle: 'Only What Matters',
     appSubtitle: 'Your path to a happy life.',
     updateReadyTitle: 'Update available',
     updateReadyText: 'A new version of the app has been downloaded. Update now?',
@@ -1156,6 +1236,30 @@ const STRINGS = {
     todayPlaceholder: 'Important task',
     todayClear: 'Clear',
     todayDone: 'Done',
+    goodTodayGood: "Today is good",
+    goodTodayBad: "Make today good",
+    goodTodayEntriesTitle: 'Good Today',
+    goodTodayEntriesSubtitle: 'What was good today?',
+    goodTodayEntriesPlaceholder: 'Write the highlight…',
+    goodTodayEntriesSave: 'Save',
+    goodTodayEntriesCancel: 'Cancel',
+    goodTodayEntriesEdit: 'Edit',
+    goodTodayEntriesDelete: 'Delete',
+    goodTodayEntriesCharCount: '{n} of 500 characters',
+    goodTodayEntriesLastEntry: 'Last entry',
+    goodTodayEntriesAddMore: 'Add another entry',
+    goodTodayEntriesHistory: 'History',
+    goodTodayEntriesHistoryEmpty: 'No entries yet',
+    goodTodayEntriesDeleteConfirm: 'This will remove the entry permanently. Delete?',
+    goodTodayEntriesEditTitle: 'Edit entry',
+    goodTodayWeekPauseTitle: 'A Small Pause',
+    goodTodayWeekPauseQ1: 'What am I grateful for right now?',
+    goodTodayWeekPauseQ2: 'How did I grow this week?',
+    goodTodayWeekPauseQ3: 'What do I want to carry into next week?',
+    goodTodayWeekPauseSave: 'Save reflection',
+    goodTodayWeekPauseSkip: 'Skip this week',
+    goodTodayWeekPauseSaved: 'Reflection saved',
+    goodTodayWeekLabel: 'Weekly reflection',
     quoteTitle: 'Motivation for today',
     quoteRefresh: 'Refresh quote',
     tipArchive: 'Archive (excluded from progress)',
@@ -1403,7 +1507,18 @@ let wishCropZoom = 1;         // 1..4 multiplier over the base (frame-covering) 
 let wishCropOx = 0;           // horizontal pan in WISH_IMG_SIZE units (clamped by cropMetrics)
 let wishCropOy = 0;           // vertical pan in WISH_IMG_SIZE units
 let wishEditIdx = null;       // index of the card whose caption is being edited
-let wishLightboxIdx = null;   // index of the card enlarged in the lightbox
+let wishLightboxIdx = null;       // index of the card enlarged in the lightbox
+// «Хорошее сегодня» journal module — fully independent of the goal tree / wheel / priorities.
+// goodTodayEntriesOpen is persisted (like wishMapOpen); the rest are transient render flags
+// (reset on reload) exactly like the other panel flags above.
+let goodTodayEntriesOpen = state.goodTodayEntriesOpen !== false;
+let goodTodayHistoryOpen = false;       // history view (grouped by week) is open
+let goodTodayEditId = null;             // id of the entry being edited inline
+let goodTodayDraftText = '';            // text typed into the add form (survives re-renders)
+let goodTodayCharError = '';            // overflow error for the add form (transient)
+let goodTodayWeekPauseOpen = false;     // weekly reflection form overlay is open
+let goodTodayWeekEditing = false;       // weekly reflection form is in edit mode (vs saved-view mode)
+let goodTodayWeekDrafts = { q1: '', q2: '', q3: '' };  // weekly reflection draft (survives re-renders)
 // Global search panel (opened from the top menu). Results are recomputed on each keystroke and
 // injected straight into the results container (no full render — that would drop the input focus).
 // Each result is { kind:'goal'|'checklist', name, path, archived } — path is the nav target.
@@ -1464,8 +1579,10 @@ function loadState(){
        if(isValidGoalTree(parsed)){
          sanitizeGoalTree(parsed);
          sanitizeEmptyChecklists(parsed);
-         ensureWheelTotals(parsed);
-         ensureToday(parsed);
+          ensureWheelTotals(parsed);
+          ensureToday(parsed);
+          ensureGoodToday(parsed);
+          if (parsed.goodToday === undefined) parsed.goodToday = parsed.today.some(item => item.done);
          ensureWishMap(parsed);
          return parsed;
        }
@@ -1474,10 +1591,10 @@ function loadState(){
   const fresh = structuredCloneFallback(SEED);
   sanitizeGoalTree(fresh);
   sanitizeEmptyChecklists(fresh);
-  ensureWheelTotals(fresh);
-  ensureToday(fresh);
-  ensureWishMap(fresh);
-  return fresh;
+   ensureWheelTotals(fresh);
+   ensureToday(fresh);
+   ensureGoodToday(fresh);
+   return fresh;
 }
 function structuredCloneFallback(obj){
   return JSON.parse(JSON.stringify(obj));
@@ -1660,7 +1777,7 @@ function startCloudSync(uid){
         // Cloud docs written by older app versions may lack the wheel counter — backfill it
         // the same way as loadState()/import so the wheel never divides by a missing zero.
         if(isValidGoalTree(state)){
-          sanitizeGoalTree(state); sanitizeEmptyChecklists(state); ensureWheelTotals(state); ensureToday(state);
+          sanitizeGoalTree(state); sanitizeEmptyChecklists(state); ensureWheelTotals(state); ensureToday(state); ensureGoodToday(state);
           // The cloud board carries metadata only; keep local cached images for cards we
           // already have and queue Storage downloads for the rest (syncWishBoard below).
           if(Array.isArray(data.state.wishMap)) state.wishMap = mergeWishMapCloud(data.state.wishMap, localWishCards);
@@ -1937,6 +2054,84 @@ function isoToday(){
   const d = String(now.getDate()).padStart(2,'0');
   return `${y}-${m}-${d}`;
 }
+// «Хорошее сегодня» journal helpers. Entries are {id, date(YYYY-MM-DD), text}.
+// weekStartISO: the Monday (00:00 ISO) that begins the week containing the given ISO date string.
+function weekStartISO(dateStr){
+  const d = new Date(dateStr + 'T00:00:00');
+  if(!(d instanceof Date) || isNaN(d.getTime())) return '';
+  const day = d.getDay(); // 0 = Sunday
+  const monday = new Date(d);
+  monday.setDate(d.getDate() - (day === 0 ? 6 : day - 1));
+  const y = monday.getFullYear();
+  const m = String(monday.getMonth()+1).padStart(2,'0');
+  const da = String(monday.getDate()).padStart(2,'0');
+  return `${y}-${m}-${da}`;
+}
+// Format an ISO date string as a localized display date in the active locale.
+function formatDateISO(isoStr){
+  if(!isoStr) return '';
+  const parts = isoStr.split('-');
+  if(parts.length !== 3) return isoStr;
+  if(lang === 'ru'){
+    const m = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+    return `${parseInt(parts[2],10)} ${m[parseInt(parts[1],10)-1]} ${parts[0]}`;
+  }
+  return `${parts[1]}/${parts[2]}/${parts[0]}`;
+}
+// All journal entries, newest first.
+function goodTodayAllEntries(){
+  const arr = Array.isArray(state.goodTodayEntries) ? state.goodTodayEntries : [];
+  return arr.slice().sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+}
+// Entries for a given ISO date string.
+function goodTodayEntriesFor(dateStr){
+  return goodTodayAllEntries().filter(e => e && e.date === dateStr);
+}
+// Entries from today.
+function goodTodayTodayEntries(){
+  return goodTodayEntriesFor(isoToday());
+}
+// The most recent entry overall (for the last-entry preview).
+function goodTodayLastEntry(){
+  const all = goodTodayAllEntries();
+  return all.length ? all[0] : null;
+}
+// History grouped by week: [{week:startISO, label:'…', entries:[...]}] newest first.
+function goodTodayHistoryGroups(){
+  const groups = {};
+  goodTodayAllEntries().forEach(e => {
+    const w = weekStartISO(e.date);
+    if(!groups[w]) groups[w] = [];
+    groups[w].push(e);
+  });
+  return Object.keys(groups)
+    .sort((a,b)=>b.localeCompare(a))
+    .map(w => ({ week: w, label: formatWeekLabel(w), entries: groups[w] }));
+}
+// Human-readable label for a week-start ISO string.
+function formatWeekLabel(weekStartStr){
+  if(!weekStartStr) return '';
+  const end = new Date(weekStartStr + 'T00:00:00');
+  end.setDate(end.getDate() + 6);
+  const ey = end.getFullYear();
+  const em = String(end.getMonth()+1).padStart(2,'0');
+  const ed = String(end.getDate()).padStart(2,'0');
+  const endStr = `${ey}-${em}-${ed}`;
+  return `${formatDateISO(weekStartStr)} – ${formatDateISO(endStr)}`;
+}
+// Find a single journal entry by id (null for junk / not found).
+function goodTodayEntryById(id){
+  if(typeof id !== 'string') return null;
+  const arr = Array.isArray(state.goodTodayEntries) ? state.goodTodayEntries : [];
+  const found = arr.find(e => e && e.id === id);
+  return found || null;
+}
+// Find the weekly reflection for a given week-start ISO string (null if none).
+function goodTodayWeekReflectionsFor(weekStart){
+  if(typeof weekStart !== 'string') return null;
+  const arr = Array.isArray(state.goodTodayWeekReflections) ? state.goodTodayWeekReflections : [];
+  return arr.find(r => r && r.week === weekStart) || null;
+}
 const PRIORITY_MAX = 5;
 // Walks the whole goal tree looking for anything marked with a `priority:true` flag — either a
 // leaf/checkbox goal itself, or an individual line inside a leaf's checklist. The flag lives
@@ -2131,6 +2326,40 @@ function ensureToday(node){
   }else{
     while(node.today.length < 3){ node.today.push({text:"",done:false}); }
     node.today = node.today.slice(0, 3);
+  }
+  if(node.goodToday === undefined) node.goodToday = node.today.some(item => item.done);
+}
+// Backfill for the «Хорошее сегодня» journal entries array — guarantees a well-formed array of
+// entry objects ({id, date, text}) for older saves, imports and cloud docs. Corrupted entries are
+// dropped, not patched. The entriesOpen collapse flag is backfilled to default-open when missing.
+function ensureGoodToday(node){
+  if(!node) return;
+  if(!Array.isArray(node.goodTodayEntries)){
+    node.goodTodayEntries = [];
+    node.goodTodayEntriesOpen = true;
+  }else{
+    node.goodTodayEntries = node.goodTodayEntries.filter(e =>
+      !!e && typeof e === 'object' && typeof e.id === 'string' && typeof e.date === 'string'
+    );
+    node.goodTodayEntries.forEach(e => {
+      if(typeof e.text !== 'string'){ e.text = ''; }
+    });
+  }
+  if(node.goodTodayEntriesOpen === undefined){ node.goodTodayEntriesOpen = true; }
+  // The weekly reflection is optional; prune anything malformed, backfill missing array.
+  if(!Array.isArray(node.goodTodayWeekReflections)){
+    node.goodTodayWeekReflections = [];
+  }else{
+    node.goodTodayWeekReflections = node.goodTodayWeekReflections.filter(r =>
+      !!r && typeof r === 'object' && typeof r.week === 'string'
+    ).map(r => ({
+      week: r.week,
+      q1: typeof r.q1 === 'string' ? r.q1 : '',
+      q2: typeof r.q2 === 'string' ? r.q2 : '',
+      q3: typeof r.q3 === 'string' ? r.q3 : '',
+      createdAt: Number.isFinite(r.createdAt) ? r.createdAt : null,
+      updatedAt: Number.isFinite(r.updatedAt) ? r.updatedAt : null
+    }));
   }
 }
 // The wish map («Карта желаний») is an array of cards:
@@ -2418,11 +2647,12 @@ function doImportData(file){
     state = candidate;
     // Imported trees (old backups, hand-made files) may lack the wheel counter entirely —
     // backfill total = current active leaves (past deletions unknowable, acceptable per spec).
-    sanitizeGoalTree(state);
-    sanitizeEmptyChecklists(state);
-    ensureWheelTotals(state);
-    ensureToday(state);
-    ensureWishMap(state);
+     sanitizeGoalTree(state);
+     sanitizeEmptyChecklists(state);
+     ensureWheelTotals(state);
+     ensureToday(state);
+     ensureGoodToday(state);
+     ensureWishMap(state);
     path = [];
     saveState();
     if(cloudEnabled && authUser) scheduleCloudPush();
@@ -2525,11 +2755,13 @@ function render(){
   // entry point already runs ensureToday(), but a single guarantee here makes the block immune to
   // any future path that swaps `state` without it (the exact bug that broke the checklist on the
   // deployed site: homeViewHTML rendered fallback rows while the handlers bailed on a non-array).
-  ensureToday(state);
-  // Same guarantee for the wish map: every state-swap path (import, cloud snapshot) runs
-  // through render(), so a board-less state can never break homeViewHTML.
-  ensureWishMap(state);
-  const app = document.getElementById('app');
+   ensureToday(state);
+   // Same guarantee for the wish map: every state-swap path (import, cloud snapshot) runs
+   // through render(), so a board-less state can never break homeViewHTML.
+   ensureWishMap(state);
+   // And for the «Хорошее сегодня» journal — a journal-less state must never break the render.
+   ensureGoodToday(state);
+   const app = document.getElementById('app');
   const node = resolve(path);
   const overallPct = computePercent(state);
 
@@ -2656,6 +2888,10 @@ function homeViewHTML(overallPct, hintHTML, mode, protectedCount){
           </div>`;
         }).join('')}
       </div>` : ''}
+    <div class="good-today ${state.goodToday ? 'good-today-good' : 'good-today-bad'}">
+      <span class="good-today-icon">${state.goodToday ? '🌟' : '🌙'}</span>
+      <span class="good-today-text">${state.goodToday ? t('goodTodayGood') : t('goodTodayBad')}</span>
+    </div>
    </div>`;
    lastPriorityItems = collectPriorityItems();
    const priorityOpen = !!state.priorityOpen;
@@ -2725,13 +2961,155 @@ function homeViewHTML(overallPct, hintHTML, mode, protectedCount){
       </div>
       ${(wishAddOpen || (Array.isArray(state.wishMap) && state.wishMap.length >= WISH_MAX_CARDS)) ? '' : `<button id="btnWishAdd" class="icon-btn" data-tip="${t('wishAdd')}" aria-label="${t('wishAdd')}">+</button>`}
     </div>`;
-    if(wishMapOpen){
-      html += wishMapSectionHTML();
+     if(wishMapOpen){
+       html += wishMapSectionHTML();
+     }
+     // «Хорошее сегодня» — independent daily journal after the wish map. Stores plain text
+     // entries in state.goodTodayEntries and optional weekly reflections in
+     // state.goodTodayWeekReflections. Never feeds the wheel / priorities / any totals.
+     html += goodTodaySectionHTML();
+   return html;
+}
+
+// ===== «Хорошее сегодня» journal section HTML =====
+// Two sub-views: the daily entry form + today's entries (default), and the week-grouped
+// history (opened via the history button). The weekly reflection form is a collapsible
+// subsection inside the daily view.
+function goodTodaySectionHTML(){
+  if(goodTodayHistoryOpen){
+    return goodTodayHistoryHTML();
+  }
+  const entries = goodTodayAllEntries();
+  const todayStr = isoToday();
+  const todayEntries = entries.filter(e => e.date === todayStr);
+  const last = goodTodayLastEntry();
+  const charCount = goodTodayDraftText.length;
+  const isEditing = goodTodayEditId !== null;
+  const editEntry = goodTodayEntryById(goodTodayEditId);
+  const weekStart = weekStartISO(todayStr);
+  const weekRefl = goodTodayWeekReflectionsFor(weekStart);
+  const hasWeekReflection = !!weekRefl;
+
+  let html = '';
+  html += `<div class="good-today-section">
+    <div class="good-today-header" id="goodTodayEntriesToggle">
+      <span class="good-today-arrow">${goodTodayEntriesOpen ? '▾' : '▸'}</span>
+      <span class="section-title">${t('goodTodayEntriesTitle')}</span>
+      <div class="good-today-actions">
+        ${entries.length > 0 ? `<span class="good-today-history-btn" id="btnGoodTodayHistory" data-tip="${t('goodTodayEntriesHistory')}" aria-label="${t('goodTodayEntriesHistory')}"><i class="ti ti-history" aria-hidden="true"></i></span>` : ''}
+      </div>
+    </div>`;
+  if(goodTodayEntriesOpen){
+    html += `<div class="good-today-subtitle">${t('goodTodayEntriesSubtitle')}</div>`;
+    html += `<textarea id="goodTodayTextarea" class="good-today-textarea" maxlength="500"
+      placeholder="${t('goodTodayEntriesPlaceholder')}">${esc(goodTodayDraftText)}</textarea>`;
+    html += `<div class="good-today-char-count ${charCount >= 450 ? 'error' : ''}">
+      ${t('goodTodayEntriesCharCount').replace('{n}', String(charCount))}
+    </div>`;
+    if(goodTodayCharError){
+      html += `<div class="auth-error">${esc(goodTodayCharError)}</div>`;
     }
+    html += `<div class="good-today-btn-row">
+      <button id="btnGoodTodaySave" type="button" class="icon-btn">${isEditing ? t('goodTodayEntriesSave') : t('goodTodayEntriesSave')}</button>
+      ${isEditing ? `<button id="btnGoodTodayCancel" type="button">${t('goodTodayEntriesCancel')}</button>` : ''}
+    </div>`;
+    // Today's entries
+    if(todayEntries.length){
+      html += `<div class="good-today-today-entries" style="margin-top:14px; border-top:1px solid var(--border); padding-top:12px;">
+        <div class="good-today-week-label">${t('goodTodayEntriesLastEntry')}</div>`;
+      todayEntries.forEach(e => {
+        html += `<div class="good-today-entry-item" style="margin-bottom:8px;" data-goodtoday-edit="${e.id}">
+          <div class="good-today-entry-date">${formatDateISO(e.date)}</div>
+          <div class="good-today-entry-text">${esc(e.text || '')}</div>
+          <div style="display:flex; gap:6px; margin-top:4px;">
+            <button class="icon-btn" data-goodtoday-edit-btn="${e.id}" data-tip="${t('goodTodayEntriesEdit')}" aria-label="${t('goodTodayEntriesEdit')}"><i class="ti ti-pencil" aria-hidden="true"></i></button>
+            <button class="icon-btn" data-goodtoday-delete="${e.id}" data-tip="${t('goodTodayEntriesDelete')}" aria-label="${t('goodTodayEntriesDelete')}"><i class="ti ti-trash" aria-hidden="true"></i></button>
+          </div>
+        </div>`;
+      });
+      html += `</div>`;
+    }
+    // Last entry preview (if different from today's)
+    if(last && last.date !== todayStr){
+      html += `<div class="good-today-last-entry">
+        <span class="good-today-week-label">${t('goodTodayEntriesLastEntry')}</span>
+        <span class="good-today-last-text">${esc(last.text || '')}</span>
+        <span class="good-today-entry-date" style="display:block; margin-top:2px;">${formatDateISO(last.date)}</span>
+      </div>`;
+    }
+    // Weekly reflection subsection
+    html += `<div class="good-today-history-view" style="margin-top:16px; border-top:1px solid var(--border); padding-top:14px;">
+      <div class="good-today-header" id="goodTodayWeekToggle">
+        <span class="good-today-arrow">${goodTodayWeekPauseOpen ? '▾' : '▸'}</span>
+        <span class="section-title">${t('goodTodayWeekPauseTitle')}</span>
+      </div>`;
+    if(goodTodayWeekPauseOpen){
+      if(hasWeekReflection && !goodTodayWeekEditing){
+        // Show saved reflection
+        html += `<div class="good-today-week-saved" style="margin-top:10px;">
+          <div class="good-today-week-label">${t('goodTodayWeekPauseSaved')}</div>`;
+        html += `<div style="margin-top:8px; font-size:14px; line-height:1.5;">
+          <div style="margin-bottom:6px;"><strong>${t('goodTodayWeekPauseQ1')}</strong><div>${esc(weekRefl.q1)}</div></div>
+          <div style="margin-bottom:6px;"><strong>${t('goodTodayWeekPauseQ2')}</strong><div>${esc(weekRefl.q2)}</div></div>
+          <div style="margin-bottom:6px;"><strong>${t('goodTodayWeekPauseQ3')}</strong><div>${esc(weekRefl.q3)}</div></div>
+        </div>`;
+        html += `<div class="good-today-btn-row" style="margin-top:10px;">
+          <button id="btnGoodTodayWeekEdit" type="button" class="icon-btn">${t('goodTodayEntriesEdit')}</button>
+        </div></div>`;
+      }else{
+        // Edit / create form
+        html += `<div style="margin-top:10px;">`;
+        html += `<div class="good-today-week-label">${t('goodTodayWeekPauseQ1')}</div>`;
+        html += `<textarea id="goodTodayWeekQ1" class="good-today-textarea" maxlength="500" placeholder="${t('goodTodayWeekPauseQ1')}">${esc(goodTodayWeekDrafts.q1)}</textarea>`;
+        html += `<div class="good-today-week-label">${t('goodTodayWeekPauseQ2')}</div>`;
+        html += `<textarea id="goodTodayWeekQ2" class="good-today-textarea" maxlength="500" placeholder="${t('goodTodayWeekPauseQ2')}">${esc(goodTodayWeekDrafts.q2)}</textarea>`;
+        html += `<div class="good-today-week-label">${t('goodTodayWeekPauseQ3')}</div>`;
+        html += `<textarea id="goodTodayWeekQ3" class="good-today-textarea" maxlength="500" placeholder="${t('goodTodayWeekPauseQ3')}">${esc(goodTodayWeekDrafts.q3)}</textarea>`;
+        html += `<div class="good-today-btn-row" style="margin-top:10px;">
+          <button id="btnGoodTodayWeekSave" type="button" class="icon-btn">${t('goodTodayWeekPauseSave')}</button>
+          <button id="btnGoodTodayWeekSkip" type="button">${t('goodTodayWeekPauseSkip')}</button>
+        </div></div>`;
+      }
+    }
+    html += `</div>`;
+  }
+  html += `</div>`;
   return html;
 }
 
-// Safe accessor for the wish-map card at `idx`: null for any junk index (the render-guard
+// History view: entries grouped by week (Mondays), newest first.
+function goodTodayHistoryHTML(){
+  const groups = goodTodayHistoryGroups();
+  let html = '';
+  html += `<div class="good-today-section">
+    <div class="good-today-header" id="goodTodayEntriesToggle">
+      <span class="good-today-arrow">◀</span>
+      <span class="section-title">${t('goodTodayEntriesHistory')}</span>
+    </div>
+    <div class="good-today-history-view">`;
+  if(groups.length){
+    groups.forEach(g => {
+      html += `<div class="good-today-history-group">
+        <div class="good-today-history-week">${g.label}</div>
+        <div class="good-today-history-items">`;
+      g.entries.forEach(e => {
+        html += `<div class="good-today-history-item" data-goodtoday-history-edit="${e.id}">
+          <div class="good-today-entry-date">${formatDateISO(e.date)}</div>
+          <div class="good-today-entry-text">${esc(e.text || '')}</div>
+        </div>`;
+      });
+      html += `      </div>
+      </div>`;
+    });
+  }else{
+    html += `<div class="good-today-history-empty">${t('goodTodayEntriesHistoryEmpty')}</div>`;
+  }
+  html += `    </div>
+    <button id="btnGoodTodayHistoryBack" type="button" class="icon-btn" style="margin-top:12px;">${t('back')}</button>
+  </div>`;
+  return html;
+}
+
 // tests deliberately poke non-numeric values into the panel flags).
 function wishCardAt(idx){
   return (Number.isInteger(idx) && idx >= 0 && Array.isArray(state.wishMap)) ? (state.wishMap[idx] || null) : null;
@@ -3086,7 +3464,7 @@ function topbarHTML(){
         </div>
       </div>` : ''}
     </div>
-    <div class="app-title-wrap"><h1>${t('appTitle')}</h1>
+    <div class="app-title-wrap"><h1><img class="app-logo" src="./icon-192.png" alt="" aria-hidden="true">${t('appTitle')}</h1>
     <div class="app-subtitle">${esc(t('appSubtitle'))}</div></div>
     <div class="actions">
       <button id="btnSearch" class="icon-btn" title="${t('search')}" aria-label="${t('search')}"><i class="ti ti-search" aria-hidden="true"></i></button>
@@ -3865,6 +4243,201 @@ function attachWishMapHandlers(){
     render();
   });
 }
+function attachGoodTodayHandlers(){
+  // Main section toggle.
+  const entriesToggle = document.getElementById('goodTodayEntriesToggle');
+  if(entriesToggle){
+    entriesToggle.addEventListener('click', ()=>{
+      if(goodTodayHistoryOpen){
+        goodTodayHistoryOpen = false;
+        return;
+      }
+      goodTodayEntriesOpen = !goodTodayEntriesOpen;
+      state.goodTodayEntriesOpen = goodTodayEntriesOpen;
+      if(!goodTodayEntriesOpen){
+        goodTodayHistoryOpen = false;
+        goodTodayEditId = null;
+        goodTodayDraftText = '';
+        goodTodayCharError = '';
+        goodTodayWeekPauseOpen = false;
+        goodTodayWeekEditing = false;
+      }
+      saveState();
+      render();
+    });
+  }
+  // Save / update entry.
+  const btnSave = document.getElementById('btnGoodTodaySave');
+  if(btnSave){
+    btnSave.addEventListener('click', ()=>{
+      const ta = document.getElementById('goodTodayTextarea');
+      const text = (ta ? ta.value : '').trim();
+      if(!text){
+        goodTodayCharError = t('goodTodayEntriesPlaceholder');
+        render();
+        return;
+      }
+      if(text.length > 500){ goodTodayCharError = 'Слишком длинно'; render(); return; }
+      goodTodayCharError = '';
+      const now = Date.now();
+      if(goodTodayEditId !== null){
+        const entry = goodTodayEntryById(goodTodayEditId);
+        if(entry){
+          entry.text = text;
+          entry.date = isoToday();
+        }
+        goodTodayEditId = null;
+        goodTodayDraftText = '';
+      }else{
+        state.goodTodayEntries = state.goodTodayEntries || [];
+        state.goodTodayEntries.push({
+          id: 'gt-' + now.toString(36) + '-' + Math.random().toString(36).slice(2, 7),
+          date: isoToday(),
+          text: text
+        });
+        goodTodayDraftText = '';
+      }
+      saveState();
+      render();
+    });
+  }
+  // Cancel inline edit.
+  const btnCancel = document.getElementById('btnGoodTodayCancel');
+  if(btnCancel){
+    btnCancel.addEventListener('click', ()=>{
+      goodTodayEditId = null;
+      goodTodayDraftText = '';
+      goodTodayCharError = '';
+      render();
+    });
+  }
+  // History toggle.
+  const btnHistory = document.getElementById('btnGoodTodayHistory');
+  if(btnHistory){
+    btnHistory.addEventListener('click', ()=>{
+      goodTodayHistoryOpen = true;
+      goodTodayEditId = null;
+      goodTodayDraftText = '';
+      goodTodayWeekPauseOpen = false;
+      render();
+    });
+  }
+  // History back.
+  const btnHistoryBack = document.getElementById('btnGoodTodayHistoryBack');
+  if(btnHistoryBack){
+    btnHistoryBack.addEventListener('click', ()=>{
+      goodTodayHistoryOpen = false;
+      goodTodayWeekPauseOpen = false;
+      render();
+    });
+  }
+  // Weekly reflection toggle.
+  on('goodTodayWeekToggle', 'click', ()=>{
+    goodTodayWeekPauseOpen = !goodTodayWeekPauseOpen;
+    if(!goodTodayWeekPauseOpen){
+      goodTodayWeekEditing = false;
+    }
+    render();
+  });
+  // Weekly reflection save.
+  const btnWeekSave = document.getElementById('btnGoodTodayWeekSave');
+  if(btnWeekSave){
+    btnWeekSave.addEventListener('click', ()=>{
+      const q1 = document.getElementById('goodTodayWeekQ1');
+      const q2 = document.getElementById('goodTodayWeekQ2');
+      const q3 = document.getElementById('goodTodayWeekQ3');
+      const week = weekStartISO(isoToday());
+      const now = Date.now();
+      const existing = goodTodayWeekReflectionsFor(week);
+      const reflection = {
+        week: week,
+        q1: q1 ? q1.value.trim() : '',
+        q2: q2 ? q2.value.trim() : '',
+        q3: q3 ? q3.value.trim() : '',
+        createdAt: existing ? existing.createdAt : now,
+        updatedAt: now
+      };
+      state.goodTodayWeekReflections = state.goodTodayWeekReflections || [];
+      if(existing){
+        Object.assign(existing, reflection);
+      }else{
+        state.goodTodayWeekReflections.push(reflection);
+      }
+      goodTodayWeekEditing = false;
+      goodTodayWeekDrafts = { q1: '', q2: '', q3: '' };
+      saveState();
+      render();
+    });
+  }
+  // Weekly reflection skip / cancel.
+  const btnWeekSkip = document.getElementById('btnGoodTodayWeekSkip');
+  if(btnWeekSkip){
+    btnWeekSkip.addEventListener('click', ()=>{
+      goodTodayWeekEditing = false;
+      goodTodayWeekDrafts = { q1: '', q2: '', q3: '' };
+      render();
+    });
+  }
+  // Weekly reflection edit (view → edit mode).
+  const btnWeekEdit = document.getElementById('btnGoodTodayWeekEdit');
+  if(btnWeekEdit){
+    btnWeekEdit.addEventListener('click', ()=>{
+      const week = weekStartISO(isoToday());
+      const refl = goodTodayWeekReflectionsFor(week);
+      if(refl){
+        goodTodayWeekDrafts = { q1: refl.q1 || '', q2: refl.q2 || '', q3: refl.q3 || '' };
+      }else{
+        goodTodayWeekDrafts = { q1: '', q2: '', q3: '' };
+      }
+      goodTodayWeekEditing = true;
+      render();
+    });
+  }
+  // Per-entry edit buttons.
+  document.querySelectorAll('[data-goodtoday-edit-btn]').forEach(el=>{
+    el.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      const id = el.dataset.goodtodayEditBtn;
+      const entry = goodTodayEntryById(id);
+      if(!entry) return;
+      goodTodayEditId = id;
+      goodTodayDraftText = entry.text || '';
+      goodTodayCharError = '';
+      goodTodayHistoryOpen = false;
+      render();
+      const ta = document.getElementById('goodTodayTextarea');
+      if(ta && ta.setSelectionRange){ ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }
+    });
+  });
+  // Per-entry delete buttons.
+  document.querySelectorAll('[data-goodtoday-delete]').forEach(el=>{
+    el.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      const id = el.dataset.goodtodayDelete;
+      if(!confirm(t('goodTodayEntriesDeleteConfirm'))) return;
+      state.goodTodayEntries = (state.goodTodayEntries || []).filter(en => en.id !== id);
+      if(goodTodayEditId === id){ goodTodayEditId = null; goodTodayDraftText = ''; goodTodayCharError = ''; }
+      saveState();
+      render();
+    });
+  });
+  // Per-entry edit from history view.
+  document.querySelectorAll('[data-goodtoday-history-edit]').forEach(el=>{
+    el.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      const id = el.dataset.goodtodayHistoryEdit;
+      const entry = goodTodayEntryById(id);
+      if(!entry) return;
+      goodTodayEditId = id;
+      goodTodayDraftText = entry.text || '';
+      goodTodayCharError = '';
+      goodTodayHistoryOpen = false;
+      render();
+      const ta = document.getElementById('goodTodayTextarea');
+      if(ta && ta.setSelectionRange){ ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }
+    });
+  });
+}
 function attachHandlers(){
   attachMainViewHandlers();
   attachTreeHandlers();
@@ -3877,6 +4450,7 @@ function attachHandlers(){
   attachTopMenuHandlers();
   attachModalHandlers();
   attachWishMapHandlers();
+  attachGoodTodayHandlers();
 }
 function attachMainViewHandlers(){
   document.querySelectorAll('[data-crumb]').forEach(el=>{
@@ -4042,6 +4616,7 @@ function attachMainViewHandlers(){
       const idx = parseInt(el.dataset.todayToggle,10);
       if(!Array.isArray(state.today) || idx >= state.today.length) return;
       state.today[idx].done = !state.today[idx].done;
+      state.goodToday = state.today.some(item => item.done);
       saveState();
       render();
     });

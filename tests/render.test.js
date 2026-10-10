@@ -16,6 +16,8 @@ const PANEL_FLAGS = [
   'checklistDeletePanelOpen', 'searchPanelOpen', 'authPanelOpen', 'signupPanelOpen',
   'accountMenuOpen', 'editAccountOpen', 'updatePanelOpen',
   'wishAddOpen', 'wishEditIdx', 'wishLightboxIdx', 'wishMapOpen', 'wishCropSrc',
+  'goodTodayEntriesOpen', 'goodTodayHistoryOpen', 'goodTodayEditId',
+  'goodTodayWeekPauseOpen', 'goodTodayWeekEditing',
 ];
 
 /* document.getElementById hands out a FRESH stub per call, so the HTML render() builds is
