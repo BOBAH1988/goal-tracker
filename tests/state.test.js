@@ -171,15 +171,15 @@ test('ensureWishMap: backfills a missing board and drops broken cards', () => {
   assert.equal(st.wishMap[0].imagePath, null, 'legacy cards have no Storage path');
 });
 
-test('ensureWishMap: caps the board at 12 cards and keeps a single personal photo', () => {
+test('ensureWishMap: caps the board at 15 cards and keeps a single personal photo', () => {
   const t = boot();
   const st = { name: 'root', children: [] };
-  st.wishMap = Array.from({ length: 15 }, (_, i) => ({
+  st.wishMap = Array.from({ length: 18 }, (_, i) => ({
     src: 'data:image/png;base64,AA', title: 'c' + i, isUserPhoto: i === 0 || i === 10,
   }));
   t.app.ensureWishMap(st);
-  assert.equal(st.wishMap.length, t.app.WISH_MAX_CARDS, 'hard cap: 12 cards');
-  assert.equal(st.wishMap.length, 12, 'the cap is 12, personal photo included');
+  assert.equal(st.wishMap.length, t.app.WISH_MAX_CARDS, 'hard cap: 15 cards');
+  assert.equal(st.wishMap.length, 15, 'the cap is 15, personal photo included');
   const marks = st.wishMap.filter(c => c.isUserPhoto);
   assert.equal(marks.length, 1, 'exactly one personal photo survives');
   assert.equal(marks[0].title, 'c0', 'the FIRST marked card keeps the flag');

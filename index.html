@@ -592,12 +592,26 @@
   }
   /* Calm limit note: the board holds at most WISH_MAX_CARDS images. */
   .wish-limit-note{margin-top:10px; color:var(--muted); font-size:12.5px; text-align:center;}
-  /* «Это моё фото» checkbox row (add form + caption editor). */
+  /* «Это моё фото» checkbox row (add form + caption editor): custom square in the site's
+     .chk style (muted box → green with a dark tick), not a default browser checkbox. */
   .wish-check{
-    display:flex; align-items:center; gap:8px; font-size:13px; color:var(--text); cursor:pointer;
-    min-height:32px;
+    display:flex; align-items:center; gap:10px; font-size:13px; color:var(--text); cursor:pointer;
+    min-height:32px; user-select:none;
   }
-  .wish-check input[type=checkbox]{width:18px; height:18px; accent-color:var(--accent); cursor:pointer;}
+  .wish-check input[type=checkbox]{
+    appearance:none; -webkit-appearance:none; width:20px; height:20px; border-radius:6px;
+    border:2px solid var(--muted); background:transparent; cursor:pointer; flex:none; margin:0;
+    position:relative; padding:0;
+  }
+  .wish-check input[type=checkbox]:checked{background:var(--green); border-color:var(--green);}
+  .wish-check input[type=checkbox]:checked::after{
+    content:'✓'; position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    color:#0b0e17; font-size:13px; font-weight:700; line-height:1;
+  }
+  /* Locked while another card already holds the personal-photo mark. */
+  .wish-check.is-off{opacity:.6; cursor:not-allowed;}
+  .wish-check input[type=checkbox]:disabled{cursor:not-allowed;}
+  .wish-check-hint{color:var(--muted); font-size:12px;}
   /* Crop dialog: square frame with the card's 1:1 ratio (rectangular, never round). The image
      can be dragged and zoomed inside the frame; only the framed area is encoded afterwards. */
   .wish-crop{display:flex; flex-direction:column; gap:12px; width:min(88vw,400px);}
@@ -751,12 +765,12 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.1.12';
+const APP_VERSION = '1.1.13';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
    temporal dead zone (ReferenceError on boot / reload with a saved board). */
-const WISH_MAX_CARDS = 12;    // hard cap: 12 cards on the board, personal photo included
+const WISH_MAX_CARDS = 15;    // hard cap: 15 cards on the board, personal photo included
 const WISH_IMG_SIZE = 720;    // card bitmap side (px): crop frame, stored copy, everything is 1:1
 const WISH_MAX_SRC_BYTES = 12 * 1024 * 1024; // sane cap for a picked source file
 const WISH_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
@@ -1084,6 +1098,7 @@ const STRINGS = {
     wishDeleteConfirm: 'Удалить эту карточку?',
     wishLimitMsg: 'На карте уже {max} изображений. Удалите или замените одно, если хотите добавить новое.',
     wishMyPhoto: 'Это моё фото',
+    wishMyPhotoTaken: 'Личное фото уже выбрано — сначала снимите метку со старого',
     wishReplaceUserPhoto: 'Отметить это фото личным? Текущее личное фото будет снято с отметки, но останется на карте.',
     wishYouBadge: 'Я',
     wishCropTitle: 'Обрежьте изображение',
@@ -1265,6 +1280,7 @@ const STRINGS = {
     wishDeleteConfirm: 'Delete this card?',
     wishLimitMsg: 'The board already has {max} images. Delete or replace one if you want to add another.',
     wishMyPhoto: 'This is my photo',
+    wishMyPhotoTaken: 'A personal photo is already set — unmark the old one first',
     wishReplaceUserPhoto: 'Mark this as your photo? The current personal photo will be unmarked but stays on the board.',
     wishYouBadge: 'Me',
     wishCropTitle: 'Crop the image',
@@ -2107,7 +2123,7 @@ function ensureToday(node){
 // `imagePath` is the Firebase Storage object (users/{uid}/vision-board/{id}.webp) — the cloud
 // document itself stores ONLY the metadata (see wishMapForCloud), never the image bytes.
 // ensureWishMap backfills older saves (legacy {src, caption}), hand-trimmed backups and cloud
-// docs, drops anything that isn't a real image card, enforces the 12-card cap and guarantees
+// docs, drops anything that isn't a real image card, enforces the 15-card cap and guarantees
 // at most one isUserPhoto card.
 function ensureWishMap(node){
   if(!node) return;
@@ -2760,13 +2776,16 @@ function wishMapSectionHTML(){
   const cards = Array.isArray(state.wishMap) ? state.wishMap : [];
   let html = '';
   if(wishAddOpen){
+    const meTakenAdd = cards.some(c => c && c.isUserPhoto);
     html += `<div class="wish-form">
-      <div class="wish-preview">${wishDraftSrc ? `<img src="${esc(wishDraftSrc)}" alt="">` : esc(t('wishNoImageYet'))}</div>
+      ${wishDraftSrc ? `<div class="wish-preview"><img src="${esc(wishDraftSrc)}" alt=""></div>` : ''}
       <label class="wish-file-label">${t('wishImageLabel')}
         <input type="file" id="wishFile" accept="image/png,image/jpeg,image/webp">
       </label>
       <input type="text" id="wishCaptionInput" maxlength="80" value="${esc(wishCaptionDraft)}" placeholder="${t('wishCaptionPlaceholder')}">
-      <label class="wish-check"><input type="checkbox" id="wishIsUserPhoto" ${wishIsUserPhotoDraft ? 'checked' : ''}> ${t('wishMyPhoto')}</label>
+      ${meTakenAdd
+        ? `<label class="wish-check is-off"><input type="checkbox" id="wishIsUserPhoto" disabled> ${t('wishMyPhoto')}</label><div class="wish-check-hint">${esc(t('wishMyPhotoTaken'))}</div>`
+        : `<label class="wish-check"><input type="checkbox" id="wishIsUserPhoto" ${wishIsUserPhotoDraft ? 'checked' : ''}> ${t('wishMyPhoto')}</label>`}
       ${wishFormError ? `<div class="auth-error">${esc(wishFormError)}</div>` : ''}
       <div class="wish-btn-row">
         <button id="btnWishSave" type="button" class="wish-primary">${t('wishSave')}</button>
@@ -2823,7 +2842,9 @@ function wishMapSectionHTML(){
         <button class="auth-close" id="btnWishEditClose" type="button" title="${t('done')}" aria-label="${t('done')}">✕</button>
         <div class="wish-edit-title">${t('wishEditTitle')}</div>
         <input type="text" id="wishEditInput" maxlength="80" value="${esc(editCard.title || '')}" placeholder="${t('wishCaptionPlaceholder')}">
-        <label class="wish-check"><input type="checkbox" id="wishEditIsUserPhoto" ${editCard.isUserPhoto ? 'checked' : ''}> ${t('wishMyPhoto')}</label>
+        ${(!editCard.isUserPhoto && cards.some(c => c && c !== editCard && c.isUserPhoto))
+          ? `<label class="wish-check is-off"><input type="checkbox" id="wishEditIsUserPhoto" disabled> ${t('wishMyPhoto')}</label><div class="wish-check-hint">${esc(t('wishMyPhotoTaken'))}</div>`
+          : `<label class="wish-check"><input type="checkbox" id="wishEditIsUserPhoto" ${editCard.isUserPhoto ? 'checked' : ''}> ${t('wishMyPhoto')}</label>`}
         <div class="wish-btn-row">
           <button id="btnWishEditSave" type="button" class="wish-primary">${t('wishSave')}</button>
           <button id="btnWishEditCancel" type="button">${t('wishCancel')}</button>
@@ -3812,7 +3833,8 @@ function attachWishMapHandlers(){
     const meBox = document.getElementById('wishEditIsUserPhoto');
     if(card && input){
       card.title = input.value.trim();
-      const wantMe = !!(meBox && meBox.checked);
+      // A locked (disabled) box still submits unchecked — never unmark through it.
+      const wantMe = !!(meBox && !meBox.disabled && meBox.checked);
       if(wantMe && !card.isUserPhoto){
         // Becoming the personal photo may require moving the mark off another card.
         card.isUserPhoto = claimUserPhoto();

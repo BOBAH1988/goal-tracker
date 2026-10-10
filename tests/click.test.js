@@ -775,30 +775,30 @@ test('wish map: section collapses like the wheel and the choice persists', () =>
   assert.ok(t.document.getElementById('btnWishAddEmpty'), 'empty state must come back when expanded');
 });
 
-test('wish map: at 12 cards «+» disappears and a calm note explains the limit', () => {
+test('wish map: at 15 cards «+» disappears and a calm note explains the limit', () => {
   const t = bootDom();
   const mk = (i) => ({
     id: 'c' + i, src: 'data:image/png;base64,AA', title: 'К' + i, imagePath: null,
     order: i, isUserPhoto: false, createdAt: 1, updatedAt: 1,
   });
   t.app.setState(Object.assign(t.app.getState(), {
-    wishMap: Array.from({ length: 11 }, (_, i) => mk(i)),
+    wishMap: Array.from({ length: 14 }, (_, i) => mk(i)),
   }));
   t.window.render();
-  assert.ok(t.document.getElementById('btnWishAdd'), 'at 11 cards «+» is still offered');
+  assert.ok(t.document.getElementById('btnWishAdd'), 'at 14 cards «+» is still offered');
   assert.ok(!t.document.querySelector('.wish-limit-note'), 'no note below the cap');
   t.app.setState(Object.assign(t.app.getState(), {
-    wishMap: Array.from({ length: 12 }, (_, i) => mk(i)),
+    wishMap: Array.from({ length: 15 }, (_, i) => mk(i)),
   }));
   t.window.render();
   assert.ok(!t.document.getElementById('btnWishAdd'), 'at the cap the header «+» must be hidden');
   const note = t.document.querySelector('.wish-limit-note');
   assert.ok(note, 'the calm limit note must render under the grid');
-  assert.match(note.textContent, /12 изображений/, 'the note states the actual cap');
-  assert.equal(t.document.querySelectorAll('.wish-card').length, 12, 'all 12 cards still render');
+  assert.match(note.textContent, /15 изображений/, 'the note states the actual cap');
+  assert.equal(t.document.querySelectorAll('.wish-card').length, 15, 'all 15 cards still render');
 });
 
-test('wish map: «Это моё фото» moves the mark only after confirmation', () => {
+test('wish map: «Это моё фото» is locked while another card holds the mark', () => {
   const t = bootDom();
   t.app.setState(Object.assign(t.app.getState(), {
     wishMap: [
@@ -808,26 +808,23 @@ test('wish map: «Это моё фото» moves the mark only after confirmatio
   }));
   t.window.render();
   assert.equal(t.document.querySelectorAll('.wish-you-badge').length, 1, 'exactly one «Я» badge renders');
-  // Declined replacement: nothing changes.
-  t.window.confirm = () => false;
+  // A second card cannot steal the mark: its editor checkbox is disabled with a hint.
   t.click('[data-wish-edit="1"]');
-  assert.ok(t.document.getElementById('wishEditIsUserPhoto'), 'the editor must carry the checkbox');
-  t.document.getElementById('wishEditIsUserPhoto').checked = true;
+  const editBox = t.document.getElementById('wishEditIsUserPhoto');
+  assert.ok(editBox, 'the editor must carry the checkbox');
+  assert.ok(editBox.disabled, 'the checkbox is disabled while another card is marked');
+  assert.ok(t.document.querySelector('.wish-check-hint'), 'a hint explains why it is locked');
+  // Saving keeps the old mark in place.
   t.click('#btnWishEditSave');
-  assert.equal(t.app.getState().wishMap[0].isUserPhoto, true, 'declined replacement keeps the old mark');
-  assert.equal(t.app.getState().wishMap[1].isUserPhoto, false, 'the new card stays unmarked after a decline');
-  // Confirmed replacement: the flag MOVES, the old card is never deleted.
-  t.window.confirm = () => true;
-  t.click('[data-wish-edit="1"]');
-  t.document.getElementById('wishEditIsUserPhoto').checked = true;
-  t.click('#btnWishEditSave');
-  assert.equal(t.app.getState().wishMap[0].isUserPhoto, false, 'the old card loses the flag');
-  assert.equal(t.app.getState().wishMap[1].isUserPhoto, true, 'the new card takes the flag');
-  assert.equal(t.app.getState().wishMap.length, 2, 'the old card stays on the board');
-  assert.equal(t.document.querySelectorAll('.wish-you-badge').length, 1, 'still exactly one badge');
-  // The add form carries the checkbox too.
+  assert.equal(t.app.getState().wishMap[0].isUserPhoto, true, 'the old mark stays');
+  assert.equal(t.app.getState().wishMap[1].isUserPhoto, false, 'the second card stays unmarked');
+  // The same lock applies to the add form.
   t.click('#btnWishAdd');
-  assert.ok(t.document.getElementById('wishIsUserPhoto'), 'the add form must offer the checkbox');
+  const addBox = t.document.getElementById('wishIsUserPhoto');
+  assert.ok(addBox, 'the add form must offer the checkbox');
+  assert.ok(addBox.disabled, 'the add-form checkbox is disabled while a mark exists');
+  // No empty preview block before a file is picked.
+  assert.ok(!t.document.querySelector('.wish-preview'), 'no empty preview until an image is chosen');
 });
 
 test('wish map: the personal photo renders in the centre of the grid order', () => {
