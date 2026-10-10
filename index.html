@@ -461,9 +461,16 @@
    }
     .good-today-last-entry .good-today-last-text{color:var(--text); display:inline;}
     .good-today-week-saved .good-today-week-label{margin-bottom:8px;}
-   .good-today-week-q{
-     margin:6px 0; font-size:14px; line-height:1.5;
-   }
+  /* Weekly Q&A: the question reads as a dim label, the answer keeps the full text colour —
+     otherwise bold-vs-regular alone was not enough to tell them apart. */
+  .good-today-week-q{
+    margin:6px 0; font-size:14px; line-height:1.5;
+  }
+  .good-today-week-q strong{
+    display:block; color:var(--muted); font-size:12px; font-weight:600;
+    margin-bottom:3px;
+  }
+  .good-today-week-q > div{color:var(--text);}
    .good-today-week-form .good-today-week-label{margin-bottom:4px;}
    .good-today-week-label{color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.04em;}
    /* History view */
@@ -928,7 +935,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.1.39';
+const APP_VERSION = '1.1.40';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
