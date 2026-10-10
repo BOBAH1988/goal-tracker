@@ -611,11 +611,11 @@
   #wheelToggle,#wishToggle{cursor:pointer; user-select:none;}
   #wheelToggle .wheel-arrow,#wishToggle .wheel-arrow{color:var(--muted); font-size:13px; margin-right:6px;}
   .add-goal-wrap{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
-  #btnAddGoal{
+  #btnAddGoal, #btnWishAdd{
     background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:8px;
     padding:6px 12px; font-size:12px; cursor:pointer; white-space:nowrap;
   }
-  #btnAddGoal:hover{color:var(--text); border-color:var(--accent);}
+  #btnAddGoal:hover, #btnWishAdd:hover{color:var(--text); border-color:var(--accent);}
   #btnAddGoal:disabled{opacity:.5; cursor:not-allowed;}
   #btnAddGoal:disabled:hover{color:var(--muted); border-color:var(--border);}
   .add-goal-msg{color:var(--red); font-size:12px; white-space:nowrap;}
@@ -640,11 +640,11 @@
   #btnAddChild:disabled:hover{color:var(--muted); border-color:var(--border);}
   /* Compact "+"/"−" icon style for Add/Delete, used instead of full text labels to save room on
      narrow (phone) screens. */
-  #btnAddGoal.icon-btn, #btnAddChild.icon-btn, #btnDelete.icon-btn, #btnEdit.icon-btn, #btnAddSubgoal.icon-btn, #btnDeleteChecklist.icon-btn, #btnMove.icon-btn, #btnMoveChecklist.icon-btn, #btnRelocate.icon-btn, #btnChecklistAdd.icon-btn, #btnFilter.icon-btn, .add-child-row #btnArchive.icon-btn, .add-goal-wrap #btnArchive.icon-btn, #btnSearch.icon-btn{
+  #btnAddGoal.icon-btn, #btnWishAdd.icon-btn, #btnAddChild.icon-btn, #btnDelete.icon-btn, #btnEdit.icon-btn, #btnAddSubgoal.icon-btn, #btnDeleteChecklist.icon-btn, #btnMove.icon-btn, #btnMoveChecklist.icon-btn, #btnRelocate.icon-btn, #btnChecklistAdd.icon-btn, #btnFilter.icon-btn, .add-child-row #btnArchive.icon-btn, .add-goal-wrap #btnArchive.icon-btn, #btnSearch.icon-btn{
     font-size:16px; font-weight:700; line-height:1; padding:5px 13px;
     min-width:32px; display:inline-flex; align-items:center; justify-content:center;
   }
-  #btnAddGoal.icon-btn, #btnAddChild.icon-btn, #btnDelete.icon-btn, #btnChecklistAdd.icon-btn{ font-size:18px; }
+  #btnAddGoal.icon-btn, #btnWishAdd.icon-btn, #btnAddChild.icon-btn, #btnDelete.icon-btn, #btnChecklistAdd.icon-btn{ font-size:18px; }
   #btnAddSubgoal.icon-btn{ font-size:24px; padding:2px; }
   #btnEdit.icon-btn{ font-size:24px; padding:2px; }
   #btnDeleteChecklist.icon-btn{ font-size:20px; padding:2px; }
@@ -712,7 +712,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.1.9';
+const APP_VERSION = '1.1.10';
 /* ===== Seed data (transcribed from the Excel table) =====
    emptyGoals/emptySteps take the noun to use for auto-generated names, so items added later via
    the UI can be named in whichever language is active at the time (default: Russian for the
