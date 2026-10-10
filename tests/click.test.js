@@ -865,7 +865,9 @@ test('wish map: «Это моё фото» is locked while another card holds th
     ],
   }));
   t.window.render();
-  assert.equal(t.document.querySelectorAll('.wish-you-badge').length, 1, 'exactly one «Я» badge renders');
+  // The personal photo is marked by the accent outline only — no «Я» badge clutter.
+  assert.equal(t.document.querySelectorAll('.wish-you-badge').length, 0, 'no «Я» badge renders');
+  assert.equal(t.document.querySelectorAll('.wish-card-me').length, 1, 'exactly one card carries the accent outline');
   // A second card cannot steal the mark: its editor checkbox is disabled with a hint.
   t.click('#btnWishManage');
   t.click('[data-wish-manage-edit="1"]');

@@ -729,13 +729,8 @@
   }
   .wish-lightbox-close:hover{background:rgba(6,9,16,.9);}
   /* Personal photo («isUserPhoto»): same size/ratio/rectangular format as every other card —
-     only a light accent frame plus a small corner badge tell it apart. */
+     only the accent outline tells it apart (no badge, so the board stays uncluttered). */
   .wish-card-me{outline:2px solid var(--accent); outline-offset:-2px;}
-  .wish-you-badge{
-    position:absolute; left:6px; top:6px; z-index:1;
-    background:var(--accent); color:#fff; font-size:11px; font-weight:700;
-    padding:3px 8px; border-radius:999px; line-height:1.3; pointer-events:none;
-  }
   /* Card whose image lives in Firebase Storage but isn't downloaded yet (other device / offline). */
   .wish-img-pending{
     display:flex; align-items:center; justify-content:center; text-align:center;
@@ -933,7 +928,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.1.36';
+const APP_VERSION = '1.1.37';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -1311,7 +1306,6 @@ const STRINGS = {
     wishMyPhoto: 'Это я. Фото будет центральным на карте.',
     wishMyPhotoTaken: 'Личное фото уже выбрано — сначала снимите метку со старого',
     wishReplaceUserPhoto: 'Отметить это фото личным? Текущее личное фото будет снято с отметки, но останется на карте.',
-    wishYouBadge: 'Я',
     wishCropTitle: 'Обрежьте изображение',
     wishCropHint: 'Перетащите изображение и настройте масштаб, чтобы в кадр попала важная область.',
     wishCropDone: 'Готово',
@@ -1536,7 +1530,6 @@ const STRINGS = {
     wishMyPhoto: 'It’s me. The photo will be central on the board.',
     wishMyPhotoTaken: 'A personal photo is already set — unmark the old one first',
     wishReplaceUserPhoto: 'Mark this as your photo? The current personal photo will be unmarked but stays on the board.',
-    wishYouBadge: 'Me',
     wishCropTitle: 'Crop the image',
     wishCropHint: 'Drag the image and adjust the zoom so the important part is inside the frame.',
     wishCropDone: 'Done',
@@ -3405,7 +3398,6 @@ function wishMapSectionHTML(){
           ? `<img class="wish-img" src="${esc(c.src)}" alt="${esc(c.title || '')}">`
           : `<div class="wish-img wish-img-pending">${esc(t('wishImagePending'))}</div>`}
         <div class="wish-caption">${esc(c.title || '')}</div>
-        ${c.isUserPhoto ? `<span class="wish-you-badge">${esc(t('wishYouBadge'))}</span>` : ''}
       </div>`;
     }).join('') + `</div>`;
     // At the cap: no add button anywhere, just a calm explanation (add it or replace one).
