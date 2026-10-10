@@ -765,7 +765,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.1.13';
+const APP_VERSION = '1.1.14';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -1097,7 +1097,7 @@ const STRINGS = {
     wishDeleteTip: 'Удалить карточку',
     wishDeleteConfirm: 'Удалить эту карточку?',
     wishLimitMsg: 'На карте уже {max} изображений. Удалите или замените одно, если хотите добавить новое.',
-    wishMyPhoto: 'Это моё фото',
+    wishMyPhoto: 'Это я. Фото будет центральным на карте.',
     wishMyPhotoTaken: 'Личное фото уже выбрано — сначала снимите метку со старого',
     wishReplaceUserPhoto: 'Отметить это фото личным? Текущее личное фото будет снято с отметки, но останется на карте.',
     wishYouBadge: 'Я',
@@ -1279,7 +1279,7 @@ const STRINGS = {
     wishDeleteTip: 'Delete card',
     wishDeleteConfirm: 'Delete this card?',
     wishLimitMsg: 'The board already has {max} images. Delete or replace one if you want to add another.',
-    wishMyPhoto: 'This is my photo',
+    wishMyPhoto: 'It’s me. The photo will be central on the board.',
     wishMyPhotoTaken: 'A personal photo is already set — unmark the old one first',
     wishReplaceUserPhoto: 'Mark this as your photo? The current personal photo will be unmarked but stays on the board.',
     wishYouBadge: 'Me',
