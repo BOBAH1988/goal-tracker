@@ -274,8 +274,8 @@ test('delete shows an undo toast; clicking Undo restores the deleted goal', () =
   assert.ok(!t.document.querySelector('.undo-toast'), 'the toast must be gone after Undo');
 });
 
-// ===== Global search (opened from the top menu; live results without losing input focus) =====
-test('global search: opens from menu, finds a goal by name and navigates to it', () => {
+// ===== Global search (opened from the topbar button; live results without losing input focus) =====
+test('global search: opens from the topbar button, finds a goal by name and navigates to it', () => {
   const t = bootDom();
   t.app.setState({
     name: 'root',
@@ -286,10 +286,9 @@ test('global search: opens from menu, finds a goal by name and navigates to it',
   });
   t.window.render();
 
-  // Open the top menu, then launch the search panel.
-  t.click('#btnTopMenu');
-  t.click('#btnSearchMenuItem');
-  assert.ok(t.document.getElementById('searchOverlay'), 'search overlay must open from the menu');
+  // Launch the search panel from the topbar search button (no menu involved).
+  t.click('#btnSearch');
+  assert.ok(t.document.getElementById('searchOverlay'), 'search overlay must open from the topbar button');
   const input = t.document.getElementById('searchInput');
   assert.ok(input, 'search input must be present');
 
@@ -314,8 +313,7 @@ test('global search: matches checklist item text and reports empty for no match'
   });
   t.window.render();
 
-  t.click('#btnTopMenu');
-  t.click('#btnSearchMenuItem');
+  t.click('#btnSearch');
   const input = t.document.getElementById('searchInput');
   const box = t.document.getElementById('searchResults');
 
