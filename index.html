@@ -825,7 +825,12 @@
     font-size:16px; font-weight:700; line-height:1; padding:5px 13px;
     min-width:32px; display:inline-flex; align-items:center; justify-content:center;
   }
-  #btnAddGoal.icon-btn, #btnWishAdd.icon-btn, #btnAddChild.icon-btn, #btnDelete.icon-btn, #btnChecklistAdd.icon-btn{ font-size:18px; }
+  #btnAddGoal.icon-btn, #btnWishAdd.icon-btn, #btnGoodTodayAdd.icon-btn, #btnAddChild.icon-btn, #btnDelete.icon-btn, #btnChecklistAdd.icon-btn{ font-size:18px; }
+  /* Same box for the text "+" and the icon-font history glyph — both centered, both 42px,
+     so the two buttons in the «Хорошее сегодня» header read as one visual pair. */
+   #btnGoodTodayHistory.icon-btn, #btnGoodTodayAdd.icon-btn{
+     min-width:42px; padding:5px 0; justify-content:center;
+   }
   #btnAddSubgoal.icon-btn{ font-size:24px; padding:2px; }
   #btnEdit.icon-btn{ font-size:24px; padding:2px; }
   #btnDeleteChecklist.icon-btn{ font-size:20px; padding:2px; }
@@ -894,7 +899,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.1.31';
+const APP_VERSION = '1.1.32';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
