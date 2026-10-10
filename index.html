@@ -426,12 +426,15 @@
    .good-today-last-entry{margin-top:10px; font-size:13px; color:var(--muted);}
    .good-today-last-entry .good-today-last-text{color:var(--text); display:inline;}
    .good-today-week-label{color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.04em;}
-   /* Pre-existing «Сегодня хорошее» mood badge (v1.1.18) — compact inline badge on the today block. */
-   .good-today{display:inline-flex; align-items:center; gap:4px; padding:2px 8px; border-radius:8px; font-size:12px; font-weight:500; margin-top:8px;}
-   .good-today-good{background:rgba(46,160,67,.12); color:var(--green);}
-   .good-today-bad{background:rgba(255,86,92,.12); color:var(--red);}
-   .good-today-icon{font-size:13px;}
-   .bar{height:10px; border-radius:6px; background:var(--track); overflow:hidden; border:1px solid var(--border);}
+    /* «Хорошее сегодня» mood badge in the today block — progressive text based on done count.
+       0 → «Начнём?» (red), 1 → «Хорошее начало» (dark yellow), 2 → «Осталось чуть-чуть» (lighter yellow),
+       3 → «Отличный день!» (soft green). No icons — text only. */
+    .good-today{display:inline-flex; align-items:center; padding:4px 10px; border-radius:8px; font-size:12px; font-weight:500; margin-top:8px;}
+    .good-today-start{background:rgba(255,86,92,.12); color:var(--red);}
+    .good-today-begin{background:rgba(217,186,31,.15); color:#b8860b;}
+    .good-today-almost{background:rgba(217,186,31,.10); color:#d4b04a;}
+    .good-today-perfect{background:rgba(46,160,67,.12); color:var(--green);}
+    .bar{height:10px; border-radius:6px; background:var(--track); overflow:hidden; border:1px solid var(--border);}
   .bar > div{height:100%; border-radius:6px; transition:width .3s ease;}
   .node-header{margin-bottom:18px;}
   .node-header h2{font-size:22px; margin:0 0 6px;}
@@ -835,7 +838,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.1.19';
+const APP_VERSION = '1.1.20';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -1031,6 +1034,10 @@ const STRINGS = {
     todayDone: 'Готово',
     goodTodayGood: "Сегодня хорошее",
     goodTodayBad: "День хороший",
+    goodTodayMoodStart: 'Начнём?',
+    goodTodayMoodBegin: 'Хорошее начало',
+    goodTodayMoodAlmost: 'Осталось чуть-чуть',
+    goodTodayMoodPerfect: 'Отличный день!',
     goodTodayEntriesTitle: 'Хорошее сегодня',
     goodTodayEntriesSubtitle: 'Что было хорошего сегодня?',
     goodTodayEntriesPlaceholder: 'Запишите главное…',
@@ -1238,6 +1245,10 @@ const STRINGS = {
     todayDone: 'Done',
     goodTodayGood: "Today is good",
     goodTodayBad: "Make today good",
+    goodTodayMoodStart: 'Let\'s start?',
+    goodTodayMoodBegin: 'Good start',
+    goodTodayMoodAlmost: 'Almost there',
+    goodTodayMoodPerfect: 'Great day!',
     goodTodayEntriesTitle: 'Good Today',
     goodTodayEntriesSubtitle: 'What was good today?',
     goodTodayEntriesPlaceholder: 'Write the highlight…',
@@ -2872,27 +2883,35 @@ function homeViewHTML(overallPct, hintHTML, mode, protectedCount){
     </div>
   </div>`;
    const todayItems = Array.isArray(state.today) ? state.today : [{text:"",done:false},{text:"",done:false},{text:"",done:false}];
+   const todayDoneCount = todayItems.filter(it => it.done).length;
+   const moodClass = todayDoneCount === 0 ? 'good-today-start'
+     : todayDoneCount === 1 ? 'good-today-begin'
+     : todayDoneCount === 2 ? 'good-today-almost'
+     : 'good-today-perfect';
+   const moodText = todayDoneCount === 0 ? t('goodTodayMoodStart')
+     : todayDoneCount === 1 ? t('goodTodayMoodBegin')
+     : todayDoneCount === 2 ? t('goodTodayMoodAlmost')
+     : t('goodTodayMoodPerfect');
    html += `<div class="priority-block">
-     <div class="priority-header" id="todayToggle">
-       <span class="priority-arrow">${todayOpen ? '▾' : '▸'}</span>
-       <span class="section-title">${t('todayTitle')}</span>
-     </div>
-      ${todayOpen ? `<div class="priority-list">
-         ${todayItems.map((item, i) => {
-          return `<div class="priority-row">
-            <div class="chk ${item.done?'done':''}" data-today-toggle="${i}">${item.done?'✓':''}</div>
-            <input type="text" class="today-input ${item.done?'done':''}" data-today-edit="${i}" value="${esc(item.text || '')}" placeholder="${t('todayPlaceholder')}">
-             <button class="today-action" data-today-action="${i}" title="${t('todayClear')}" aria-label="${t('todayClear')}">
-               <i class="ti ti-trash" aria-hidden="true"></i>
-             </button>
-          </div>`;
-        }).join('')}
-      </div>` : ''}
-    <div class="good-today ${state.goodToday ? 'good-today-good' : 'good-today-bad'}">
-      <span class="good-today-icon">${state.goodToday ? '🌟' : '🌙'}</span>
-      <span class="good-today-text">${state.goodToday ? t('goodTodayGood') : t('goodTodayBad')}</span>
-    </div>
-   </div>`;
+      <div class="priority-header" id="todayToggle">
+        <span class="priority-arrow">${todayOpen ? '▾' : '▸'}</span>
+        <span class="section-title">${t('todayTitle')}</span>
+      </div>
+       <div class="good-today ${moodClass}">
+         <span class="good-today-text">${moodText}</span>
+       </div>
+       ${todayOpen ? `<div class="priority-list">
+          ${todayItems.map((item, i) => {
+           return `<div class="priority-row">
+             <div class="chk ${item.done?'done':''}" data-today-toggle="${i}">${item.done?'✓':''}</div>
+             <input type="text" class="today-input ${item.done?'done':''}" data-today-edit="${i}" value="${esc(item.text || '')}" placeholder="${t('todayPlaceholder')}">
+              <button class="today-action" data-today-action="${i}" title="${t('todayClear')}" aria-label="${t('todayClear')}">
+                <i class="ti ti-trash" aria-hidden="true"></i>
+              </button>
+           </div>`;
+         }).join('')}
+       </div>` : ''}
+     </div>`;
    lastPriorityItems = collectPriorityItems();
    const priorityOpen = !!state.priorityOpen;
    html += `<div class="priority-block">
@@ -4277,7 +4296,6 @@ function attachGoodTodayHandlers(){
         render();
         return;
       }
-      if(text.length > 500){ goodTodayCharError = 'Слишком длинно'; render(); return; }
       goodTodayCharError = '';
       const now = Date.now();
       if(goodTodayEditId !== null){
