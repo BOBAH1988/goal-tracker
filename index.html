@@ -409,13 +409,8 @@
    .good-today-last-entry{
      margin-top:12px; padding-top:10px; border-top:1px solid var(--border); font-size:13px; color:var(--muted);
    }
-   .good-today-last-entry .good-today-last-text{color:var(--text); display:inline;}
-   .good-today-week-section{
-     margin-top:16px; border-top:1px solid var(--border); padding-top:14px;
-   }
-   #goodTodayWeekToggle{cursor:pointer; user-select:none; margin-bottom:6px;}
-   #goodTodayWeekToggle .wheel-arrow{color:var(--muted); font-size:13px; margin-right:6px;}
-   .good-today-week-saved .good-today-week-label{margin-bottom:8px;}
+    .good-today-last-entry .good-today-last-text{color:var(--text); display:inline;}
+    .good-today-week-saved .good-today-week-label{margin-bottom:8px;}
    .good-today-week-q{
      margin:6px 0; font-size:14px; line-height:1.5;
    }
@@ -848,7 +843,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.1.21';
+const APP_VERSION = '1.1.22';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -2906,11 +2901,11 @@ function homeViewHTML(overallPct, hintHTML, mode, protectedCount){
       <div class="priority-header" id="todayToggle">
         <span class="priority-arrow">${todayOpen ? '▾' : '▸'}</span>
         <span class="section-title">${t('todayTitle')}</span>
-      </div>
-       <div class="good-today ${moodClass}">
+       </div>
+       ${todayOpen ? `<div class="good-today ${moodClass}">
          <span class="good-today-text">${moodText}</span>
        </div>
-       ${todayOpen ? `<div class="priority-list">
+       <div class="priority-list">
           ${todayItems.map((item, i) => {
            return `<div class="priority-row">
              <div class="chk ${item.done?'done':''}" data-today-toggle="${i}">${item.done?'✓':''}</div>
@@ -3001,9 +2996,10 @@ function homeViewHTML(overallPct, hintHTML, mode, protectedCount){
 }
 
 // ===== «Хорошее сегодня» journal section HTML =====
-// Two sub-views: the daily entry form + today's entries (default), and the week-grouped
-// history (opened via the history button). The weekly reflection form is a collapsible
-// subsection inside the daily view.
+// Renders two independent collapsible sections (like «Колесо» + «Карта желаний»):
+//   1. Daily entries form + today's entries + last-entry preview
+//   2. Weekly reflection «Небольшая пауза» (separate header toggle, always visible)
+// A third transient view — history — replaces both when goodTodayHistoryOpen is true.
 function goodTodaySectionHTML(){
   if(goodTodayHistoryOpen){
     return goodTodayHistoryHTML();
@@ -3014,11 +3010,8 @@ function goodTodaySectionHTML(){
   const last = goodTodayLastEntry();
   const charCount = goodTodayDraftText.length;
   const isEditing = goodTodayEditId !== null;
-  const weekStart = weekStartISO(todayStr);
-  const weekRefl = goodTodayWeekReflectionsFor(weekStart);
-  const hasWeekReflection = !!weekRefl;
-
   let html = '';
+  // --- Daily entries section ---
   html += `<div class="section-title-row" style="margin-top:24px;">
     <div class="section-title" id="goodTodayEntriesToggle">
       <span class="wheel-arrow">${goodTodayEntriesOpen ? '▾' : '▸'}</span>${t('goodTodayEntriesTitle')}
@@ -3063,44 +3056,47 @@ function goodTodaySectionHTML(){
         <span class="good-today-entry-date">${formatDateISO(last.date)}</span>
       </div>`;
     }
-    // Weekly reflection subsection
-    html += `<div class="good-today-week-section">
-      <div class="section-title" id="goodTodayWeekToggle" style="margin-top:14px;">
-        <span class="wheel-arrow">${goodTodayWeekPauseOpen ? '▾' : '▸'}</span>${t('goodTodayWeekPauseTitle')}
+  }
+  // --- Weekly reflection section (separate toggle, always visible header) ---
+  const weekStart = weekStartISO(todayStr);
+  const weekRefl = goodTodayWeekReflectionsFor(weekStart);
+  const hasWeekReflection = !!weekRefl;
+  html += `<div class="section-title-row" style="margin-top:24px;">
+    <div class="section-title" id="goodTodayWeekToggle" style="flex:1;">
+      <span class="wheel-arrow">${goodTodayWeekPauseOpen ? '▾' : '▸'}</span>${t('goodTodayWeekPauseTitle')}
+    </div>
+  </div>`;
+  if(goodTodayWeekPauseOpen){
+    if(hasWeekReflection && !goodTodayWeekEditing){
+      // Show saved reflection
+      html += `<div class="good-today-week-saved">
+        <div class="good-today-week-label">${t('goodTodayWeekPauseSaved')}</div>`;
+      html += `<div class="good-today-week-q">
+        <strong>${t('goodTodayWeekPauseQ1')}</strong><div>${esc(weekRefl.q1)}</div>
+      </div>
+      <div class="good-today-week-q">
+        <strong>${t('goodTodayWeekPauseQ2')}</strong><div>${esc(weekRefl.q2)}</div>
+      </div>
+      <div class="good-today-week-q">
+        <strong>${t('goodTodayWeekPauseQ3')}</strong><div>${esc(weekRefl.q3)}</div>
       </div>`;
-    if(goodTodayWeekPauseOpen){
-      if(hasWeekReflection && !goodTodayWeekEditing){
-        // Show saved reflection
-        html += `<div class="good-today-week-saved">
-          <div class="good-today-week-label">${t('goodTodayWeekPauseSaved')}</div>`;
-        html += `<div class="good-today-week-q">
-          <strong>${t('goodTodayWeekPauseQ1')}</strong><div>${esc(weekRefl.q1)}</div>
-        </div>
-        <div class="good-today-week-q">
-          <strong>${t('goodTodayWeekPauseQ2')}</strong><div>${esc(weekRefl.q2)}</div>
-        </div>
-        <div class="good-today-week-q">
-          <strong>${t('goodTodayWeekPauseQ3')}</strong><div>${esc(weekRefl.q3)}</div>
-        </div>`;
-        html += `<div class="good-today-btn-row">
-          <button id="btnGoodTodayWeekEdit" type="button" class="icon-btn">${t('goodTodayEntriesEdit')}</button>
-        </div></div>`;
-      }else{
-        // Edit / create form
-        html += `<div class="good-today-week-form">`;
-        html += `<div class="good-today-week-label">${t('goodTodayWeekPauseQ1')}</div>`;
-        html += `<textarea id="goodTodayWeekQ1" class="good-today-textarea" maxlength="500" placeholder="${t('goodTodayWeekPauseQ1')}">${esc(goodTodayWeekDrafts.q1)}</textarea>`;
-        html += `<div class="good-today-week-label">${t('goodTodayWeekPauseQ2')}</div>`;
-        html += `<textarea id="goodTodayWeekQ2" class="good-today-textarea" maxlength="500" placeholder="${t('goodTodayWeekPauseQ2')}">${esc(goodTodayWeekDrafts.q2)}</textarea>`;
-        html += `<div class="good-today-week-label">${t('goodTodayWeekPauseQ3')}</div>`;
-        html += `<textarea id="goodTodayWeekQ3" class="good-today-textarea" maxlength="500" placeholder="${t('goodTodayWeekPauseQ3')}">${esc(goodTodayWeekDrafts.q3)}</textarea>`;
-        html += `<div class="good-today-btn-row" style="margin-top:10px;">
-          <button id="btnGoodTodayWeekSave" type="button" class="icon-btn">${t('goodTodayWeekPauseSave')}</button>
-          <button id="btnGoodTodayWeekSkip" type="button">${t('goodTodayWeekPauseSkip')}</button>
-        </div></div>`;
-      }
+      html += `<div class="good-today-btn-row">
+        <button id="btnGoodTodayWeekEdit" type="button" class="icon-btn">${t('goodTodayEntriesEdit')}</button>
+      </div></div>`;
+    }else{
+      // Edit / create form
+      html += `<div class="good-today-week-form">`;
+      html += `<div class="good-today-week-label">${t('goodTodayWeekPauseQ1')}</div>`;
+      html += `<textarea id="goodTodayWeekQ1" class="good-today-textarea" maxlength="500" placeholder="${t('goodTodayWeekPauseQ1')}">${esc(goodTodayWeekDrafts.q1)}</textarea>`;
+      html += `<div class="good-today-week-label">${t('goodTodayWeekPauseQ2')}</div>`;
+      html += `<textarea id="goodTodayWeekQ2" class="good-today-textarea" maxlength="500" placeholder="${t('goodTodayWeekPauseQ2')}">${esc(goodTodayWeekDrafts.q2)}</textarea>`;
+      html += `<div class="good-today-week-label">${t('goodTodayWeekPauseQ3')}</div>`;
+      html += `<textarea id="goodTodayWeekQ3" class="good-today-textarea" maxlength="500" placeholder="${t('goodTodayWeekPauseQ3')}">${esc(goodTodayWeekDrafts.q3)}</textarea>`;
+      html += `<div class="good-today-btn-row" style="margin-top:10px;">
+        <button id="btnGoodTodayWeekSave" type="button" class="icon-btn">${t('goodTodayWeekPauseSave')}</button>
+        <button id="btnGoodTodayWeekSkip" type="button">${t('goodTodayWeekPauseSkip')}</button>
+      </div></div>`;
     }
-    html += `</div>`;
   }
   return html;
 }
