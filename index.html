@@ -160,11 +160,11 @@
   .topbar .theme-option:hover{background:var(--card); border-color:var(--border);}
   .topbar .theme-option.active{border-color:var(--accent); box-shadow:0 0 0 1px var(--accent);}
   /* ===== Action buttons (edit/delete/move/relocate/archive) ===== */
-   #btnEdit, #btnDelete, #btnAddSubgoal, #btnDeleteChecklist, #btnMove, #btnMoveChecklist, #btnRelocate, #btnChecklistAdd, #btnFilter, .add-child-row #btnArchive, .add-goal-wrap #btnArchive, #btnGoodTodayHistory, #btnGoodTodayWeekHistory, #btnWishManage, #btnGoodTodayHistoryPagePrev, #btnGoodTodayHistoryPageNext, #btnGoodTodayHistoryPagePrevBottom, #btnGoodTodayHistoryPageNextBottom{
+   #btnEdit, #btnDelete, #btnAddSubgoal, #btnDeleteChecklist, #btnMove, #btnMoveChecklist, #btnRelocate, #btnChecklistAdd, #btnFilter, .add-child-row #btnArchive, .add-goal-wrap #btnArchive, #btnGoodTodayHistory, #btnGoodTodayWeekHistory, #btnGoodTodayWeekEdit, #btnWishManage, #btnGoodTodayHistoryPagePrev, #btnGoodTodayHistoryPageNext, #btnGoodTodayHistoryPagePrevBottom, #btnGoodTodayHistoryPageNextBottom{
     background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:8px;
     padding:6px 12px; font-size:12px; cursor:pointer; white-space:nowrap;
   }
-   #btnFilter:hover,#btnGoodTodayHistory:hover,#btnGoodTodayWeekHistory:hover,#btnGoodTodayHistoryPagePrev:hover,#btnGoodTodayHistoryPageNext:hover,#btnGoodTodayHistoryPagePrevBottom:hover,#btnGoodTodayHistoryPageNextBottom:hover{color:var(--text); border-color:var(--accent);}
+   #btnFilter:hover,#btnGoodTodayHistory:hover,#btnGoodTodayWeekHistory:hover,#btnGoodTodayWeekEdit:hover,#btnGoodTodayHistoryPagePrev:hover,#btnGoodTodayHistoryPageNext:hover,#btnGoodTodayHistoryPagePrevBottom:hover,#btnGoodTodayHistoryPageNextBottom:hover{color:var(--text); border-color:var(--accent);}
   #btnEdit:hover{color:var(--text); border-color:var(--accent);}
   #btnEdit.active{background:var(--accent); color:#fff; border-color:var(--accent);}
   #btnDelete:hover{border-color:var(--red); color:var(--red);}
@@ -852,7 +852,7 @@
   #btnAddChild:disabled:hover{color:var(--muted); border-color:var(--border);}
   /* Compact "+"/"−" icon style for Add/Delete, used instead of full text labels to save room on
      narrow (phone) screens. */
-   #btnAddGoal.icon-btn, #btnWishAdd.icon-btn, #btnWishManage.icon-btn, #btnAddChild.icon-btn, #btnDelete.icon-btn, #btnEdit.icon-btn, #btnAddSubgoal.icon-btn, #btnDeleteChecklist.icon-btn, #btnMove.icon-btn, #btnMoveChecklist.icon-btn, #btnRelocate.icon-btn, #btnChecklistAdd.icon-btn, #btnFilter.icon-btn, .add-child-row #btnArchive.icon-btn, .add-goal-wrap #btnArchive.icon-btn, #btnSearch.icon-btn, #btnGoodTodayHistory.icon-btn, #btnGoodTodayWeekHistory.icon-btn, #btnGoodTodayAdd.icon-btn, #btnGoodTodayHistoryPagePrevBottom.icon-btn, #btnGoodTodayHistoryPageNextBottom.icon-btn{
+   #btnAddGoal.icon-btn, #btnWishAdd.icon-btn, #btnWishManage.icon-btn, #btnAddChild.icon-btn, #btnDelete.icon-btn, #btnEdit.icon-btn, #btnAddSubgoal.icon-btn, #btnDeleteChecklist.icon-btn, #btnMove.icon-btn, #btnMoveChecklist.icon-btn, #btnRelocate.icon-btn, #btnChecklistAdd.icon-btn, #btnFilter.icon-btn, .add-child-row #btnArchive.icon-btn, .add-goal-wrap #btnArchive.icon-btn, #btnSearch.icon-btn, #btnGoodTodayHistory.icon-btn, #btnGoodTodayWeekHistory.icon-btn, #btnGoodTodayWeekEdit.icon-btn, #btnGoodTodayAdd.icon-btn, #btnGoodTodayHistoryPagePrevBottom.icon-btn, #btnGoodTodayHistoryPageNextBottom.icon-btn{
     font-size:16px; font-weight:700; line-height:1; padding:5px 13px;
     min-width:32px; display:inline-flex; align-items:center; justify-content:center;
   }
@@ -938,7 +938,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.1.45';
+const APP_VERSION = '1.1.46';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -3234,6 +3234,7 @@ function goodTodaySectionHTML(){
     <div class="section-title" id="goodTodayWeekToggle" style="flex:1;">
       <span class="wheel-arrow">${goodTodayWeekPauseOpen ? '▾' : '▸'}</span>${t('goodTodayWeekPauseTitle')}
     </div>
+    ${hasWeekReflection ? `<button id="btnGoodTodayWeekEdit" class="icon-btn" data-tip="${t('goodTodayEntriesEdit')}" aria-label="${t('goodTodayEntriesEdit')}"><i class="ti ti-edit" aria-hidden="true"></i></button>` : ''}
     ${hasAnyWeekReflection ? `<button id="btnGoodTodayWeekHistory" class="icon-btn" data-tip="${t('goodTodayWeekHistory')}" aria-label="${t('goodTodayWeekHistory')}"><i class="ti ti-history" aria-hidden="true"></i></button>` : ''}
   </div>`;
   if(goodTodayWeekHistoryOpen){
@@ -3253,9 +3254,6 @@ function goodTodaySectionHTML(){
       </div>
       <div class="good-today-week-q">
         <strong>${t('goodTodayWeekPauseQ3')}</strong><div>${esc(weekRefl.q3)}</div>
-      </div>`;
-      html += `<div class="good-today-btn-row">
-          <button id="btnGoodTodayWeekEdit" type="button" class="good-today-primary">${t('goodTodayEntriesEdit')}</button>
       </div></div>`;
     }else{
       // Edit / create form
@@ -4874,6 +4872,16 @@ function attachGoodTodayHandlers(){
   const btnWeekEdit = document.getElementById('btnGoodTodayWeekEdit');
   if(btnWeekEdit){
     btnWeekEdit.addEventListener('click', ()=>{
+      // The header icon only makes sense when a reflection exists — clicking it while the
+      // form is already open collapses back to the saved view instead of re-seeding the drafts.
+      if(goodTodayWeekEditing){
+        goodTodayWeekEditing = false;
+        goodTodayWeekDrafts = { q1: '', q2: '', q3: '' };
+        render();
+        return;
+      }
+      // Expand the section too — otherwise the form would open behind a collapsed header.
+      goodTodayWeekPauseOpen = true;
       const week = weekStartISO(isoToday());
       const refl = goodTodayWeekReflectionsFor(week);
       if(refl){

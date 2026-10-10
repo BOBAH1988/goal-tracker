@@ -981,3 +981,33 @@ test('Хорошее сегодня: «+» opens the form and «−» collapses 
   t.click('#btnGoodTodayAdd');
   assert.equal(t.document.getElementById('goodTodayTextarea').value, '', 'the abandoned draft is discarded');
 });
+
+test('Победы за неделю: header «Изменить» icon opens the form even when collapsed', () => {
+  const t = bootDom();
+  const curWeek = t.window.weekStartISO(t.window.isoToday());
+  t.app.setState(Object.assign(t.app.getState(), {
+    goodTodayWeekReflections: [
+      { week: curWeek, q1: 'Q1a', q2: 'Q2a', q3: 'Q3a', createdAt: 1, updatedAt: 1 },
+    ],
+  }));
+  t.window.render();
+  // Collapse the weekly section — the header icons stay reachable.
+  t.click('#goodTodayWeekToggle');
+  assert.ok(!t.document.getElementById('goodTodayWeekQ1'), 'the section starts collapsed');
+  // The edit icon must still be in the header, ahead of the history icon.
+  assert.ok(t.document.getElementById('btnGoodTodayWeekEdit'), 'the edit icon is in the header');
+  assert.ok(t.document.getElementById('btnGoodTodayWeekHistory'), 'the history icon is in the header');
+  const order = [...t.document.querySelectorAll('.section-title-row')]
+    .filter(r => r.querySelector('#goodTodayWeekToggle'))
+    .pop().innerHTML;
+  assert.ok(order.indexOf('btnGoodTodayWeekEdit') < order.indexOf('btnGoodTodayWeekHistory'),
+    'edit comes before history');
+  // Tapping edit expands the section AND loads the saved answers into the form.
+  t.click('#btnGoodTodayWeekEdit');
+  assert.ok(t.document.getElementById('goodTodayWeekQ1'), 'the form opens');
+  assert.equal(t.document.getElementById('goodTodayWeekQ1').value, 'Q1a', 'the saved answer is loaded');
+  // Tapping the same icon again collapses back to the saved view.
+  t.click('#btnGoodTodayWeekEdit');
+  assert.ok(!t.document.getElementById('goodTodayWeekQ1'), 'the icon toggles back');
+  assert.match(t.document.getElementById('app').innerHTML, /Q1a/, 'the saved report is shown again');
+});

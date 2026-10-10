@@ -705,3 +705,36 @@ test('goodTodaySectionHTML: «−» also replaces «+» while editing an entry',
   assert.ok(html.includes('>−</button>'), 'edit mode shows a «−», not a «+»');
   assert.ok(html.includes('id="goodTodayTextarea"'), 'edit mode keeps the textarea');
 });
+
+test('goodTodaySectionHTML: «Изменить» lives in the header as an icon, before history', () => {
+  const t = boot();
+  const curWeek = vm.runInContext('weekStartISO(isoToday())', t.ctx);
+  t.app.setState({
+    name: 'root',
+    children: [],
+    goodTodayWeekReflections: [
+      { week: curWeek, q1: 'B1', q2: 'B2', q3: 'B3', createdAt: 2, updatedAt: 2 },
+    ],
+  });
+  // Section expanded, saved view on screen — no in-body edit button anymore.
+  vm.runInContext('goodTodayWeekPauseOpen = true; goodTodayWeekEditing = false; goodTodayWeekHistoryOpen = false;', t.ctx);
+  const html = vm.runInContext('goodTodaySectionHTML()', t.ctx);
+  assert.ok(html.includes('id="btnGoodTodayWeekEdit"'), 'the edit control must be in the header');
+  assert.ok(html.includes('<i class="ti ti-edit" aria-hidden="true"></i>'), 'edit is an icon button, like the wish map');
+  assert.ok(html.includes('id="btnGoodTodayWeekHistory"'), 'the history button is still there');
+  // Order matters: edit comes BEFORE history in the header row.
+  const editAt = html.indexOf('id="btnGoodTodayWeekEdit"');
+  const histAt = html.indexOf('id="btnGoodTodayWeekHistory"');
+  assert.ok(editAt > -1 && editAt < histAt, '«Изменить» must sit before «История»');
+  // The old in-body button is gone (no good-today-btn-row wrapping it).
+  assert.ok(!/<div class="good-today-btn-row">\s*<button id="btnGoodTodayWeekEdit"/.test(html), 'the in-body edit button is gone');
+});
+
+test('goodTodaySectionHTML: edit icon hidden when there is no reflection yet', () => {
+  const t = boot();
+  t.app.setState({ name: 'root', children: [], goodTodayWeekReflections: [] });
+  vm.runInContext('goodTodayWeekPauseOpen = true; goodTodayWeekEditing = false; goodTodayWeekHistoryOpen = false;', t.ctx);
+  const html = vm.runInContext('goodTodaySectionHTML()', t.ctx);
+  assert.ok(!html.includes('id="btnGoodTodayWeekEdit"'), 'nothing to edit yet → no edit button');
+  assert.ok(!html.includes('id="btnGoodTodayWeekHistory"'), 'and no history button either');
+});
