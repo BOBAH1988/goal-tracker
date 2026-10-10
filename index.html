@@ -390,9 +390,15 @@
    .good-today-textarea:focus{outline:2px solid var(--accent); outline-offset:1px; border-color:var(--accent);}
    .good-today-char-count{color:var(--muted); font-size:12px; text-align:right; margin-top:6px;}
    .good-today-char-count.error{color:var(--red);}
-   .good-today-btn-row{
-     display:flex; align-items:center; gap:10px; margin-top:10px;
-   }
+    .good-today-btn-row{
+      display:flex; gap:10px; margin-top:10px;
+    }
+    .good-today-btn-row button{
+      flex:1; min-height:44px; padding:10px 12px; border-radius:10px; cursor:pointer;
+      font-size:14px; font-weight:600; border:1px solid var(--border);
+      background:var(--card2); color:var(--text);
+    }
+    .good-today-btn-row button.good-today-primary{background:var(--accent); border-color:var(--accent); color:#fff;}
    .good-today-today-entries{
      margin-top:12px; border-top:1px solid var(--border); padding-top:12px;
    }
@@ -843,7 +849,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.1.22';
+const APP_VERSION = '1.1.23';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -3029,7 +3035,7 @@ function goodTodaySectionHTML(){
       html += `<div class="auth-error">${esc(goodTodayCharError)}</div>`;
     }
     html += `<div class="good-today-btn-row">
-      <button id="btnGoodTodaySave" type="button" class="icon-btn">${t('goodTodayEntriesSave')}</button>
+      <button id="btnGoodTodaySave" type="button" class="good-today-primary">${t('goodTodayEntriesSave')}</button>
       ${isEditing ? `<button id="btnGoodTodayCancel" type="button">${t('goodTodayEntriesCancel')}</button>` : ''}
     </div>`;
     // Today's entries
@@ -3081,7 +3087,7 @@ function goodTodaySectionHTML(){
         <strong>${t('goodTodayWeekPauseQ3')}</strong><div>${esc(weekRefl.q3)}</div>
       </div>`;
       html += `<div class="good-today-btn-row">
-        <button id="btnGoodTodayWeekEdit" type="button" class="icon-btn">${t('goodTodayEntriesEdit')}</button>
+          <button id="btnGoodTodayWeekEdit" type="button" class="good-today-primary">${t('goodTodayEntriesEdit')}</button>
       </div></div>`;
     }else{
       // Edit / create form
@@ -3093,7 +3099,7 @@ function goodTodaySectionHTML(){
       html += `<div class="good-today-week-label">${t('goodTodayWeekPauseQ3')}</div>`;
       html += `<textarea id="goodTodayWeekQ3" class="good-today-textarea" maxlength="500" placeholder="${t('goodTodayWeekPauseQ3')}">${esc(goodTodayWeekDrafts.q3)}</textarea>`;
       html += `<div class="good-today-btn-row" style="margin-top:10px;">
-        <button id="btnGoodTodayWeekSave" type="button" class="icon-btn">${t('goodTodayWeekPauseSave')}</button>
+          <button id="btnGoodTodayWeekSave" type="button" class="good-today-primary">${t('goodTodayWeekPauseSave')}</button>
         <button id="btnGoodTodayWeekSkip" type="button">${t('goodTodayWeekPauseSkip')}</button>
       </div></div>`;
     }
@@ -3129,7 +3135,7 @@ function goodTodayHistoryHTML(){
   }else{
     html += `<div class="good-today-history-empty">${t('goodTodayEntriesHistoryEmpty')}</div>`;
   }
-  html += `    <button id="btnGoodTodayHistoryBack" type="button" class="icon-btn" style="margin-top:12px;">${t('back')}</button>`;
+   html += ` <div class="good-today-btn-row" style="margin-top:12px;"><button id="btnGoodTodayHistoryBack" type="button">${t('back')}</button></div>`;
   return html;
 }
 
