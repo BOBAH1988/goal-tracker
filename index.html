@@ -127,10 +127,11 @@
   .topbar .theme-option:hover{background:var(--card); border-color:var(--border);}
   .topbar .theme-option.active{border-color:var(--accent); box-shadow:0 0 0 1px var(--accent);}
   /* ===== Action buttons (edit/delete/move/relocate/archive) ===== */
-  #btnEdit, #btnDelete, #btnAddSubgoal, #btnDeleteChecklist, #btnMove, #btnMoveChecklist, #btnRelocate, #btnChecklistAdd, .add-child-row #btnArchive, .add-goal-wrap #btnArchive{
+  #btnEdit, #btnDelete, #btnAddSubgoal, #btnDeleteChecklist, #btnMove, #btnMoveChecklist, #btnRelocate, #btnChecklistAdd, #btnFilter, .add-child-row #btnArchive, .add-goal-wrap #btnArchive{
     background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:8px;
     padding:6px 12px; font-size:12px; cursor:pointer; white-space:nowrap;
   }
+  #btnFilter:hover{color:var(--text); border-color:var(--accent);}
   #btnEdit:hover{color:var(--text); border-color:var(--accent);}
   #btnEdit.active{background:var(--accent); color:#fff; border-color:var(--accent);}
   #btnDelete:hover{border-color:var(--red); color:var(--red);}
@@ -538,7 +539,7 @@
   #btnAddChild:disabled:hover{color:var(--muted); border-color:var(--border);}
   /* Compact "+"/"−" icon style for Add/Delete, used instead of full text labels to save room on
      narrow (phone) screens. */
-  #btnAddGoal.icon-btn, #btnAddChild.icon-btn, #btnDelete.icon-btn, #btnEdit.icon-btn, #btnAddSubgoal.icon-btn, #btnDeleteChecklist.icon-btn, #btnMove.icon-btn, #btnMoveChecklist.icon-btn, #btnRelocate.icon-btn, #btnChecklistAdd.icon-btn, .add-child-row #btnArchive.icon-btn, .add-goal-wrap #btnArchive.icon-btn, #btnSearch.icon-btn{
+  #btnAddGoal.icon-btn, #btnAddChild.icon-btn, #btnDelete.icon-btn, #btnEdit.icon-btn, #btnAddSubgoal.icon-btn, #btnDeleteChecklist.icon-btn, #btnMove.icon-btn, #btnMoveChecklist.icon-btn, #btnRelocate.icon-btn, #btnChecklistAdd.icon-btn, #btnFilter.icon-btn, .add-child-row #btnArchive.icon-btn, .add-goal-wrap #btnArchive.icon-btn, #btnSearch.icon-btn{
     font-size:16px; font-weight:700; line-height:1; padding:5px 13px;
     min-width:32px; display:inline-flex; align-items:center; justify-content:center;
   }
@@ -549,6 +550,7 @@
   #btnRelocate.icon-btn{ font-size:18px; padding:4px; }
   .add-child-row #btnArchive.icon-btn, .add-goal-wrap #btnArchive.icon-btn{ font-size:24px; padding:2px; }
   #btnMove.icon-btn, #btnMoveChecklist.icon-btn{ font-size:18px; padding:4px; }
+  #btnFilter.icon-btn{ font-size:18px; padding:4px; }
   /* ===== Checklist rows ===== */
   .checklist-section{margin-top:20px;}
   .checklist-row.movable{
@@ -609,7 +611,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.0.32';
+const APP_VERSION = '1.0.33';
 /* ===== Seed data (transcribed from the Excel table) =====
    emptyGoals/emptySteps take the noun to use for auto-generated names, so items added later via
    the UI can be named in whichever language is active at the time (default: Russian for the
@@ -2230,7 +2232,7 @@ function homeViewHTML(overallPct, hintHTML, mode, protectedCount){
       <button id="btnDelete" class="${deleteMode?'active':'icon-btn'}" data-tip="${deleteMode?t('done'):t('tipDelete')}" aria-label="${deleteMode?t('done'):t('tipDelete')}">${deleteMode ? t('done') : '−'}</button>
       <button id="btnMove" class="${moveMode?'active':'icon-btn'}" data-tip="${moveMode?t('done'):t('tipMove')}" aria-label="${moveMode?t('done'):t('tipMove')}">${moveMode ? t('done') : '↕'}</button>
       <div class="filter-dropdown">
-        <button id="btnFilter" class="icon-btn" data-tip="${t('tipSort')}" aria-label="${t('tipSort')}"><i class="ti ti-arrows-sort" aria-hidden="true"></i></button>
+        <button id="btnFilter" class="icon-btn" data-tip="${t('tipSort')}" aria-label="${t('tipSort')}"><i class="ti ti-filter" aria-hidden="true"></i></button>
         ${filterMenuOpen ? `<div class="filter-menu" id="filterMenu">
           <button data-sort="desc" class="${goalsSort==='desc'?'active':''}">${t('sortDesc')}</button>
           <button data-sort="asc" class="${goalsSort==='asc'?'active':''}">${t('sortAsc')}</button>
