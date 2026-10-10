@@ -854,10 +854,10 @@
   }
    #btnAddGoal.icon-btn, #btnWishAdd.icon-btn, #btnGoodTodayAdd.icon-btn, #btnAddChild.icon-btn, #btnDelete.icon-btn, #btnChecklistAdd.icon-btn{ font-size:18px; }
   /* The wish «Исправить» button mirrors #btnEdit in «Главные цели» — the same rename pencil
-     glyph and the same 24px/2px box, so the two sections read alike. Kept in --text (asked for
-     by the owner: a dim pencil looked like a disabled control). */
+     glyph and the same 24px/2px box, so the two sections read alike. No colour override here:
+     the base action-button rule's --muted is what #btnEdit uses, and overriding it to --text made
+     the glyph near-white (#eef2f8) on the dark button — a white icon with nothing to read it. */
    #btnEdit.icon-btn, #btnWishManage.icon-btn{ font-size:24px; padding:2px; }
-  #btnWishManage.icon-btn{ color:var(--text); }
   /* The wish header pair («+» and the pencil): one shared 42px box so the text glyph and
      the icon font line up exactly, like the «Хорошее сегодня» header pair. */
    #btnWishAdd.icon-btn{ min-width:42px; padding:5px 0; justify-content:center; }
@@ -934,7 +934,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.1.41';
+const APP_VERSION = '1.1.42';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
