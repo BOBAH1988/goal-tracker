@@ -515,8 +515,8 @@ test('today block: action button is trash by default, checkmark only during acti
   assert.ok(t.document.querySelector('[data-today-edit="2"]').classList.contains('done'), 'done input must get .done class after toggle');
 });
 
-// ===== Today block: motivational quotes row =====
-test('today block: shows quote row with refresh button, clicking refresh updates state', () => {
+// ===== Overall progress block: motivational quotes row =====
+test('overall progress block: shows quote row with refresh button, clicking refresh updates state', () => {
   const t = bootDom();
   t.app.setState({
     name: 'root', children: [leaf(false, { name: 'Цель' })],
@@ -525,11 +525,13 @@ test('today block: shows quote row with refresh button, clicking refresh updates
   });
   t.window.render();
 
-  // Quote row must exist inside the today block.
+  // Quote row must exist inside the overall progress block.
   const quoteInput = t.document.querySelector('[data-quote-display]');
   const refreshBtn = t.document.querySelector('[data-quote-refresh]');
-  assert.ok(quoteInput, 'quote display input must exist in today block');
-  assert.ok(refreshBtn, 'quote refresh button must exist in today block');
+  assert.ok(quoteInput, 'quote display input must exist in overall progress block');
+  assert.ok(refreshBtn, 'quote refresh button must exist in overall progress block');
+  // Quote lives under the progress bar, not in the collapsible today list.
+  assert.ok(quoteInput.closest('.overall'), 'quote row must sit inside the overall progress card');
 
   // Input shows the quote text from state.
   assert.match(quoteInput.value, /Тестовая цитата/, 'quote input must show state.quoteText');
