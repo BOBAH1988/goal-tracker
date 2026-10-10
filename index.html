@@ -378,20 +378,8 @@
   #btnArchive:hover{color:var(--accent);}
   #btnArchive.active{color:var(--accent);}
    .checklist-star{font-size:15px;}
-   /* «Хорошее сегодня» journal section — shares the card look with .priority-block but has its own
-      header (subtitle + char-counter) and a taller textarea. */
-   .good-today-section{
-     background:var(--card); border:1px solid var(--border); border-radius:16px; padding:16px 18px; margin-bottom:22px;
-   }
-   .good-today-header{
-     display:flex; align-items:center; cursor:pointer; user-select:none; margin-bottom:10px;
-   }
-   .good-today-arrow{color:var(--muted); font-size:13px; margin-right:6px;}
-   .good-today-header .section-title{margin:0; flex:1;}
-   .good-today-header .good-today-actions{
-     display:flex; align-items:center; gap:6px; opacity:.7; transition:opacity .15s;
-   }
-   .good-today-header:hover .good-today-actions{opacity:1;}
+   /* «Хорошее сегодня» journal module — styled like «Карта желаний» (same .section-title-row /
+      .wheel-arrow / .icon-btn language), no card wrapper — content renders directly under the header. */
    .good-today-subtitle{color:var(--muted); font-size:13px; margin:0 0 10px;}
    .good-today-textarea{
      width:100%; min-height:72px; resize:vertical;
@@ -400,18 +388,45 @@
      font-family:inherit; box-sizing:border-box;
    }
    .good-today-textarea:focus{outline:2px solid var(--accent); outline-offset:1px; border-color:var(--accent);}
-   .good-today-textarea:disabled{background:rgba(0,0,0,.05); opacity:.6;}
    .good-today-char-count{color:var(--muted); font-size:12px; text-align:right; margin-top:6px;}
    .good-today-char-count.error{color:var(--red);}
    .good-today-btn-row{
      display:flex; align-items:center; gap:10px; margin-top:10px;
    }
-   .good-today-history-view{
-     margin-top:14px; border-top:1px solid var(--border); padding-top:14px;
+   .good-today-today-entries{
+     margin-top:12px; border-top:1px solid var(--border); padding-top:12px;
    }
-   .good-today-history-groups{display:flex; flex-direction:column; gap:12px;}
-   .good-today-history-group{border-bottom:1px solid var(--border); padding-bottom:10px;}
-   .good-today-history-group:last-child{border-bottom:none; padding-bottom:0;}
+   .good-today-today-entries .good-today-week-label{margin-bottom:8px;}
+   .good-today-entry-item{
+     border:1px solid var(--border); border-radius:8px; padding:8px 10px; margin-bottom:8px;
+     background:var(--card2);
+   }
+   .good-today-entry-date{color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.04em; margin-bottom:4px;}
+   .good-today-entry-text{font-size:14px; line-height:1.4; word-break:break-word;}
+   .good-today-entry-actions{
+     display:flex; gap:6px; margin-top:6px;
+   }
+   .good-today-last-entry{
+     margin-top:12px; padding-top:10px; border-top:1px solid var(--border); font-size:13px; color:var(--muted);
+   }
+   .good-today-last-entry .good-today-last-text{color:var(--text); display:inline;}
+   .good-today-week-section{
+     margin-top:16px; border-top:1px solid var(--border); padding-top:14px;
+   }
+   #goodTodayWeekToggle{cursor:pointer; user-select:none; margin-bottom:6px;}
+   #goodTodayWeekToggle .wheel-arrow{color:var(--muted); font-size:13px; margin-right:6px;}
+   .good-today-week-saved .good-today-week-label{margin-bottom:8px;}
+   .good-today-week-q{
+     margin:6px 0; font-size:14px; line-height:1.5;
+   }
+   .good-today-week-form .good-today-week-label{margin-bottom:4px;}
+   .good-today-week-label{color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.04em;}
+   /* History view */
+   .good-today-history-view{margin-top:12px;}
+   .good-today-history-group{
+     border-bottom:1px solid var(--border); padding-bottom:10px; margin-bottom:10px;
+   }
+   .good-today-history-group:last-child{border-bottom:none; padding-bottom:0; margin-bottom:0;}
    .good-today-history-week{font-size:12px; font-weight:600; color:var(--muted); margin-bottom:6px;}
    .good-today-history-items{display:flex; flex-direction:column; gap:6px;}
    .good-today-history-item{
@@ -420,12 +435,7 @@
      background:var(--card2); cursor:pointer;
    }
    .good-today-history-item:hover{background:rgba(0,0,0,.03);}
-   .good-today-history-empty{color:var(--muted); font-size:13px; text-align:center; padding:20px;}
-   .good-today-entry-date{color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.04em; margin-bottom:4px;}
-   .good-today-entry-text{font-size:14px; line-height:1.4; word-break:break-word;}
-   .good-today-last-entry{margin-top:10px; font-size:13px; color:var(--muted);}
-   .good-today-last-entry .good-today-last-text{color:var(--text); display:inline;}
-   .good-today-week-label{color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.04em;}
+   .good-today-history-empty{color:var(--muted); font-size:13px; text-align:center; padding:14px;}
     /* «Хорошее сегодня» mood badge in the today block — progressive text based on done count.
        0 → «Начнём?» (red), 1 → «Хорошее начало» (dark yellow), 2 → «Осталось чуть-чуть» (lighter yellow),
        3 → «Отличный день!» (soft green). No icons — text only. */
@@ -733,8 +743,8 @@
   /* Collapsing "Главные цели" / "Main goals" — the arrow toggles the grid below. */
   #mainGoalsToggle{cursor:pointer; user-select:none;}
   #mainGoalsToggle .main-goals-arrow{color:var(--muted); font-size:13px; margin-right:6px;}
-  #wheelToggle,#wishToggle{cursor:pointer; user-select:none;}
-  #wheelToggle .wheel-arrow,#wishToggle .wheel-arrow{color:var(--muted); font-size:13px; margin-right:6px;}
+  #wheelToggle,#wishToggle,#goodTodayEntriesToggle,#goodTodayWeekToggle{cursor:pointer; user-select:none;}
+  #wheelToggle .wheel-arrow,#wishToggle .wheel-arrow,#goodTodayEntriesToggle .wheel-arrow,#goodTodayWeekToggle .wheel-arrow{color:var(--muted); font-size:13px; margin-right:6px;}
   .add-goal-wrap{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
   #btnAddGoal, #btnWishAdd{
     background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:8px;
@@ -838,7 +848,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.1.20';
+const APP_VERSION = '1.1.21';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -3004,20 +3014,17 @@ function goodTodaySectionHTML(){
   const last = goodTodayLastEntry();
   const charCount = goodTodayDraftText.length;
   const isEditing = goodTodayEditId !== null;
-  const editEntry = goodTodayEntryById(goodTodayEditId);
   const weekStart = weekStartISO(todayStr);
   const weekRefl = goodTodayWeekReflectionsFor(weekStart);
   const hasWeekReflection = !!weekRefl;
 
   let html = '';
-  html += `<div class="good-today-section">
-    <div class="good-today-header" id="goodTodayEntriesToggle">
-      <span class="good-today-arrow">${goodTodayEntriesOpen ? '▾' : '▸'}</span>
-      <span class="section-title">${t('goodTodayEntriesTitle')}</span>
-      <div class="good-today-actions">
-        ${entries.length > 0 ? `<span class="good-today-history-btn" id="btnGoodTodayHistory" data-tip="${t('goodTodayEntriesHistory')}" aria-label="${t('goodTodayEntriesHistory')}"><i class="ti ti-history" aria-hidden="true"></i></span>` : ''}
-      </div>
-    </div>`;
+  html += `<div class="section-title-row" style="margin-top:24px;">
+    <div class="section-title" id="goodTodayEntriesToggle">
+      <span class="wheel-arrow">${goodTodayEntriesOpen ? '▾' : '▸'}</span>${t('goodTodayEntriesTitle')}
+    </div>
+    ${entries.length > 0 ? `<button id="btnGoodTodayHistory" class="icon-btn" data-tip="${t('goodTodayEntriesHistory')}" aria-label="${t('goodTodayEntriesHistory')}"><i class="ti ti-history" aria-hidden="true"></i></button>` : ''}
+  </div>`;
   if(goodTodayEntriesOpen){
     html += `<div class="good-today-subtitle">${t('goodTodayEntriesSubtitle')}</div>`;
     html += `<textarea id="goodTodayTextarea" class="good-today-textarea" maxlength="500"
@@ -3029,18 +3036,18 @@ function goodTodaySectionHTML(){
       html += `<div class="auth-error">${esc(goodTodayCharError)}</div>`;
     }
     html += `<div class="good-today-btn-row">
-      <button id="btnGoodTodaySave" type="button" class="icon-btn">${isEditing ? t('goodTodayEntriesSave') : t('goodTodayEntriesSave')}</button>
+      <button id="btnGoodTodaySave" type="button" class="icon-btn">${t('goodTodayEntriesSave')}</button>
       ${isEditing ? `<button id="btnGoodTodayCancel" type="button">${t('goodTodayEntriesCancel')}</button>` : ''}
     </div>`;
     // Today's entries
     if(todayEntries.length){
-      html += `<div class="good-today-today-entries" style="margin-top:14px; border-top:1px solid var(--border); padding-top:12px;">
+      html += `<div class="good-today-today-entries">
         <div class="good-today-week-label">${t('goodTodayEntriesLastEntry')}</div>`;
       todayEntries.forEach(e => {
-        html += `<div class="good-today-entry-item" style="margin-bottom:8px;" data-goodtoday-edit="${e.id}">
+        html += `<div class="good-today-entry-item" data-goodtoday-edit="${e.id}">
           <div class="good-today-entry-date">${formatDateISO(e.date)}</div>
           <div class="good-today-entry-text">${esc(e.text || '')}</div>
-          <div style="display:flex; gap:6px; margin-top:4px;">
+          <div class="good-today-entry-actions">
             <button class="icon-btn" data-goodtoday-edit-btn="${e.id}" data-tip="${t('goodTodayEntriesEdit')}" aria-label="${t('goodTodayEntriesEdit')}"><i class="ti ti-pencil" aria-hidden="true"></i></button>
             <button class="icon-btn" data-goodtoday-delete="${e.id}" data-tip="${t('goodTodayEntriesDelete')}" aria-label="${t('goodTodayEntriesDelete')}"><i class="ti ti-trash" aria-hidden="true"></i></button>
           </div>
@@ -3053,31 +3060,34 @@ function goodTodaySectionHTML(){
       html += `<div class="good-today-last-entry">
         <span class="good-today-week-label">${t('goodTodayEntriesLastEntry')}</span>
         <span class="good-today-last-text">${esc(last.text || '')}</span>
-        <span class="good-today-entry-date" style="display:block; margin-top:2px;">${formatDateISO(last.date)}</span>
+        <span class="good-today-entry-date">${formatDateISO(last.date)}</span>
       </div>`;
     }
     // Weekly reflection subsection
-    html += `<div class="good-today-history-view" style="margin-top:16px; border-top:1px solid var(--border); padding-top:14px;">
-      <div class="good-today-header" id="goodTodayWeekToggle">
-        <span class="good-today-arrow">${goodTodayWeekPauseOpen ? '▾' : '▸'}</span>
-        <span class="section-title">${t('goodTodayWeekPauseTitle')}</span>
+    html += `<div class="good-today-week-section">
+      <div class="section-title" id="goodTodayWeekToggle" style="margin-top:14px;">
+        <span class="wheel-arrow">${goodTodayWeekPauseOpen ? '▾' : '▸'}</span>${t('goodTodayWeekPauseTitle')}
       </div>`;
     if(goodTodayWeekPauseOpen){
       if(hasWeekReflection && !goodTodayWeekEditing){
         // Show saved reflection
-        html += `<div class="good-today-week-saved" style="margin-top:10px;">
+        html += `<div class="good-today-week-saved">
           <div class="good-today-week-label">${t('goodTodayWeekPauseSaved')}</div>`;
-        html += `<div style="margin-top:8px; font-size:14px; line-height:1.5;">
-          <div style="margin-bottom:6px;"><strong>${t('goodTodayWeekPauseQ1')}</strong><div>${esc(weekRefl.q1)}</div></div>
-          <div style="margin-bottom:6px;"><strong>${t('goodTodayWeekPauseQ2')}</strong><div>${esc(weekRefl.q2)}</div></div>
-          <div style="margin-bottom:6px;"><strong>${t('goodTodayWeekPauseQ3')}</strong><div>${esc(weekRefl.q3)}</div></div>
+        html += `<div class="good-today-week-q">
+          <strong>${t('goodTodayWeekPauseQ1')}</strong><div>${esc(weekRefl.q1)}</div>
+        </div>
+        <div class="good-today-week-q">
+          <strong>${t('goodTodayWeekPauseQ2')}</strong><div>${esc(weekRefl.q2)}</div>
+        </div>
+        <div class="good-today-week-q">
+          <strong>${t('goodTodayWeekPauseQ3')}</strong><div>${esc(weekRefl.q3)}</div>
         </div>`;
-        html += `<div class="good-today-btn-row" style="margin-top:10px;">
+        html += `<div class="good-today-btn-row">
           <button id="btnGoodTodayWeekEdit" type="button" class="icon-btn">${t('goodTodayEntriesEdit')}</button>
         </div></div>`;
       }else{
         // Edit / create form
-        html += `<div style="margin-top:10px;">`;
+        html += `<div class="good-today-week-form">`;
         html += `<div class="good-today-week-label">${t('goodTodayWeekPauseQ1')}</div>`;
         html += `<textarea id="goodTodayWeekQ1" class="good-today-textarea" maxlength="500" placeholder="${t('goodTodayWeekPauseQ1')}">${esc(goodTodayWeekDrafts.q1)}</textarea>`;
         html += `<div class="good-today-week-label">${t('goodTodayWeekPauseQ2')}</div>`;
@@ -3092,7 +3102,6 @@ function goodTodaySectionHTML(){
     }
     html += `</div>`;
   }
-  html += `</div>`;
   return html;
 }
 
@@ -3100,13 +3109,13 @@ function goodTodaySectionHTML(){
 function goodTodayHistoryHTML(){
   const groups = goodTodayHistoryGroups();
   let html = '';
-  html += `<div class="good-today-section">
-    <div class="good-today-header" id="goodTodayEntriesToggle">
-      <span class="good-today-arrow">◀</span>
-      <span class="section-title">${t('goodTodayEntriesHistory')}</span>
+  html += `<div class="section-title-row" style="margin-top:24px;">
+    <div class="section-title" id="goodTodayEntriesToggle">
+      <span class="wheel-arrow">◀</span>${t('goodTodayEntriesHistory')}
     </div>
-    <div class="good-today-history-view">`;
+  </div>`;
   if(groups.length){
+    html += `<div class="good-today-history-view">`;
     groups.forEach(g => {
       html += `<div class="good-today-history-group">
         <div class="good-today-history-week">${g.label}</div>
@@ -3120,12 +3129,11 @@ function goodTodayHistoryHTML(){
       html += `      </div>
       </div>`;
     });
+    html += `    </div>`;
   }else{
     html += `<div class="good-today-history-empty">${t('goodTodayEntriesHistoryEmpty')}</div>`;
   }
-  html += `    </div>
-    <button id="btnGoodTodayHistoryBack" type="button" class="icon-btn" style="margin-top:12px;">${t('back')}</button>
-  </div>`;
+  html += `    <button id="btnGoodTodayHistoryBack" type="button" class="icon-btn" style="margin-top:12px;">${t('back')}</button>`;
   return html;
 }
 
