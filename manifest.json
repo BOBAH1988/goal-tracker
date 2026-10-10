@@ -1,7 +1,7 @@
 {
-  "name": "Трекер целей",
-  "short_name": "Трекер целей",
-  "description": "Персональный трекер целей с колесом баланса",
+  "name": "Только важное",
+  "short_name": "Только важное",
+  "description": "Твой путь к счастливой жизни.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
@@ -12,7 +12,7 @@
   "dir": "ltr",
   "id": "./",
   "categories": ["productivity", "lifestyle", "utilities"],
-  "version": "1.1.15",
+  "version": "1.1.16",
   "icons": [
     { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
     { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },

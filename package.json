@@ -1,8 +1,8 @@
 {
   "name": "goal-tracker",
-  "version": "1.1.15",
+  "version": "1.1.16",
   "private": true,
-  "description": "Трекер целей с колесом баланса (PWA, чистый HTML/CSS/JS)",
+  "description": "Только важное — твой путь к счастливой жизни (PWA, чистый HTML/CSS/JS)",
   "scripts": {
     "test": "node --test tests/*.test.js"
   },

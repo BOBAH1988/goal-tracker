@@ -3,29 +3,29 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Колесо баланса — Трекер целей для достижения целей</title>
-<meta name="description" content="Колесо баланса и трекер целей для достижения целей: разбивайте задачи на подцели и двигайтесь к результату шаг за шагом — бесплатно и просто, без дедлайнов и сложных методик.">
-<meta name="keywords" content="колесо баланса, трекер целей, достижение целей, постановка целей, колесо жизненного баланса, PWA приложение">
+<title>Только важное — твой путь к счастливой жизни</title>
+<meta name="description" content="Только важное — твой путь к счастливой жизни: разбивайте задачи на подцели и двигайтесь к результату шаг за шагом — бесплатно и просто, без дедлайнов и сложных методик.">
+<meta name="keywords" content="только важное, колесо баланса, трекер целей, достижение целей, постановка целей, колесо жизненного баланса, PWA приложение">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://bobah1988.github.io/goal-tracker/">
 <meta name="author" content="Владимир Соколов">
-<meta name="application-name" content="Трекер целей">
+<meta name="application-name" content="Только важное">
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="Трекер целей с колесом баланса">
+<meta property="og:site_name" content="Только важное">
 <meta property="og:locale" content="ru_RU">
 <meta property="og:locale:alternate" content="en_US">
 <meta property="og:url" content="https://bobah1988.github.io/goal-tracker/">
-<meta property="og:title" content="Колесо баланса — Трекер целей для достижения целей">
-<meta property="og:description" content="Колесо баланса и трекер целей: разбивайте задачи на подцели и шаг за шагом двигайтесь к результату — бесплатно и без лишней сложности.">
+<meta property="og:title" content="Только важное — твой путь к счастливой жизни">
+<meta property="og:description" content="Только важное — твой путь к счастливой жизни: разбивайте задачи на подцели и шаг за шагом двигайтесь к результату — бесплатно и без лишней сложности.">
 <meta property="og:image" content="https://bobah1988.github.io/goal-tracker/icon-512.png">
 <meta property="og:image:width" content="512">
 <meta property="og:image:height" content="512">
-<meta property="og:image:alt" content="Колесо баланса — логотип трекера целей">
+<meta property="og:image:alt" content="Только важное — логотип приложения">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Колесо баланса — Трекер целей для достижения целей">
-<meta name="twitter:description" content="Колесо баланса и трекер целей: разбивайте задачи на подцели и шаг за шагом двигайтесь к результату — бесплатно и без лишней сложности.">
+<meta name="twitter:title" content="Только важное — твой путь к счастливой жизни">
+<meta name="twitter:description" content="Только важное — твой путь к счастливой жизни: разбивайте задачи на подцели и шаг за шагом двигайтесь к результату — бесплатно и без лишней сложности.">
 <meta name="twitter:image" content="https://bobah1988.github.io/goal-tracker/icon-512.png">
-<meta name="twitter:image:alt" content="Колесо баланса — логотип трекера целей">
+<meta name="twitter:image:alt" content="Только важное — логотип приложения">
 <link rel="manifest" href="./manifest.json">
 <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
 <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
@@ -36,14 +36,14 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Трекер целей">
+<meta name="apple-mobile-web-app-title" content="Только важное">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
   "@type": "WebApplication",
-  "name": "Колесо баланса — Трекер целей",
-  "alternateName": ["Колесо баланса", "Трекер целей"],
-  "description": "Колесо баланса и трекер целей для достижения целей: разбивайте задачи на подцели и двигайтесь к результату шаг за шагом — бесплатно и без дедлайнов.",
+  "name": "Только важное",
+  "alternateName": ["Только важное", "Колесо баланса", "Трекер целей"],
+  "description": "Только важное — твой путь к счастливой жизни: разбивайте задачи на подцели и двигайтесь к результату шаг за шагом — бесплатно и без дедлайнов.",
   "url": "https://bobah1988.github.io/goal-tracker/",
   "applicationCategory": "LifestyleApplication",
   "applicationSubCategory": "ProductivityApplication",
@@ -777,7 +777,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.1.15';
+const APP_VERSION = '1.1.16';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -939,7 +939,7 @@ function emptyTemplate(){
 const LANG_KEY = "goal_tracker_lang";
 const STRINGS = {
   ru: {
-    appTitle: '🎯 Трекер целей с колесом баланса',
+    appTitle: '🎯 Только важное',
     updateReadyTitle: 'Доступно обновление',
     updateReadyText: 'Загружена новая версия приложения. Обновить сейчас?',
     updateReadyApply: 'Обновить',
@@ -1084,10 +1084,10 @@ const STRINGS = {
     importData: 'Импорт данных',
     importConfirm: 'Это заменит все текущие цели данными из файла резервной копии. Продолжить?',
     importErrorParse: 'Не удалось прочитать файл. Убедитесь, что это файл резервной копии, скачанный через «Скачать данные».',
-    importErrorInvalid: 'Файл не похож на резервную копию Трекера целей.',
+    importErrorInvalid: 'Файл не похож на резервную копию «Только важное».',
     importSuccessMsg: 'Данные успешно восстановлены из резервной копии.',
     aboutTitle: 'О проекте',
-    aboutText: 'Трекер целей помогает двигаться к важному без дедлайнов, давления и лишней сложности.\n\nВыберите цель, разделите её на подцели и маленькие шаги. Делайте главное в своём темпе — каждый завершённый шаг приближает к результату.\n\nЕсли сил или ресурсов стало меньше, цель можно архивировать: она не будет давить и влиять на прогресс. Вернитесь к ней позже, измените или отпустите.\n\nНе нужно успевать всё. Главное — бережно двигаться вперёд.\n\n— Владимир Соколов',
+    aboutText: 'Только важное помогает двигаться к важному без дедлайнов, давления и лишней сложности.\n\nВыберите цель, разделите её на подцели и маленькие шаги. Делайте главное в своём темпе — каждый завершённый шаг приближает к результату.\n\nЕсли сил или ресурсов стало меньше, цель можно архивировать: она не будет давить и влиять на прогресс. Вернитесь к ней позже, измените или отпустите.\n\nНе нужно успевать всё. Главное — бережно двигаться вперёд.\n\n— Владимир Соколов',
     instructionsTitle: 'Инструкция',
     instructionsText: 'ЦЕЛИ И ПОДЦЕЛИ\nНажмите «+» рядом с «Главные цели», чтобы создать первую цель. Откройте её и нажмите «+» ещё раз, чтобы разбить на подцели — так можно дробить сколько угодно уровней вглубь, пока задача не станет по-настоящему простой. У цели без подцелей на её странице есть чек-бокс «выполнено».\n\nЧЕК-ЛИСТ\nВместо простого чек-бокса цель можно превратить в список пунктов — кнопка «Добавить чек-лист» на её странице. Процент выполнения тогда считается по отмеченным пунктам, а не по одному общему флажку.\n\nСРОК ВЫПОЛНЕНИЯ\nНа странице цели можно указать дату (день, месяц, год — поля переключаются сами по мере ввода). Дату раньше сегодняшнего дня система не примет.\n\nПРИОРИТЕТНЫЕ ЦЕЛИ\nЗвёздочка ☆ на странице цели или пункта чек-листа добавляет его в блок «Приоритетные цели» на главном экране — не больше 5 одновременно, чтобы список не превращался в ещё один общий список дел. Так самое важное всегда под рукой, не надо искать его в глубине дерева целей.\n\nАРХИВ\nЗначок архива на странице цели скрывает её (делает бледной) и убирает из расчёта процента выполнения — удобно для целей, которые отложены, но удалять не хочется. Архивная цель автоматически уходит в конец списка.\n\nРЕДАКТИРОВАНИЕ, УДАЛЕНИЕ, ПОРЯДОК, ПЕРЕНОС\nНад списком целей есть кнопки: карандаш — переименовать, «−» — удалить, «↕» — включить режим перемещения (после этого зажмите и перетащите карточку, чтобы изменить порядок). Кнопка-перенос перемещает цель вместе со всем содержимым в другую цель или подцель.\n\nСОРТИРОВКА\nКнопка-фильтр (воронка) рядом с «↕» открывает меню порядка списка: «По убыванию» (сначала самые выполненные цели), «По возрастанию» (наоборот) и «Пользовательский» — ваш собственный порядок перетаскиванием, он включён по умолчанию. Работает и на главном экране, и внутри любой подцели. Архивированные цели всегда остаются в конце списка, пока не станут активными.\n\nРАЗВЕРНУТЬ И РАЗБИТЬ\nКнопка «Развернуть» превращает цель без подцелей в цель с двумя подцелями-чекбоксами, а «Разбить на 6 подшагов» делит её сразу на шесть шагов.\n\nКОЛЕСО БАЛАНСА\nВнизу главного экрана — колесо со всеми целями верхнего уровня: сектор заполнен, когда в сфере нет незавершённых целей. Выполнение цели заполняет сектор, частично отмеченный чек-лист даёт дробный вклад (2 из 4 — половина), новая невыполненная цель уменьшает сектор, а удаление выполненной цели показатель не снижает.\n\nЛИЧНЫЙ КАБИНЕТ И СИНХРОНИЗАЦИЯ\nБез аккаунта тоже можно пользоваться — все данные хранятся прямо в этом браузере. Если нужно видеть свои цели на нескольких устройствах, создайте аккаунт (значок 🔐) — дальше всё синхронизируется само. Если на устройстве уже были несохранённые локальные цели, при входе появится выбор, что оставить — данные без предупреждения никогда не перезаписываются.\n\nРЕЗЕРВНАЯ КОПИЯ\nВ меню (☰) есть «Экспорт данных» — сохраняет файл с полной копией целей, и «Импорт данных» — восстанавливает из такого файла. Полезно делать копию время от времени, даже если вы пользуетесь аккаунтом.\n\nУСТАНОВКА И ОБНОВЛЕНИЕ\nНа телефоне сайт можно добавить на главный экран как отдельное приложение — шаги есть в меню («Установить приложение»). Если после обновления сайта что-то выглядит по-старому, нажмите «Обновить приложение» в меню — иконку с экрана удалять не придётся.\n\nТЕМЫ И ЯЗЫК\nВ меню можно переключить оформление (тёмная, светлая, розовая тема) и язык интерфейса.',
     menuTitle: 'Меню',
@@ -1121,7 +1121,7 @@ const STRINGS = {
     wishImagePending: 'Изображение загрузится при появлении сети'
   },
   en: {
-    appTitle: '🎯 Goal Tracker with Balance Wheel',
+    appTitle: '🎯 Only What Matters',
     updateReadyTitle: 'Update available',
     updateReadyText: 'A new version of the app has been downloaded. Update now?',
     updateReadyApply: 'Update',
@@ -1266,10 +1266,10 @@ const STRINGS = {
     importData: 'Import data',
     importConfirm: 'This will replace all current goals with the data from the backup file. Continue?',
     importErrorParse: "Couldn't read the file. Make sure it's a backup file downloaded via \"Download data\".",
-    importErrorInvalid: "This file doesn't look like a Goal Tracker backup.",
+    importErrorInvalid: "This file doesn't look like an Only What Matters backup.",
     importSuccessMsg: 'Data restored from backup successfully.',
     aboutTitle: 'About',
-    aboutText: 'Goal Tracker helps you move toward what matters — without deadlines, pressure, or needless complexity.\n\nPick a goal, break it into subgoals and small steps. Do the important things at your own pace — every completed step brings you closer to the result.\n\nIf your energy or resources run low, archive the goal: it will not weigh on you or affect your progress. Come back to it later — change it or let it go.\n\nYou don\'t have to do everything. The point is to move forward, gently.\n\n— Vladimir Sokolov',
+    aboutText: 'Only What Matters helps you move toward what matters — without deadlines, pressure, or needless complexity.\n\nPick a goal, break it into subgoals and small steps. Do the important things at your own pace — every completed step brings you closer to the result.\n\nIf your energy or resources run low, archive the goal: it will not weigh on you or affect your progress. Come back to it later — change it or let it go.\n\nYou don\'t have to do everything. The point is to move forward, gently.\n\n— Vladimir Sokolov',
     instructionsTitle: 'Instructions',
     instructionsText: 'GOALS AND SUBGOALS\nTap "+" next to "Main Goals" to create your first goal. Open it and tap "+" again to break it into subgoals — you can nest as many levels as you like, until a task feels genuinely simple. A goal with no subgoals has a "done" checkbox on its own page.\n\nCHECKLIST\nInstead of a single checkbox, a goal can become a list of items — the "Add checklist" button on its page. Its completion percentage is then based on checked items, not one overall flag.\n\nDUE DATE\nA goal’s page lets you set a date (day, month, year — the fields advance automatically as you type). A date earlier than today won’t be accepted.\n\nPRIORITY GOALS\nThe ☆ star on a goal’s page or a checklist item adds it to the "Priority goals" block on the home screen — capped at 5 at a time, so it never turns into just another to-do list. That keeps the most important things within reach without digging through the whole tree.\n\nARCHIVE\nThe archive icon on a goal’s page dims it and excludes it from every completion percentage — handy for goals you’re pausing but don’t want to delete. An archived goal automatically moves to the end of its list.\n\nEDITING, DELETING, REORDERING, MOVING\nAbove the goal list: the pencil renames, "−" deletes, and "↕" turns on move mode (press and drag a card to reorder once it’s on). The relocate button moves a goal with all its contents into another goal or subgoal.\n\nSORTING\nThe filter button (funnel) next to "↕" opens a list-order menu: "Descending" (most complete goals first), "Ascending" (the reverse) and "Custom" — your own drag order, on by default. It works both on the home screen and inside any subgoal. Archived goals always stay at the end of the list until they become active again.\n\nEXPAND AND SPLIT\nThe "Expand" button turns a goal with no subgoals into one with two checkbox subgoals, and "Split into 6 steps" breaks it into six steps at once.\n\nBALANCE WHEEL\nAt the bottom of the home screen, the wheel shows every top-level goal at a glance: a sector is full when its area has no open goals. Completing a goal fills its sector, a half-ticked checklist counts fractionally (2 of 4 is half), a new open goal shrinks it, and deleting a completed goal never lowers it.\n\nACCOUNT AND SYNC\nYou don’t need an account — everything is stored right in this browser. To see your goals on more than one device, create an account (the 🔐 icon) and it syncs automatically from then on. If a device already had unsaved local goals, signing in shows a choice of what to keep — data is never overwritten without asking first.\n\nBACKUP\nThe menu (☰) has "Export data", which saves a file with a full copy of your goals, and "Import data", which restores from one. Worth doing now and then even if you use an account.\n\nINSTALLING AND UPDATING\nOn a phone, the site can be added to the home screen as its own app — steps are in the menu ("Install app"). If something looks out of date after a site update, tap "Update app" in the menu — no need to remove the home-screen icon.\n\nTHEMES AND LANGUAGE\nThe menu also switches the look (dark, light, pink) and the interface language.',
     menuTitle: 'Menu',
