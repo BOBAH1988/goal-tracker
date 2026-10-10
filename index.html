@@ -503,6 +503,80 @@
   .add-checklist-btn:hover{opacity:.9;}
   /* ===== Sections: empty state, titles, add-rows ===== */
   .empty-state{color:var(--muted); font-size:13px; padding:20px; text-align:center; border:1px dashed var(--border); border-radius:12px;}
+  /* ===== Wish map («Карта желаний») — independent vision board under the wheel ===== */
+  .wish-empty{
+    border:1px dashed var(--border); border-radius:12px; padding:24px 14px;
+    display:flex; flex-direction:column; align-items:center; gap:14px; text-align:center;
+  }
+  .wish-empty-text{color:var(--muted); font-size:13px; max-width:420px;}
+  .wish-add-btn{
+    background:var(--accent); color:#fff; border:none; border-radius:10px;
+    padding:12px 20px; font-size:14px; font-weight:600; cursor:pointer; min-height:44px;
+  }
+  .wish-add-btn:hover{opacity:.9;}
+  /* Columns: 1 on very narrow screens, 2 on phones (default), 3 on tablets, 4 on desktop. */
+  .wish-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:10px;}
+  @media (max-width:360px){ .wish-grid{grid-template-columns:1fr;} }
+  @media (min-width:600px){ .wish-grid{grid-template-columns:repeat(3,1fr);} }
+  @media (min-width:960px){ .wish-grid{grid-template-columns:repeat(4,1fr);} }
+  .wish-card{
+    position:relative; background:var(--card); border:1px solid var(--border);
+    border-radius:12px; overflow:hidden; cursor:pointer; min-width:0;
+  }
+  .wish-img{display:block; width:100%; aspect-ratio:1/1; object-fit:cover; background:var(--card2);}
+  .wish-caption{
+    padding:8px 10px; font-size:13px; color:var(--text);
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  /* Corner actions: 44px targets so thumbs can hit them comfortably on a phone. */
+  .wish-actions{position:absolute; top:6px; right:6px; display:flex; gap:6px;}
+  .wish-action{
+    width:44px; height:44px; padding:0; display:flex; align-items:center; justify-content:center;
+    border:none; border-radius:10px; background:rgba(6,9,16,.55); color:#fff;
+    font-size:18px; cursor:pointer;
+  }
+  .wish-action:hover{background:rgba(6,9,16,.75);}
+  .wish-form{
+    background:var(--card); border:1px solid var(--border); border-radius:12px;
+    padding:14px; display:flex; flex-direction:column; gap:10px; margin-bottom:12px;
+  }
+  .wish-preview{
+    aspect-ratio:16/9; border-radius:10px; background:var(--card2);
+    border:1px dashed var(--border); display:flex; align-items:center; justify-content:center;
+    color:var(--muted); font-size:13px; overflow:hidden; text-align:center; padding:8px;
+  }
+  .wish-preview img{width:100%; height:100%; object-fit:contain;}
+  .wish-file-label{display:flex; flex-direction:column; gap:6px; color:var(--muted); font-size:12px;}
+  .wish-file-label input[type=file]{color:var(--text); font-size:13px;}
+  .wish-form input[type=text]{
+    background:var(--card2); border:1px solid var(--border); color:var(--text);
+    border-radius:8px; padding:10px; font-size:16px; outline:none; width:100%;
+  }
+  .wish-form input[type=text]:focus{border-color:var(--accent);}
+  .wish-btn-row{display:flex; gap:8px;}
+  .wish-btn-row button{
+    flex:1; min-height:44px; padding:10px 12px; border-radius:10px; cursor:pointer;
+    font-size:14px; font-weight:600; border:1px solid var(--border);
+    background:var(--card2); color:var(--text);
+  }
+  .wish-btn-row button.wish-primary{background:var(--accent); border-color:var(--accent); color:#fff;}
+  .wish-edit-title{font-size:15px; font-weight:600; color:var(--text);}
+  .wish-lightbox{
+    position:relative; display:flex; flex-direction:column; align-items:center; gap:10px;
+    max-width:min(92vw,860px);
+  }
+  .wish-lightbox-img{
+    max-width:min(92vw,860px); max-height:78vh; width:auto; height:auto;
+    border-radius:12px; display:block; background:var(--card2);
+    box-shadow:0 20px 60px rgba(0,0,0,.45);
+  }
+  .wish-lightbox-caption{color:#fff; font-size:14px; text-align:center; max-width:100%;}
+  .wish-lightbox-close{
+    position:absolute; top:-14px; right:-14px; z-index:1; width:44px; height:44px;
+    border:none; border-radius:50%; background:rgba(6,9,16,.7); color:#fff;
+    font-size:18px; cursor:pointer; line-height:1;
+  }
+  .wish-lightbox-close:hover{background:rgba(6,9,16,.9);}
   .add-sub{margin-top:14px;}
   .add-sub button{
     background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:8px; padding:8px 14px; font-size:13px; cursor:pointer;
@@ -638,7 +712,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.1.6';
+const APP_VERSION = '1.1.7';
 /* ===== Seed data (transcribed from the Excel table) =====
    emptyGoals/emptySteps take the noun to use for auto-generated names, so items added later via
    the UI can be named in whichever language is active at the time (default: Russian for the
@@ -946,7 +1020,21 @@ const STRINGS = {
     menuTitle: 'Меню',
     themeDark: 'Тёмная тема',
     themeLight: 'Светлая тема',
-    themePink: 'Розовая тема'
+    themePink: 'Розовая тема',
+    wishMapTitle: 'Карта желаний',
+    wishEmpty: 'Пока нет карточек — добавьте картинку с мечтой, чтобы она всегда была под рукой.',
+    wishAdd: '+ Добавить желание',
+    wishImageLabel: 'Изображение',
+    wishNoImageYet: 'Изображение не выбрано',
+    wishCaptionPlaceholder: 'Короткая подпись',
+    wishSave: 'Сохранить',
+    wishCancel: 'Отмена',
+    wishNeedImage: 'Сначала выберите изображение.',
+    wishImageError: 'Не удалось прочитать изображение — попробуйте другой файл.',
+    wishEditTitle: 'Редактировать подпись',
+    wishEditTip: 'Редактировать подпись',
+    wishDeleteTip: 'Удалить карточку',
+    wishDeleteConfirm: 'Удалить эту карточку?'
   },
   en: {
     appTitle: '🎯 Goal Tracker with Balance Wheel',
@@ -1103,7 +1191,21 @@ const STRINGS = {
     menuTitle: 'Menu',
     themeDark: 'Dark theme',
     themeLight: 'Light theme',
-    themePink: 'Pink theme'
+    themePink: 'Pink theme',
+    wishMapTitle: 'Vision Board',
+    wishEmpty: 'No cards yet — add a picture of your dream so it is always within reach.',
+    wishAdd: '+ Add a wish',
+    wishImageLabel: 'Image',
+    wishNoImageYet: 'No image selected',
+    wishCaptionPlaceholder: 'Short caption',
+    wishSave: 'Save',
+    wishCancel: 'Cancel',
+    wishNeedImage: 'Choose an image first.',
+    wishImageError: "Couldn't read the image — try a different file.",
+    wishEditTitle: 'Edit caption',
+    wishEditTip: 'Edit caption',
+    wishDeleteTip: 'Delete card',
+    wishDeleteConfirm: 'Delete this card?'
   }
 };
 function loadLang(){
@@ -1183,6 +1285,15 @@ let relocateSourcePath = null;
 // Where the destination picker is currently browsing, relative to `state` (starts at the root —
 // an empty path lets "move here" target the top level itself).
 let relocatePickerPath = [];
+// «Карта желаний» (vision board) — transient dialog state. The cards themselves live in
+// state.wishMap (persisted + backed up with everything else); these flags only say which
+// dialog is open right now and reset on reload, like the other panel flags above.
+let wishAddOpen = false;      // add-card form (file picker + caption) is open
+let wishDraftSrc = null;      // dataURL of the picked image, pending Save
+let wishCaptionDraft = '';    // caption typed into the add form (survives re-renders)
+let wishFormError = '';       // add-form error (missing / unreadable image)
+let wishEditIdx = null;       // index of the card whose caption is being edited
+let wishLightboxIdx = null;   // index of the card enlarged in the lightbox
 // Global search panel (opened from the top menu). Results are recomputed on each keystroke and
 // injected straight into the results container (no full render — that would drop the input focus).
 // Each result is { kind:'goal'|'checklist', name, path, archived } — path is the nav target.
@@ -1245,6 +1356,7 @@ function loadState(){
          sanitizeEmptyChecklists(parsed);
          ensureWheelTotals(parsed);
          ensureToday(parsed);
+         ensureWishMap(parsed);
          return parsed;
        }
     }
@@ -1254,6 +1366,7 @@ function loadState(){
   sanitizeEmptyChecklists(fresh);
   ensureWheelTotals(fresh);
   ensureToday(fresh);
+  ensureWishMap(fresh);
   return fresh;
 }
 function structuredCloneFallback(obj){
@@ -1900,6 +2013,17 @@ function ensureToday(node){
     node.today = node.today.slice(0, 3);
   }
 }
+// The wish map («Карта желаний») is a plain array of {src, caption} cards; src is a
+// self-contained data: URL so the board renders fully offline. Backfills older saves,
+// hand-trimmed backups and cloud docs that predate (or mangle) the feature, and drops
+// anything that isn't a real image card.
+function ensureWishMap(node){
+  if(!node) return;
+  if(!Array.isArray(node.wishMap)){ node.wishMap = []; return; }
+  node.wishMap = node.wishMap
+    .filter(c => !!c && typeof c === 'object' && typeof c.src === 'string' && c.src.startsWith('data:image/'))
+    .map(c => ({ src: c.src, caption: typeof c.caption === 'string' ? c.caption : '' }));
+}
 // percent = 100% * (1 - fractionalIncomplete / max(totalGoalsAdded, activeLeaves)),
 // clamped to 0..100. Incomplete is fractional: an open plain leaf contributes 1,
 // a 2/4 checklist contributes 0.5 of open load. The sticky "ever added" total is
@@ -2010,6 +2134,7 @@ function doImportData(file){
     sanitizeEmptyChecklists(state);
     ensureWheelTotals(state);
     ensureToday(state);
+    ensureWishMap(state);
     path = [];
     saveState();
     if(cloudEnabled && authUser) scheduleCloudPush();
@@ -2113,6 +2238,9 @@ function render(){
   // any future path that swaps `state` without it (the exact bug that broke the checklist on the
   // deployed site: homeViewHTML rendered fallback rows while the handlers bailed on a non-array).
   ensureToday(state);
+  // Same guarantee for the wish map: every state-swap path (import, cloud snapshot) runs
+  // through render(), so a board-less state can never break homeViewHTML.
+  ensureWishMap(state);
   const app = document.getElementById('app');
   const node = resolve(path);
   const overallPct = computePercent(state);
@@ -2301,6 +2429,96 @@ function homeViewHTML(overallPct, hintHTML, mode, protectedCount){
     if(wheelOpen){
       html += `<div class="wheel-wrap" id="wheelWrap">${wheelHTML(activeChildren(state))}</div>`;
     }
+    // «Карта желаний» — optional vision board directly under the wheel. Fully independent:
+    // cards live in state.wishMap only and never feed the wheel, ratings or any totals.
+    html += `<div class="section-title-row" style="margin-top:24px;">
+      <div class="section-title">${t('wishMapTitle')}</div>
+      ${wishAddOpen ? '' : `<button id="btnWishAdd" class="icon-btn" data-tip="${t('wishAdd')}" aria-label="${t('wishAdd')}">+</button>`}
+    </div>`;
+    html += wishMapSectionHTML();
+  return html;
+}
+
+// Safe accessor for the wish-map card at `idx`: null for any junk index (the render-guard
+// tests deliberately poke non-numeric values into the panel flags).
+function wishCardAt(idx){
+  return (Number.isInteger(idx) && idx >= 0 && Array.isArray(state.wishMap)) ? (state.wishMap[idx] || null) : null;
+}
+// Downscale a picked image to ≤720px on the longest side and re-encode it as JPEG. Cards store
+// the image as a self-contained data: URL, so the board works fully offline — but keeping it
+// small matters too (localStorage quota, backup size, optional Firestore document limit).
+function shrinkWishImage(img){
+  const maxSide = 720;
+  const iw = img.naturalWidth || img.width || 1;
+  const ih = img.naturalHeight || img.height || 1;
+  const scale = Math.min(1, maxSide / Math.max(iw, ih));
+  const w = Math.max(1, Math.round(iw * scale));
+  const h = Math.max(1, Math.round(ih * scale));
+  const c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  c.getContext('2d').drawImage(img, 0, 0, w, h);
+  return c.toDataURL('image/jpeg', 0.82);
+}
+// Home-screen section under the balance wheel: the add form (preview + caption), the card
+// grid (or a friendly empty state) and the two dialogs (lightbox, caption editor).
+function wishMapSectionHTML(){
+  const cards = Array.isArray(state.wishMap) ? state.wishMap : [];
+  let html = '';
+  if(wishAddOpen){
+    html += `<div class="wish-form">
+      <div class="wish-preview">${wishDraftSrc ? `<img src="${esc(wishDraftSrc)}" alt="">` : esc(t('wishNoImageYet'))}</div>
+      <label class="wish-file-label">${t('wishImageLabel')}
+        <input type="file" id="wishFile" accept="image/*">
+      </label>
+      <input type="text" id="wishCaptionInput" maxlength="80" value="${esc(wishCaptionDraft)}" placeholder="${t('wishCaptionPlaceholder')}">
+      ${wishFormError ? `<div class="auth-error">${esc(wishFormError)}</div>` : ''}
+      <div class="wish-btn-row">
+        <button id="btnWishSave" type="button" class="wish-primary">${t('wishSave')}</button>
+        <button id="btnWishCancel" type="button">${t('wishCancel')}</button>
+      </div>
+    </div>`;
+  }else if(!cards.length){
+    html += `<div class="wish-empty">
+      <div class="wish-empty-text">${esc(t('wishEmpty'))}</div>
+      <button id="btnWishAddEmpty" type="button" class="wish-add-btn">${t('wishAdd')}</button>
+    </div>`;
+  }else{
+    html += `<div class="wish-grid">` + cards.map((c, i) => `
+      <div class="wish-card" data-wish-open="${i}">
+        <img class="wish-img" src="${esc(c.src)}" alt="${esc(c.caption || '')}">
+        <div class="wish-caption">${esc(c.caption || '')}</div>
+        <div class="wish-actions">
+          <button class="wish-action" type="button" data-wish-edit="${i}" title="${t('wishEditTip')}" aria-label="${t('wishEditTip')}"><i class="ti ti-pencil" aria-hidden="true"></i></button>
+          <button class="wish-action" type="button" data-wish-del="${i}" title="${t('wishDeleteTip')}" aria-label="${t('wishDeleteTip')}"><i class="ti ti-trash" aria-hidden="true"></i></button>
+        </div>
+      </div>`).join('') + `</div>`;
+  }
+  // Lightbox: the picked card enlarged. ✕ or a backdrop click closes it.
+  const bigCard = wishCardAt(wishLightboxIdx);
+  if(bigCard){
+    html += `<div class="auth-modal-overlay" id="wishLightbox">
+      <div class="wish-lightbox">
+        <button class="wish-lightbox-close" id="btnWishLightboxClose" type="button" title="${t('done')}" aria-label="${t('done')}">✕</button>
+        <img class="wish-lightbox-img" src="${esc(bigCard.src)}" alt="${esc(bigCard.caption || '')}">
+        ${bigCard.caption ? `<div class="wish-lightbox-caption">${esc(bigCard.caption)}</div>` : ''}
+      </div>
+    </div>`;
+  }
+  // Caption editor dialog.
+  const editCard = wishCardAt(wishEditIdx);
+  if(editCard){
+    html += `<div class="auth-modal-overlay" id="wishEditOverlay">
+      <div class="auth-panel">
+        <button class="auth-close" id="btnWishEditClose" type="button" title="${t('done')}" aria-label="${t('done')}">✕</button>
+        <div class="wish-edit-title">${t('wishEditTitle')}</div>
+        <input type="text" id="wishEditInput" maxlength="80" value="${esc(editCard.caption || '')}" placeholder="${t('wishCaptionPlaceholder')}">
+        <div class="wish-btn-row">
+          <button id="btnWishEditSave" type="button" class="wish-primary">${t('wishSave')}</button>
+          <button id="btnWishEditCancel" type="button">${t('wishCancel')}</button>
+        </div>
+      </div>
+    </div>`;
+  }
   return html;
 }
 
@@ -3082,6 +3300,105 @@ function refreshWheel(){
   const wheelWrap = document.getElementById('wheelWrap');
   if(wheelWrap){ wheelWrap.innerHTML = wheelHTML(activeChildren(resolve(path))); adjustWheelLabels(); }
 }
+// «Карта желаний» handlers: add form (file → dataURL preview → save), card lightbox,
+// caption editing and confirmed deletion. Cards only mutate state.wishMap — never goals,
+// the wheel, ratings or any other calculation.
+function attachWishMapHandlers(){
+  const syncWishDraft = ()=>{
+    const input = document.getElementById('wishCaptionInput');
+    if(input) wishCaptionDraft = input.value;
+  };
+  const closeAddForm = ()=>{
+    wishAddOpen = false; wishDraftSrc = null; wishFormError = ''; wishCaptionDraft = '';
+  };
+  on('btnWishAdd', 'click', ()=>{ closeAddForm(); wishAddOpen = true; render(); });
+  on('btnWishAddEmpty', 'click', ()=>{ closeAddForm(); wishAddOpen = true; render(); });
+  const fileInput = document.getElementById('wishFile');
+  if(fileInput){
+    fileInput.addEventListener('change', ()=>{
+      const file = fileInput.files && fileInput.files[0];
+      if(!file) return;
+      syncWishDraft();
+      const reader = new FileReader();
+      reader.onload = ()=>{
+        const img = new Image();
+        img.onload = ()=>{
+          try{
+            wishDraftSrc = shrinkWishImage(img);
+            wishFormError = '';
+          }catch(e){
+            wishDraftSrc = null;
+            wishFormError = t('wishImageError');
+          }
+          render();
+        };
+        img.onerror = ()=>{ wishDraftSrc = null; wishFormError = t('wishImageError'); render(); };
+        img.src = String(reader.result);
+      };
+      reader.onerror = ()=>{ wishFormError = t('wishImageError'); render(); };
+      reader.readAsDataURL(file);
+    });
+  }
+  on('btnWishSave', 'click', ()=>{
+    syncWishDraft();
+    if(!wishDraftSrc){ wishFormError = t('wishNeedImage'); render(); return; }
+    if(!Array.isArray(state.wishMap)) state.wishMap = [];
+    state.wishMap.push({ src: wishDraftSrc, caption: (wishCaptionDraft || '').trim() });
+    closeAddForm();
+    saveState();
+    render();
+  });
+  on('btnWishCancel', 'click', ()=>{ closeAddForm(); render(); });
+  document.querySelectorAll('[data-wish-open]').forEach(el=>{
+    el.addEventListener('click', (e)=>{
+      if(e.target && e.target.closest && e.target.closest('[data-wish-edit],[data-wish-del]')) return;
+      wishLightboxIdx = parseInt(el.dataset.wishOpen, 10);
+      render();
+    });
+  });
+  document.querySelectorAll('[data-wish-edit]').forEach(el=>{
+    el.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      wishEditIdx = parseInt(el.dataset.wishEdit, 10);
+      render();
+      const input = document.getElementById('wishEditInput');
+      if(input && input.setSelectionRange){
+        input.focus();
+        input.setSelectionRange(input.value.length, input.value.length);
+      }
+    });
+  });
+  document.querySelectorAll('[data-wish-del]').forEach(el=>{
+    el.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      const idx = parseInt(el.dataset.wishDel, 10);
+      if(!wishCardAt(idx)) return;
+      if(!confirm(t('wishDeleteConfirm'))) return;
+      state.wishMap.splice(idx, 1);
+      saveState();
+      render();
+    });
+  });
+  on('btnWishLightboxClose', 'click', ()=>{ wishLightboxIdx = null; render(); });
+  const lightbox = document.getElementById('wishLightbox');
+  if(lightbox){
+    lightbox.addEventListener('click', (e)=>{
+      if(e.target === lightbox){ wishLightboxIdx = null; render(); }
+    });
+  }
+  on('btnWishEditClose', 'click', ()=>{ wishEditIdx = null; render(); });
+  on('btnWishEditCancel', 'click', ()=>{ wishEditIdx = null; render(); });
+  on('btnWishEditSave', 'click', ()=>{
+    const card = wishCardAt(wishEditIdx);
+    const input = document.getElementById('wishEditInput');
+    if(card && input){
+      card.caption = input.value.trim();
+      saveState();
+    }
+    wishEditIdx = null;
+    render();
+  });
+}
 function attachHandlers(){
   attachMainViewHandlers();
   attachTreeHandlers();
@@ -3093,6 +3410,7 @@ function attachHandlers(){
   attachAuthHandlers();
   attachTopMenuHandlers();
   attachModalHandlers();
+  attachWishMapHandlers();
 }
 function attachMainViewHandlers(){
   document.querySelectorAll('[data-crumb]').forEach(el=>{

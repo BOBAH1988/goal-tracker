@@ -43,6 +43,7 @@ const EXPORT_SRC = `
   protectedCountFor, minChildrenFor, collectPriorityItems,
   resolve, validatePath, loadState, saveState, sortHomeGoals,
    STRINGS, SEED, LANG_KEY, STORAGE_KEY, QUOTES,
+  ensureWishMap, wishCardAt, doImportData,
   getState: () => state,
   setState: (v) => { state = v; },
   getPath: () => path,

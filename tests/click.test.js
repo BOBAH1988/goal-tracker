@@ -684,4 +684,82 @@ test('goals sort: same filter works on a subgoal page, not just the home screen'
   assert.deepEqual(cardNavOrder(t), ['1', '2', '0', '3'], 'desc must rank subgoals by completion, archived last');
 });
 
+// ===== Wish map («Карта желаний») — optional vision board under the balance wheel =====
+
+test('wish map: empty state offers the add button; Save without an image is refused', () => {
+  const t = bootDom();
+  assert.match(t.document.getElementById('app').innerHTML, /Карта желаний/, 'the board title must be on the home screen');
+  assert.ok(t.document.getElementById('btnWishAddEmpty'), 'empty board must show «+ Добавить желание»');
+  assert.ok(!t.document.querySelector('.wish-card'), 'a fresh board has no cards');
+  t.click('#btnWishAddEmpty');
+  assert.ok(t.document.getElementById('wishFile'), 'the add form must open with a file input');
+  // A caption typed before picking a file must survive the refused save attempt.
+  t.document.getElementById('wishCaptionInput').value = 'Дом у моря';
+  t.click('#btnWishSave');
+  assert.equal(t.app.getState().wishMap.length, 0, 'a card cannot be saved without an image');
+  const err = t.document.querySelector('.wish-form .auth-error');
+  assert.ok(err && /изображение/.test(err.textContent), 'the form must explain what is missing');
+  assert.equal(t.document.getElementById('wishCaptionInput').value, 'Дом у моря', 'typed caption survives the refusal');
+  t.click('#btnWishCancel');
+  assert.ok(!t.document.getElementById('wishFile'), 'cancel must close the form');
+  assert.ok(t.document.getElementById('btnWishAddEmpty'), 'empty state must come back after cancel');
+});
+
+test('wish map: card opens the lightbox, caption edits persist, delete asks first', () => {
+  const t = bootDom();
+  t.app.setState(Object.assign(t.app.getState(), {
+    wishMap: [{ src: 'data:image/jpeg;base64,AAA', caption: 'Море' }],
+  }));
+  t.window.render();
+  assert.ok(t.document.querySelector('.wish-card'), 'the seeded card must render');
+  // Tap the card → enlarged image; ✕ closes it.
+  t.click('[data-wish-open="0"]');
+  assert.ok(t.document.getElementById('wishLightbox'), 'tapping a card must enlarge the image');
+  t.click('#btnWishLightboxClose');
+  assert.ok(!t.document.getElementById('wishLightbox'), '✕ must close the lightbox');
+  // Pencil → caption dialog; saving writes through to state and localStorage.
+  t.click('[data-wish-edit="0"]');
+  assert.ok(t.document.getElementById('wishEditOverlay'), 'pencil must open the caption dialog');
+  t.document.getElementById('wishEditInput').value = 'Южное побережье';
+  t.click('#btnWishEditSave');
+  assert.equal(t.app.getState().wishMap[0].caption, 'Южное побережье', 'new caption must persist in state');
+  const raw = t.window.localStorage.getItem(t.app.STORAGE_KEY);
+  assert.ok(raw && raw.includes('Южное побережье'), 'caption must round-trip through localStorage');
+  // Trash → confirmation; declining keeps the card, confirming removes it.
+  t.window.confirm = () => false;
+  t.click('[data-wish-del="0"]');
+  assert.equal(t.app.getState().wishMap.length, 1, 'declined delete must keep the card');
+  t.window.confirm = () => true;
+  t.click('[data-wish-del="0"]');
+  assert.equal(t.app.getState().wishMap.length, 0, 'confirmed delete must remove the card');
+  assert.ok(t.document.getElementById('btnWishAddEmpty'), 'board falls back to the empty state');
+});
+
+test('wish map: cards never touch the wheel math and ride along in the backup import', async () => {
+  const t = bootDom();
+  const pctBefore = t.app.computePercent(t.app.getState());
+  t.app.setState(Object.assign(t.app.getState(), {
+    wishMap: [{ src: 'data:image/jpeg;base64,AAA', caption: 'Мечта' }],
+  }));
+  assert.equal(t.app.computePercent(t.app.getState()), pctBefore, 'wish cards must not affect any percent');
+  // Import a backup payload that carries a wish map — it must restore as-is.
+  t.window.alert = () => {};
+  t.window.confirm = () => true;
+  const payload = {
+    app: 'goal-tracker-backup',
+    version: 1,
+    state: { name: 'Главная', children: [], wishMap: [{ src: 'data:image/jpeg;base64,AAA', caption: 'Из бэкапа' }] },
+  };
+  const file = new t.window.File([JSON.stringify(payload)], 'backup.json', { type: 'application/json' });
+  t.app.doImportData(file);
+  // FileReader is async — wait for the import itself to land (max ~2s), keyed on the
+  // backup's distinctive caption so a pre-existing local card can't end the wait early.
+  for (let i = 0; i < 200 && t.app.getState().wishMap[0]?.caption !== 'Из бэкапа'; i++) {
+    await new Promise((r) => setTimeout(r, 10));
+  }
+  assert.equal(t.app.getState().wishMap.length, 1, 'imported backup must restore the wish map');
+  assert.equal(t.app.getState().wishMap[0].caption, 'Из бэкапа', 'restored caption must match');
+  assert.ok(t.document.querySelector('.wish-card'), 'restored card must render on the board');
+});
+
 

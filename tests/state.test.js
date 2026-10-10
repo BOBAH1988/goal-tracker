@@ -149,6 +149,25 @@ test('collectPriorityItems: skips archived subtrees', () => {
   assert.equal(items[0].node, open);
 });
 
+test('ensureWishMap: backfills a missing board and drops broken cards', () => {
+  const t = boot();
+  const st = { name: 'root', children: [] };
+  t.app.ensureWishMap(st);
+  assert.equal(st.wishMap.length, 0, 'a board-less state must be backfilled as []');
+  st.wishMap = [
+    { src: 'data:image/jpeg;base64,AA', caption: 'ok' },
+    null,
+    { caption: 'no src' },
+    42,
+    { src: '<script>alert(1)</script>', caption: 'not an image' },
+    { src: 'data:image/png;base64,BB' },
+  ];
+  t.app.ensureWishMap(st);
+  assert.equal(st.wishMap.length, 2, 'only cards with a data:image src survive the sanitize');
+  assert.equal(st.wishMap[0].caption, 'ok', 'valid caption kept');
+  assert.equal(st.wishMap[1].caption, '', 'missing caption defaults to empty string');
+});
+
 test('locales: ru and en carry the same key set', () => {
   const t = boot();
   const ru = Object.keys(t.app.STRINGS.ru).sort();
