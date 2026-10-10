@@ -481,6 +481,13 @@
    }
     .good-today-history-item:hover{background:rgba(0,0,0,.03);}
     .good-today-history-item.selected{background:rgba(91,140,255,.10); border-color:var(--accent);}
+    .good-today-history-item{display:flex; align-items:center; gap:10px;}
+    .good-today-history-item .good-today-entry-text{flex:1; min-width:0;}
+    .good-today-history-delete{
+      flex:none; background:none; border:none; color:var(--muted);
+      font-size:14px; line-height:1; cursor:pointer; padding:4px;
+    }
+    .good-today-history-delete:hover{color:var(--red);}
    .good-today-history-empty{color:var(--muted); font-size:13px; text-align:center; padding:14px;}
     /* «Хорошее сегодня» mood badge in the today block — progressive text based on done count.
        0 → «Начнём?» (red), 1 → «Хорошее начало» (dark yellow), 2 → «Осталось чуть-чуть» (lighter yellow),
@@ -899,7 +906,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.1.32';
+const APP_VERSION = '1.1.33';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -1121,6 +1128,9 @@ const STRINGS = {
     goodTodayHistorySave: 'Сохранить',
     goodTodayHistoryCancel: 'Назад к истории',
     goodTodayEntriesDeleteConfirm: 'Точка входа. Удалить запись навсегда?',
+    goodTodayDeleteConfirmText: 'Точно удалить запись?',
+    yes: 'Да',
+    no: 'Нет',
     goodTodayEntriesEditTitle: 'Редактирование записи',
     goodTodayWeekPauseTitle: 'Небольшая пауза',
     goodTodayWeekPauseQ1: 'Что я ценю в этот момент?',
@@ -1341,6 +1351,9 @@ const STRINGS = {
     goodTodayHistorySave: 'Save',
     goodTodayHistoryCancel: 'Back to history',
     goodTodayEntriesDeleteConfirm: 'This will remove the entry permanently. Delete?',
+    goodTodayDeleteConfirmText: 'Delete this entry?',
+    yes: 'Yes',
+    no: 'No',
     goodTodayEntriesEditTitle: 'Edit entry',
     goodTodayWeekPauseTitle: 'A Small Pause',
     goodTodayWeekPauseQ1: 'What am I grateful for right now?',
@@ -1609,6 +1622,7 @@ let goodTodayDraftText = '';            // text typed into the add form (survive
 let goodTodayHistoryEditId = null;      // id of the entry being edited inline (history view)
 let goodTodayHistoryDraftText = '';     // draft text for the history edit form (survives re-renders)
 let goodTodayFormOpen = false;          // add/edit form in the daily view is expanded (opens on '+')
+let goodTodayDeleteId = null;           // entry awaiting delete confirmation (modal open)
 let goodTodayCharError = '';            // overflow error for the add form (transient)
 let goodTodayWeekPauseOpen = false;     // weekly reflection form overlay is open
 let goodTodayWeekEditing = false;       // weekly reflection form is in edit mode (vs saved-view mode)
@@ -3241,6 +3255,7 @@ function goodTodayHistoryHTML(){
         html += `<div class="good-today-history-item ${isSelected ? 'selected' : ''}" data-goodtoday-history-edit="${e.id}">
           <div class="good-today-entry-date">${formatDateISO(e.date)}</div>
           <div class="good-today-entry-text">${esc(e.text || '')}</div>
+          <button type="button" class="good-today-history-delete" data-goodtoday-history-delete="${e.id}" data-tip="${t('goodTodayEntriesDelete')}" aria-label="${t('goodTodayEntriesDelete')}">✕</button>
         </div>`;
       });
       html += `      </div>
@@ -3507,6 +3522,17 @@ function statusPanelsHTML(){
           <button id="btnSyncConflictUseLocal" class="btn-danger">${t('syncConflictUseLocal')}</button>
         </div>
         <button type="button" id="btnSyncConflictExport" class="auth-link-center">${t('syncConflictExport')}</button>
+      </div>
+    </div>`;
+  }
+  if(goodTodayDeleteId){
+    html += `<div class="auth-modal-overlay" id="goodTodayDeleteOverlay">
+      <div class="auth-panel">
+        <h2 style="margin:0 0 4px; font-size:16px;">${t('goodTodayDeleteConfirmText')}</h2>
+        <div class="auth-btn-row">
+          <button id="btnGoodTodayDeleteYes">${t('yes')}</button>
+          <button id="btnGoodTodayDeleteNo">${t('no')}</button>
+        </div>
       </div>
     </div>`;
   }
@@ -4646,6 +4672,42 @@ function attachGoodTodayHandlers(){
       const ta = document.getElementById('goodTodayHistoryTextarea');
       if(ta && ta.setSelectionRange){ ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }
     });
+  });
+  // History rows: '✕' opens the delete confirmation (stopPropagation keeps the edit form closed).
+  document.querySelectorAll('[data-goodtoday-history-delete]').forEach(el=>{
+    el.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      goodTodayDeleteId = el.dataset.goodtodayHistoryDelete;
+      render();
+    });
+  });
+  // Delete confirmation: Yes = remove entry, No = back to history.
+  on('btnGoodTodayDeleteYes', 'click', ()=>{
+    const id = goodTodayDeleteId;
+    goodTodayDeleteId = null;
+    if(id){
+      state.goodTodayEntries = (state.goodTodayEntries || []).filter(en => en.id !== id);
+      // If the removed entry was open in the inline editor, close that too.
+      if(goodTodayHistoryEditId === id){
+        goodTodayHistoryEditId = null;
+        goodTodayHistoryDraftText = '';
+        goodTodayCharError = '';
+      }
+      if(goodTodayEditId === id){
+        goodTodayEditId = null;
+        goodTodayDraftText = '';
+        goodTodayFormOpen = false;
+      }
+      // Keep the page index valid (deleting the last entry on a later page could underflow).
+      const totalPages = Math.ceil((state.goodTodayEntries || []).length / 7);
+      if(goodTodayHistoryPage >= totalPages) goodTodayHistoryPage = Math.max(0, totalPages - 1);
+      saveState();
+    }
+    render();
+  });
+  on('btnGoodTodayDeleteNo', 'click', ()=>{
+    goodTodayDeleteId = null;
+    render();
   });
   // History inline edit: prev / next navigation.
   on('btnGoodTodayHistoryPrev', 'click', ()=>{

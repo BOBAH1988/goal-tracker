@@ -18,7 +18,7 @@ const PANEL_FLAGS = [
   'wishAddOpen', 'wishEditIdx', 'wishLightboxIdx', 'wishMapOpen', 'wishCropSrc',
   'goodTodayEntriesOpen', 'goodTodayHistoryOpen', 'goodTodayEditId',
   'goodTodayHistoryEditId', 'goodTodayHistoryPage', 'goodTodayFormOpen',
-  'goodTodayWeekPauseOpen', 'goodTodayWeekEditing',
+  'goodTodayDeleteId', 'goodTodayWeekPauseOpen', 'goodTodayWeekEditing',
 ];
 
 /* document.getElementById hands out a FRESH stub per call, so the HTML render() builds is
