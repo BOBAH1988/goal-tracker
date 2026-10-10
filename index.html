@@ -638,7 +638,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.1.2';
+const APP_VERSION = '1.1.3';
 /* ===== Seed data (transcribed from the Excel table) =====
    emptyGoals/emptySteps take the noun to use for auto-generated names, so items added later via
    the UI can be named in whichever language is active at the time (default: Russian for the
@@ -4462,8 +4462,30 @@ if(cloudEnabled){
 // PWA: register the service worker so the app can be installed and used offline.
 // Registration silently no-ops on file:// pages or browsers without support.
 if('serviceWorker' in navigator){
+  // Was this page already running under a service worker when it loaded? Captured synchronously
+  // at parse time, before any worker could take control. Used to tell a genuine UPDATE (a new
+  // worker replacing an old one) apart from the very FIRST install — we only auto-reload on the
+  // former, never on the latter, so a brand-new visitor doesn't get a pointless reload.
+  const hadControllerAtLoad = !!navigator.serviceWorker.controller;
+  let swUpdateReloaded = false;
+  navigator.serviceWorker.addEventListener('controllerchange', ()=>{
+    // A new service worker just took over (skipWaiting + clients.claim in sw.js). An already-open
+    // tab would otherwise keep executing the OLD cached JS until the user manually reloads, so the
+    // fresh code the cache-busting CACHE_NAME bump fetched never actually runs. Reload once to make
+    // the update take effect immediately. Guards: fire at most once per page (no reload loop), and
+    // only when there was already a controller (skip the first-ever activation).
+    if(swUpdateReloaded || !hadControllerAtLoad) return;
+    swUpdateReloaded = true;
+    window.location.reload();
+  });
   window.addEventListener('load', ()=>{
-    navigator.serviceWorker.register('./sw.js').catch(()=>{});
+    // updateViaCache:'none' forces the browser to fetch sw.js straight from the network whenever it
+    // checks for updates, bypassing the HTTP cache. Without it a cached sw.js can pin an old
+    // CACHE_NAME for up to 24h, so the cache-busting bump never reaches installed PWAs and they keep
+    // serving stale code. reg.update() additionally kicks an immediate check on every load.
+    navigator.serviceWorker.register('./sw.js', { updateViaCache:'none' })
+      .then(reg => { try{ reg.update(); }catch(e){} })
+      .catch(()=>{});
   });
 }
 // "Обновить приложение" in the menu — lets someone on an installed PWA pull the latest version
