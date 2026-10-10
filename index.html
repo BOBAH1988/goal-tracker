@@ -157,11 +157,11 @@
   .topbar .theme-option:hover{background:var(--card); border-color:var(--border);}
   .topbar .theme-option.active{border-color:var(--accent); box-shadow:0 0 0 1px var(--accent);}
   /* ===== Action buttons (edit/delete/move/relocate/archive) ===== */
-   #btnEdit, #btnDelete, #btnAddSubgoal, #btnDeleteChecklist, #btnMove, #btnMoveChecklist, #btnRelocate, #btnChecklistAdd, #btnFilter, .add-child-row #btnArchive, .add-goal-wrap #btnArchive, #btnGoodTodayHistory{
+   #btnEdit, #btnDelete, #btnAddSubgoal, #btnDeleteChecklist, #btnMove, #btnMoveChecklist, #btnRelocate, #btnChecklistAdd, #btnFilter, .add-child-row #btnArchive, .add-goal-wrap #btnArchive, #btnGoodTodayHistory, #btnGoodTodayHistoryPagePrev, #btnGoodTodayHistoryPageNext, #btnGoodTodayHistoryPagePrevBottom, #btnGoodTodayHistoryPageNextBottom{
     background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:8px;
     padding:6px 12px; font-size:12px; cursor:pointer; white-space:nowrap;
   }
-   #btnFilter:hover,#btnGoodTodayHistory:hover{color:var(--text); border-color:var(--accent);}
+   #btnFilter:hover,#btnGoodTodayHistory:hover,#btnGoodTodayHistoryPagePrev:hover,#btnGoodTodayHistoryPageNext:hover,#btnGoodTodayHistoryPagePrevBottom:hover,#btnGoodTodayHistoryPageNextBottom:hover{color:var(--text); border-color:var(--accent);}
   #btnEdit:hover{color:var(--text); border-color:var(--accent);}
   #btnEdit.active{background:var(--accent); color:#fff; border-color:var(--accent);}
   #btnDelete:hover{border-color:var(--red); color:var(--red);}
@@ -380,7 +380,13 @@
    .checklist-star{font-size:15px;}
    /* «Хорошее сегодня» journal module — styled like «Карта желаний» (same .section-title-row /
       .wheel-arrow / .icon-btn language), no card wrapper — content renders directly under the header. */
-   .good-today-subtitle{color:var(--muted); font-size:13px; margin:0 0 10px;}
+    .good-today-subtitle{color:var(--muted); font-size:13px; margin:0 0 10px;}
+    #btnGoodTodayCalendar.icon-btn{
+      background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:8px;
+      padding:4px; min-width:32px; font-size:14px; cursor:pointer;
+      display:inline-flex; align-items:center; justify-content:center;
+    }
+    #btnGoodTodayCalendar.icon-btn:hover{color:var(--text); border-color:var(--accent);}
    .good-today-textarea{
      width:100%; min-height:72px; resize:vertical;
      background:var(--card2); border:1px solid var(--border); border-radius:10px;
@@ -398,7 +404,19 @@
       font-size:14px; font-weight:600; border:1px solid var(--border);
       background:var(--card2); color:var(--text);
     }
-    .good-today-btn-row button.good-today-primary{background:var(--accent); border-color:var(--accent); color:#fff;}
+     .good-today-btn-row button.good-today-primary{background:var(--accent); border-color:var(--accent); color:#fff;}
+     .good-today-history-nav button{
+       flex:1; min-height:24px; padding:4px 12px; border-radius:10px; cursor:pointer;
+       font-size:13px; font-weight:600; border:1px solid var(--border);
+       background:var(--card2); color:var(--text);
+     }
+     .good-today-history-nav button.good-today-primary{background:var(--accent); border-color:var(--accent); color:#fff;}
+     .good-today-history-nav .icon-btn{
+       flex:none; width:36px; height:36px; min-width:36px; padding:6px;
+       border-radius:10px; border:1px solid var(--border); background:var(--card2); color:var(--muted);
+       cursor:pointer; font-size:13px; display:inline-flex; align-items:center; justify-content:center;
+     }
+     .good-today-history-nav .icon-btn:hover{color:var(--text); border-color:var(--accent);}
    .good-today-today-entries{
      margin-top:12px; border-top:1px solid var(--border); padding-top:12px;
    }
@@ -445,7 +463,8 @@
      border:1px solid var(--border); border-radius:8px; padding:8px 10px;
      background:var(--card2); cursor:pointer;
    }
-   .good-today-history-item:hover{background:rgba(0,0,0,.03);}
+    .good-today-history-item:hover{background:rgba(0,0,0,.03);}
+    .good-today-history-item.selected{background:rgba(91,140,255,.10); border-color:var(--accent);}
    .good-today-history-empty{color:var(--muted); font-size:13px; text-align:center; padding:14px;}
     /* «Хорошее сегодня» mood badge in the today block — progressive text based on done count.
        0 → «Начнём?» (red), 1 → «Хорошее начало» (dark yellow), 2 → «Осталось чуть-чуть» (lighter yellow),
@@ -786,7 +805,7 @@
   #btnAddChild:disabled:hover{color:var(--muted); border-color:var(--border);}
   /* Compact "+"/"−" icon style for Add/Delete, used instead of full text labels to save room on
      narrow (phone) screens. */
-   #btnAddGoal.icon-btn, #btnWishAdd.icon-btn, #btnAddChild.icon-btn, #btnDelete.icon-btn, #btnEdit.icon-btn, #btnAddSubgoal.icon-btn, #btnDeleteChecklist.icon-btn, #btnMove.icon-btn, #btnMoveChecklist.icon-btn, #btnRelocate.icon-btn, #btnChecklistAdd.icon-btn, #btnFilter.icon-btn, .add-child-row #btnArchive.icon-btn, .add-goal-wrap #btnArchive.icon-btn, #btnSearch.icon-btn, #btnGoodTodayHistory.icon-btn{
+   #btnAddGoal.icon-btn, #btnWishAdd.icon-btn, #btnAddChild.icon-btn, #btnDelete.icon-btn, #btnEdit.icon-btn, #btnAddSubgoal.icon-btn, #btnDeleteChecklist.icon-btn, #btnMove.icon-btn, #btnMoveChecklist.icon-btn, #btnRelocate.icon-btn, #btnChecklistAdd.icon-btn, #btnFilter.icon-btn, .add-child-row #btnArchive.icon-btn, .add-goal-wrap #btnArchive.icon-btn, #btnSearch.icon-btn, #btnGoodTodayHistory.icon-btn,    #btnAddGoal.icon-btn, #btnWishAdd.icon-btn, #btnAddChild.icon-btn, #btnDelete.icon-btn, #btnEdit.icon-btn, #btnAddSubgoal.icon-btn, #btnDeleteChecklist.icon-btn, #btnMove.icon-btn, #btnMoveChecklist.icon-btn, #btnRelocate.icon-btn, #btnChecklistAdd.icon-btn, #btnFilter.icon-btn, .add-child-row #btnArchive.icon-btn, .add-goal-wrap #btnArchive.icon-btn, #btnSearch.icon-btn, #btnGoodTodayHistory.icon-btn, #btnGoodTodayHistoryPagePrevBottom.icon-btn, #btnGoodTodayHistoryPageNextBottom.icon-btn{
     font-size:16px; font-weight:700; line-height:1; padding:5px 13px;
     min-width:32px; display:inline-flex; align-items:center; justify-content:center;
   }
@@ -859,7 +878,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.1.25';
+const APP_VERSION = '1.1.29';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -1068,9 +1087,17 @@ const STRINGS = {
     goodTodayEntriesDelete: 'Удалить',
     goodTodayEntriesCharCount: '{n} из 500 символов',
     goodTodayEntriesLastEntry: 'Последняя запись',
+    goodTodayEntriesToday: 'Сегодня',
     goodTodayEntriesAddMore: 'Ещё одна запись',
     goodTodayEntriesHistory: 'История',
     goodTodayEntriesHistoryEmpty: 'Записей пока нет',
+    goodTodayHistoryCalendar: 'Перейти к дате',
+    goodTodayHistoryPrev: '← Предыдущая',
+    goodTodayHistoryNext: 'Следующая →',
+    goodTodayHistoryPagePrev: 'Предыдущие',
+    goodTodayHistoryPageNext: 'Следующие',
+    goodTodayHistorySave: 'Сохранить',
+    goodTodayHistoryCancel: 'Назад к истории',
     goodTodayEntriesDeleteConfirm: 'Точка входа. Удалить запись навсегда?',
     goodTodayEntriesEditTitle: 'Редактирование записи',
     goodTodayWeekPauseTitle: 'Небольшая пауза',
@@ -1279,9 +1306,17 @@ const STRINGS = {
     goodTodayEntriesDelete: 'Delete',
     goodTodayEntriesCharCount: '{n} of 500 characters',
     goodTodayEntriesLastEntry: 'Last entry',
+    goodTodayEntriesToday: 'Today',
     goodTodayEntriesAddMore: 'Add another entry',
     goodTodayEntriesHistory: 'History',
     goodTodayEntriesHistoryEmpty: 'No entries yet',
+    goodTodayHistoryCalendar: 'Jump to date',
+    goodTodayHistoryPrev: '← Previous',
+    goodTodayHistoryNext: 'Next →',
+    goodTodayHistoryPagePrev: 'Previous',
+    goodTodayHistoryPageNext: 'Next',
+    goodTodayHistorySave: 'Save',
+    goodTodayHistoryCancel: 'Back to history',
     goodTodayEntriesDeleteConfirm: 'This will remove the entry permanently. Delete?',
     goodTodayEntriesEditTitle: 'Edit entry',
     goodTodayWeekPauseTitle: 'A Small Pause',
@@ -1545,8 +1580,11 @@ let wishLightboxIdx = null;       // index of the card enlarged in the lightbox
 // (reset on reload) exactly like the other panel flags above.
 let goodTodayEntriesOpen = state.goodTodayEntriesOpen !== false;
 let goodTodayHistoryOpen = false;       // history view (grouped by week) is open
-let goodTodayEditId = null;             // id of the entry being edited inline
+let goodTodayHistoryPage = 0;           // 0 = newest page of 7 entries; ++ for older
+let goodTodayEditId = null;             // id of the entry being edited inline (daily view)
 let goodTodayDraftText = '';            // text typed into the add form (survives re-renders)
+let goodTodayHistoryEditId = null;      // id of the entry being edited inline (history view)
+let goodTodayHistoryDraftText = '';     // draft text for the history edit form (survives re-renders)
 let goodTodayCharError = '';            // overflow error for the add form (transient)
 let goodTodayWeekPauseOpen = false;     // weekly reflection form overlay is open
 let goodTodayWeekEditing = false;       // weekly reflection form is in edit mode (vs saved-view mode)
@@ -2129,9 +2167,10 @@ function goodTodayLastEntry(){
   return all.length ? all[0] : null;
 }
 // History grouped by week: [{week:startISO, label:'…', entries:[...]}] newest first.
-function goodTodayHistoryGroups(){
+function goodTodayHistoryGroups(entriesArr){
+  const entries = entriesArr || goodTodayAllEntries();
   const groups = {};
-  goodTodayAllEntries().forEach(e => {
+  entries.forEach(e => {
     const w = weekStartISO(e.date);
     if(!groups[w]) groups[w] = [];
     groups[w].push(e);
@@ -3048,20 +3087,19 @@ function goodTodaySectionHTML(){
       <button id="btnGoodTodaySave" type="button" class="good-today-primary">${t('goodTodayEntriesSave')}</button>
       ${isEditing ? `<button id="btnGoodTodayCancel" type="button">${t('goodTodayEntriesCancel')}</button>` : ''}
     </div>`;
-    // Today's entries
+    // Today's entries — показываем только последнюю запись за сегодня
     if(todayEntries.length){
+      const lastToday = todayEntries[todayEntries.length - 1];
       html += `<div class="good-today-today-entries">
-        <div class="good-today-week-label">${t('goodTodayEntriesLastEntry')}</div>`;
-      todayEntries.forEach(e => {
-        html += `<div class="good-today-entry-item" data-goodtoday-edit="${e.id}">
-          <div class="good-today-entry-date">${formatDateISO(e.date)}</div>
-          <div class="good-today-entry-text">${esc(e.text || '')}</div>
+         <div class="good-today-week-label">${t('goodTodayEntriesToday')}</div>`;
+      html += `<div class="good-today-entry-item" data-goodtoday-edit="${lastToday.id}">
+          <div class="good-today-entry-date">${formatDateISO(lastToday.date)}</div>
+          <div class="good-today-entry-text">${esc(lastToday.text || '')}</div>
           <div class="good-today-entry-actions">
-            <button class="icon-btn" data-goodtoday-edit-btn="${e.id}" data-tip="${t('goodTodayEntriesEdit')}" aria-label="${t('goodTodayEntriesEdit')}"><i class="ti ti-pencil" aria-hidden="true"></i></button>
-            <button class="icon-btn" data-goodtoday-delete="${e.id}" data-tip="${t('goodTodayEntriesDelete')}" aria-label="${t('goodTodayEntriesDelete')}"><i class="ti ti-trash" aria-hidden="true"></i></button>
+            <button class="icon-btn" data-goodtoday-edit-btn="${lastToday.id}" data-tip="${t('goodTodayEntriesEdit')}" aria-label="${t('goodTodayEntriesEdit')}"><i class="ti ti-pencil" aria-hidden="true"></i></button>
+            <button class="icon-btn" data-goodtoday-delete="${lastToday.id}" data-tip="${t('goodTodayEntriesDelete')}" aria-label="${t('goodTodayEntriesDelete')}"><i class="ti ti-trash" aria-hidden="true"></i></button>
           </div>
         </div>`;
-      });
       html += `</div>`;
     }
     // Last entry preview (if different from today's)
@@ -3118,22 +3156,59 @@ function goodTodaySectionHTML(){
 }
 
 // History view: entries grouped by week (Mondays), newest first.
+// When goodTodayHistoryEditId is set, an inline edit form with prev/next navigation
+// appears at the top — stays in the history view so the user can flip between entries.
 function goodTodayHistoryHTML(){
-  const groups = goodTodayHistoryGroups();
-  let html = '';
+  const all = goodTodayAllEntries();
+  const PAGE_SIZE = 7;
+  const totalPages = Math.ceil(all.length / PAGE_SIZE);
+  const canPagePrev = goodTodayHistoryPage < totalPages - 1;  // can go to older entries
+  const canPageNext = goodTodayHistoryPage > 0;               // can go to newer entries (back toward page 0)
+  const startIdx = goodTodayHistoryPage * PAGE_SIZE;
+  const pageEntries = all.slice(startIdx, startIdx + PAGE_SIZE);
+   let html = '';
   html += `<div class="section-title-row" style="margin-top:24px;">
     <div class="section-title" id="goodTodayEntriesToggle">
-      <span class="wheel-arrow">◀</span>${t('goodTodayEntriesHistory')}
+      <span class="wheel-arrow">${goodTodayEntriesOpen ? '▾' : '▸'}</span>${t('goodTodayEntriesTitle')}
     </div>
   </div>`;
-  if(groups.length){
+  html += `<div class="good-today-subtitle" style="display:flex; align-items:center; gap:8px;">${t('goodTodayEntriesHistory')}
+    <button id="btnGoodTodayCalendar" type="button" class="icon-btn" data-tip="${t('goodTodayHistoryCalendar')}" aria-label="${t('goodTodayHistoryCalendar')}"><i class="ti ti-calendar" aria-hidden="true"></i></button>
+    <input id="goodTodayDatePicker" type="date" style="display:none; position:absolute;">
+  </div>`;
+  // Inline edit form (keeps the user in the history view)
+  if(goodTodayHistoryEditId !== null){
+    const editEntry = goodTodayEntryById(goodTodayHistoryEditId);
+    const idx = all.findIndex(e => e && e.id === goodTodayHistoryEditId);
+    const hasPrev = idx > 0;
+    const hasNext = idx < all.length - 1;
+    html += `<div class="good-today-history-edit" style="margin-bottom:16px;">
+      <div class="good-today-entry-date">${editEntry ? formatDateISO(editEntry.date) : ''}</div>`;
+    html += `<textarea id="goodTodayHistoryTextarea" class="good-today-textarea" maxlength="500"
+      placeholder="${t('goodTodayEntriesPlaceholder')}">${esc(goodTodayHistoryDraftText)}</textarea>`;
+    html += `<div class="good-today-char-count">${t('goodTodayEntriesCharCount').replace('{n}', String(goodTodayHistoryDraftText.length))}</div>`;
+    if(goodTodayCharError){
+      html += `<div class="auth-error">${esc(goodTodayCharError)}</div>`;
+    }
+    html += `<div class="good-today-history-nav" style="display:flex; gap:8px; margin-top:10px;">
+      ${hasPrev ? `<button class="icon-btn" id="btnGoodTodayHistoryPrev" data-tip="${t('goodTodayHistoryPrev')}" aria-label="${t('goodTodayHistoryPrev')}"><i class="ti ti-chevron-left" aria-hidden="true"></i></button>` : '<div style="width:32px;"></div>'}
+      <button id="btnGoodTodayHistorySave" type="button" class="good-today-primary">${t('goodTodayHistorySave')}</button>
+      <button id="btnGoodTodayHistoryCancel" type="button">${t('goodTodayHistoryCancel')}</button>
+      ${hasNext ? `<button class="icon-btn" id="btnGoodTodayHistoryNext" data-tip="${t('goodTodayHistoryNext')}" aria-label="${t('goodTodayHistoryNext')}"><i class="ti ti-chevron-right" aria-hidden="true"></i></button>` : '<div style="width:32px;"></div>'}
+    </div>
+    </div>`;
+  }
+  if(pageEntries.length){
+    // Group the current page of entries by week
+    const pageGroups = goodTodayHistoryGroups(pageEntries);
     html += `<div class="good-today-history-view">`;
-    groups.forEach(g => {
+    pageGroups.forEach(g => {
       html += `<div class="good-today-history-group">
         <div class="good-today-history-week">${g.label}</div>
         <div class="good-today-history-items">`;
       g.entries.forEach(e => {
-        html += `<div class="good-today-history-item" data-goodtoday-history-edit="${e.id}">
+        const isSelected = e.id === goodTodayHistoryEditId;
+        html += `<div class="good-today-history-item ${isSelected ? 'selected' : ''}" data-goodtoday-history-edit="${e.id}">
           <div class="good-today-entry-date">${formatDateISO(e.date)}</div>
           <div class="good-today-entry-text">${esc(e.text || '')}</div>
         </div>`;
@@ -3145,7 +3220,15 @@ function goodTodayHistoryHTML(){
   }else{
     html += `<div class="good-today-history-empty">${t('goodTodayEntriesHistoryEmpty')}</div>`;
   }
-   html += ` <div class="good-today-btn-row" style="margin-top:12px;"><button id="btnGoodTodayHistoryBack" type="button">${t('back')}</button></div>`;
+  // Page navigation (bottom)
+  if(totalPages > 1){
+    html += `<div class="good-today-history-pages" style="display:flex; gap:8px; justify-content:center; align-items:center; margin:12px 0;">
+      ${canPageNext ? `<button id="btnGoodTodayHistoryPageNextBottom" type="button" class="icon-btn"><i class="ti ti-chevron-right" aria-hidden="true"></i> ${t('goodTodayHistoryPageNext')}</button>` : '<div style="width:40px;"></div>'}
+      <span class="good-today-page-info">${goodTodayHistoryPage + 1} / ${totalPages}</span>
+      ${canPagePrev ? `<button id="btnGoodTodayHistoryPagePrevBottom" type="button" class="icon-btn"><i class="ti ti-chevron-left" aria-hidden="true"></i> ${t('goodTodayHistoryPagePrev')}</button>` : '<div style="width:40px;"></div>'}
+    </div>`;
+  }
+  html += ` <div class="good-today-btn-row" style="margin-top:12px;"><button id="btnGoodTodayHistoryBack" type="button">${t('back')}</button></div>`;
   return html;
 }
 
@@ -4357,9 +4440,43 @@ function attachGoodTodayHandlers(){
       goodTodayEditId = null;
       goodTodayDraftText = '';
       goodTodayWeekPauseOpen = false;
+      goodTodayHistoryPage = 0; // reset to newest page
       render();
     });
   }
+  // Calendar icon: jump to a specific date in history.
+  on('btnGoodTodayCalendar', 'click', ()=>{
+    const dp = document.getElementById('goodTodayDatePicker');
+    if(dp){
+      dp.style.display = 'block';
+      dp.focus();
+      dp.click();
+    }
+  });
+  // Date picker change: find page containing the selected date and jump there.
+  on('goodTodayDatePicker', 'change', ()=>{
+    const dp = document.getElementById('goodTodayDatePicker');
+    const dateStr = dp ? dp.value : '';
+    if(dp){ dp.style.display = 'none'; }
+    if(!dateStr) return;
+    const all = goodTodayAllEntries();
+    if(!all.length) return;
+    // Entries are sorted newest-first; find the page containing an entry for this date
+    let idx = all.findIndex(e => e && e.date === dateStr);
+    if(idx === -1){
+      // No exact match — find closest entry
+      idx = all.findIndex(e => e && e.date < dateStr);
+      if(idx === -1) idx = all.length - 1;
+    }
+    goodTodayHistoryPage = Math.floor(idx / 7);
+    // Enter edit mode for the found entry
+    if(all[idx]){
+      goodTodayHistoryEditId = all[idx].id;
+      goodTodayHistoryDraftText = all[idx].text || '';
+      goodTodayCharError = '';
+    }
+    render();
+  });
   // History back.
   const btnHistoryBack = document.getElementById('btnGoodTodayHistoryBack');
   if(btnHistoryBack){
@@ -4369,6 +4486,21 @@ function attachGoodTodayHandlers(){
       render();
     });
   }
+  // History page navigation (prev/next 7 entries) — bottom buttons only.
+  on('btnGoodTodayHistoryPagePrevBottom', 'click', ()=>{
+    const allLen = goodTodayAllEntries().length;
+    const totalPages = Math.ceil(allLen / 7);
+    if(goodTodayHistoryPage < totalPages - 1){
+      goodTodayHistoryPage++;
+      render();
+    }
+  });
+  on('btnGoodTodayHistoryPageNextBottom', 'click', ()=>{
+    if(goodTodayHistoryPage > 0){
+      goodTodayHistoryPage--;
+      render();
+    }
+  });
   // Weekly reflection toggle.
   on('goodTodayWeekToggle', 'click', ()=>{
     goodTodayWeekPauseOpen = !goodTodayWeekPauseOpen;
@@ -4459,21 +4591,73 @@ function attachGoodTodayHandlers(){
       render();
     });
   });
-  // Per-entry edit from history view.
+  // Per-entry edit from history view — stays in history, shows inline edit form.
   document.querySelectorAll('[data-goodtoday-history-edit]').forEach(el=>{
     el.addEventListener('click', (e)=>{
       e.stopPropagation();
       const id = el.dataset.goodtodayHistoryEdit;
       const entry = goodTodayEntryById(id);
       if(!entry) return;
-      goodTodayEditId = id;
-      goodTodayDraftText = entry.text || '';
+      goodTodayHistoryEditId = id;
+      goodTodayHistoryDraftText = entry.text || '';
       goodTodayCharError = '';
-      goodTodayHistoryOpen = false;
       render();
-      const ta = document.getElementById('goodTodayTextarea');
+      const ta = document.getElementById('goodTodayHistoryTextarea');
       if(ta && ta.setSelectionRange){ ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }
     });
+  });
+  // History inline edit: prev / next navigation.
+  on('btnGoodTodayHistoryPrev', 'click', ()=>{
+    const all = goodTodayAllEntries();
+    if(!goodTodayHistoryEditId) return;
+    let idx = all.findIndex(e => e && e.id === goodTodayHistoryEditId);
+    if(idx > 0){
+      const entry = all[idx - 1];
+      goodTodayHistoryEditId = entry.id;
+      goodTodayHistoryDraftText = entry.text || '';
+      goodTodayCharError = '';
+      render();
+      const ta = document.getElementById('goodTodayHistoryTextarea');
+      if(ta && ta.setSelectionRange){ ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }
+    }
+  });
+  on('btnGoodTodayHistoryNext', 'click', ()=>{
+    const all = goodTodayAllEntries();
+    if(!goodTodayHistoryEditId) return;
+    let idx = all.findIndex(e => e && e.id === goodTodayHistoryEditId);
+    if(idx < all.length - 1){
+      const entry = all[idx + 1];
+      goodTodayHistoryEditId = entry.id;
+      goodTodayHistoryDraftText = entry.text || '';
+      goodTodayCharError = '';
+      render();
+      const ta = document.getElementById('goodTodayHistoryTextarea');
+      if(ta && ta.setSelectionRange){ ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }
+    }
+  });
+  // History inline edit: save.
+  on('btnGoodTodayHistorySave', 'click', ()=>{
+    const ta = document.getElementById('goodTodayHistoryTextarea');
+    const text = (ta ? ta.value : '').trim();
+    if(!text){
+      goodTodayCharError = t('goodTodayEntriesPlaceholder');
+      render();
+      return;
+    }
+    goodTodayCharError = '';
+    const entry = goodTodayEntryById(goodTodayHistoryEditId);
+    if(entry){
+      entry.text = text;
+      saveState();
+    }
+    render();
+  });
+  // History inline edit: cancel / back to history.
+  on('btnGoodTodayHistoryCancel', 'click', ()=>{
+    goodTodayHistoryEditId = null;
+    goodTodayHistoryDraftText = '';
+    goodTodayCharError = '';
+    render();
   });
 }
 function attachHandlers(){

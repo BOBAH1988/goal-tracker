@@ -267,3 +267,228 @@ test('loadState: fresh seed has empty goodTodayEntries + open flag', () => {
   assert.equal(loaded.goodTodayEntriesOpen, true, 'fresh load must be open by default');
   assert.ok(Array.isArray(loaded.goodTodayWeekReflections), 'fresh load must have week reflections array');
 });
+
+test('render: history view inline edit form appears when goodTodayHistoryEditId is set', () => {
+  const t = boot();
+  const appStub = {
+    innerHTML: '', value: '', textContent: '', dataset: {}, style: {},
+    classList: { add() {}, remove() {}, contains: () => false },
+    addEventListener() {}, removeEventListener() {},
+    setAttribute() {}, getAttribute: () => null,
+    appendChild() {}, click() {}, focus() {},
+    querySelectorAll: () => [], querySelector: () => null,
+  };
+  const original = t.document.getElementById;
+  t.document.getElementById = (id) => (id === 'app' ? appStub : original(id));
+  t.app.setState({
+    name: 'root',
+    children: [{ name: 'Цель 1', done: false, children: [] }],
+    goodTodayEntries: [
+      { id: 'e1', date: '2026-10-05', text: 'Первая запись' },
+    ],
+  });
+  vm.runInContext('goodTodayEntriesOpen = true; goodTodayHistoryOpen = true; goodTodayHistoryEditId = "e1"; goodTodayHistoryDraftText = "Первая запись";', t.ctx);
+  assert.doesNotThrow(() => vm.runInContext('render()', t.ctx));
+  assert.ok(appStub.innerHTML.includes('id="goodTodayHistoryTextarea"'), 'inline textarea must appear in history view');
+  assert.ok(appStub.innerHTML.includes('id="btnGoodTodayHistorySave"'), 'save button must appear');
+  assert.ok(appStub.innerHTML.includes('id="btnGoodTodayHistoryCancel"'), 'cancel button must appear');
+  // e1 is the only entry → neither prev nor next should appear
+  assert.ok(!appStub.innerHTML.includes('id="btnGoodTodayHistoryPrev"'), 'prev nav must be absent when only one entry');
+  assert.ok(!appStub.innerHTML.includes('id="btnGoodTodayHistoryNext"'), 'next nav must be absent when only one entry');
+  assert.ok(appStub.innerHTML.includes('selected'), 'edited entry must be highlighted as selected');
+  t.document.getElementById = original;
+});
+
+test('render: history view shows next nav when editing newest entry', () => {
+  const t = boot();
+  const appStub = {
+    innerHTML: '', value: '', textContent: '', dataset: {}, style: {},
+    classList: { add() {}, remove() {}, contains: () => false },
+    addEventListener() {}, removeEventListener() {},
+    setAttribute() {}, getAttribute: () => null,
+    appendChild() {}, click() {}, focus() {},
+    querySelectorAll: () => [], querySelector: () => null,
+  };
+  const original = t.document.getElementById;
+  t.document.getElementById = (id) => (id === 'app' ? appStub : original(id));
+  t.app.setState({
+    name: 'root',
+    children: [],
+    goodTodayEntries: [
+      { id: 'e1', date: '2026-10-05', text: 'Первая запись' },
+      { id: 'e2', date: '2026-10-06', text: 'Вторая запись' },
+      { id: 'e3', date: '2026-10-07', text: 'Третья запись' },
+    ],
+  });
+  // Edit the newest entry (e3, index 0) → next present, prev absent
+  vm.runInContext('goodTodayEntriesOpen = true; goodTodayHistoryOpen = true; goodTodayHistoryEditId = "e3"; goodTodayHistoryDraftText = "Третья запись";', t.ctx);
+  assert.doesNotThrow(() => vm.runInContext('render()', t.ctx));
+  assert.ok(!appStub.innerHTML.includes('id="btnGoodTodayHistoryPrev"'), 'prev nav must be absent when editing newest entry');
+  assert.ok(appStub.innerHTML.includes('id="btnGoodTodayHistoryNext"'), 'next nav must appear when editing newest entry');
+  // The edited entry (e2) should be highlighted as selected
+  const selectedCount = (appStub.innerHTML.match(/selected/g) || []).length;
+  assert.ok(selectedCount >= 1, 'at least one history item must be selected');
+  t.document.getElementById = original;
+});
+
+test('goodTodayEntryById: finds entry by id across all entries', () => {
+  const t = boot();
+  t.app.setState({
+    name: 'root',
+    children: [],
+    goodTodayEntries: [
+      { id: 'e1', date: '2026-10-05', text: 'Первая' },
+      { id: 'e2', date: '2026-10-06', text: 'Вторая' },
+    ],
+  });
+  assert.doesNotThrow(() => {
+    const e1 = vm.runInContext('goodTodayEntryById("e1")', t.ctx);
+    const e2 = vm.runInContext('goodTodayEntryById("e2")', t.ctx);
+    assert.ok(e1 && e1.text === 'Первая', 'e1 must be found');
+    assert.ok(e2 && e2.text === 'Вторая', 'e2 must be found');
+    const missing = vm.runInContext('goodTodayEntryById("nope")', t.ctx);
+    assert.equal(missing, null, 'non-existent id must return null');
+  });
+});
+
+test('goodTodayHistoryHTML: inline edit form with prev/next renders correctly', () => {
+  const t = boot();
+  t.app.setState({
+    name: 'root',
+    children: [],
+    goodTodayEntries: [
+      { id: 'e1', date: '2026-10-05', text: 'A' },
+      { id: 'e2', date: '2026-10-06', text: 'B' },
+    ],
+  });
+  vm.runInContext('goodTodayHistoryEditId = "e1"; goodTodayHistoryDraftText = "A";', t.ctx);
+  const html = vm.runInContext('goodTodayHistoryHTML()', t.ctx);
+  // e1 sorted first (newest 2026-10-06? no — e1=10-05, e2=10-06, so e2 is newest)
+  // In sorted order: e2 (index 0) then e1 (index 1). Editing e1 → prev present, next absent.
+  assert.ok(html.includes('id="btnGoodTodayHistoryPrev"'), 'prev present when editing oldest entry');
+  assert.ok(!html.includes('id="btnGoodTodayHistoryNext"'), 'next absent when editing oldest entry');
+  assert.ok(html.includes('id="btnGoodTodayHistoryCancel"'), 'cancel button must render');
+});
+
+test('goodTodayHistoryHTML: last entry shows prev but no next', () => {
+  const t = boot();
+  t.app.setState({
+    name: 'root',
+    children: [],
+    goodTodayEntries: [
+      { id: 'e1', date: '2026-10-05', text: 'A' },
+      { id: 'e2', date: '2026-10-06', text: 'B' },
+    ],
+  });
+  vm.runInContext('goodTodayHistoryEditId = "e2"; goodTodayHistoryDraftText = "B";', t.ctx);
+  const html = vm.runInContext('goodTodayHistoryHTML()', t.ctx);
+  // e2 sorted first (newest 2026-10-06). Editing e2 → next present, prev absent.
+  assert.ok(!html.includes('id="btnGoodTodayHistoryPrev"'), 'prev absent when editing newest entry');
+  assert.ok(html.includes('id="btnGoodTodayHistoryNext"'), 'next present when editing newest entry');
+});
+
+test('goodTodayHistoryHTML: no inline edit form when goodTodayHistoryEditId is null', () => {
+  const t = boot();
+  t.app.setState({
+    name: 'root',
+    children: [],
+    goodTodayEntries: [
+      { id: 'e1', date: '2026-10-05', text: 'A' },
+    ],
+  });
+  const html = vm.runInContext('goodTodayHistoryHTML()', t.ctx);
+  assert.ok(!html.includes('id="goodTodayHistoryTextarea"'), 'textarea must not render without edit id');
+  assert.ok(!html.includes('id="btnGoodTodayHistorySave"'), 'save button must not render without edit id');
+  assert.ok(html.includes('data-goodtoday-history-edit="e1"'), 'history entries still listed');
+});
+
+test('STRUNAS goodTodayHistoryHTML: no crash with no entries', () => {
+  const t = boot();
+  t.app.setState({
+    name: 'root',
+    children: [],
+    goodTodayEntries: [],
+  });
+  assert.doesNotThrow(() => {
+    vm.runInContext('goodTodayHistoryEditId = null; goodTodayHistoryDraftText = "";', t.ctx);
+    const html = vm.runInContext('goodTodayHistoryHTML()', t.ctx);
+    assert.ok(html.includes('История'), 'history title present');
+  });
+});
+
+test('goodTodayHistoryHTML: shows 7 entries per page with pagination nav', () => {
+  const t = boot();
+  const entries = [];
+  for(let i = 1; i <= 10; i++){
+    entries.push({ id: `e${i}`, date: `2026-10-${String(i).padStart(2,'0')}`, text: `Запись ${i}` });
+  }
+  t.app.setState({
+    name: 'root',
+    children: [],
+    goodTodayEntries: entries,
+  });
+  // Page 0: newest 7 (e10..e4)
+  vm.runInContext('goodTodayHistoryPage = 0;', t.ctx);
+  const html0 = vm.runInContext('goodTodayHistoryHTML()', t.ctx);
+  assert.ok(html0.includes('id="btnGoodTodayHistoryPagePrevBottom"'), 'prev page nav on page 0');
+  assert.ok(!html0.includes('id="btnGoodTodayHistoryPageNextBottom"'), 'next page nav absent on page 0');
+  // Count how many entry IDs appear in page 0 (should be 7)
+  const page0Ids = [...html0.matchAll(/data-goodtoday-history-edit="([^"]+)"/g)].map(m => m[1]);
+  assert.equal(page0Ids.length, 7, 'page 0 shows exactly 7 entries');
+  assert.ok(page0Ids.includes('e10'), 'e10 (newest) on page 0');
+  assert.ok(!page0Ids.includes('e1'), 'e1 not on page 0');
+});
+
+test('goodTodayHistoryHTML: page 1 shows entries 8-10 with correct nav', () => {
+  const t = boot();
+  const entries = [];
+  for(let i = 1; i <= 10; i++){
+    entries.push({ id: `e${i}`, date: `2026-10-${String(i).padStart(2,'0')}`, text: `Запись ${i}` });
+  }
+  t.app.setState({
+    name: 'root',
+    children: [],
+    goodTodayEntries: entries,
+  });
+  // Page 1: older entries (e3..e1)
+  vm.runInContext('goodTodayHistoryPage = 1;', t.ctx);
+  const html1 = vm.runInContext('goodTodayHistoryHTML()', t.ctx);
+  assert.ok(!html1.includes('id="btnGoodTodayHistoryPagePrevBottom"'), 'prev page nav absent on page 1 (no older entries)');
+  assert.ok(html1.includes('id="btnGoodTodayHistoryPageNextBottom"'), 'next page nav (back to newer) on page 1');
+  const page1Ids = [...html1.matchAll(/data-goodtoday-history-edit="([^"]+)"/g)].map(m => m[1]);
+  assert.equal(page1Ids.length, 3, 'page 1 shows remaining 3 entries');
+  assert.ok(page1Ids.includes('e1'), 'e1 (oldest) on page 1');
+  assert.ok(!page1Ids.includes('e10'), 'e10 not on page 1');
+});
+
+test('goodTodayHistoryGroups: accepts optional entries array', () => {
+  const t = boot();
+  t.app.setState({
+    name: 'root',
+    children: [],
+    goodTodayEntries: [
+      { id: 'e1', date: '2026-10-05', text: 'A' },
+      { id: 'e2', date: '2026-10-09', text: 'B' },
+    ],
+  });
+  assert.doesNotThrow(() => {
+    const allGroups = vm.runInContext('goodTodayHistoryGroups()', t.ctx);
+    assert.ok(allGroups.length >= 1, 'groups without arg returns all entries');
+    const paged = vm.runInContext('goodTodayHistoryGroups(goodTodayAllEntries().slice(0,1))', t.ctx);
+    assert.equal(paged[0].entries.length, 1, 'paged groups only include provided entries');
+  });
+});
+
+test('goodTodayHistoryHTML: page nav absent with <=7 entries', () => {
+  const t = boot();
+  t.app.setState({
+    name: 'root',
+    children: [],
+    goodTodayEntries: [
+      { id: 'e1', date: '2026-10-05', text: 'A' },
+      { id: 'e2', date: '2026-10-06', text: 'B' },
+    ],
+  });
+  const html = vm.runInContext('goodTodayHistoryHTML()', t.ctx);
+  assert.ok(!html.includes('id="btnGoodTodayHistoryPagePrevBottom"'), 'no page nav when <=7 entries');
+});
