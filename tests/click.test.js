@@ -1093,3 +1093,33 @@ test('wish map: board survives a reload by rebuilding pixels from the local cach
   assert.ok(t.document.querySelector('.wish-img'), 'the reloaded board shows the image');
   assert.ok(!t.document.querySelector('.wish-img-pending'), 'no pending placeholder after a reload');
 });
+
+test('top menu: shows the build version and a manual update check', () => {
+  const t = bootDom();
+  t.click('#btnTopMenu');
+  const html = t.document.getElementById('app').innerHTML;
+  assert.ok(t.document.getElementById('btnCheckUpdateMenuItem'), 'the menu offers an update check');
+  assert.match(html, /v\d+\.\d+\.\d+/, 'the running build version is visible in the menu');
+  // Clicking it must not explode when there is no service worker (jsdom has none).
+  t.click('#btnCheckUpdateMenuItem');
+  assert.ok(!t.document.getElementById('btnCheckUpdateMenuItem'), 'the menu closes after the click');
+});
+
+test('update modal: confirming applies the waiting worker', async () => {
+  const t = bootDom();
+  // Drive it through the real path: a registration with an ACTIVE worker plus a WAITING one
+  // is, by definition, an update — checkForAppUpdate() must open the modal on its own.
+  const messages = [];
+  const reg = {
+    active: {},
+    waiting: { postMessage: (m) => messages.push(m) },
+    update: () => Promise.resolve(),
+  };
+  t.app.setSwRegistration(reg);
+  await t.app.checkForAppUpdate(true);
+  t.window.render();
+  assert.ok(t.document.getElementById('updateOverlay'), 'the update modal renders');
+  t.click('#btnUpdateApply');
+  assert.equal(messages.length, 1, 'confirming posts SKIP_WAITING once');
+  assert.equal(messages[0].type, 'SKIP_WAITING', 'the message asks the worker to activate');
+});

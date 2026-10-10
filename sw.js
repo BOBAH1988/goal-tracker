@@ -4,7 +4,7 @@
 //
 // Версия кэша = версия приложения (см. APP_VERSION в index.html): каждый бамп версии
 // гарантированно сносит старый кэш у всех, кто уже установил приложение, и тянет свежие файлы.
-const CACHE_NAME = 'goal-tracker-v1.1.49';
+const CACHE_NAME = 'goal-tracker-v1.1.50';
 const ASSETS = [
   './',
   './index.html',
@@ -56,11 +56,25 @@ async function isExpectedPayload(url, response) {
   }
 }
 
+// Кэш-ключ навигации: запрос приходит с cache-busting «?_sw=<ts>» после применения обновления
+// (см. controllerchange в index.html). Если писать ответ под таким ключом, каждый апдейт растил
+// бы кэш новым дублем оболочки. Приводим любой такой URL к каноническому './index.html'.
+function navCacheKey(request) {
+  try {
+    const url = new URL(request.url);
+    // Корень и любой html-запрос пишутся под './index.html' — единственный ключ оболочки.
+    if (url.pathname === '/' || url.pathname.endsWith('/') || url.pathname.endsWith('.html')) {
+      return './index.html';
+    }
+  } catch (e) { /* относительный URL — отдаём как есть ниже */ }
+  return request;
+}
+
 // Кэширует HTML-оболочку, но только если ответ прошёл валидацию маркером. true при успехе.
 async function cacheIfAppShell(request, cache, response) {
   try {
     if (!(await isExpectedPayload(request.url, response))) return false;
-    await cache.put(request, response);
+    await cache.put(navCacheKey(request), response);
     return true;
   } catch (e) {
     return false;
@@ -135,7 +149,10 @@ self.addEventListener('fetch', (event) => {
     // ответ; страница-заглушка оператора отсекается проверкой маркера и в кэш не попадает.
     event.respondWith((async () => {
       const cache = await caches.open(CACHE_NAME);
-      const cached = (await cache.match(event.request)) ||
+      // Канонический ключ первым: запрос после применения обновления приходит с «?_sw=<ts>» и
+      // под своим ключом в кэше не нашёлся бы. './' оставлен как второй вариант — ранние версии
+      // воркера писали оболочку именно под ним.
+      const cached = (await cache.match(navCacheKey(event.request))) ||
                      (await cache.match('./index.html')) ||
                      (await cache.match('./'));
       if (cached) {

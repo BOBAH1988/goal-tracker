@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Только важное — твой путь к счастливой жизни</title>
 <meta name="description" content="Только важное — твой путь к счастливой жизни: разбивайте задачи на подцели и двигайтесь к результату шаг за шагом — бесплатно и просто, без дедлайнов и сложных методик.">
 <meta name="keywords" content="только важное, колесо баланса, трекер целей, достижение целей, постановка целей, колесо жизненного баланса, PWA приложение">
@@ -98,11 +98,21 @@
   html[data-theme="light"]{ background:#f5f7fb; }
   html[data-theme="pink"]{ background:#fff0f5; }
   /* ===== Page shell ===== */
-  body{
-    margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-    background:linear-gradient(160deg,#0b0e17,#141b2c 60%,#0f1420); color:var(--text); min-height:100vh;
-    overscroll-behavior:none; overflow-x:hidden;
-  }
+   body{
+     margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+     background:linear-gradient(160deg,#0b0e17,#141b2c 60%,#0f1420); color:var(--text); min-height:100vh;
+     overscroll-behavior:none; overflow-x:hidden;
+     /* viewport-fit=cover lets the page use the full screen in an installed PWA, but then the
+        notch / home-indicator area overlaps the content. These insets reserve it, so the header
+        and the bottom of the list are never clipped or half-hidden ("шапка съезжает"). */
+     padding-left:env(safe-area-inset-left);
+     padding-right:env(safe-area-inset-right);
+   }
+   /* Top/bottom insets only matter where the system UI actually overlaps (a standalone PWA);
+      in a plain browser tab env() resolves to 0 and the page is unchanged. */
+   @media (display-mode: standalone){
+     body{ padding-top:env(safe-area-inset-top); padding-bottom:env(safe-area-inset-bottom); }
+   }
   html[data-theme="light"] body{ background:linear-gradient(160deg,#f5f7fb,#eef1f7 60%,#f5f7fb); }
   html[data-theme="pink"] body{ background:linear-gradient(160deg,#fff0f5,#ffe4ef 60%,#fff5f9); }
   #app{max-width:920px; margin:0 auto; padding:28px 20px 80px;}
@@ -149,6 +159,12 @@
     cursor:pointer; text-align:left; white-space:normal; word-break:break-word;
   }
    .topbar .menu-item:hover{background:var(--card);}
+  /* Version shown in the top menu: the quickest way to tell an installed PWA's build from the
+     one the main site is serving ("PWA версия отличается от основной"). */
+  .menu-version{
+    color:var(--muted); font-size:11px; text-align:right;
+    padding:2px 8px 0; margin:0;
+  }
   /* Same horizontal padding (8px) as .menu-item above, so the flag/theme rows line up flush with
      the text items instead of sitting slightly indented relative to them. */
   .menu-lang-row{display:flex; gap:4px; justify-content:flex-start; padding:8px 8px 0; margin-top:4px; border-top:1px solid var(--border);}
@@ -949,7 +965,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.1.49';
+const APP_VERSION = '1.1.50';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -1115,6 +1131,9 @@ const STRINGS = {
     appSubtitle: 'Твой путь к счастливой жизни.',
     updateReadyTitle: 'Доступно обновление',
     updateReadyText: 'Загружена новая версия приложения. Обновить сейчас?',
+    updateCheck: 'Проверить обновление',
+    updateCurrentVersion: 'Текущая версия',
+    updateUpToDate: 'Обновлений нет',
     updateReadyApply: 'Обновить',
     home: 'Главная',
     back: 'Назад',
@@ -1351,6 +1370,9 @@ const STRINGS = {
     appSubtitle: 'Your path to a happy life.',
     updateReadyTitle: 'Update available',
     updateReadyText: 'A new version of the app has been downloaded. Update now?',
+    updateCheck: 'Check for update',
+    updateCurrentVersion: 'Current version',
+    updateUpToDate: 'No updates',
     updateReadyApply: 'Update',
     home: 'Home',
     back: 'Back',
@@ -1709,12 +1731,11 @@ let searchPanelOpen = false;
 let checklistEditIdx = null;
 let installPanelOpen = false;
 let deferredInstallPrompt = null;
-let aboutPanelOpen = false;
-// "Update available" dialog: open while a freshly downloaded service worker waits for consent.
-let updatePanelOpen = false;
-// The waiting worker to activate (SKIP_WAITING) once the user confirms the update.
-let pendingUpdateWorker = null;
-let instructionsPanelOpen = false;
+ let aboutPanelOpen = false;
+ // "Update available" dialog: open while a freshly downloaded service worker waits for consent.
+ // (The pending worker itself lives next to the service-worker plumbing below.)
+ let updatePanelOpen = false;
+ let instructionsPanelOpen = false;
 let checklistDeletePanelOpen = false;
 // Timers for the temporary "Максимум 10 целей" toasts (cleared/reset so rapid repeat clicks
 // don't cut the message short or leave two competing hide-timers running).
@@ -3175,6 +3196,16 @@ function render(){
   document.documentElement.lang = lang;
   document.documentElement.setAttribute('data-theme', theme);
   document.title = t('appTitle');
+  // The status/navigation bar colour must follow the active theme. A hard-coded dark
+  // theme-color left Android's system bars black in the light and pink themes, which read as a
+  // mismatch between the app chrome and the page ("оформление плывёт") — especially on an
+  // installed PWA where the system bars are always visible. Purely cosmetic: never let a
+  // missing/odd implementation break the render.
+  try{
+    const themeColorMeta = document.querySelector('meta[name="theme-color"]');
+    const cssBg = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim();
+    if(themeColorMeta && cssBg) themeColorMeta.setAttribute('content', cssBg);
+  }catch(e){}
 
   let html = topbarHTML();
 
@@ -3977,6 +4008,7 @@ function systemPanelsHTML(){
         <button class="auth-close" id="btnUpdateClose" aria-label="close" title="${t('done')}">✕</button>
         <h2 style="margin:0 0 4px; font-size:16px;">${esc(t('updateReadyTitle'))}</h2>
         <p style="margin:0 0 12px; font-size:14px; color:var(--muted);">${esc(t('updateReadyText'))}</p>
+        <p style="margin:0 0 12px; font-size:12px; color:var(--muted);">${esc(t('updateCurrentVersion'))}: v${APP_VERSION}</p>
         <div class="auth-btn-row">
           <button id="btnUpdateApply">${t('updateReadyApply')}</button>
         </div>
@@ -4036,6 +4068,8 @@ function topbarHTML(){
         <button id="btnExportData" class="menu-item">${t('exportData')}</button>
         <button id="btnImportData" class="menu-item">${t('importData')}</button>
         <input type="file" id="importFileInput" accept="application/json,.json" style="display:none">` : ''}
+        <button id="btnCheckUpdateMenuItem" class="menu-item">${t('updateCheck')}</button>
+        <div class="menu-version">v${APP_VERSION}</div>
         <button id="btnAboutMenuItem" class="menu-item">${t('aboutTitle')}</button>
         <button id="btnInstructionsMenuItem" class="menu-item">${t('instructionsTitle')}</button>
         ${!isStandalonePwa() ? `<button id="btnInstallAppMenuItem" class="menu-item">${t('installAppTitle')}</button>` : ''}
@@ -6496,6 +6530,17 @@ function attachTopMenuHandlers(){
       render();
     });
   }
+  // Manual update check from the top menu: the guaranteed path when the automatic prompt was
+  // missed (e.g. the PWA was installed before this fix and never got offered an update).
+  const btnCheckUpdate = document.getElementById('btnCheckUpdateMenuItem');
+  if(btnCheckUpdate){
+    btnCheckUpdate.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      topMenuOpen = false;
+      render();
+      checkForAppUpdate();
+    });
+  }
   const btnInstructionsMenuItem = document.getElementById('btnInstructionsMenuItem');
   if(btnInstructionsMenuItem){
     btnInstructionsMenuItem.addEventListener('click', (e)=>{
@@ -6751,23 +6796,84 @@ if(cloudEnabled){
 }
 // PWA: register the service worker so the app can be installed and used offline.
 // Registration silently no-ops on file:// pages or browsers without support.
+// ===== Service worker plumbing (update detection + prompt) =====
+// Kept at top level (not inside the 'serviceWorker' in navigator block below) so the top-menu
+// handler and tests can always reach them — in a browser without SW support they simply no-op.
+let swRegistration = null;             // the active ServiceWorkerRegistration, once known
+let swUpdateReloaded = false;          // one cache-busting reload per page, never a loop
+let pendingUpdateWorker = null;        // the waiting worker SKIP_WAITING is sent to
+const swHasPreviousWorker = (reg) => !!reg && (!!reg.active || !!reg.waiting);
+let swNoteEl = null;
+let swNoteTimer = null;
+// Manual/auto update check. Network reality decides: offline (or a carrier whitelist that makes
+// the check fail) leaves the SW serving its cache — the offline-first behaviour this app wants.
+// `silent` skips the "no updates" note for the background checks (resume from background, online).
+function checkForAppUpdate(silent){
+  const reg = swRegistration;
+  if(!reg) return Promise.resolve(false);
+  if(navigator.onLine === false){ if(!silent) swUpToDateNote(); return Promise.resolve(false); }
+  return reg.update()
+    .then(()=>{
+      if(reg.waiting && swHasPreviousWorker(reg)){
+        pendingUpdateWorker = reg.waiting;
+        offerAppUpdate();
+        return true;
+      }
+      if(!silent) swUpToDateNote();
+      return false;
+    })
+    .catch(()=>{ if(!silent) swUpToDateNote(); return false; });
+}
+// Transient note ("Обновлений нет · vX"), built outside #app so a re-render cannot drop it.
+function swUpToDateNote(){
+  try{
+    if(!swNoteEl){
+      swNoteEl = document.createElement('div');
+      swNoteEl.style.cssText = 'position:fixed;left:50%;bottom:24px;transform:translateX(-50%);' +
+        'background:var(--card2,#20293d);color:var(--text,#fff);border:1px solid var(--border,#2a3348);' +
+        'border-radius:10px;padding:8px 14px;font-size:13px;z-index:2000;box-shadow:0 6px 18px rgba(0,0,0,.3);';
+      document.body.appendChild(swNoteEl);
+    }
+    swNoteEl.textContent = t('updateUpToDate') + ' · v' + APP_VERSION;
+    swNoteEl.style.display = 'block';
+    if(swNoteTimer) clearTimeout(swNoteTimer);
+    swNoteTimer = setTimeout(()=>{ if(swNoteEl) swNoteEl.style.display = 'none'; }, 2200);
+  }catch(e){}
+}
 if('serviceWorker' in navigator){
-  // Was this page already running under a service worker when it loaded? Captured synchronously
-  // at parse time, before any worker could take control. Used to tell a genuine UPDATE (a new
-  // worker replacing an old one) apart from the very FIRST install — we only auto-reload on the
-  // former, never on the latter, so a brand-new visitor doesn't get a pointless reload.
-  const hadControllerAtLoad = !!navigator.serviceWorker.controller;
-  let swUpdateReloaded = false;
+  // BUGFIX (v1.1.50): the update prompt used to be gated on navigator.serviceWorker.controller
+  // captured at PARSE time. A standalone PWA launched from the home screen on Android/Chrome
+  // frequently has NO controller yet when the page parses (the client is still being claimed), so
+  // an installed app could NEVER be prompted to update — it silently stayed on the old cache
+  // while the main-site tab updated. That is exactly the "PWA версия отличается от основной"
+  // report. Whether an update exists is now read from the registration itself (reg.active /
+  // reg.waiting), which is true regardless of the launch path.
   navigator.serviceWorker.addEventListener('controllerchange', ()=>{
     // A new service worker just took over (skipWaiting + clients.claim in sw.js). An already-open
     // tab would otherwise keep executing the OLD cached JS until the user manually reloads, so the
     // fresh code the cache-busting CACHE_NAME bump fetched never actually runs. Reload once to make
     // the update take effect immediately. Guards: fire at most once per page (no reload loop), and
-    // only when there was already a controller (skip the first-ever activation).
-    if(swUpdateReloaded || !hadControllerAtLoad) return;
+    // only when this page was already controlled (skip the very first activation).
+    if(swUpdateReloaded || !navigator.serviceWorker.controller) return;
     swUpdateReloaded = true;
-    window.location.reload();
+    // Cache-busting reload: going through the SW with a fresh query guarantees we land on the
+    // shell the new worker just cached, never on a stale entry an old cache could still answer.
+    // The SW's navigation handler falls back to './index.html' for any key it has not seen, so a
+    // query it has never cached resolves to the freshly written shell.
+    const url = new URL(window.location.href);
+    url.searchParams.delete('_sw');
+    url.searchParams.set('_sw', String(Date.now()));
+    window.location.replace(url.toString());
   });
+  // Return to the foreground after the app sat in the background (minimised PWA, switched tab): a
+  // release published meanwhile is picked up here instead of waiting for the next cold start.
+  document.addEventListener('visibilitychange', ()=>{
+    if(document.visibilityState === 'visible') checkForAppUpdate(true);
+  });
+  window.addEventListener('online', ()=>checkForAppUpdate(true));
+  navigator.serviceWorker.getRegistration && navigator.serviceWorker.getRegistration()
+    .then(reg => { if(reg) swRegistration = reg; })
+    .catch(()=>{});
   window.addEventListener('load', ()=>{
     // updateViaCache:'none' forces the browser to fetch sw.js straight from the network whenever it
     // checks for updates, bypassing the HTTP cache. Without it a cached sw.js can pin an old
@@ -6775,6 +6881,7 @@ if('serviceWorker' in navigator){
     // serving stale code. reg.update() additionally kicks an immediate check on every load.
     navigator.serviceWorker.register('./sw.js', { updateViaCache:'none' })
       .then(reg => {
+        swRegistration = reg;
         try{ reg.update(); }catch(e){}
         // A worker sitting in "waiting" is a fully downloaded update awaiting consent — OFFER it
         // in a modal instead of activating silently (the old auto-SKIP_WAITING kicked the reload
@@ -6782,18 +6889,18 @@ if('serviceWorker' in navigator){
         // they decide when the reload happens; declining just leaves the worker waiting.
         try{
           const offer = (worker) => {
+            if(!worker) return;
             pendingUpdateWorker = worker;
             offerAppUpdate();
           };
-          if(reg.waiting && hadControllerAtLoad) offer(reg.waiting);
+          // A waiting worker at load time is an update we never got to apply.
+          if(reg.waiting && swHasPreviousWorker(reg)) offer(reg.waiting);
           reg.addEventListener('updatefound', ()=>{
             const nw = reg.installing;
             if(nw) nw.addEventListener('statechange', ()=>{
-              // hadControllerAtLoad guards the very first install: a brand-new visitor must not be
-              // asked to "update" right after the first worker registers.
-              if(nw.state === 'waiting' && hadControllerAtLoad && navigator.serviceWorker.controller){
-                offer(nw);
-              }
+              // updatefound only fires when a worker is ALREADY running, so reaching "waiting" here
+              // is by definition an update, not a first install.
+              if(nw.state === 'waiting') offer(nw);
             });
           });
         }catch(e){}

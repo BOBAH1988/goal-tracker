@@ -58,6 +58,9 @@ const EXPORT_SRC = `
   // from a test would create an unrelated property. This setter lets tests drive the add-form
   // save path (draft image + caption + the personal-photo box) through the real handler.
   setWishDraft: (src, cap, isMe) => { wishDraftSrc = src; wishCaptionDraft = cap || ''; wishIsUserPhotoDraft = !!isMe; },
+  // service-worker update plumbing (swRegistration is a lexical let, same reason as above)
+  setSwRegistration: (r) => { swRegistration = r; },
+  checkForAppUpdate,
   getPath: () => path,
   setPath: (v) => { path = v; },
   offerAppUpdate,
