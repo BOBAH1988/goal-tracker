@@ -73,16 +73,19 @@
   :root{
     --bg:#0f1420; --card:#1a2233; --card2:#20293d; --text:#eef2f8; --muted:#8a93a6;
     --green:#3ecf8e; --yellow:#f2b84b; --red:#e5645a; --accent:#5b8cff; --border:#2a3348; --track:#0c1120;
+    color-scheme: dark;
   }
   /* Light theme — clean, bright, high-contrast on white. */
   :root[data-theme="light"]{
     --bg:#f5f7fb; --card:#ffffff; --card2:#eef1f7; --text:#1a2233; --muted:#5c6577;
     --green:#2fa876; --yellow:#c98a1f; --red:#d1483f; --accent:#3b6fe0; --border:#dbe1ea; --track:#e4e9f2;
+    color-scheme: light;
   }
   /* Pink theme — soft pastel pink palette. */
   :root[data-theme="pink"]{
     --bg:#fff0f5; --card:#ffffff; --card2:#ffe4ef; --text:#5a2340; --muted:#a1657f;
     --green:#3ecf9e; --yellow:#e0a23f; --red:#e0567e; --accent:#ff6fa5; --border:#f6c9dd; --track:#ffe0ec;
+    color-scheme: light;
   }
   *{box-sizing:border-box;}
   html{
@@ -387,6 +390,14 @@
       display:inline-flex; align-items:center; justify-content:center;
     }
     #btnGoodTodayCalendar.icon-btn:hover{color:var(--text); border-color:var(--accent);}
+    /* Native date picker (jump-to-date in history) — themed, not browser-white. */
+    #goodTodayDatePicker{
+      position:absolute; z-index:60; top:0; left:0;
+      background:var(--card2); color:var(--text);
+      border:1px solid var(--border); border-radius:10px;
+      padding:8px 10px; font-size:14px; font-family:inherit;
+      color-scheme:inherit;
+    }
    .good-today-textarea{
      width:100%; min-height:72px; resize:vertical;
      background:var(--card2); border:1px solid var(--border); border-radius:10px;
@@ -878,7 +889,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.1.29';
+const APP_VERSION = '1.1.30';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
