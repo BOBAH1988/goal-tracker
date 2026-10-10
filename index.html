@@ -8,17 +8,27 @@
 <meta name="keywords" content="колесо баланса, трекер целей, достижение целей, постановка целей, колесо жизненного баланса, PWA приложение">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://bobah1988.github.io/goal-tracker/">
+<meta name="author" content="Владимир Соколов">
+<meta name="application-name" content="Трекер целей">
 <meta property="og:type" content="website">
+<meta property="og:site_name" content="Трекер целей с колесом баланса">
 <meta property="og:locale" content="ru_RU">
+<meta property="og:locale:alternate" content="en_US">
 <meta property="og:url" content="https://bobah1988.github.io/goal-tracker/">
 <meta property="og:title" content="Колесо баланса — Трекер целей для достижения целей">
 <meta property="og:description" content="Колесо баланса и трекер целей: разбивайте задачи на подцели и шаг за шагом двигайтесь к результату — бесплатно и без лишней сложности.">
 <meta property="og:image" content="https://bobah1988.github.io/goal-tracker/icon-512.png">
+<meta property="og:image:width" content="512">
+<meta property="og:image:height" content="512">
+<meta property="og:image:alt" content="Колесо баланса — логотип трекера целей">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Колесо баланса — Трекер целей для достижения целей">
 <meta name="twitter:description" content="Колесо баланса и трекер целей: разбивайте задачи на подцели и шаг за шагом двигайтесь к результату — бесплатно и без лишней сложности.">
 <meta name="twitter:image" content="https://bobah1988.github.io/goal-tracker/icon-512.png">
+<meta name="twitter:image:alt" content="Колесо баланса — логотип трекера целей">
 <link rel="manifest" href="./manifest.json">
+<link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+<link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/3.44.0/tabler-icons.min.css">
 <meta name="theme-color" content="#0f1420">
 <link rel="icon" href="./icon-192.png">
@@ -33,11 +43,28 @@
   "@type": "WebApplication",
   "name": "Колесо баланса — Трекер целей",
   "alternateName": ["Колесо баланса", "Трекер целей"],
-  "description": "Колесо баланса и трекер целей для достижения целей: разбивайте задачи на подцели и двигайтесь к результату шаг за шагом.",
+  "description": "Колесо баланса и трекер целей для достижения целей: разбивайте задачи на подцели и двигайтесь к результату шаг за шагом — бесплатно и без дедлайнов.",
   "url": "https://bobah1988.github.io/goal-tracker/",
   "applicationCategory": "LifestyleApplication",
+  "applicationSubCategory": "ProductivityApplication",
   "operatingSystem": "Any",
+  "browserRequirements": "Requires a modern browser with JavaScript",
   "inLanguage": ["ru", "en"],
+  "isAccessibleForFree": true,
+  "featureList": [
+    "Дерево целей с неограниченной вложенностью подцелей",
+    "Чек-листы для пошагового выполнения",
+    "Колесо баланса по сферам жизни",
+    "Приоритетные цели (звёздочки)",
+    "Архив отложенных целей",
+    "Сортировка списка целей по прогрессу",
+    "Тёмная, светлая и розовая темы",
+    "Работа офлайн как PWA",
+    "Необязательная облачная синхронизация",
+    "Экспорт и импорт резервной копии"
+  ],
+  "author": { "@type": "Organization", "name": "Владимир Соколов", "url": "https://bobah1988.github.io/goal-tracker/" },
+  "publisher": { "@type": "Organization", "name": "Владимир Соколов", "url": "https://bobah1988.github.io/goal-tracker/" },
   "offers": { "@type": "Offer", "price": "0", "priceCurrency": "RUB" }
 }
 </script>
@@ -611,7 +638,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.1.0';
+const APP_VERSION = '1.1.1';
 /* ===== Seed data (transcribed from the Excel table) =====
    emptyGoals/emptySteps take the noun to use for auto-generated names, so items added later via
    the UI can be named in whichever language is active at the time (default: Russian for the
