@@ -30,6 +30,24 @@ test('emptyTemplate/seed: valid trees with expected shape', () => {
   assert.ok(t.app.SEED.children.length >= 4, 'demo spheres must survive');
 });
 
+// Regression (found 10.10.2026): the "today" checklist broke on the deployed site because
+// ensureToday() only ran in loadState(), not in the cloud-sync / fresh-signup / import /
+// sync-conflict paths (which only fire on https). Those paths replaced `state` with a doc
+// lacking `today`, so homeViewHTML rendered 3 dead fallback rows — checkbox/edit/action all
+// silently no-op'd. Fix: every state entry point now runs ensureToday, and emptyTemplate()
+// carries a today array. Pin both invariants here.
+test('emptyTemplate/seed carry a valid 3-item today checklist', () => {
+  const t = boot();
+  for (const [label, st] of [['emptyTemplate', t.app.emptyTemplate()], ['SEED', t.app.SEED]]) {
+    assert.ok(Array.isArray(st.today), `${label}.today must be an array`);
+    assert.equal(st.today.length, 3, `${label}.today must have exactly 3 items`);
+    for (const item of st.today) {
+      assert.equal(typeof item.text, 'string', `${label} item.text must be a string`);
+      assert.equal(typeof item.done, 'boolean', `${label} item.done must be a boolean`);
+    }
+  }
+});
+
 test('saveState/loadState round-trip preserves the sticky wheel totals', () => {
   const t = boot();
   t.app.setState({

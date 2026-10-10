@@ -638,7 +638,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.1.1';
+const APP_VERSION = '1.1.2';
 /* ===== Seed data (transcribed from the Excel table) =====
    emptyGoals/emptySteps take the noun to use for auto-generated names, so items added later via
    the UI can be named in whichever language is active at the time (default: Russian for the
@@ -783,7 +783,9 @@ function emptyTemplate(){
   const goalWord = capWord('goal');
   return { name:"Главная", children: [
     { name:`${goalWord} 1`, children: emptySteps(capWord('subgoal'), goalWord) }
-  ]};
+  ],
+  today: [{text:"",done:false},{text:"",done:false},{text:"",done:false}],
+  todayOpen: true };
 }
 
 /* ===== Language ===== */
@@ -1429,7 +1431,7 @@ function startCloudSync(uid){
         state = data.state;
         // Cloud docs written by older app versions may lack the wheel counter — backfill it
         // the same way as loadState()/import so the wheel never divides by a missing zero.
-        if(isValidGoalTree(state)){ sanitizeGoalTree(state); sanitizeEmptyChecklists(state); ensureWheelTotals(state); }
+        if(isValidGoalTree(state)){ sanitizeGoalTree(state); sanitizeEmptyChecklists(state); ensureWheelTotals(state); ensureToday(state); }
         saveState();
         applyingRemoteUpdate = false;
       }
@@ -2005,6 +2007,7 @@ function doImportData(file){
     sanitizeGoalTree(state);
     sanitizeEmptyChecklists(state);
     ensureWheelTotals(state);
+    ensureToday(state);
     path = [];
     saveState();
     if(cloudEnabled && authUser) scheduleCloudPush();
@@ -2103,6 +2106,11 @@ function render(){
   // gets un-stuck from its last fixed position, looking like it's frozen floating above everything.
   if(dragCtx) cancelDrag();
   validatePath();
+  // Belt-and-suspenders: the "today" block must always have a real array behind it. Every state
+  // entry point already runs ensureToday(), but a single guarantee here makes the block immune to
+  // any future path that swaps `state` without it (the exact bug that broke the checklist on the
+  // deployed site: homeViewHTML rendered fallback rows while the handlers bailed on a non-array).
+  ensureToday(state);
   const app = document.getElementById('app');
   const node = resolve(path);
   const overallPct = computePercent(state);
@@ -3837,7 +3845,7 @@ function attachSyncConflictHandlers(){
     if(!syncConflict) return;
     applyingRemoteUpdate = true;
     state = syncConflict.cloud;
-    if(isValidGoalTree(state)){ sanitizeGoalTree(state); sanitizeEmptyChecklists(state); ensureWheelTotals(state); }
+    if(isValidGoalTree(state)){ sanitizeGoalTree(state); sanitizeEmptyChecklists(state); ensureWheelTotals(state); ensureToday(state); }
     path = [];
     saveState();
     applyingRemoteUpdate = false;
