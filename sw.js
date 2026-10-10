@@ -4,7 +4,7 @@
 //
 // Версия кэша = версия приложения (см. APP_VERSION в index.html): каждый бамп версии
 // гарантированно сносит старый кэш у всех, кто уже установил приложение, и тянет свежие файлы.
-const CACHE_NAME = 'goal-tracker-v1.1.50';
+const CACHE_NAME = 'goal-tracker-v1.1.51';
 const ASSETS = [
   './',
   './index.html',
@@ -13,6 +13,11 @@ const ASSETS = [
   './icon-512.png',
   './quotes.js'
 ];
+// Версия ЭТОГО воркера (из CACHE_NAME 'goal-tracker-vX.Y.Z'). Используется для самолечения:
+// если в кэше лежит оболочка от ДРУГОЙ версии — она устаревшая.
+const SELF_VERSION = (CACHE_NAME.match(/goal-tracker-v(.+)$/) || [null, ''])[1];
+// Маркер версии в оболочке: 'v1.1.50' из const APP_VERSION в index.html.
+const APP_VERSION_RE = /APP_VERSION\s*=\s*['"]([^'"]+)['"]/;
 
 // Фрагмент, который есть ТОЛЬКО в настоящей «оболочке» приложения. На «белых списках» оператор
 // может ответить на заблокированный запрос своей страницей-заглушкой с кодом 200 и тем же
@@ -68,6 +73,28 @@ function navCacheKey(request) {
     }
   } catch (e) { /* относительный URL — отдаём как есть ниже */ }
   return request;
+}
+
+// Достаёт версию сборки из текста оболочки ('' — не распознали).
+function shellVersion(html) {
+  try {
+    const m = String(html).match(APP_VERSION_RE);
+    return m ? m[1] : '';
+  } catch (e) { return ''; }
+}
+
+// Самолечение: если в кэше оказалась оболочка от ДРУГОЙ версии приложения — она устаревшая.
+// Такое случается, когда предложение обновить было пропущено/не показано: пользователь мог
+// навсегда остаться на старой оболочке (пользователь был на v1.1.17 при актуальной 1.1.50).
+// Воркер сам знает свою версию, поэтому просто идёт в сеть и перезаписывает оболочку.
+async function isStaleShell(response) {
+  if (!response || !response.body || !SELF_VERSION) return false;
+  try {
+    const text = await response.clone().text();
+    const v = shellVersion(text);
+    // Версия не распознана (например оболочка без APP_VERSION) — молча доверяем кэшу.
+    return !!v && v !== SELF_VERSION;
+  } catch (e) { return false; }
 }
 
 // Кэширует HTML-оболочку, но только если ответ прошёл валидацию маркером. true при успехе.
@@ -156,6 +183,18 @@ self.addEventListener('fetch', (event) => {
                      (await cache.match('./index.html')) ||
                      (await cache.match('./'));
       if (cached) {
+        // Самолечение: оболочка от другой версии = устаревшая. Отдаём свежую из СЕТИ (и
+        // перезаписываем кэш), иначе приложением можно было бы навсегда залипнуть на старой
+        // версии, если предложение обновиться не показывалось. Офлайн — отдаём что есть.
+        if (await isStaleShell(cached)) {
+          try {
+            const res = await fetchWithTimeout(event.request, 8000);
+            if (res && res.ok && await isExpectedPayload(event.request.url, res)) {
+              await cacheIfAppShell(event.request, cache, res.clone());
+              return res;
+            }
+          } catch (e) { /* офлайн/блокировка — отдаём кэш ниже, он лучше чёрного экрана */ }
+        }
         // Фоновое обновление (не задерживает ответ). Офлайн/блокировка — просто сохраняем кэш.
         // try/catch вокруг waitUntil: даже если браузер отклонит расширение жизни события,
         // respondWith обязан вернуть кэш, иначе возможен тот самый чёрный экран.

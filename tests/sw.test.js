@@ -12,6 +12,8 @@ const vm = require('vm');
 
 const SW_PATH = path.join(__dirname, '..', 'sw.js');
 const SW_SRC = fs.readFileSync(SW_PATH, 'utf8');
+// The build under test, read from the sources so a version bump cannot redden these guards.
+const BUILD = (fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8').match(/APP_VERSION = '([^']+)'/) || [])[1];
 
 // Fake CacheStorage: an in-memory map keyed by url, enough for match/put/keys/delete/open.
 function fakeCaches(seed) {
@@ -31,7 +33,7 @@ function fakeCaches(seed) {
   };
 }
 function res(text, ok) {
-  return { ok: ok !== false, clone() { return this; }, text: async () => String(text), type: 'basic', status: 200 };
+  return { ok: ok !== false, body: {}, clone() { return this; }, text: async () => String(text), type: 'basic', status: 200 };
 }
 function bootSw(opts) {
   opts = opts || {};
@@ -82,4 +84,31 @@ test('sw: the real shell passes validation and is cached under the canonical key
   assert.equal(ok, true, 'a real shell is accepted');
   const put = await vm.runInContext('(async () => (await caches.open("goal-tracker-v1")).match("./index.html"))()', sw);
   assert.ok(put, 'cached under ./index.html even though the request carried ?_sw');
+});
+
+test('sw: a cached shell from an older build is detected as stale', async () => {
+  const sw = bootSw();
+  const shell = (version) => ({
+    ok: true, body: {}, clone() { return this; },
+    text: async () => '<html><body id="app">const APP_VERSION = \'' + version + '\';</body></html>',
+  });
+  // A shell stamped with an OLDER build than this worker is stale (the "stuck PWA" case).
+  sw.__stale = shell('stale-' + BUILD);
+  const stale = await vm.runInContext('(async () => isStaleShell(globalThis.__stale))()', sw);
+  assert.equal(stale, true, 'a shell stamped with an older APP_VERSION is stale');
+  // The shell of this worker's own build is current.
+  sw.__fresh = shell(BUILD);
+  const fresh = await vm.runInContext('(async () => isStaleShell(globalThis.__fresh))()', sw);
+  assert.equal(fresh, false, "the shell of the worker's own build is not stale");
+  // No recognisable stamp (an operator page) — never treat it as "just old", the cache wins.
+  sw.__unknown = { ok: true, body: {}, clone() { return this; }, text: async () => '<html><body>оператор</body></html>' };
+  const unknown = await vm.runInContext('(async () => isStaleShell(globalThis.__unknown))()', sw);
+  assert.equal(unknown, false, 'an unrecognised stamp is not treated as stale (the cache wins)');
+});
+
+test('sw: SELF_VERSION comes from CACHE_NAME', () => {
+  const sw = bootSw();
+  assert.equal(vm.runInContext('SELF_VERSION', sw), BUILD, 'the worker knows its own build');
+  const stamped = "shellVersion(\"<x>const APP_VERSION = 'stale-\" + SELF_VERSION + \"';</x>\")";
+  assert.equal(vm.runInContext(stamped, sw), 'stale-' + BUILD, 'the shell version is read from the HTML');
 });

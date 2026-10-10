@@ -965,7 +965,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.1.50';
+const APP_VERSION = '1.1.51';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -1133,6 +1133,10 @@ const STRINGS = {
     updateReadyText: 'Загружена новая версия приложения. Обновить сейчас?',
     updateCheck: 'Проверить обновление',
     updateCurrentVersion: 'Текущая версия',
+    resetPwaCache: 'Переустановить приложение (сброс кэша)',
+    resetPwaCacheHint: 'Если приложение застряло на старой версии: закройте его и откройте заново — данные сохранятся.',
+    resetPwaCacheOffline: 'Нет сети — сброс отменён, чтобы приложение осталось рабочим.',
+    resetPwaCacheConfirm: 'Переустановить приложение? Открытые цели и дневник сохранятся.',
     updateUpToDate: 'Обновлений нет',
     updateReadyApply: 'Обновить',
     home: 'Главная',
@@ -1372,6 +1376,10 @@ const STRINGS = {
     updateReadyText: 'A new version of the app has been downloaded. Update now?',
     updateCheck: 'Check for update',
     updateCurrentVersion: 'Current version',
+    resetPwaCache: 'Reinstall app (clear cache)',
+    resetPwaCacheHint: 'If the app is stuck on an old version: close it and open it again — your data stays.',
+    resetPwaCacheOffline: 'No network — reset cancelled so the app stays usable.',
+    resetPwaCacheConfirm: 'Reinstall the app? Your goals and journal are kept.',
     updateUpToDate: 'No updates',
     updateReadyApply: 'Update',
     home: 'Home',
@@ -4069,6 +4077,7 @@ function topbarHTML(){
         <button id="btnImportData" class="menu-item">${t('importData')}</button>
         <input type="file" id="importFileInput" accept="application/json,.json" style="display:none">` : ''}
         <button id="btnCheckUpdateMenuItem" class="menu-item">${t('updateCheck')}</button>
+        <button id="btnResetPwaCacheMenuItem" class="menu-item">${t('resetPwaCache')}</button>
         <div class="menu-version">v${APP_VERSION}</div>
         <button id="btnAboutMenuItem" class="menu-item">${t('aboutTitle')}</button>
         <button id="btnInstructionsMenuItem" class="menu-item">${t('instructionsTitle')}</button>
@@ -6539,6 +6548,53 @@ function attachTopMenuHandlers(){
       topMenuOpen = false;
       render();
       checkForAppUpdate();
+    });
+  }
+  // Last-resort recovery for a PWA stuck on an old build: the early builds (≤ v1.1.49) gated the
+  // update prompt on navigator.serviceWorker.controller, which is null while a home-screen PWA
+  // parses — so an installed app could be offered nothing and stay on its old cache forever.
+  // This unregisters the worker and wipes the caches, so the next launch is a fresh network
+  // install. It is SAFE: the shell is fetched and validated from the network FIRST, and if that
+  // fails (offline / carrier whitelist) nothing is destroyed — the app keeps working from cache.
+  const btnResetPwa = document.getElementById('btnResetPwaCacheMenuItem');
+  if(btnResetPwa){
+    btnResetPwa.addEventListener('click', async (e)=>{
+      e.stopPropagation();
+      topMenuOpen = false;
+      render();
+      if(!confirm(t('resetPwaCacheConfirm'))) return;
+      let fresh = null;
+      try{
+        const res = await fetch('./index.html', { cache: 'reload' });
+        const html = res.ok ? await res.text() : '';
+        if(html.indexOf('id="app"') === -1) throw new Error('not our shell');
+        fresh = html;
+      }catch(err){}
+      if(!fresh){
+        try{ swUpToDateNote(); }catch(e){}
+        // A dedicated message, not the generic "no updates": we refused to wipe on purpose.
+        try{
+          if(swNoteEl){
+            swNoteEl.textContent = t('resetPwaCacheOffline');
+            swNoteEl.style.display = 'block';
+            if(swNoteTimer) clearTimeout(swNoteTimer);
+            swNoteTimer = setTimeout(()=>{ if(swNoteEl) swNoteEl.style.display = 'none'; }, 3200);
+          }
+        }catch(e){}
+        return;
+      }
+      try{
+        if('caches' in window){
+          const keys = await caches.keys();
+          await Promise.all(keys.map(k => caches.delete(k)));
+        }
+        if('serviceWorker' in navigator){
+          const reg = swRegistration || await navigator.serviceWorker.getRegistration();
+          if(reg) await reg.unregister();
+        }
+      }catch(err){}
+      // The worker is gone and the caches are empty, so this load is a plain network fetch.
+      window.location.href = './index.html';
     });
   }
   const btnInstructionsMenuItem = document.getElementById('btnInstructionsMenuItem');

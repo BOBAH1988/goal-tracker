@@ -1123,3 +1123,30 @@ test('update modal: confirming applies the waiting worker', async () => {
   assert.equal(messages.length, 1, 'confirming posts SKIP_WAITING once');
   assert.equal(messages[0].type, 'SKIP_WAITING', 'the message asks the worker to activate');
 });
+
+test('top menu: a stuck PWA can be reinstalled, and an offline refusal wipes nothing', async () => {
+  const t = bootDom();
+  t.click('#btnTopMenu');
+  assert.ok(t.document.getElementById('btnResetPwaCacheMenuItem'), 'the reinstall action is in the menu');
+  // Offline: the fresh shell cannot be validated, so NOTHING is destroyed and the app keeps
+  // working from its cache (the early "hard wipe" used to leave it unopenable without a network).
+  t.window.confirm = () => true;
+  t.window.fetch = () => Promise.reject(new Error('offline'));
+  t.click('#btnResetPwaCacheMenuItem');
+  await new Promise((r) => setTimeout(r, 40));
+  assert.ok(t.document.getElementById('app').innerHTML.length > 1000,
+    'the app is still rendered — an offline reinstall attempt must not blank it');
+});
+
+test('top menu: an online reinstall validates the shell before wiping caches', async () => {
+  const t = bootDom();
+  t.click('#btnTopMenu');
+  t.window.confirm = () => true;
+  // The real app shell (validated by the id="app" marker in index.html).
+  t.window.fetch = () => Promise.resolve({ ok: true, text: () => Promise.resolve('<html><body id="app">ok</body></html>') });
+  const deleted = [];
+  t.window.caches = { keys: async () => ['goal-tracker-v1.1.50'], delete: async (k) => { deleted.push(k); } };
+  t.click('#btnResetPwaCacheMenuItem');
+  await new Promise((r) => setTimeout(r, 40));
+  assert.deepEqual(deleted, ['goal-tracker-v1.1.50'], 'a validated fresh shell lets the wipes run');
+});
