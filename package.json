@@ -1,6 +1,6 @@
 {
   "name": "goal-tracker",
-  "version": "1.0.28",
+  "version": "1.0.29",
   "private": true,
   "description": "Трекер целей с колесом баланса (PWA, чистый HTML/CSS/JS)",
   "scripts": {
