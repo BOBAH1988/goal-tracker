@@ -1011,3 +1011,44 @@ test('Победы за неделю: header «Изменить» icon opens the
   assert.ok(!t.document.getElementById('goodTodayWeekQ1'), 'the icon toggles back');
   assert.match(t.document.getElementById('app').innerHTML, /Q1a/, 'the saved report is shown again');
 });
+
+/* Companion to the CSS guards in css.test.js: jsdom gives us a real DOM here, so we can assert
+   the *rendered* markup. The custom [data-tip] bubble never shows on touch/PWA, so a button left
+   on the native title= attribute silently loses its hint — exactly the subgoal-page bug. */
+test('guard: every rendered action button carries data-tip, not a native title', () => {
+  const t = bootDom();
+  t.app.setState(Object.assign(t.app.getState(), {
+    children: [
+      { name: 'Цель с подцелями', children: [
+        { name: 'Подцель 1', done: false, children: [] },
+      ] },
+    ],
+    goodTodayEntries: [{ id: 'e1', date: '2026-10-05', text: 'Запись' }],
+    goodTodayWeekReflections: [{ week: '2026-09-21', q1: 'a', q2: 'b', q3: 'c', createdAt: 1, updatedAt: 1 }],
+    wishMap: [{ src: 'data:image/jpeg;base64,AAA', caption: 'Море' }],
+  }));
+  const check = (label) => {
+    const found = t.document.querySelectorAll('button.icon-btn');
+    assert.ok(found.length > 0, `${label}: expected at least one .icon-btn button, guard would pass vacuously`);
+    const bad = [];
+    found.forEach(el => {
+      if (!el.getAttribute('data-tip') && el.getAttribute('title')) bad.push(el.id || el.className);
+    });
+    assert.deepEqual(bad, [], `${label}: these buttons use a native title, which never shows on touch/PWA: ${bad.join(', ')}`);
+  };
+  // Home screen with every panel open at once.
+  t.window.wishAddOpen = true;
+  t.window.goodTodayFormOpen = true;
+  t.window.render();
+  check('home');
+  // Wish card manager.
+  t.click('#btnWishManage');
+  check('wish manager');
+  t.click('#btnWishManageClose');
+  // Subgoal (node) view — the surface where the whole toolbar used to be title-only.
+  t.click('[data-nav="0"]');
+  check('subgoal page');
+  // Leaf / checklist view (data-nav is a flat index inside whatever view is on screen).
+  t.click('[data-nav="0"]');
+  check('leaf page');
+});
