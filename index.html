@@ -938,7 +938,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.1.44';
+const APP_VERSION = '1.1.45';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -1180,7 +1180,7 @@ const STRINGS = {
     goodTodayWeekLabel: 'Рефлексия недели',
     quoteTitle: 'Мотивация на сегодня',
     quoteRefresh: 'Обновить цитату',
-    tipArchive: 'В архив (не учитывается в прогрессе)',
+    tipArchive: 'В архив',
     tipUnarchive: 'Вернуть из архива',
     tipRemovePriority: 'Убрать из приоритета',
     balanceWheel: 'Колесо баланса',
@@ -1410,7 +1410,7 @@ const STRINGS = {
     goodTodayWeekLabel: 'Weekly reflection',
     quoteTitle: 'Motivation for today',
     quoteRefresh: 'Refresh quote',
-    tipArchive: 'Archive (excluded from progress)',
+    tipArchive: 'Archive',
     tipUnarchive: 'Unarchive',
     tipRemovePriority: 'Remove from priority',
     balanceWheel: 'Balance Wheel',
