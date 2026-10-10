@@ -160,7 +160,7 @@
   .topbar .theme-option:hover{background:var(--card); border-color:var(--border);}
   .topbar .theme-option.active{border-color:var(--accent); box-shadow:0 0 0 1px var(--accent);}
   /* ===== Action buttons (edit/delete/move/relocate/archive) ===== */
-   #btnEdit, #btnDelete, #btnAddSubgoal, #btnDeleteChecklist, #btnMove, #btnMoveChecklist, #btnRelocate, #btnChecklistAdd, #btnFilter, .add-child-row #btnArchive, .add-goal-wrap #btnArchive, #btnGoodTodayHistory, #btnGoodTodayWeekHistory, #btnGoodTodayHistoryPagePrev, #btnGoodTodayHistoryPageNext, #btnGoodTodayHistoryPagePrevBottom, #btnGoodTodayHistoryPageNextBottom{
+   #btnEdit, #btnDelete, #btnAddSubgoal, #btnDeleteChecklist, #btnMove, #btnMoveChecklist, #btnRelocate, #btnChecklistAdd, #btnFilter, .add-child-row #btnArchive, .add-goal-wrap #btnArchive, #btnGoodTodayHistory, #btnGoodTodayWeekHistory, #btnWishManage, #btnGoodTodayHistoryPagePrev, #btnGoodTodayHistoryPageNext, #btnGoodTodayHistoryPagePrevBottom, #btnGoodTodayHistoryPageNextBottom{
     background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:8px;
     padding:6px 12px; font-size:12px; cursor:pointer; white-space:nowrap;
   }
@@ -853,12 +853,11 @@
     min-width:32px; display:inline-flex; align-items:center; justify-content:center;
   }
    #btnAddGoal.icon-btn, #btnWishAdd.icon-btn, #btnGoodTodayAdd.icon-btn, #btnAddChild.icon-btn, #btnDelete.icon-btn, #btnChecklistAdd.icon-btn{ font-size:18px; }
-  /* «Исправить» (card manager) — same box and size as the wish «+», but in the brighter
-     --text colour so the pencil does not read as a dimmed secondary control. */
-   #btnWishManage.icon-btn{
-     font-size:18px; min-width:42px; padding:5px 0; justify-content:center;
-     color:var(--text);
-   }
+  /* The wish «Исправить» button mirrors #btnEdit in «Главные цели» — the same rename pencil
+     glyph and the same 24px/2px box, so the two sections read alike. Kept in --text (asked for
+     by the owner: a dim pencil looked like a disabled control). */
+   #btnEdit.icon-btn, #btnWishManage.icon-btn{ font-size:24px; padding:2px; }
+  #btnWishManage.icon-btn{ color:var(--text); }
   /* The wish header pair («+» and the pencil): one shared 42px box so the text glyph and
      the icon font line up exactly, like the «Хорошее сегодня» header pair. */
    #btnWishAdd.icon-btn{ min-width:42px; padding:5px 0; justify-content:center; }
@@ -867,9 +866,9 @@
    #btnGoodTodayHistory.icon-btn, #btnGoodTodayAdd.icon-btn{
      min-width:42px; padding:5px 0; justify-content:center;
    }
-  #btnAddSubgoal.icon-btn{ font-size:24px; padding:2px; }
-  #btnEdit.icon-btn{ font-size:24px; padding:2px; }
-  #btnDeleteChecklist.icon-btn{ font-size:20px; padding:2px; }
+   #btnAddSubgoal.icon-btn{ font-size:24px; padding:2px; }
+   /* #btnEdit shares its box with #btnWishManage above (the rename pencil rule). */
+   #btnDeleteChecklist.icon-btn{ font-size:20px; padding:2px; }
   #btnRelocate.icon-btn{ font-size:18px; padding:4px; }
   .add-child-row #btnArchive.icon-btn, .add-goal-wrap #btnArchive.icon-btn{ font-size:24px; padding:2px; }
   #btnMove.icon-btn, #btnMoveChecklist.icon-btn{ font-size:18px; padding:4px; }
@@ -935,7 +934,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.1.40';
+const APP_VERSION = '1.1.41';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -3135,7 +3134,7 @@ function homeViewHTML(overallPct, hintHTML, mode, protectedCount){
        </div>
        <div class="wish-header-actions">
          ${(wishAddOpen || (Array.isArray(state.wishMap) && state.wishMap.length >= WISH_MAX_CARDS)) ? '' : `<button id="btnWishAdd" class="icon-btn" data-tip="${t('wishAdd')}" aria-label="${t('wishAdd')}">+</button>`}
-         ${(wishAddOpen || !(Array.isArray(state.wishMap) && state.wishMap.length)) ? '' : `<button id="btnWishManage" class="icon-btn" data-tip="${t('wishManage')}" aria-label="${t('wishManage')}"><i class="ti ti-pencil" aria-hidden="true"></i></button>`}
+         ${(wishAddOpen || !(Array.isArray(state.wishMap) && state.wishMap.length)) ? '' : `<button id="btnWishManage" class="icon-btn" data-tip="${t('wishManage')}" aria-label="${t('wishManage')}"><i class="ti ti-edit" aria-hidden="true"></i></button>`}
        </div>
      </div>`;
      if(wishMapOpen){
