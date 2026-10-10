@@ -54,6 +54,10 @@ const EXPORT_SRC = `
     goodTodaySectionHTML, goodTodayHistoryHTML, goodTodayWeekHistoryHTML,
   getState: () => state,
   setState: (v) => { state = v; },
+  // The crop dialog's output is a lexical let in the app script, so a plain window assignment
+  // from a test would create an unrelated property. This setter lets tests drive the add-form
+  // save path (draft image + caption + the personal-photo box) through the real handler.
+  setWishDraft: (src, cap, isMe) => { wishDraftSrc = src; wishCaptionDraft = cap || ''; wishIsUserPhotoDraft = !!isMe; },
   getPath: () => path,
   setPath: (v) => { path = v; },
   offerAppUpdate,

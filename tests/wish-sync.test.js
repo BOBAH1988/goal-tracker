@@ -262,3 +262,48 @@ test('no cloud / not signed in: everything is a safe no-op, nothing throws', asy
   await new Promise(r => setTimeout(r, 20));
   assert.equal(t.app.getState().wishMap.length, 2, 'the local board is untouched without a cloud');
 });
+
+test('boot: a local (no cloud) user still sees their cached images', async () => {
+  const t = boot();
+  // No firebase at all, no sign-in — the onAuthStateChanged listener is never even registered
+  // (cloudEnabled=false), so the ONLY way the board gets its pixels is the boot-time warm-up.
+  assert.equal(vm.runInContext('cloudEnabled', t.ctx), false, 'this boot has no cloud');
+  t.ctx.URL = { createObjectURL: () => 'blob:local', revokeObjectURL: () => {} };
+  t.ctx.fetch = () => Promise.resolve({ ok: true, blob: () => Promise.resolve({ size: 3, type: 'image/webp' }) });
+  const blob = fakeBlob('pixels');
+  await t.app.wishCachePut('boot1', blob);
+  t.app.setState({
+    name: 'root', children: [],
+    wishMap: [{ id: 'boot1', title: 'Отдых на море', imagePath: null, order: 0, isUserPhoto: false,
+                createdAt: 1, updatedAt: 1, uploadState: 'pending' }],
+  });
+  // Before the warm-up the registry is empty — the card would render "Сохраняем в облако…".
+  assert.ok(!t.app.wishHasLocalBytes(t.app.getState().wishMap[0]),
+    'a cold boot has no blob URLs yet (that was the blank-card bug)');
+  await vm.runInContext('wishCacheWarm()', t.ctx);
+  await new Promise((r) => setTimeout(r, 30));
+  const c = t.app.getState().wishMap[0];
+  assert.ok(t.app.wishHasLocalBytes(c), 'the boot warm-up picks the bytes up from the cache');
+  assert.equal(t.app.wishBlobUrlFor(c), 'blob:local', 'and the card gets a usable blob URL');
+  assert.equal(c.title, 'Отдых на море');
+});
+
+test('boot: a signed-out reload of a cloud card keeps showing its cached pixels', async () => {
+  const t = boot();
+  installFakeFirebase(t.ctx, { failDownload: true });
+  vm.runInContext('cloudEnabled = true; authUser = null;', t.ctx);
+  t.ctx.URL = { createObjectURL: () => 'blob:cached', revokeObjectURL: () => {} };
+  const blob = fakeBlob('pixels');
+  await t.app.wishCachePut('cloudc', blob);
+  t.app.setState({
+    name: 'root', children: [],
+    wishMap: [{ id: 'cloudc', title: 'С облака', imagePath: 'users/u1/vision-board/cloudc.webp',
+                order: 0, isUserPhoto: false, createdAt: 1, updatedAt: 1, uploadState: 'uploaded' }],
+  });
+  await vm.runInContext('wishCacheWarm()', t.ctx);
+  await new Promise((r) => setTimeout(r, 30));
+  // Signed out: the download is impossible, but the local cache still has the bytes → no blank.
+  assert.ok(t.app.wishHasLocalBytes(t.app.getState().wishMap[0]),
+    'a signed-out user keeps seeing the cached image instead of an empty card');
+  assert.equal(t.app.getState().wishMap[0].uploadState, 'uploaded');
+});

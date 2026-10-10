@@ -949,7 +949,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.1.48';
+const APP_VERSION = '1.1.49';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -2819,16 +2819,45 @@ function wishHasLocalBytes(card){
 // that only exist in the cloud can still show the pixels we already have. Re-renders once.
 async function wishCacheWarm(){
   const cards = Array.isArray(state.wishMap) ? state.wishMap : [];
-  let changed = false;
-  for(const c of cards){
-    if(!c || !c.id || wishBlobUrls.has(c.id)) continue;
-    const blob = await wishCacheGet(c.id);
-    if(blob){ wishRememberBlob(c.id, blob); changed = true; }
-  }
+  // In parallel: each card is its own IndexedDB read, and the board should not wait for card 1
+  // before it even asks for card 2 (a full 15-card board warms in one round trip instead of 15).
+  const pending = cards
+    .filter(c => c && c.id && !wishBlobUrls.has(c.id))
+    .map(c => wishCacheGet(c.id).then(blob => (blob ? wishRememberBlob(c.id, blob) : '')));
+  const results = await Promise.all(pending);
+  const changed = results.some(Boolean);
   if(changed && typeof render === 'function') render();
 }
 function dataUrlToBlob(dataUrl){
-  return fetch(dataUrl).then(r => r.blob());
+  // Decode the data: URL ourselves instead of round-tripping through fetch(): it is synchronous
+  // for base64 payloads (so an added card is cached in the same tick as the Save tap), has no
+  // network-stack dependency, and works everywhere fetch() on a data: URL might be blocked.
+  return new Promise((resolve, reject)=>{
+    try{
+      const comma = String(dataUrl).indexOf(',');
+      const header = comma < 0 ? '' : String(dataUrl).slice(0, comma);
+      const payload = comma < 0 ? '' : String(dataUrl).slice(comma + 1);
+      if(!header.startsWith('data:') || comma < 0) throw new Error('not a data url');
+      const mime = (header.slice(5).split(';')[0] || '').trim() || 'application/octet-stream';
+      const isBase64 = /;base64/i.test(header);
+      if(isBase64){
+        const bin = atob(payload);
+        const len = bin.length;
+        const bytes = new Uint8Array(len);
+        for(let i = 0; i < len; i++) bytes[i] = bin.charCodeAt(i);
+        resolve(new Blob([bytes], { type: mime }));
+        return;
+      }
+      resolve(new Blob([decodeURIComponent(payload)], { type: mime }));
+    }catch(e){
+      // Nothing decodable — fall back to the network stack before giving up.
+      if(typeof fetch === 'function'){
+        fetch(dataUrl).then(r => r.blob()).then(resolve, reject);
+      }else{
+        reject(e);
+      }
+    }
+  });
 }
 // Uploads a card's cached bytes to Storage. ONLY after the put() resolves does the card become
 // an uploaded one (imagePath set, uploadState='uploaded', metadata pushed to Firestore) — a
@@ -6681,6 +6710,12 @@ function attachModalHandlers(){
 
 render();
 
+// Rebuild the in-memory blob URLs from the local image cache on EVERY boot — not only when a
+// cloud session exists. The vision board must render its pixels for a signed-out, local-only
+// user too (the auth listener below is never even registered without cloudEnabled, which used
+// to leave every card stuck in the "Сохраняем в облако…" state on a plain local load).
+wishCacheWarm();
+
 if(cloudEnabled){
   firebase.auth().onAuthStateChanged((user)=>{
     if(user){
@@ -6707,6 +6742,9 @@ if(cloudEnabled){
       preSyncLocalState = null;
       syncConflict = null;
       stopCloudSync();
+      // Signed out (or a fresh anonymous load): the cloud bytes are unreachable, so fall back to
+      // the local cache — otherwise a sign-out would blank every card to its pending state.
+      wishCacheWarm();
     }
     render();
   });

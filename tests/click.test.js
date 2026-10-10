@@ -1052,3 +1052,44 @@ test('guard: every rendered action button carries data-tip, not a native title',
   t.click('[data-nav="0"]');
   check('leaf page');
 });
+
+test('wish map: a saved card shows its pixels, not the pending placeholder', async () => {
+  const t = bootDom();
+  // jsdom has no object URLs — a browser always does, and without one the card could not
+  // render its pixels. Stand the surface in so this test exercises the real path.
+  t.window.URL.createObjectURL = () => 'blob:saved';
+  t.window.URL.revokeObjectURL = () => {};
+  t.click('#btnWishAdd');                       // the form must be open for Save to exist
+  // wishDraftSrc is a lexical `let` inside the app script — a plain window assignment would
+  // create an unrelated property, so go through the exported setter (same for the caption).
+  t.app.setWishDraft('data:image/webp;base64,UklGRhoAAAA', 'Отдых на море', false);
+  t.window.render();
+  t.click('#btnWishSave');
+  await new Promise((r) => setTimeout(r, 30));
+  const state = t.app.getState();
+  assert.equal(state.wishMap.length, 1, 'the card is saved');
+  assert.equal(state.wishMap[0].uploadState, 'pending', 'no cloud yet → pending (local only)');
+  // The board must show the image, not the «Сохраняем в облако…» placeholder.
+  const img = t.document.querySelector('.wish-img');
+  assert.ok(img, 'a saved card renders its <img>');
+  assert.ok(!t.document.querySelector('.wish-img-pending'), 'no pending placeholder on a cached card');
+  assert.match(t.document.getElementById('app').innerHTML, /Отдых на море/, 'caption is shown');
+});
+
+test('wish map: board survives a reload by rebuilding pixels from the local cache', async () => {
+  const t = bootDom();
+  // A card as the app saves it now: metadata only, bytes in the IndexedDB cache.
+  t.app.setState(Object.assign(t.app.getState(), {
+    wishMap: [{ id: 'r1', title: 'Море', imagePath: null, order: 0, isUserPhoto: false,
+                createdAt: 1, updatedAt: 1, uploadState: 'pending' }],
+  }));
+  await t.app.wishCachePut('r1', new t.window.Blob(['pixels'], { type: 'image/webp' }));
+  // jsdom has no object URLs — stand the surface in so the board can render its pixels.
+  t.window.URL.createObjectURL = () => 'blob:test';
+  t.window.URL.revokeObjectURL = () => {};
+  // Boot-time warm-up (what index.html now runs right after the first render()).
+  t.app.wishRememberBlob('r1', new t.window.Blob(['pixels'], { type: 'image/webp' }));
+  t.window.render();
+  assert.ok(t.document.querySelector('.wish-img'), 'the reloaded board shows the image');
+  assert.ok(!t.document.querySelector('.wish-img-pending'), 'no pending placeholder after a reload');
+});
