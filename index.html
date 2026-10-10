@@ -384,6 +384,11 @@
    /* «Хорошее сегодня» journal module — styled like «Карта желаний» (same .section-title-row /
       .wheel-arrow / .icon-btn language), no card wrapper — content renders directly under the header. */
     .good-today-subtitle{color:var(--muted); font-size:13px; margin:0 0 10px;}
+    .good-today-subtitle-row{
+      display:flex; align-items:center; justify-content:space-between;
+      gap:10px; margin:0 0 10px;
+    }
+    .good-today-subtitle-row .good-today-subtitle{margin:0;}
     #btnGoodTodayCalendar.icon-btn{
       background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:8px;
       padding:4px; min-width:32px; font-size:14px; cursor:pointer;
@@ -787,11 +792,11 @@
   #wheelToggle,#wishToggle,#goodTodayEntriesToggle,#goodTodayWeekToggle{cursor:pointer; user-select:none;}
   #wheelToggle .wheel-arrow,#wishToggle .wheel-arrow,#goodTodayEntriesToggle .wheel-arrow,#goodTodayWeekToggle .wheel-arrow{color:var(--muted); font-size:13px; margin-right:6px;}
   .add-goal-wrap{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
-  #btnAddGoal, #btnWishAdd{
+  #btnAddGoal, #btnWishAdd, #btnGoodTodayAdd{
     background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:8px;
     padding:6px 12px; font-size:12px; cursor:pointer; white-space:nowrap;
   }
-  #btnAddGoal:hover, #btnWishAdd:hover{color:var(--text); border-color:var(--accent);}
+  #btnAddGoal:hover, #btnWishAdd:hover, #btnGoodTodayAdd:hover{color:var(--text); border-color:var(--accent);}
   #btnAddGoal:disabled{opacity:.5; cursor:not-allowed;}
   #btnAddGoal:disabled:hover{color:var(--muted); border-color:var(--border);}
   .add-goal-msg{color:var(--red); font-size:12px; white-space:nowrap;}
@@ -816,7 +821,7 @@
   #btnAddChild:disabled:hover{color:var(--muted); border-color:var(--border);}
   /* Compact "+"/"−" icon style for Add/Delete, used instead of full text labels to save room on
      narrow (phone) screens. */
-   #btnAddGoal.icon-btn, #btnWishAdd.icon-btn, #btnAddChild.icon-btn, #btnDelete.icon-btn, #btnEdit.icon-btn, #btnAddSubgoal.icon-btn, #btnDeleteChecklist.icon-btn, #btnMove.icon-btn, #btnMoveChecklist.icon-btn, #btnRelocate.icon-btn, #btnChecklistAdd.icon-btn, #btnFilter.icon-btn, .add-child-row #btnArchive.icon-btn, .add-goal-wrap #btnArchive.icon-btn, #btnSearch.icon-btn, #btnGoodTodayHistory.icon-btn,    #btnAddGoal.icon-btn, #btnWishAdd.icon-btn, #btnAddChild.icon-btn, #btnDelete.icon-btn, #btnEdit.icon-btn, #btnAddSubgoal.icon-btn, #btnDeleteChecklist.icon-btn, #btnMove.icon-btn, #btnMoveChecklist.icon-btn, #btnRelocate.icon-btn, #btnChecklistAdd.icon-btn, #btnFilter.icon-btn, .add-child-row #btnArchive.icon-btn, .add-goal-wrap #btnArchive.icon-btn, #btnSearch.icon-btn, #btnGoodTodayHistory.icon-btn, #btnGoodTodayHistoryPagePrevBottom.icon-btn, #btnGoodTodayHistoryPageNextBottom.icon-btn{
+   #btnAddGoal.icon-btn, #btnWishAdd.icon-btn, #btnAddChild.icon-btn, #btnDelete.icon-btn, #btnEdit.icon-btn, #btnAddSubgoal.icon-btn, #btnDeleteChecklist.icon-btn, #btnMove.icon-btn, #btnMoveChecklist.icon-btn, #btnRelocate.icon-btn, #btnChecklistAdd.icon-btn, #btnFilter.icon-btn, .add-child-row #btnArchive.icon-btn, .add-goal-wrap #btnArchive.icon-btn, #btnSearch.icon-btn, #btnGoodTodayHistory.icon-btn, #btnGoodTodayAdd.icon-btn, #btnGoodTodayHistoryPagePrevBottom.icon-btn, #btnGoodTodayHistoryPageNextBottom.icon-btn{
     font-size:16px; font-weight:700; line-height:1; padding:5px 13px;
     min-width:32px; display:inline-flex; align-items:center; justify-content:center;
   }
@@ -889,7 +894,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.1.30';
+const APP_VERSION = '1.1.31';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -1091,6 +1096,7 @@ const STRINGS = {
     goodTodayMoodPerfect: 'Отличный день!',
     goodTodayEntriesTitle: 'Хорошее сегодня',
     goodTodayEntriesSubtitle: 'Что было хорошего сегодня?',
+    goodTodayEntriesAdd: 'Новая запись',
     goodTodayEntriesPlaceholder: 'Запишите главное…',
     goodTodayEntriesSave: 'Сохранить',
     goodTodayEntriesCancel: 'Отмена',
@@ -1310,6 +1316,7 @@ const STRINGS = {
     goodTodayMoodPerfect: 'Great day!',
     goodTodayEntriesTitle: 'Good Today',
     goodTodayEntriesSubtitle: 'What was good today?',
+    goodTodayEntriesAdd: 'New entry',
     goodTodayEntriesPlaceholder: 'Write the highlight…',
     goodTodayEntriesSave: 'Save',
     goodTodayEntriesCancel: 'Cancel',
@@ -1596,6 +1603,7 @@ let goodTodayEditId = null;             // id of the entry being edited inline (
 let goodTodayDraftText = '';            // text typed into the add form (survives re-renders)
 let goodTodayHistoryEditId = null;      // id of the entry being edited inline (history view)
 let goodTodayHistoryDraftText = '';     // draft text for the history edit form (survives re-renders)
+let goodTodayFormOpen = false;          // add/edit form in the daily view is expanded (opens on '+')
 let goodTodayCharError = '';            // overflow error for the add form (transient)
 let goodTodayWeekPauseOpen = false;     // weekly reflection form overlay is open
 let goodTodayWeekEditing = false;       // weekly reflection form is in edit mode (vs saved-view mode)
@@ -3085,19 +3093,25 @@ function goodTodaySectionHTML(){
     ${entries.length > 0 ? `<button id="btnGoodTodayHistory" class="icon-btn" data-tip="${t('goodTodayEntriesHistory')}" aria-label="${t('goodTodayEntriesHistory')}"><i class="ti ti-history" aria-hidden="true"></i></button>` : ''}
   </div>`;
   if(goodTodayEntriesOpen){
-    html += `<div class="good-today-subtitle">${t('goodTodayEntriesSubtitle')}</div>`;
-    html += `<textarea id="goodTodayTextarea" class="good-today-textarea" maxlength="500"
-      placeholder="${t('goodTodayEntriesPlaceholder')}">${esc(goodTodayDraftText)}</textarea>`;
-    html += `<div class="good-today-char-count ${charCount >= 450 ? 'error' : ''}">
-      ${t('goodTodayEntriesCharCount').replace('{n}', String(charCount))}
+    // Subtitle row: «Что было хорошего сегодня?» + «+» button that expands the entry form.
+    html += `<div class="good-today-subtitle-row">
+      <span class="good-today-subtitle">${t('goodTodayEntriesSubtitle')}</span>
+      <button id="btnGoodTodayAdd" type="button" class="icon-btn" data-tip="${t('goodTodayEntriesAdd')}" aria-label="${t('goodTodayEntriesAdd')}">+</button>
     </div>`;
-    if(goodTodayCharError){
-      html += `<div class="auth-error">${esc(goodTodayCharError)}</div>`;
+    if(goodTodayFormOpen || isEditing){
+      html += `<textarea id="goodTodayTextarea" class="good-today-textarea" maxlength="500"
+        placeholder="${t('goodTodayEntriesPlaceholder')}">${esc(goodTodayDraftText)}</textarea>`;
+      html += `<div class="good-today-char-count ${charCount >= 450 ? 'error' : ''}">
+        ${t('goodTodayEntriesCharCount').replace('{n}', String(charCount))}
+      </div>`;
+      if(goodTodayCharError){
+        html += `<div class="auth-error">${esc(goodTodayCharError)}</div>`;
+      }
+      html += `<div class="good-today-btn-row">
+        <button id="btnGoodTodaySave" type="button" class="good-today-primary">${t('goodTodayEntriesSave')}</button>
+        ${isEditing ? `<button id="btnGoodTodayCancel" type="button">${t('goodTodayEntriesCancel')}</button>` : ''}
+      </div>`;
     }
-    html += `<div class="good-today-btn-row">
-      <button id="btnGoodTodaySave" type="button" class="good-today-primary">${t('goodTodayEntriesSave')}</button>
-      ${isEditing ? `<button id="btnGoodTodayCancel" type="button">${t('goodTodayEntriesCancel')}</button>` : ''}
-    </div>`;
     // Today's entries — показываем только последнюю запись за сегодня
     if(todayEntries.length){
       const lastToday = todayEntries[todayEntries.length - 1];
@@ -4392,6 +4406,7 @@ function attachGoodTodayHandlers(){
         goodTodayEditId = null;
         goodTodayDraftText = '';
         goodTodayCharError = '';
+        goodTodayFormOpen = false;
         goodTodayWeekPauseOpen = false;
         goodTodayWeekEditing = false;
       }
@@ -4399,6 +4414,14 @@ function attachGoodTodayHandlers(){
       render();
     });
   }
+  // '+' expands the entry form (collapsed by default so it never eats the screen).
+  on('btnGoodTodayAdd', 'click', ()=>{
+    goodTodayFormOpen = true;
+    goodTodayCharError = '';
+    render();
+    const ta = document.getElementById('goodTodayTextarea');
+    if(ta && ta.setSelectionRange){ ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }
+  });
   // Save / update entry.
   const btnSave = document.getElementById('btnGoodTodaySave');
   if(btnSave){
@@ -4429,6 +4452,7 @@ function attachGoodTodayHandlers(){
         });
         goodTodayDraftText = '';
       }
+      goodTodayFormOpen = false;
       saveState();
       render();
     });
@@ -4440,6 +4464,7 @@ function attachGoodTodayHandlers(){
       goodTodayEditId = null;
       goodTodayDraftText = '';
       goodTodayCharError = '';
+      goodTodayFormOpen = false;
       render();
     });
   }

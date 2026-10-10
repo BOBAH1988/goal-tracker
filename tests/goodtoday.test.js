@@ -492,3 +492,53 @@ test('goodTodayHistoryHTML: page nav absent with <=7 entries', () => {
   const html = vm.runInContext('goodTodayHistoryHTML()', t.ctx);
   assert.ok(!html.includes('id="btnGoodTodayHistoryPagePrevBottom"'), 'no page nav when <=7 entries');
 });
+
+test('goodTodaySectionHTML: entry form collapsed by default (+ button shown)', () => {
+  const t = boot();
+  t.app.setState({
+    name: 'root',
+    children: [],
+    goodTodayEntries: [
+      { id: 'e1', date: '2026-10-05', text: 'A' },
+    ],
+  });
+  // Collapsed: no textarea, no save button, but subtitle + '+' button present
+  vm.runInContext('goodTodayFormOpen = false; goodTodayEditId = null;', t.ctx);
+  const html = vm.runInContext('goodTodaySectionHTML()', t.ctx);
+  assert.ok(html.includes('id="btnGoodTodayAdd"'), "'+' button must be present");
+  assert.ok(html.includes('Что было хорошего сегодня?'), 'subtitle must be present');
+  assert.ok(!html.includes('id="goodTodayTextarea"'), 'textarea must be hidden when form closed');
+  assert.ok(!html.includes('id="btnGoodTodaySave"'), 'save button must be hidden when form closed');
+});
+
+test('goodTodaySectionHTML: entry form expands when goodTodayFormOpen is true', () => {
+  const t = boot();
+  t.app.setState({
+    name: 'root',
+    children: [],
+    goodTodayEntries: [
+      { id: 'e1', date: '2026-10-05', text: 'A' },
+    ],
+  });
+  vm.runInContext('goodTodayFormOpen = true; goodTodayEditId = null;', t.ctx);
+  const html = vm.runInContext('goodTodaySectionHTML()', t.ctx);
+  assert.ok(html.includes('id="goodTodayTextarea"'), 'textarea must appear when form open');
+  assert.ok(html.includes('id="btnGoodTodaySave"'), 'save button must appear when form open');
+  assert.ok(html.includes('id="btnGoodTodayAdd"'), "'+' button stays present");
+});
+
+test('goodTodaySectionHTML: entry form auto-opens while editing an entry', () => {
+  const t = boot();
+  t.app.setState({
+    name: 'root',
+    children: [],
+    goodTodayEntries: [
+      { id: 'e1', date: '2026-10-05', text: 'A' },
+    ],
+  });
+  // Editing without goodTodayFormOpen — form still shows (edit needs the field)
+  vm.runInContext('goodTodayFormOpen = false; goodTodayEditId = "e1"; goodTodayDraftText = "A";', t.ctx);
+  const html = vm.runInContext('goodTodaySectionHTML()', t.ctx);
+  assert.ok(html.includes('id="goodTodayTextarea"'), 'textarea must appear while editing');
+  assert.ok(html.includes('id="btnGoodTodayCancel"'), 'cancel button must appear while editing');
+});
