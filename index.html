@@ -105,7 +105,9 @@
   #app{max-width:920px; margin:0 auto; padding:28px 20px 80px;}
   /* ===== Topbar: menus, language & theme switchers ===== */
   .topbar{display:flex; align-items:center; margin-bottom:18px; flex-wrap:wrap; gap:10px;}
+  .app-title-wrap{display:flex; flex-direction:column; gap:0; line-height:1.2;}
   .topbar h1{font-size:20px; margin:0; font-weight:600;}
+  .app-subtitle{font-size:12px; color:var(--muted); font-weight:400;}
   /* margin-left:auto (rather than justify-content:space-between on .topbar) so this stays pinned
      to the right edge even after it wraps onto its own line below a long title on narrow screens —
      with space-between, a lone wrapped item sits at the START of its line (the left edge) instead. */
@@ -777,7 +779,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.1.16';
+const APP_VERSION = '1.1.17';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -940,6 +942,7 @@ const LANG_KEY = "goal_tracker_lang";
 const STRINGS = {
   ru: {
     appTitle: '🎯 Только важное',
+    appSubtitle: 'Твой путь к счастливой жизни.',
     updateReadyTitle: 'Доступно обновление',
     updateReadyText: 'Загружена новая версия приложения. Обновить сейчас?',
     updateReadyApply: 'Обновить',
@@ -1122,6 +1125,7 @@ const STRINGS = {
   },
   en: {
     appTitle: '🎯 Only What Matters',
+    appSubtitle: 'Your path to a happy life.',
     updateReadyTitle: 'Update available',
     updateReadyText: 'A new version of the app has been downloaded. Update now?',
     updateReadyApply: 'Update',
@@ -3082,7 +3086,8 @@ function topbarHTML(){
         </div>
       </div>` : ''}
     </div>
-    <h1>${t('appTitle')}</h1>
+    <div class="app-title-wrap"><h1>${t('appTitle')}</h1>
+    <div class="app-subtitle">${esc(t('appSubtitle'))}</div></div>
     <div class="actions">
       <button id="btnSearch" class="icon-btn" title="${t('search')}" aria-label="${t('search')}"><i class="ti ti-search" aria-hidden="true"></i></button>
       ${cloudEnabled ? (authUser
