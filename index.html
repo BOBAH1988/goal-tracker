@@ -743,10 +743,21 @@
      only the accent outline tells it apart (no badge, so the board stays uncluttered). */
   .wish-card-me{outline:2px solid var(--accent); outline-offset:-2px;}
   /* Card whose image lives in Firebase Storage but isn't downloaded yet (other device / offline). */
-  .wish-img-pending{
-    display:flex; align-items:center; justify-content:center; text-align:center;
-    color:var(--muted); font-size:12px; padding:12px; background:var(--card2);
-  }
+   .wish-img-pending{
+     display:flex; align-items:center; justify-content:center; text-align:center;
+     color:var(--muted); font-size:12px; padding:12px; background:var(--card2);
+   }
+   /* Failed upload: a visible, honest state — never a silently blank card. */
+   .wish-img-pending.wish-img-error{color:var(--red); background:rgba(229,100,90,.10);}
+   .wish-card-error{border-color:var(--red);}
+   .wish-state-tag{color:var(--muted); font-size:11px; white-space:nowrap;}
+   .wish-state-tag.wish-state-err{color:var(--red);}
+   .wish-retry-btn{
+     background:var(--card2); border:1px solid var(--border); color:var(--text);
+     border-radius:8px; padding:4px 10px; font-size:12px; cursor:pointer; white-space:nowrap;
+   }
+   .wish-retry-btn:hover{color:var(--text); border-color:var(--accent);}
+   .wish-upload-note{margin-top:10px; text-align:center;}
   /* Calm limit note: the board holds at most WISH_MAX_CARDS images. */
   .wish-limit-note{margin-top:10px; color:var(--muted); font-size:12.5px; text-align:center;}
   /* «Это моё фото» checkbox row (add form + caption editor): custom square in the site's
@@ -938,7 +949,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.1.47';
+const APP_VERSION = '1.1.48';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -1327,7 +1338,13 @@ const STRINGS = {
     wishCropDone: 'Готово',
     wishImageTooBig: 'Файл слишком большой — максимум 12 МБ.',
     wishFileTypeError: 'Нужен файл PNG, JPEG или WebP.',
-    wishImagePending: 'Изображение загрузится при появлении сети'
+    wishImagePending: 'Изображение загрузится при появлении сети',
+    wishUploadPending: 'Сохраняем в облако…',
+    wishUploadError: 'Не удалось сохранить в облако',
+    wishUploadRetry: 'Повторить',
+    wishUploadMissing: 'Изображение не сохранено',
+    wishImageTooBigCloud: 'Слишком большой файл для облака — до 3 МБ.',
+    wishUploadErrorHint: 'Проверьте сеть и вход в аккаунт — изображение сохранено на устройстве.'
   },
   en: {
     appTitle: 'Only What Matters',
@@ -1557,7 +1574,13 @@ const STRINGS = {
     wishCropDone: 'Done',
     wishImageTooBig: 'The file is too big — 12 MB max.',
     wishFileTypeError: 'A PNG, JPEG or WebP file is required.',
-    wishImagePending: 'The image will download when you are online'
+    wishImagePending: 'The image will download when you are online',
+    wishUploadPending: 'Saving to the cloud…',
+    wishUploadError: 'Could not save to the cloud',
+    wishUploadRetry: 'Retry',
+    wishUploadMissing: 'Image not saved',
+    wishImageTooBigCloud: 'Too large for the cloud — up to 3 MB.',
+    wishUploadErrorHint: 'Check your connection and sign-in — the image is kept on this device.'
   }
 };
 function loadLang(){
@@ -1646,6 +1669,7 @@ let wishAddOpen = false;      // add-card form (file picker + caption) is open
 let wishDraftSrc = null;      // dataURL of the picked image, pending Save
 let wishCaptionDraft = '';    // caption typed into the add form (survives re-renders)
 let wishFormError = '';       // add-form error (missing / unreadable image)
+let wishUploadNotice = '';    // transient board-level notice (retry impossible: not signed in)
 let wishIsUserPhotoDraft = false; // «Это моё фото» checkbox state in the add form
 // Crop dialog state: wishCropSrc is non-null only while the crop overlay is open (top-level so
 // render() can paint it and the render-guard tests can poke it like the other panel flags).
@@ -1757,10 +1781,18 @@ function loadState(){
 function structuredCloneFallback(obj){
   return JSON.parse(JSON.stringify(obj));
 }
-function saveState(){
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+ function saveState(){
+   try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+   }catch(e){
+     // Quota or private-mode write failure: state stays correct in memory, the cloud push
+     // below still runs (it is metadata only), and the image bytes live in IndexedDB — so a
+     // quota blow-up can never silently swallow a card the way it did when base64 images were
+     // stored here. Log it so the failure is visible instead of silent.
+    console.warn('saveState: localStorage write failed', e && e.name ? e.name : e);
+   }
   scheduleCloudPush();
-}
+ }
 
 /* ===== Cloud sync (Firebase Firestore + email/password account) =====
    No "Sign in with Google/Apple/VK" button here — this is a plain email+password account form
@@ -1943,7 +1975,7 @@ function startCloudSync(uid){
         }
         saveState();
         applyingRemoteUpdate = false;
-        syncWishBoard();
+        wishBoardReady();
       }
       if(data && authUser){
         if(data.name) authUser.name = data.name;
@@ -2533,23 +2565,30 @@ function ensureGoodToday(node){
     }));
   }
 }
-// The wish map («Карта желаний») is an array of cards:
-//   {id, title, src, imagePath, order, isUserPhoto, createdAt, updatedAt}
-// `src` is a self-contained data: URL (local cache → the board renders fully offline),
-// `imagePath` is the Firebase Storage object (users/{uid}/vision-board/{id}.webp) — the cloud
-// document itself stores ONLY the metadata (see wishMapForCloud), never the image bytes.
-// ensureWishMap backfills older saves (legacy {src, caption}), hand-trimmed backups and cloud
-// docs, drops anything that isn't a real image card, enforces the 15-card cap and guarantees
-// at most one isUserPhoto card.
-function ensureWishMap(node){
+ // The wish map («Карта желаний») is an array of cards. A card is METADATA ONLY:
+ //   {id, title, imagePath, order, isUserPhoto, createdAt, updatedAt, uploadState}
+ // `imagePath` is the Firebase Storage object (users/{uid}/vision-board/{id}.webp) and the
+ // `uploadState` says where the bytes are ('pending' → only on this device, 'uploaded' →
+ // in the cloud, 'error' → upload failed, pixels are still cached locally).
+ // NEVER store image bytes (data:/blob: URLs, base64) in state — localStorage blew its quota
+ // with a handful of cards and silently dropped every image on the next reload. The bytes live
+ // in the IndexedDB image cache (offline-first, see wishCacheGet/Put) and, as the source of
+ // truth, in Firebase Storage. Rendering only borrows transient blob: URLs (wishBlobUrlFor).
+ // ensureWishMap backfills older saves (legacy {src, caption} — migrated to the cache), drops
+ // anything that isn't a real card, enforces the 15-card cap and guarantees one isUserPhoto.
+ function ensureWishMap(node){
   if(!node) return;
   if(!Array.isArray(node.wishMap)){ node.wishMap = []; return; }
   const seenIds = new Set();
   let userPhotoTaken = false;
   node.wishMap = node.wishMap
     .filter(c => !!c && typeof c === 'object'
-      && ((typeof c.src === 'string' && c.src.startsWith('data:image/'))
-          || (typeof c.imagePath === 'string' && c.imagePath)))
+      && ((typeof c.src === 'string' && c.src.startsWith('data:image/'))    // legacy bytes → migrated below
+          || (typeof c.imagePath === 'string' && c.imagePath)               // cloud card
+          // Local-only card awaiting its upload: real (its bytes are in the image cache), so it
+          // must survive every later sanitize pass — it has neither src nor imagePath by design.
+          || (typeof c.id === 'string' && !!c.id
+              && (c.uploadState === 'pending' || c.uploadState === 'error'))))
     .slice(0, WISH_MAX_CARDS)
     .map((c, i) => {
       let id = (typeof c.id === 'string' && c.id)
@@ -2561,15 +2600,20 @@ function ensureWishMap(node){
       let isUserPhoto = !!c.isUserPhoto;
       if(isUserPhoto && userPhotoTaken) isUserPhoto = false;
       if(isUserPhoto) userPhotoTaken = true;
+      // Legacy saves kept the bytes in `src` — move them into the image cache and drop the
+      // data-URL from state (that is what used to wreck the localStorage quota).
+      if(typeof c.src === 'string' && c.src.startsWith('data:image/')) wishCachePutFromDataUrl(id, c.src);
+      const uploadState = (typeof c.uploadState === 'string' && c.uploadState) ? c.uploadState
+        : (c.imagePath ? 'uploaded' : 'pending');
       return {
         id,
-        src: (typeof c.src === 'string' && c.src.startsWith('data:image/')) ? c.src : '',
         title: typeof c.title === 'string' ? c.title : (typeof c.caption === 'string' ? c.caption : ''),
         imagePath: (typeof c.imagePath === 'string' && c.imagePath) ? c.imagePath : null,
         order: Number.isInteger(c.order) ? c.order : i,
         isUserPhoto,
         createdAt: Number.isFinite(c.createdAt) ? c.createdAt : null,
-        updatedAt: Number.isFinite(c.updatedAt) ? c.updatedAt : null
+        updatedAt: Number.isFinite(c.updatedAt) ? c.updatedAt : null,
+        uploadState
       };
     });
 }
@@ -2577,15 +2621,21 @@ function ensureWishMap(node){
 // bytes live in Firebase Storage (keyed by imagePath). Used by scheduleCloudPush.
 function wishMapForCloud(node){
   const cards = (node && Array.isArray(node.wishMap)) ? node.wishMap : [];
-  return cards.map((c, i) => ({
-    id: c.id,
-    title: c.title || '',
-    imagePath: c.imagePath || null,
-    order: Number.isInteger(c.order) ? c.order : i,
-    isUserPhoto: !!c.isUserPhoto,
-    createdAt: c.createdAt || null,
-    updatedAt: c.updatedAt || null
-  }));
+  // ONLY uploaded cards go to Firestore. A card whose file is still pending (or failed) stays
+  // local-only: writing metadata first would hand other devices a card with no image behind it,
+  // which is exactly the "карточка есть, картинки нет" bug. imagePath is the join key to the
+  // Storage object users/{uid}/vision-board/{id}.webp — no bytes, no base64, no URLs here.
+  return cards
+    .filter(c => !!c && !!c.imagePath && c.uploadState !== 'pending' && c.uploadState !== 'error')
+    .map((c, i) => ({
+      id: c.id,
+      title: c.title || '',
+      imagePath: c.imagePath,
+      order: Number.isInteger(c.order) ? c.order : i,
+      isUserPhoto: !!c.isUserPhoto,
+      createdAt: c.createdAt || null,
+      updatedAt: c.updatedAt || null
+    }));
 }
 // Top-level state with the wish map replaced by its cloud projection (what gets written to
 // the users/{uid} Firestore document).
@@ -2597,13 +2647,24 @@ function stateForCloud(s){
 // Merges the cloud board (metadata) with the local one (image cache): cloud wins for metadata
 // (title/order/isUserPhoto/dates), local src is kept for cards we already have, cards known
 // only by imagePath wait for downloadWishImage. Result is fully sanitized (ids, cap, one mark).
-function mergeWishMapCloud(cloudCards, localCards){
+ function mergeWishMapCloud(cloudCards, localCards){
   const local = new Map((Array.isArray(localCards) ? localCards : []).filter(c => c && c.id).map(c => [c.id, c]));
   const merged = (Array.isArray(cloudCards) ? cloudCards : []).map(cc => {
     const card = Object.assign({}, cc || {});
     const keep = card.id ? local.get(card.id) : null;
-    if(keep && typeof keep.src === 'string' && keep.src.startsWith('data:image/')) card.src = keep.src;
+    // Keep our own view of where the bytes are. imagePath present means the cloud already has
+    // the file (so it is 'uploaded' here whatever the local flag was); otherwise trust the
+    // local flag, and default a brand-new card to 'pending'.
+    if(card.imagePath) card.uploadState = 'uploaded';
+    else if(keep && keep.uploadState) card.uploadState = keep.uploadState;
+    else card.uploadState = 'pending';
     return card;
+  });
+  // Cards that exist ONLY on this device (never uploaded — offline add, failed upload) must
+  // survive a cloud snapshot, otherwise the next merge would silently drop them.
+  const cloudIds = new Set(merged.filter(c => c && c.id).map(c => c.id));
+  (Array.isArray(localCards) ? localCards : []).forEach(lc => {
+    if(lc && lc.id && !cloudIds.has(lc.id) && !lc.imagePath) merged.push(Object.assign({}, lc));
   });
   const holder = { wishMap: merged };
   ensureWishMap(holder);
@@ -2622,6 +2683,11 @@ function wishMapDisplayOrder(cards){
   order.splice(order.indexOf(meIdx), 1);
   order.splice(Math.min(Math.floor(n / 2), order.length), 0, meIdx);
   return order;
+}
+// After the personal photo is deleted, make sure exactly zero cards carry the mark (never one).
+function wishClearUserPhoto(){
+  if(!Array.isArray(state.wishMap)) return;
+  state.wishMap.forEach(c => { if(c) c.isUserPhoto = false; });
 }
 // Attempts to make the CURRENT save the personal photo: if another card already holds the
 // mark, asks for a replacement confirmation. On confirm the OLD card only loses the flag
@@ -2648,70 +2714,211 @@ function wishStorageReady(){
 function wishStoragePath(card){
   return 'users/' + authUser.uid + '/vision-board/' + card.id + '.webp';
 }
+// ===== Local image cache (IndexedDB) + cloud bytes (Firebase Storage) =====
+// Source of truth = Firebase Storage (bytes) + Firestore (metadata). Everything below is built
+// around one rule: a card's file must be UPLOADED before its metadata is written to the cloud,
+// and the pixels are cached locally so the board still renders offline.
+//
+// The local cache is IndexedDB (goal-tracker-wish-img / images, key = cardId) — not
+// localStorage: a handful of base64 cards used to blow the ~5 MB localStorage quota, the
+// setItem threw, and every image vanished on the next reload. When indexedDB is unavailable
+// (private mode, older engines, tests) a plain Map keeps the app working in-memory.
+const WISH_DB_NAME = 'goal-tracker-wish-img';
+const WISH_DB_STORE = 'images';
+const WISH_MAX_UPLOAD_BYTES = 3 * 1024 * 1024;  // mirrors storage.rules
+let wishDBFallback = new Map();                  // in-memory store when IDB is missing
+let wishBlobUrls = new Map();                    // cardId -> blob: URL, transient render cache
+
+function wishIDBAvailable(){
+  return typeof indexedDB !== 'undefined' && indexedDB && typeof indexedDB.open === 'function';
+}
+function wishCacheGet(id){
+  if(!id) return Promise.resolve(null);
+  if(!wishIDBAvailable()) return Promise.resolve(wishDBFallback.get(id) || null);
+  return new Promise((resolve)=>{
+    try{
+      const open = indexedDB.open(WISH_DB_NAME, 1);
+      open.onupgradeneeded = ()=>{
+        const db = open.result;
+        if(!db.objectStoreNames.contains(WISH_DB_STORE)) db.createObjectStore(WISH_DB_STORE);
+      };
+      open.onsuccess = ()=>{
+        const db = open.result;
+        const get = db.transaction(WISH_DB_STORE, 'readonly').objectStore(WISH_DB_STORE).get(id);
+        get.onsuccess = ()=>{ try{ db.close(); }catch(e){} resolve(get.result || null); };
+        get.onerror = ()=>{ try{ db.close(); }catch(e){} resolve(null); };
+      };
+      open.onerror = ()=>resolve(null);
+    }catch(e){ resolve(null); }
+  });
+}
+function wishCachePut(id, blob){
+  if(!id || !blob) return Promise.resolve(false);
+  if(!wishIDBAvailable()){ wishDBFallback.set(id, blob); return Promise.resolve(true); }
+  return new Promise((resolve)=>{
+    try{
+      const open = indexedDB.open(WISH_DB_NAME, 1);
+      open.onupgradeneeded = ()=>{
+        const db = open.result;
+        if(!db.objectStoreNames.contains(WISH_DB_STORE)) db.createObjectStore(WISH_DB_STORE);
+      };
+      open.onsuccess = ()=>{
+        const db = open.result;
+        const put = db.transaction(WISH_DB_STORE, 'readwrite').objectStore(WISH_DB_STORE).put(blob, id);
+        put.onsuccess = ()=>{ try{ db.close(); }catch(e){} resolve(true); };
+        put.onerror = ()=>{ try{ db.close(); }catch(e){} wishDBFallback.set(id, blob); resolve(false); };
+      };
+      open.onerror = ()=>{ wishDBFallback.set(id, blob); resolve(false); };
+    }catch(e){ wishDBFallback.set(id, blob); resolve(false); }
+  });
+}
+function wishCacheDelete(id){
+  if(!id) return Promise.resolve(true);
+  wishDBFallback.delete(id);
+  if(!wishIDBAvailable()) return Promise.resolve(true);
+  return new Promise((resolve)=>{
+    try{
+      const open = indexedDB.open(WISH_DB_NAME, 1);
+      open.onsuccess = ()=>{
+        const db = open.result;
+        const del = db.transaction(WISH_DB_STORE, 'readwrite').objectStore(WISH_DB_STORE).delete(id);
+        del.onsuccess = ()=>{ try{ db.close(); }catch(e){} resolve(true); };
+        del.onerror = ()=>{ try{ db.close(); }catch(e){} resolve(false); };
+      };
+      open.onerror = ()=>resolve(false);
+    }catch(e){ resolve(false); }
+  });
+}
+// One-time migration for saves made before the cache existed: move the bytes out of state.
+function wishCachePutFromDataUrl(id, dataUrl){
+  if(!id || typeof dataUrl !== 'string' || !dataUrl.startsWith('data:image/')) return;
+  if(typeof fetch !== 'function') return;   // no fetch (old engine, test harness) — bytes stay out of state
+  fetch(dataUrl).then(r => r.blob()).then(b => wishCachePut(id, b)).catch(()=>{});
+}
+// Transient blob: URL a card renders from. Bytes never enter the DOM in base64 form.
+function wishRememberBlob(id, blob){
+  if(!id || !blob) return '';
+  try{
+    const prev = wishBlobUrls.get(id);
+    if(prev && typeof URL !== 'undefined' && URL.revokeObjectURL) URL.revokeObjectURL(prev);
+    if(typeof URL === 'undefined' || !URL.createObjectURL) return '';   // no object URLs — pending state
+    const url = URL.createObjectURL(blob);
+    wishBlobUrls.set(id, url);
+    return url;
+  }catch(e){ return ''; }
+}
+function wishBlobUrlFor(card){
+  if(!card || !card.id) return '';
+  const u = wishBlobUrls.get(card.id);
+  return (typeof u === 'string' && u) ? u : '';
+}
+function wishHasLocalBytes(card){
+  return !!(card && card.id && wishBlobUrls.has(card.id));
+}
+// Rebuilds the in-memory blob URLs from the local cache (boot, sign-in, cloud merge) so cards
+// that only exist in the cloud can still show the pixels we already have. Re-renders once.
+async function wishCacheWarm(){
+  const cards = Array.isArray(state.wishMap) ? state.wishMap : [];
+  let changed = false;
+  for(const c of cards){
+    if(!c || !c.id || wishBlobUrls.has(c.id)) continue;
+    const blob = await wishCacheGet(c.id);
+    if(blob){ wishRememberBlob(c.id, blob); changed = true; }
+  }
+  if(changed && typeof render === 'function') render();
+}
 function dataUrlToBlob(dataUrl){
   return fetch(dataUrl).then(r => r.blob());
 }
-function blobToDataUrl(blob){
-  return new Promise((resolve, reject)=>{
-    const reader = new FileReader();
-    reader.onload = ()=>resolve(String(reader.result));
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
-  });
-}
-// Uploads a freshly saved card's optimised WebP to Storage and records imagePath on success.
-function uploadWishImage(card){
-  if(!wishStorageReady() || !card || !(typeof card.src === 'string' && card.src)) return;
+// Uploads a card's cached bytes to Storage. ONLY after the put() resolves does the card become
+// an uploaded one (imagePath set, uploadState='uploaded', metadata pushed to Firestore) — a
+// failed put leaves uploadState='error' and the pixels stay cached for a retry.
+async function uploadWishCard(card){
+  if(!wishStorageReady() || !card || !card.id) return;
+  const blob = await wishCacheGet(card.id);
+  if(!blob) return;                       // nothing cached — keep pending, retry later
+  if(blob.size > WISH_MAX_UPLOAD_BYTES){ markWishUploadError(card); return; }
   const path = wishStoragePath(card);
-  dataUrlToBlob(card.src)
-    .then(blob => firebase.storage().ref(path).put(blob, { contentType: blob.type || 'image/webp' }))
-    .then(()=>{
-      const live = (state.wishMap || []).find(c => c.id === card.id);
-      if(live){
-        live.imagePath = path;
-        live.updatedAt = Date.now();
-        saveState();
-        scheduleCloudPush();
-        render();
-      }
-    })
-    .catch(()=>{}); // offline or rules rejected — the card stays local, syncWishBoard retries later
+  try{
+    await firebase.storage().ref(path).put(blob, { contentType: (blob && blob.type) || 'image/webp' });
+  }catch(e){
+    markWishUploadError(card);            // offline / unauthorized / network — user sees a retry
+    return;
+  }
+  const live = (state.wishMap || []).find(c => c.id === card.id);
+  if(!live) return;                       // deleted while uploading
+  live.imagePath = path;
+  live.uploadState = 'uploaded';
+  live.updatedAt = Date.now();
+  saveState();                            // metadata only, small
+  scheduleCloudPush();                    // → Firestore, after the file is safely up
+  render();
 }
-// Downloads the Storage object for a card that has metadata but no local image cache yet.
-function downloadWishImage(card){
+function markWishUploadError(card){
+  if(!card || !card.id) return;
+  card.uploadState = 'error';
+  saveState();
+  render();
+}
+// Pulls the bytes for a card that has metadata but nothing cached (another device / fresh
+// install). Caches them locally, then renders from the blob URL.
+async function downloadWishImage(card){
   if(!wishStorageReady() || !card || !card.imagePath) return;
-  firebase.storage().ref(card.imagePath).getDownloadURL()
-    .then(url => fetch(url))
-    .then(res => { if(!res.ok) throw new Error('http ' + res.status); return res.blob(); })
-    .then(blob => blobToDataUrl(blob))
-    .then(dataUrl => {
-      const live = (state.wishMap || []).find(c => c.id === card.id);
-      if(live && typeof dataUrl === 'string' && dataUrl.startsWith('data:image/')){
-        live.src = dataUrl;
-        saveState();
-        render();
-      }
-    })
-    .catch(()=>{}); // offline — retried by the next syncWishBoard (sign-in / snapshot / save)
+  try{
+    const url = await firebase.storage().ref(card.imagePath).getDownloadURL();
+    const res = await fetch(url);
+    if(!res.ok) throw new Error('http ' + res.status);
+    const blob = await res.blob();
+    await wishCachePut(card.id, blob);
+    wishRememberBlob(card.id, blob);
+    const live = (state.wishMap || []).find(c => c.id === card.id);
+    if(live){
+      live.uploadState = 'uploaded';
+      saveState();
+      render();
+    }
+  }catch(e){
+    // storage/unauthorized, storage/object-not-found, offline, not signed in — the card keeps
+    // its pending placeholder; the next sign-in / snapshot / save retries via syncWishBoard.
+  }
 }
-// One pass over the board: upload cards that only exist locally, download cards that only
-// exist in the cloud. Safe to call often — every card is already in its final state or one
-// async step away from it.
+// One pass over the board: upload cards whose bytes exist only here, download cards whose bytes
+// exist only in the cloud. Safe to call often — every card is in its final state or one async
+// step away from it.
 function syncWishBoard(){
   if(!wishStorageReady()) return;
   (state.wishMap || []).forEach(c => {
-    if(c.imagePath){
-      if(!(typeof c.src === 'string' && c.src.startsWith('data:image/'))) downloadWishImage(c);
-    }else if(typeof c.src === 'string' && c.src.startsWith('data:image/')){
-      uploadWishImage(c);
+    if(!c || !c.id) return;
+    if(c.uploadState === 'pending' || c.uploadState === 'error'){
+      if(wishHasLocalBytes(c)) uploadWishCard(c);   // retry / first upload from the cache
+      else if(c.imagePath) downloadWishImage(c);     // bytes only exist in the cloud
+    }else if(c.imagePath && !wishHasLocalBytes(c)){
+      downloadWishImage(c);
     }
   });
 }
-// Best-effort removal of the Storage object when its card is deleted (never blocks the UI).
+// Boot / sign-in / cloud-merge entry point: warm the local render cache, then reconcile bytes.
+function wishBoardReady(){
+  wishCacheWarm();
+  syncWishBoard();
+}
+// Removes the Storage object for a deleted card (never blocks the UI; the Firestore record goes
+// automatically because the card is gone from the pushed projection). Orphan-free by design:
+// deleteWishCard always calls this before the local state is saved.
 function deleteWishImageFile(card){
   if(!wishStorageReady() || !card || !card.imagePath) return;
   firebase.storage().ref(card.imagePath).delete().catch(()=>{});
 }
+// Removes a card everywhere it exists: local cache + Storage file. Firestore follows because the
+// card is gone from state, and scheduleCloudPush writes the projection.
+async function deleteWishCard(card){
+  if(!card || !card.id) return;
+  const url = wishBlobUrls.get(card.id);
+  if(url){ try{ URL.revokeObjectURL(url); }catch(e){} wishBlobUrls.delete(card.id); }
+  await wishCacheDelete(card.id);
+  deleteWishImageFile(card);
+}
+
 // percent = 100% * (1 - fractionalIncomplete / max(totalGoalsAdded, activeLeaves)),
 // clamped to 0..100. Incomplete is fractional: an open plain leaf contributes 1,
 // a 2/4 checklist contributes 0.5 of open load. The sticky "ever added" total is
@@ -3493,21 +3700,29 @@ function wishMapSectionHTML(){
     </div>`;
   }else{
     // Render in display order: the personal photo sits in the centre slot of the matrix.
-    const displayOrder = wishMapDisplayOrder(cards);
-    html += `<div class="wish-grid">` + displayOrder.map(i => {
-      const c = cards[i];
-      const hasImage = typeof c.src === 'string' && c.src;
-      return `
-      <div class="wish-card${c.isUserPhoto ? ' wish-card-me' : ''}" data-wish-open="${i}">
-        ${hasImage
-          ? `<img class="wish-img" src="${esc(c.src)}" alt="${esc(c.title || '')}">`
-          : `<div class="wish-img wish-img-pending">${esc(t('wishImagePending'))}</div>`}
-        <div class="wish-caption">${esc(c.title || '')}</div>
-      </div>`;
-    }).join('') + `</div>`;
+     const displayOrder = wishMapDisplayOrder(cards);
+     html += `<div class="wish-grid">` + displayOrder.map(i => {
+       const c = cards[i];
+       const imgSrc = wishBlobUrlFor(c);
+       // Every "no pixels on screen" case gets an explicit, honest state instead of a blank box.
+       const stateText = c.uploadState === 'error' ? t('wishUploadError')
+         : (c.uploadState === 'pending' ? t('wishUploadPending') : t('wishUploadMissing'));
+       const stateCls = c.uploadState === 'error' ? ' wish-img-error' : '';
+       return `
+       <div class="wish-card${c.isUserPhoto ? ' wish-card-me' : ''}${c.uploadState === 'error' ? ' wish-card-error' : ''}" data-wish-open="${i}">
+         ${imgSrc
+           ? `<img class="wish-img" src="${esc(imgSrc)}" alt="${esc(c.title || '')}">`
+           : `<div class="wish-img wish-img-pending${stateCls}">${esc(stateText)}</div>`}
+         <div class="wish-caption">${esc(c.title || '')}</div>
+       </div>`;
+     }).join('') + `</div>`;
     // At the cap: no add button anywhere, just a calm explanation (add it or replace one).
     if(!wishAddOpen && cards.length >= WISH_MAX_CARDS){
       html += `<div class="wish-limit-note">${esc(t('wishLimitMsg').replace('{max}', String(WISH_MAX_CARDS)))}</div>`;
+    }
+    // Board-level upload notice (e.g. retry attempted while signed out).
+    if(wishUploadNotice){
+      html += `<div class="auth-error wish-upload-note">${esc(wishUploadNotice)}</div>`;
     }
   }
   // Lightbox: the picked card enlarged. ✕ or a backdrop click closes it.
@@ -3516,8 +3731,8 @@ function wishMapSectionHTML(){
     html += `<div class="auth-modal-overlay" id="wishLightbox">
       <div class="wish-lightbox">
         <button class="wish-lightbox-close" id="btnWishLightboxClose" type="button" title="${t('done')}" aria-label="${t('done')}">✕</button>
-        ${bigCard.src
-          ? `<img class="wish-lightbox-img" src="${esc(bigCard.src)}" alt="${esc(bigCard.title || '')}">`
+        ${wishBlobUrlFor(bigCard)
+          ? `<img class="wish-lightbox-img" src="${esc(wishBlobUrlFor(bigCard))}" alt="${esc(bigCard.title || '')}">`
           : `<div class="wish-lightbox-img wish-img-pending">${esc(t('wishImagePending'))}</div>`}
         ${bigCard.title ? `<div class="wish-lightbox-caption">${esc(bigCard.title)}</div>` : ''}
       </div>
@@ -3550,18 +3765,27 @@ function wishMapSectionHTML(){
         <button class="auth-close" id="btnWishManageClose" type="button" title="${t('done')}" aria-label="${t('done')}">✕</button>
         <div class="wish-edit-title">${t('wishManageTitle')}</div>
         <div class="wish-manage-list">
-          ${manageOrder.map(i => {
-            const c = cards[i];
-            const rowThumb = (typeof c.src === 'string' && c.src)
-              ? `<img class="wish-manage-thumb" src="${esc(c.src)}" alt="">`
-              : `<div class="wish-manage-thumb wish-img-pending"></div>`;
-            return `<div class="wish-manage-row">
-              ${rowThumb}
-              <span class="wish-manage-caption">${esc(c.title || '')}</span>
-              <button type="button" class="icon-btn wish-manage-btn" data-wish-manage-edit="${i}" data-tip="${t('wishEditTip')}" aria-label="${t('wishEditTip')}"><i class="ti ti-pencil" aria-hidden="true"></i></button>
-              <button type="button" class="icon-btn wish-manage-btn" data-wish-manage-del="${i}" data-tip="${t('wishDeleteTip')}" aria-label="${t('wishDeleteTip')}"><i class="ti ti-trash" aria-hidden="true"></i></button>
-            </div>`;
-          }).join('')}
+           ${manageOrder.map(i => {
+             const c = cards[i];
+             const thumbSrc = wishBlobUrlFor(c);
+             const rowThumb = thumbSrc
+               ? `<img class="wish-manage-thumb" src="${esc(thumbSrc)}" alt="">`
+               : `<div class="wish-manage-thumb wish-img-pending"></div>`;
+             // A failed upload gets an explicit «Повторить» right in the row.
+             const retryBtn = (c.uploadState === 'error')
+               ? ` <button type="button" class="wish-retry-btn" data-wish-retry="${i}" title="${t('wishUploadRetry')}" aria-label="${t('wishUploadRetry')}">${esc(t('wishUploadRetry'))}</button>`
+               : (c.uploadState === 'pending'
+                   ? ` <span class="wish-state-tag">${esc(t('wishUploadPending'))}</span>`
+                   : '');
+             const errTag = (c.uploadState === 'error')
+               ? ` <span class="wish-state-tag wish-state-err">${esc(t('wishUploadError'))}</span>` : '';
+             return `<div class="wish-manage-row">
+               ${rowThumb}
+               <span class="wish-manage-caption">${esc(c.title || '')}${errTag}${retryBtn}</span>
+               <button type="button" class="icon-btn wish-manage-btn" data-wish-manage-edit="${i}" data-tip="${t('wishEditTip')}" aria-label="${t('wishEditTip')}"><i class="ti ti-pencil" aria-hidden="true"></i></button>
+               <button type="button" class="icon-btn wish-manage-btn" data-wish-manage-del="${i}" data-tip="${t('wishDeleteTip')}" aria-label="${t('wishDeleteTip')}"><i class="ti ti-trash" aria-hidden="true"></i></button>
+             </div>`;
+           }).join('')}
         </div>
       </div>
     </div>`;
@@ -4483,7 +4707,13 @@ function attachWishMapHandlers(){
   on('btnWishCropCancel', 'click', ()=>{ closeCrop(); render(); });
   // Re-apply preview geometry after ANY re-render while the dialog is open.
   if(wishCropSrc && wishCropImg) drawCrop();
-  on('btnWishSave', 'click', ()=>{
+  // Save a new card. Order matters and is deliberate:
+  //   1. decode the cropped WebP into a Blob (nothing persists before this exists),
+  //   2. cache the bytes locally (IndexedDB) — the card survives a reload even offline,
+  //   3. save metadata + render — the board shows the card immediately,
+  //   4. upload to Storage; only its SUCCESS sets imagePath and pushes metadata to Firestore.
+  // A card is therefore never "saved in the cloud" before its file is up (see uploadWishCard).
+  on('btnWishSave', 'click', async ()=>{
     syncWishDraft();
     if(!wishDraftSrc){ wishFormError = t('wishNeedImage'); render(); return; }
     if(!Array.isArray(state.wishMap)) state.wishMap = [];
@@ -4491,25 +4721,35 @@ function attachWishMapHandlers(){
       wishFormError = t('wishLimitMsg').replace('{max}', String(WISH_MAX_CARDS));
       render(); return;
     }
+    let blob = null;
+    try{ blob = await dataUrlToBlob(wishDraftSrc); }catch(e){ blob = null; }
+    if(!blob){ wishFormError = t('wishImageError'); render(); return; }
+    // Fail here, not at the Storage rule — storage.rules caps the object at 3 MB.
+    if(blob.size > WISH_MAX_UPLOAD_BYTES){
+      wishFormError = t('wishImageTooBigCloud'); render(); return;
+    }
     const now = Date.now();
+    const id = 'wish-' + now.toString(36) + '-' + Math.random().toString(36).slice(2, 7);
     const card = {
-      id: 'wish-' + now.toString(36) + '-' + Math.random().toString(36).slice(2, 7),
-      src: wishDraftSrc,
+      id: id,
       title: (wishCaptionDraft || '').trim(),
       imagePath: null,
       order: state.wishMap.length,
       isUserPhoto: false,
       createdAt: now,
-      updatedAt: now
+      updatedAt: now,
+      uploadState: 'pending'   // becomes 'uploaded' only after the Storage put() resolves
     };
     // «Это моё фото»: if another card already holds the mark, claimUserPhoto() asks for
     // confirmation and clears the OLD flag on yes (the old card stays on the board).
     if(wishIsUserPhotoDraft) card.isUserPhoto = claimUserPhoto();
+    await wishCachePut(id, blob);
+    wishRememberBlob(id, blob);
     state.wishMap.push(card);
     closeAddForm();
     saveState();
-    uploadWishImage(card); // no-op without cloud/sign-in
     render();
+    uploadWishCard(card); // no-op without cloud/sign-in; retried by syncWishBoard
   });
   on('btnWishCancel', 'click', ()=>{ closeAddForm(); render(); });
   document.querySelectorAll('[data-wish-open]').forEach(el=>{
@@ -4543,16 +4783,41 @@ function attachWishMapHandlers(){
     });
   });
   document.querySelectorAll('[data-wish-manage-del]').forEach(el=>{
-    el.addEventListener('click', ()=>{
+    el.addEventListener('click', async ()=>{
       const idx = parseInt(el.dataset.wishManageDel, 10);
       const card = wishCardAt(idx);
       if(!card) return;
       if(!confirm(t('wishDeleteConfirm'))) return;
       state.wishMap.splice(idx, 1);
-      deleteWishImageFile(card); // best-effort Storage cleanup, never blocks the UI
+      // Firestore metadata goes with the splice (scheduleCloudPush); this clears the remaining
+      // Storage file and the local cache entry so no orphan object is left in the bucket.
+      deleteWishCard(card);
+      // Deleting the personal photo must not leave a second card holding a stale mark.
+      if(card.isUserPhoto) wishClearUserPhoto();
       wishManageOpen = false;
       saveState();
       render();
+    });
+  });
+  // «Повторить загрузку» — the pixels are safe in the local cache, so retrying loses nothing.
+  document.querySelectorAll('[data-wish-retry]').forEach(el=>{
+    el.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      const idx = parseInt(el.dataset.wishRetry, 10);
+      const card = wishCardAt(idx);
+      if(!card) return;
+      card.uploadState = 'pending';
+      saveState();
+      render();
+      if(!wishStorageReady()){
+        // Not signed in / cloud off: the card is fine locally, say so instead of looping.
+        wishFormError = '';
+        wishUploadNotice = t('wishUploadErrorHint');
+        render();
+        return;
+      }
+      wishUploadNotice = '';
+      uploadWishCard(card);
     });
   });
   on('btnWishLightboxClose', 'click', ()=>{ wishLightboxIdx = null; render(); });
@@ -6435,7 +6700,7 @@ if(cloudEnabled){
       startCloudSync(user.uid);
       // Push any cards saved while signed out to Storage and pull the ones this device is
       // missing — the vision board follows the account across devices (when online).
-      syncWishBoard();
+      wishBoardReady();
     } else {
       authUser = null;
       verifyMsg = '';

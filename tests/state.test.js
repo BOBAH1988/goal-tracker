@@ -191,8 +191,10 @@ test('ensureWishMap: a cloud card (imagePath, no local src) is valid', () => {
   st.wishMap = [{ imagePath: 'users/u1/vision-board/c1.webp', title: 'С облака' }];
   t.app.ensureWishMap(st);
   assert.equal(st.wishMap.length, 1, 'metadata-only card survives the sanitize');
-  assert.equal(st.wishMap[0].src, '', 'no local image cache yet — waits for download');
   assert.equal(st.wishMap[0].imagePath, 'users/u1/vision-board/c1.webp', 'Storage path kept');
+  assert.equal(st.wishMap[0].uploadState, 'uploaded', 'an imagePath means the file is already up');
+  assert.equal('src' in st.wishMap[0], false, 'no image bytes (no src) may live in state');
+  assert.equal(JSON.stringify(st.wishMap).includes('data:image'), false, 'state stays metadata only');
 });
 
 test('wishMapForCloud: metadata only — no image data in the Firestore doc', () => {
@@ -219,16 +221,20 @@ test('wishMapForCloud: metadata only — no image data in the Firestore doc', ()
 
 test('mergeWishMapCloud: local image cache wins for src, cloud wins for metadata', () => {
   const t = boot();
-  const local = [{ id: 'c1', src: 'data:image/png;base64,LOCAL', title: 'Старая', imagePath: null }];
+  // Bytes are no longer part of a card: the local copy lives in the image cache, so the local
+  // side is metadata too — uploadState is what remembers "bytes are here, file is not up yet".
+  const local = [{ id: 'c1', title: 'Старая', imagePath: null, uploadState: 'pending' }];
   const cloud = [
     { id: 'c1', title: 'Новая', imagePath: 'users/u/vision-board/c1.webp', isUserPhoto: true },
     { id: 'c2', title: 'Только облако', imagePath: 'users/u/vision-board/c2.webp' },
   ];
   const merged = Array.from(t.app.mergeWishMapCloud(cloud, local));
   assert.equal(merged.length, 2, 'both cloud cards are adopted');
-  assert.equal(merged[0].src, 'data:image/png;base64,LOCAL', 'local src survives the merge');
+  assert.equal(merged[0].uploadState, 'uploaded', 'the cloud imagePath means the file is up there');
+  assert.equal('src' in merged[0], false, 'the merge never resurrects image bytes in state');
   assert.equal(merged[0].title, 'Новая', 'cloud metadata overwrites local');
-  assert.equal(merged[1].src, '', 'a card from another device waits for its image');
+  assert.equal('src' in merged[1], false, 'a card from another device carries no bytes in state');
+  assert.equal(merged[1].uploadState, 'uploaded', 'its file is already in the cloud');
   assert.equal(merged[1].imagePath, 'users/u/vision-board/c2.webp');
 });
 

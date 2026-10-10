@@ -1,22 +1,28 @@
 // Firebase Storage rules for the vision board images («Карта желаний»).
-// Files live at users/{uid}/vision-board/{imageId}.webp — only the authenticated OWNER of that
-// uid may read, write or delete them. Writes accept only optimised image uploads (jpeg/png/webp)
-// within a sane size; nothing here is public and no open download URL is a security boundary
-// (getDownloadURL tokens still pass every check below on each request).
+// Files live at users/{uid}/vision-board/{cardId}.webp — only the authenticated OWNER of that
+// uid may read, write or delete them. Nothing here is public: every request is re-checked against
+// these rules, and getDownloadURL tokens do not bypass them (they only make the URL unguessable).
+//
+// The app never uploads anything but the optimised 720×720 WebP produced by the crop dialog, so
+// the rules say exactly that: contentType must be image/webp and the object must stay ≤ 3 MB
+// (the UI refuses a bigger file before it ever reaches the network). Junk of any other type,
+// and every other path in the bucket, is denied.
+//
 // Deploy with: firebase deploy --only storage  (owner does this from the Firebase console/CLI).
+// Firestore rules stay independent — they hold only the card METADATA (id/title/imagePath/…).
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
-    match /users/{uid}/{filePath=**} {
+    match /users/{uid}/vision-board/{cardId} {
       // Read: signed-in owner only.
       allow read: if request.auth != null && request.auth.uid == uid;
-      // Delete: signed-in owner only (card removed from the board).
+      // Delete: signed-in owner only (card removed from the board → no orphan objects).
       allow delete: if request.auth != null && request.auth.uid == uid;
-      // Create/update: owner only, images only, ≤ 1 MB (optimised 720×720 WebP is ~100–300 KB).
+      // Create/update: owner only, the optimised WebP only, ≤ 3 MB.
       allow create, update: if request.auth != null
         && request.auth.uid == uid
-        && request.resource.size <= 1024 * 1024
-        && request.resource.contentType in ['image/jpeg', 'image/png', 'image/webp'];
+        && request.resource.size <= 3 * 1024 * 1024
+        && request.resource.contentType == 'image/webp';
     }
     // Everything else in the bucket stays locked down.
     match /{allPaths=**} {
