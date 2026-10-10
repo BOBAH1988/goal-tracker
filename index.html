@@ -461,17 +461,21 @@
    }
     .good-today-last-entry .good-today-last-text{color:var(--text); display:inline;}
     .good-today-week-saved .good-today-week-label{margin-bottom:8px;}
-  /* Weekly Q&A: the question reads as a dim label, the answer keeps the full text colour —
-     otherwise bold-vs-regular alone was not enough to tell them apart. */
+  /* Weekly Q&A: the question is the prominent line (full text colour, semibold), the answer is
+     dimmer underneath — the reverse of the original pairing, as asked. */
   .good-today-week-q{
     margin:6px 0; font-size:14px; line-height:1.5;
   }
   .good-today-week-q strong{
-    display:block; color:var(--muted); font-size:12px; font-weight:600;
+    display:block; color:var(--text); font-size:12px; font-weight:700;
     margin-bottom:3px;
   }
-  .good-today-week-q > div{color:var(--text);}
+  .good-today-week-q > div{color:var(--muted);}
    .good-today-week-form .good-today-week-label{margin-bottom:4px;}
+  /* The question doubles as the form's field label, so it matches the saved view's question
+     colour (--text) instead of the generic muted label. Only inside the weekly form — the
+     journal's own «Сегодня» / «Последняя запись» labels keep the muted style. */
+   .good-today-week-form .good-today-week-label{color:var(--text);}
    .good-today-week-label{color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.04em;}
    /* History view */
    .good-today-history-view{margin-top:12px;}
@@ -934,7 +938,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.1.43';
+const APP_VERSION = '1.1.44';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -2991,9 +2995,9 @@ function nodeViewHTML(node, mode, protectedCount, hintHTML){
     // even when there are currently 0 children — every non-home level can be emptied out.
     html += `<div class="add-child-row">
       <span id="addChildMsg" class="add-goal-msg"></span>
-      <button id="btnAddChild" class="icon-btn" title="${t('tipAdd')}" aria-label="${t('tipAdd')}">+</button>
-      <button id="btnDelete" class="${deleteMode?'active':'icon-btn'}" title="${deleteMode?t('done'):t('tipDelete')}" aria-label="${deleteMode?t('done'):t('tipDelete')}">${deleteMode ? t('done') : '−'}</button>
-      <button id="btnMove" class="${moveMode?'active':'icon-btn'}" title="${moveMode?t('done'):t('tipMove')}" aria-label="${moveMode?t('done'):t('tipMove')}">${moveMode ? t('done') : '↕'}</button>
+      <button id="btnAddChild" class="icon-btn" data-tip="${t('tipAdd')}" aria-label="${t('tipAdd')}">+</button>
+      <button id="btnDelete" class="${deleteMode?'active':'icon-btn'}" data-tip="${deleteMode?t('done'):t('tipDelete')}" aria-label="${deleteMode?t('done'):t('tipDelete')}">${deleteMode ? t('done') : '−'}</button>
+      <button id="btnMove" class="${moveMode?'active':'icon-btn'}" data-tip="${moveMode?t('done'):t('tipMove')}" aria-label="${moveMode?t('done'):t('tipMove')}">${moveMode ? t('done') : '↕'}</button>
       <div class="filter-dropdown">
         <button id="btnFilter" class="icon-btn" data-tip="${t('tipSort')}" aria-label="${t('tipSort')}"><i class="ti ti-filter" aria-hidden="true"></i></button>
         ${filterMenuOpen ? `<div class="filter-menu" id="filterMenu">
@@ -3002,10 +3006,10 @@ function nodeViewHTML(node, mode, protectedCount, hintHTML){
           <button data-sort="custom" class="${goalsSort==='custom'?'active':''}">${t('sortCustom')}</button>
         </div>` : ''}
       </div>
-      <button id="btnRelocate" class="${relocateMode?'active':'icon-btn'}" title="${relocateMode?t('done'):t('tipRelocate')}" aria-label="${relocateMode?t('done'):t('tipRelocate')}">${relocateMode ? t('done') : '<i class="ti ti-folder-symlink" aria-hidden="true"></i>'}</button>
-      ${path.length === 2 ? `<button id="btnAddSubgoal" class="${addSubMode?'active':'icon-btn'}" title="${addSubMode?t('done'):t('tipExpand')}" aria-label="${addSubMode?t('done'):t('tipExpand')}">${addSubMode ? t('done') : '<i class="ti ti-sitemap" aria-hidden="true"></i>'}</button>` : ''}
-      <button id="btnEdit" class="${editMode?'active':'icon-btn'}" title="${editMode?t('done'):t('tipEdit')}" aria-label="${editMode?t('done'):t('tipEdit')}">${editMode ? t('done') : '<i class="ti ti-edit" aria-hidden="true"></i>'}</button>
-      <button id="btnArchive" class="${node.archived?'active':'icon-btn'}" title="${node.archived ? t('tipUnarchive') : t('tipArchive')}" aria-label="${node.archived ? t('tipUnarchive') : t('tipArchive')}"><i class="ti ${node.archived ? 'ti-archive-off' : 'ti-archive'}" aria-hidden="true"></i></button>
+      <button id="btnRelocate" class="${relocateMode?'active':'icon-btn'}" data-tip="${relocateMode?t('done'):t('tipRelocate')}" aria-label="${relocateMode?t('done'):t('tipRelocate')}">${relocateMode ? t('done') : '<i class="ti ti-folder-symlink" aria-hidden="true"></i>'}</button>
+      ${path.length === 2 ? `<button id="btnAddSubgoal" class="${addSubMode?'active':'icon-btn'}" data-tip="${addSubMode?t('done'):t('tipExpand')}" aria-label="${addSubMode?t('done'):t('tipExpand')}">${addSubMode ? t('done') : '<i class="ti ti-sitemap" aria-hidden="true"></i>'}</button>` : ''}
+      <button id="btnEdit" class="${editMode?'active':'icon-btn'}" data-tip="${editMode?t('done'):t('tipEdit')}" aria-label="${editMode?t('done'):t('tipEdit')}">${editMode ? t('done') : '<i class="ti ti-edit" aria-hidden="true"></i>'}</button>
+      <button id="btnArchive" class="${node.archived?'active':'icon-btn'}" data-tip="${node.archived ? t('tipUnarchive') : t('tipArchive')}" aria-label="${node.archived ? t('tipUnarchive') : t('tipArchive')}"><i class="ti ${node.archived ? 'ti-archive-off' : 'ti-archive'}" aria-hidden="true"></i></button>
       <span id="deleteMsg" class="add-goal-msg"></span>
     </div>`;
     if(node.children.length){
@@ -3033,7 +3037,7 @@ function homeViewHTML(overallPct, hintHTML, mode, protectedCount){
     <div class="bar"><div style="width:${overallPct}%; background:${barColor(overallPct)}"></div></div>
     <div class="priority-row quote-row">
       <input type="text" class="quote-input" data-quote-display readonly value="${state.quoteText ? esc(state.quoteText) : ''}" placeholder="${t('quoteRefresh')}">
-      <button class="quote-btn" data-quote-refresh title="${t('quoteRefresh')}" aria-label="${t('quoteRefresh')}">
+      <button class="quote-btn" data-quote-refresh data-tip="${t('quoteRefresh')}" aria-label="${t('quoteRefresh')}">
         <i class="ti ti-refresh" aria-hidden="true"></i>
       </button>
     </div>
@@ -3061,7 +3065,7 @@ function homeViewHTML(overallPct, hintHTML, mode, protectedCount){
            return `<div class="priority-row">
              <div class="chk ${item.done?'done':''}" data-today-toggle="${i}">${item.done?'✓':''}</div>
              <input type="text" class="today-input ${item.done?'done':''}" data-today-edit="${i}" value="${esc(item.text || '')}" placeholder="${t('todayPlaceholder')}">
-              <button class="today-action" data-today-action="${i}" title="${t('todayClear')}" aria-label="${t('todayClear')}">
+              <button class="today-action" data-today-action="${i}" data-tip="${t('todayClear')}" aria-label="${t('todayClear')}">
                 <i class="ti ti-trash" aria-hidden="true"></i>
               </button>
            </div>`;
@@ -3087,7 +3091,7 @@ function homeViewHTML(overallPct, hintHTML, mode, protectedCount){
                <div class="chk ${done?'done':''}" data-priority-toggle="${i}">${done?'✓':''}</div>
                <span class="priority-name ${done?'done':''}" data-priority-nav="${i}">${esc(name)}</span>
                ${date ? `<span class="priority-date">${esc(date)}</span>` : ''}
-               <button class="priority-remove" data-priority-remove="${i}" title="${t('tipRemovePriority')}" aria-label="${t('tipRemovePriority')}">✕</button>
+               <button class="priority-remove" data-priority-remove="${i}" data-tip="${t('tipRemovePriority')}" aria-label="${t('tipRemovePriority')}">✕</button>
              </div>`;
            }).join('')
          : `<div class="empty-state">${t('priorityEmpty')}</div>`}
@@ -3796,7 +3800,7 @@ function topbarHTML(){
     <div class="app-title-wrap"><h1><img class="app-logo" src="./icon-192.png" alt="" aria-hidden="true">${t('appTitle')}</h1>
     <div class="app-subtitle">${esc(t('appSubtitle'))}</div></div>
     <div class="actions">
-      <button id="btnSearch" class="icon-btn" title="${t('search')}" aria-label="${t('search')}"><i class="ti ti-search" aria-hidden="true"></i></button>
+      <button id="btnSearch" class="icon-btn" data-tip="${t('search')}" aria-label="${t('search')}"><i class="ti ti-search" aria-hidden="true"></i></button>
       ${cloudEnabled ? (authUser
         ? `<div class="account-dropdown">
             <button id="btnAccount" title="${esc(authUser.email)}">${esc(authUser.name || authUser.email)}</button>
@@ -3821,7 +3825,7 @@ function renderBreadcrumb(){
   // obvious at a glance which crumb is "one level up", so this is a single, always-in-the-same-
   // place way to step back exactly one level.
   const backBtn = path.length > 0
-    ? `<button class="back-btn" id="btnBack" title="${t('tipBack')}" aria-label="${t('tipBack')}">‹ ${t('back')}</button>`
+    ? `<button class="back-btn" id="btnBack" data-tip="${t('tipBack')}" aria-label="${t('tipBack')}">‹ ${t('back')}</button>`
     : '';
   return `<div class="breadcrumb-row">${backBtn}<div class="breadcrumb">${parts.join('')}</div></div>`;
 }
@@ -4086,8 +4090,8 @@ function leafDetailHTML(node){
       <div class="leaf-title-row">
         <div class="leaf-title">${esc(node.name)}</div>
         <div style="display:flex; align-items:center; gap:8px;">
-          <button id="btnArchive" class="star-btn ${node.archived?'active':''}" title="${node.archived ? t('tipUnarchive') : t('tipArchive')}" aria-label="${node.archived ? t('tipUnarchive') : t('tipArchive')}"><i class="ti ${node.archived ? 'ti-archive-off' : 'ti-archive'}" aria-hidden="true"></i></button>
-          <button id="btnTogglePriority" class="star-btn ${node.priority?'active':''}" title="${node.priority ? t('tipRemovePriority') : t('tipAddPriority')}" aria-label="${node.priority ? t('tipRemovePriority') : t('tipAddPriority')}">${node.priority ? '⭐' : '☆'}</button>
+          <button id="btnArchive" class="star-btn ${node.archived?'active':''}" data-tip="${node.archived ? t('tipUnarchive') : t('tipArchive')}" aria-label="${node.archived ? t('tipUnarchive') : t('tipArchive')}"><i class="ti ${node.archived ? 'ti-archive-off' : 'ti-archive'}" aria-hidden="true"></i></button>
+          <button id="btnTogglePriority" class="star-btn ${node.priority?'active':''}" data-tip="${node.priority ? t('tipRemovePriority') : t('tipAddPriority')}" aria-label="${node.priority ? t('tipRemovePriority') : t('tipAddPriority')}">${node.priority ? '⭐' : '☆'}</button>
         </div>
       </div>
       <div class="leaf-meta">
@@ -4114,8 +4118,8 @@ function checklistHTML(list){
     <div class="section-title-row" style="margin-top:20px;">
       <div class="section-title">${t('checklistTitle')}</div>
       <div style="display:flex; align-items:center; gap:8px;">
-        <button id="btnMoveChecklist" class="${moveMode?'active':'icon-btn'}" title="${moveMode?t('done'):t('tipMove')}" aria-label="${moveMode?t('done'):t('tipMove')}">${moveMode ? t('done') : '↕'}</button>
-        <button id="btnDeleteChecklist" class="icon-btn" title="${t('tipDeleteChecklist')}" aria-label="${t('tipDeleteChecklist')}">🗑️</button>
+        <button id="btnMoveChecklist" class="${moveMode?'active':'icon-btn'}" data-tip="${moveMode?t('done'):t('tipMove')}" aria-label="${moveMode?t('done'):t('tipMove')}">${moveMode ? t('done') : '↕'}</button>
+        <button id="btnDeleteChecklist" class="icon-btn" data-tip="${t('tipDeleteChecklist')}" aria-label="${t('tipDeleteChecklist')}">🗑️</button>
       </div>
     </div>`;
   if(moveMode){
@@ -4138,8 +4142,8 @@ function checklistHTML(list){
         ${isEditing
           ? `<form class="checklist-edit-form" style="display:contents"><input type="text" class="checklist-edit-input" data-checklist-edit-idx="${i}" data-original="${esc(item.text)}" value="${esc(item.text)}" maxlength="80" enterkeyhint="done"></form>`
           : `<span class="checklist-text ${item.done?'done':''}">${esc(item.text)}</span>`}
-        <button class="star-btn checklist-star ${item.priority?'active':''}" data-checklist-priority="${i}" title="${item.priority ? t('tipRemovePriority') : t('tipAddPriority')}" aria-label="${item.priority ? t('tipRemovePriority') : t('tipAddPriority')}">${item.priority ? '⭐' : '☆'}</button>
-        <button class="checklist-edit" data-checklist-edit="${i}" title="${t('tipEditItem')}" aria-label="${t('tipEditItem')}"><i class="ti ti-edit" aria-hidden="true"></i></button>
+        <button class="star-btn checklist-star ${item.priority?'active':''}" data-checklist-priority="${i}" data-tip="${item.priority ? t('tipRemovePriority') : t('tipAddPriority')}" aria-label="${item.priority ? t('tipRemovePriority') : t('tipAddPriority')}">${item.priority ? '⭐' : '☆'}</button>
+        <button class="checklist-edit" data-checklist-edit="${i}" data-tip="${t('tipEditItem')}" aria-label="${t('tipEditItem')}"><i class="ti ti-edit" aria-hidden="true"></i></button>
         <button class="checklist-remove" data-checklist-remove="${i}" title="${t('tipDelete')}" aria-label="${t('tipDelete')}">✕</button>
       </div>`;
     });
