@@ -626,4 +626,30 @@ test('goals sort: filter button opens a menu; picking an order re-ranks the card
   assert.deepEqual(cardNavOrder(t2), ['0', '2', '1', '3'], 'restored sort must re-rank on boot');
 });
 
+test('goals sort: same filter works on a subgoal page, not just the home screen', () => {
+  const t = bootDom();
+  // One top-level container holding subgoals with mixed completion (low/full/half) + archived.
+  t.app.setState({
+    name: 'root',
+    children: [
+      container([
+        leaf(false, { name: 'Низкая' }),
+        container([leaf(true), leaf(true)], { name: 'Полная', total: 2 }),
+        container([leaf(true), leaf(false)], { name: 'Половина', total: 2 }),
+        container([leaf(true), leaf(true)], { name: 'В архиве', total: 2, archived: true }),
+      ], { name: 'Сфера', total: 4 }),
+    ],
+  });
+  t.window.render();
+  // Drill into the container (its page uses nodeViewHTML, not homeViewHTML).
+  t.click('.grid-goals [data-nav]');
+  assert.ok(t.document.getElementById('btnAddChild'), 'must be on the subgoal container page');
+  assert.ok(t.document.getElementById('btnFilter'), 'filter button must exist on the subgoal page too');
+
+  t.click('#btnFilter');
+  t.click('[data-sort="desc"]');
+  // Полная(1,100%) → Половина(2,50%) → Низкая(0,0%) → В архиве(3, archived last)
+  assert.deepEqual(cardNavOrder(t), ['1', '2', '0', '3'], 'desc must rank subgoals by completion, archived last');
+});
+
 
