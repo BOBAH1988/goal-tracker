@@ -906,7 +906,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.1.33';
+const APP_VERSION = '1.1.34';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -1132,7 +1132,7 @@ const STRINGS = {
     yes: 'Да',
     no: 'Нет',
     goodTodayEntriesEditTitle: 'Редактирование записи',
-    goodTodayWeekPauseTitle: 'Небольшая пауза',
+    goodTodayWeekPauseTitle: 'Победы за неделю',
     goodTodayWeekPauseQ1: 'Что я ценю в этот момент?',
     goodTodayWeekPauseQ2: 'Чем я расту за эту неделю?',
     goodTodayWeekPauseQ3: 'Что хочу продолжить следующей неделей?',
@@ -1355,7 +1355,7 @@ const STRINGS = {
     yes: 'Yes',
     no: 'No',
     goodTodayEntriesEditTitle: 'Edit entry',
-    goodTodayWeekPauseTitle: 'A Small Pause',
+    goodTodayWeekPauseTitle: 'Wins of the Week',
     goodTodayWeekPauseQ1: 'What am I grateful for right now?',
     goodTodayWeekPauseQ2: 'How did I grow this week?',
     goodTodayWeekPauseQ3: 'What do I want to carry into next week?',
@@ -3091,7 +3091,7 @@ function homeViewHTML(overallPct, hintHTML, mode, protectedCount){
 // ===== «Хорошее сегодня» journal section HTML =====
 // Renders two independent collapsible sections (like «Колесо» + «Карта желаний»):
 //   1. Daily entries form + today's entries + last-entry preview
-//   2. Weekly reflection «Небольшая пауза» (separate header toggle, always visible)
+//   2. Weekly reflection «Победы за неделю» (separate header toggle, always visible)
 // A third transient view — history — replaces both when goodTodayHistoryOpen is true.
 function goodTodaySectionHTML(){
   if(goodTodayHistoryOpen){
