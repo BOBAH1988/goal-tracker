@@ -545,3 +545,33 @@ test('overall progress block: shows quote row with refresh button, clicking refr
   assert.ok(t.document.querySelector('[data-quote-display]'), 'quote row must survive re-render');
 });
 
+// ===== "Установить приложение" menu item =====
+test('install app: menu item shows the instructions modal when no native prompt is available', () => {
+  const t = bootDom();
+  // Desktop UA in jsdom (no Android/iPhone) → not a mobile device, so the desktop instructions apply.
+  t.click('#btnTopMenu');
+  assert.ok(t.document.getElementById('btnInstallAppMenuItem'), 'install item must be present in the menu');
+  t.click('#btnInstallAppMenuItem');
+  const overlay = t.document.getElementById('installOverlay');
+  assert.ok(overlay, 'clicking the item without a native prompt must open the instructions modal');
+  // Desktop instructions (the ru locale default) must be shown, not the Android ones.
+  assert.match(overlay.textContent, /адресной строке/i, 'desktop install instructions must be rendered');
+  assert.ok(!t.document.getElementById('btnInstallNow'), 'no native "install now" button without a deferred prompt');
+});
+
+test('install app: a captured beforeinstallprompt installs directly instead of showing instructions', () => {
+  const t = bootDom();
+  // Simulate Chrome/Edge firing beforeinstallprompt before the user clicks the menu item.
+  let prompted = false;
+  const ev = new t.window.Event('beforeinstallprompt');
+  ev.preventDefault = () => {};
+  ev.prompt = () => { prompted = true; return Promise.resolve(); };
+  ev.userChoice = Promise.resolve({ outcome: 'accepted' });
+  t.window.dispatchEvent(ev);
+
+  t.click('#btnTopMenu');
+  t.click('#btnInstallAppMenuItem');
+  assert.equal(prompted, true, 'the native install prompt() must fire immediately');
+  assert.ok(!t.document.getElementById('installOverlay'), 'the instructions modal must NOT open when installing natively');
+});
+
