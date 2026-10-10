@@ -928,7 +928,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.1.38';
+const APP_VERSION = '1.1.39';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -3276,11 +3276,8 @@ function goodTodayWeekHistoryHTML(){
   const canGoNext = shownWeek < todayWeek;     // we are looking at a past week
   const refl = goodTodayWeekReflectionsFor(shownWeek);
   let html = '';
-  html += `<div class="section-title-row" style="margin-top:24px;">
-    <div class="section-title" id="goodTodayWeekToggle">
-      <span class="wheel-arrow">${goodTodayWeekPauseOpen ? '▾' : '▸'}</span>${t('goodTodayWeekPauseTitle')}
-    </div>
-  </div>`;
+  // No section-title-row here — goodTodaySectionHTML() already painted the
+  // «Победы за неделю» header (with the history button) before calling in.
   html += `<div class="good-today-subtitle">${t('goodTodayWeekHistory')}</div>`;
   // Week navigation — one report at a time.
   html += `<div class="good-today-week-history-nav" style="display:flex; gap:8px; align-items:center; justify-content:center; margin-bottom:12px;">

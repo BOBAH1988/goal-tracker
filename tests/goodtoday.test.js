@@ -652,3 +652,27 @@ test('goodTodaySectionHTML: weekly history view replaces the weekly section', ()
   assert.ok(hist.includes('id="btnGoodTodayWeekPrev"'), 'prev week navigation is present');
   assert.ok(hist.includes('id="btnGoodTodayWeekNext"'), 'next week navigation is present');
 });
+
+test('goodTodaySectionHTML: weekly history paints the block title exactly once', () => {
+  const t = boot();
+  t.app.setState({
+    name: 'root',
+    children: [],
+    goodTodayWeekReflections: [
+      { week: '2026-09-21', q1: 'B1', q2: 'B2', q3: 'B3', createdAt: 2, updatedAt: 2 },
+    ],
+  });
+  vm.runInContext('goodTodayWeekHistoryOpen = true; goodTodayWeekHistoryWeek = null; goodTodayWeekHistoryEditing = false;', t.ctx);
+  const html = vm.runInContext('goodTodaySectionHTML()', t.ctx);
+  // The header carries the title once; the history viewer only adds the subtitle.
+  const titleHits = (html.match(/Победы за неделю/g) || []).length;
+  assert.equal(titleHits, 1, 'the block title must appear exactly once (no duplicate header)');
+  // The visible subtitle once (the same string also legitimately appears in the
+  // button's data-tip / aria-label attributes).
+  assert.equal((html.match(/class="good-today-subtitle">История побед/g) || []).length, 1, 'the visible history subtitle appears once');
+  // The header still owns the toggle + history button, so «back» via the title keeps working.
+  assert.ok(html.includes('id="goodTodayWeekToggle"'), 'the toggle stays in the single header');
+  assert.ok(html.includes('id="btnGoodTodayWeekHistory"'), 'the history button stays in the single header');
+  // And exactly one section-title-row wraps the weekly block.
+  assert.equal((html.match(/id="goodTodayWeekToggle"/g) || []).length, 1, 'one toggle id only');
+});
