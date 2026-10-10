@@ -703,6 +703,16 @@ test('wish map: header card manager replaces per-card edit/delete buttons', () =
   // The header «+» and the manager button sit together.
   assert.ok(t.document.getElementById('btnWishAdd'), 'the add button stays in the header');
   assert.ok(t.document.getElementById('btnWishManage'), 'the manager button lives next to it');
+  // Both live in ONE right-aligned flex group (like .add-goal-wrap in «Главные цели»),
+  // so neither drifts to the centre between title and its sibling.
+  const group = t.document.querySelector('.wish-header-actions');
+  assert.ok(group, 'header buttons must share one group element');
+  assert.ok(group.contains(t.document.getElementById('btnWishAdd')), '«+» belongs to the group');
+  assert.ok(group.contains(t.document.getElementById('btnWishManage')), 'the manager belongs to the same group');
+  assert.equal(group.children.length, 2, 'the group holds exactly the two buttons');
+  // The group is the LAST child of the header row → pushed to the right by space-between.
+  const headerRow = t.document.querySelector('.section-title-row:has(#wishToggle)');
+  assert.ok(headerRow && headerRow.lastElementChild === group, 'the group must sit on the right edge');
   // Opening the manager lists every card with its caption.
   t.click('#btnWishManage');
   const overlay = t.document.getElementById('wishManageOverlay');
