@@ -547,7 +547,19 @@
   }
   .wish-preview img{width:100%; height:100%; object-fit:contain;}
   .wish-file-label{display:flex; flex-direction:column; gap:6px; color:var(--muted); font-size:12px;}
-  .wish-file-label input[type=file]{color:var(--text); font-size:13px;}
+  .wish-file-label input[type=file]{color:var(--muted); font-size:13px;}
+  /* Native «Browse» button + «No file chosen» text both follow the site palette instead of
+     the browser-default white button that stood out of the dark card. */
+  .wish-file-label input[type=file]::file-selector-button{
+    background:var(--card2); border:1px solid var(--border); color:var(--text);
+    border-radius:8px; padding:8px 14px; font-size:13px; cursor:pointer; margin-right:10px;
+  }
+  .wish-file-label input[type=file]::file-selector-button:hover{border-color:var(--accent);}
+  .wish-file-label input[type=file]::-webkit-file-upload-button{
+    background:var(--card2); border:1px solid var(--border); color:var(--text);
+    border-radius:8px; padding:8px 14px; font-size:13px; cursor:pointer; margin-right:10px;
+  }
+  .wish-file-label input[type=file]::-webkit-file-upload-button:hover{border-color:var(--accent);}
   .wish-form input[type=text]{
     background:var(--card2); border:1px solid var(--border); color:var(--text);
     border-radius:8px; padding:10px; font-size:16px; outline:none; width:100%;
@@ -765,7 +777,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.1.14';
+const APP_VERSION = '1.1.15';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
