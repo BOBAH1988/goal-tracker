@@ -409,9 +409,19 @@
    }
    .good-today-entry-date{color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.04em; margin-bottom:4px;}
    .good-today-entry-text{font-size:14px; line-height:1.4; word-break:break-word;}
-   .good-today-entry-actions{
-     display:flex; gap:6px; margin-top:6px;
-   }
+    .good-today-entry-actions{
+      display:flex; gap:6px; margin-top:6px;
+    }
+    .good-today-entry-actions .icon-btn{
+      background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:8px;
+      padding:4px; min-width:32px; font-size:14px; line-height:1; display:inline-flex; align-items:center; justify-content:center;
+    }
+    .good-today-entry-actions .icon-btn:hover{
+      color:var(--text); border-color:var(--accent);
+    }
+    [data-goodtoday-delete].icon-btn:hover{
+      border-color:var(--red); color:var(--red);
+    }
    .good-today-last-entry{
      margin-top:12px; padding-top:10px; border-top:1px solid var(--border); font-size:13px; color:var(--muted);
    }
@@ -849,7 +859,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.1.24';
+const APP_VERSION = '1.1.25';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
