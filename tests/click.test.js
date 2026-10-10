@@ -907,3 +907,55 @@ test('wish map: the personal photo renders in the centre of the grid order', () 
 });
 
 
+
+test('Победы за неделю: history browses one report per week and edits it', () => {
+  const t = bootDom();
+  t.app.setState(Object.assign(t.app.getState(), {
+    goodTodayWeekReflections: [
+      { week: '2026-09-14', q1: 'A1', q2: 'A2', q3: 'A3', createdAt: 1, updatedAt: 1 },
+      { week: '2026-09-21', q1: 'B1', q2: 'B2', q3: 'B3', createdAt: 2, updatedAt: 2 },
+    ],
+  }));
+  t.window.render();
+  // The weekly header carries the history button.
+  assert.ok(t.document.getElementById('btnGoodTodayWeekHistory'), 'history button must sit in the weekly header');
+  t.click('#btnGoodTodayWeekHistory');
+  assert.ok(t.document.getElementById('btnGoodTodayWeekHistoryBack'), 'history view opens');
+  const appHtml = () => t.document.getElementById('app').innerHTML;
+  assert.ok(appHtml().includes('B1'), 'newest report is shown first');
+  // One week back → the older report, one week forward → back to the newer one.
+  t.click('#btnGoodTodayWeekPrev');
+  assert.ok(appHtml().includes('A1'), 'prev week shows the older report');
+  t.click('#btnGoodTodayWeekNext');
+  assert.ok(appHtml().includes('B1'), 'next week returns to the newer report');
+  // Editing the shown week writes through to state.
+  t.click('#btnGoodTodayWeekHistoryEdit');
+  assert.ok(t.document.getElementById('goodTodayWeekHistoryQ1'), 'edit form opens for the shown week');
+  t.document.getElementById('goodTodayWeekHistoryQ1').value = 'B1 new';
+  t.click('#btnGoodTodayWeekHistorySave');
+  const saved = t.app.getState().goodTodayWeekReflections.find(r => r.week === '2026-09-21');
+  assert.equal(saved.q1, 'B1 new', 'the edit persists in state');
+  assert.ok(appHtml().includes('B1 new'), 'the view reflects the saved text');
+  // Back returns to the weekly section (history view closed).
+  t.click('#btnGoodTodayWeekHistoryBack');
+  assert.ok(!t.document.getElementById('btnGoodTodayWeekHistoryBack'), 'back closes the history view');
+});
+
+test('Победы за неделю: history saves a brand new report for the shown week', () => {
+  const t = bootDom();
+  t.app.setState(Object.assign(t.app.getState(), {
+    goodTodayWeekReflections: [
+      { week: '2026-09-14', q1: 'A1', q2: 'A2', q3: 'A3', createdAt: 1, updatedAt: 1 },
+    ],
+  }));
+  t.window.render();
+  t.click('#btnGoodTodayWeekHistory');
+  // Navigate to a week without a report and fill it in from history.
+  t.click('#btnGoodTodayWeekNext');
+  const appHtml = () => t.document.getElementById('app').innerHTML;
+  assert.ok(appHtml().includes('За эту неделю отчёта нет'), 'empty week is announced');
+  t.click('#btnGoodTodayWeekHistoryEdit');
+  t.document.getElementById('goodTodayWeekHistoryQ1').value = 'Победа';
+  t.click('#btnGoodTodayWeekHistorySave');
+  assert.equal(t.app.getState().goodTodayWeekReflections.length, 2, 'a new report is created');
+});

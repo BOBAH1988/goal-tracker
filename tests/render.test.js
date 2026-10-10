@@ -19,6 +19,7 @@ const PANEL_FLAGS = [
   'goodTodayEntriesOpen', 'goodTodayHistoryOpen', 'goodTodayEditId',
   'goodTodayHistoryEditId', 'goodTodayHistoryPage', 'goodTodayFormOpen',
   'goodTodayDeleteId', 'goodTodayWeekPauseOpen', 'goodTodayWeekEditing',
+  'goodTodayWeekHistoryOpen', 'goodTodayWeekHistoryWeek', 'goodTodayWeekHistoryEditing',
 ];
 
 /* document.getElementById hands out a FRESH stub per call, so the HTML render() builds is

@@ -160,11 +160,11 @@
   .topbar .theme-option:hover{background:var(--card); border-color:var(--border);}
   .topbar .theme-option.active{border-color:var(--accent); box-shadow:0 0 0 1px var(--accent);}
   /* ===== Action buttons (edit/delete/move/relocate/archive) ===== */
-   #btnEdit, #btnDelete, #btnAddSubgoal, #btnDeleteChecklist, #btnMove, #btnMoveChecklist, #btnRelocate, #btnChecklistAdd, #btnFilter, .add-child-row #btnArchive, .add-goal-wrap #btnArchive, #btnGoodTodayHistory, #btnGoodTodayHistoryPagePrev, #btnGoodTodayHistoryPageNext, #btnGoodTodayHistoryPagePrevBottom, #btnGoodTodayHistoryPageNextBottom{
+   #btnEdit, #btnDelete, #btnAddSubgoal, #btnDeleteChecklist, #btnMove, #btnMoveChecklist, #btnRelocate, #btnChecklistAdd, #btnFilter, .add-child-row #btnArchive, .add-goal-wrap #btnArchive, #btnGoodTodayHistory, #btnGoodTodayWeekHistory, #btnGoodTodayHistoryPagePrev, #btnGoodTodayHistoryPageNext, #btnGoodTodayHistoryPagePrevBottom, #btnGoodTodayHistoryPageNextBottom{
     background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:8px;
     padding:6px 12px; font-size:12px; cursor:pointer; white-space:nowrap;
   }
-   #btnFilter:hover,#btnGoodTodayHistory:hover,#btnGoodTodayHistoryPagePrev:hover,#btnGoodTodayHistoryPageNext:hover,#btnGoodTodayHistoryPagePrevBottom:hover,#btnGoodTodayHistoryPageNextBottom:hover{color:var(--text); border-color:var(--accent);}
+   #btnFilter:hover,#btnGoodTodayHistory:hover,#btnGoodTodayWeekHistory:hover,#btnGoodTodayHistoryPagePrev:hover,#btnGoodTodayHistoryPageNext:hover,#btnGoodTodayHistoryPagePrevBottom:hover,#btnGoodTodayHistoryPageNextBottom:hover{color:var(--text); border-color:var(--accent);}
   #btnEdit:hover{color:var(--text); border-color:var(--accent);}
   #btnEdit.active{background:var(--accent); color:#fff; border-color:var(--accent);}
   #btnDelete:hover{border-color:var(--red); color:var(--red);}
@@ -841,7 +841,7 @@
   #btnAddChild:disabled:hover{color:var(--muted); border-color:var(--border);}
   /* Compact "+"/"−" icon style for Add/Delete, used instead of full text labels to save room on
      narrow (phone) screens. */
-   #btnAddGoal.icon-btn, #btnWishAdd.icon-btn, #btnWishManage.icon-btn, #btnAddChild.icon-btn, #btnDelete.icon-btn, #btnEdit.icon-btn, #btnAddSubgoal.icon-btn, #btnDeleteChecklist.icon-btn, #btnMove.icon-btn, #btnMoveChecklist.icon-btn, #btnRelocate.icon-btn, #btnChecklistAdd.icon-btn, #btnFilter.icon-btn, .add-child-row #btnArchive.icon-btn, .add-goal-wrap #btnArchive.icon-btn, #btnSearch.icon-btn, #btnGoodTodayHistory.icon-btn, #btnGoodTodayAdd.icon-btn, #btnGoodTodayHistoryPagePrevBottom.icon-btn, #btnGoodTodayHistoryPageNextBottom.icon-btn{
+   #btnAddGoal.icon-btn, #btnWishAdd.icon-btn, #btnWishManage.icon-btn, #btnAddChild.icon-btn, #btnDelete.icon-btn, #btnEdit.icon-btn, #btnAddSubgoal.icon-btn, #btnDeleteChecklist.icon-btn, #btnMove.icon-btn, #btnMoveChecklist.icon-btn, #btnRelocate.icon-btn, #btnChecklistAdd.icon-btn, #btnFilter.icon-btn, .add-child-row #btnArchive.icon-btn, .add-goal-wrap #btnArchive.icon-btn, #btnSearch.icon-btn, #btnGoodTodayHistory.icon-btn, #btnGoodTodayWeekHistory.icon-btn, #btnGoodTodayAdd.icon-btn, #btnGoodTodayHistoryPagePrevBottom.icon-btn, #btnGoodTodayHistoryPageNextBottom.icon-btn{
     font-size:16px; font-weight:700; line-height:1; padding:5px 13px;
     min-width:32px; display:inline-flex; align-items:center; justify-content:center;
   }
@@ -928,7 +928,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.1.37';
+const APP_VERSION = '1.1.38';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -1161,6 +1161,11 @@ const STRINGS = {
     goodTodayWeekPauseSave: 'Сохранить рефлексию',
     goodTodayWeekPauseSkip: 'Пропустить на этой неделе',
     goodTodayWeekPauseSaved: 'Рефлексия сохранена',
+    goodTodayWeekHistory: 'История побед',
+    goodTodayWeekPrev: '← Предыдущая неделя',
+    goodTodayWeekNext: 'Следующая неделя →',
+    goodTodayWeekHistoryEmpty: 'Отчётов пока нет',
+    goodTodayWeekHistoryNoReport: 'За эту неделю отчёта нет',
     goodTodayWeekLabel: 'Рефлексия недели',
     quoteTitle: 'Мотивация на сегодня',
     quoteRefresh: 'Обновить цитату',
@@ -1385,6 +1390,11 @@ const STRINGS = {
     goodTodayWeekPauseSave: 'Save reflection',
     goodTodayWeekPauseSkip: 'Skip this week',
     goodTodayWeekPauseSaved: 'Reflection saved',
+    goodTodayWeekHistory: 'Wins history',
+    goodTodayWeekPrev: '← Previous week',
+    goodTodayWeekNext: 'Next week →',
+    goodTodayWeekHistoryEmpty: 'No reports yet',
+    goodTodayWeekHistoryNoReport: 'No report for this week',
     goodTodayWeekLabel: 'Weekly reflection',
     quoteTitle: 'Motivation for today',
     quoteRefresh: 'Refresh quote',
@@ -1651,6 +1661,9 @@ let goodTodayDeleteId = null;           // entry awaiting delete confirmation (m
 let goodTodayCharError = '';            // overflow error for the add form (transient)
 let goodTodayWeekPauseOpen = false;     // weekly reflection form overlay is open
 let goodTodayWeekEditing = false;       // weekly reflection form is in edit mode (vs saved-view mode)
+let goodTodayWeekHistoryOpen = false;   // weekly reflection history view is open
+let goodTodayWeekHistoryWeek = null;    // ISO week (Monday) shown in the weekly history
+let goodTodayWeekHistoryEditing = false; // edit form for the week shown in the weekly history
 let goodTodayWeekDrafts = { q1: '', q2: '', q3: '' };  // weekly reflection draft (survives re-renders)
 // Global search panel (opened from the top menu). Results are recomputed on each keystroke and
 // injected straight into the results container (no full render — that would drop the input focus).
@@ -2265,6 +2278,18 @@ function goodTodayWeekReflectionsFor(weekStart){
   if(typeof weekStart !== 'string') return null;
   const arr = Array.isArray(state.goodTodayWeekReflections) ? state.goodTodayWeekReflections : [];
   return arr.find(r => r && r.week === weekStart) || null;
+}
+// Shifts a Monday-start ISO string by whole weeks (negative = older).
+function weekShiftISO(weekStartStr, weeks){
+  if(typeof weekStartStr !== 'string' || !weekStartStr) return '';
+  const d = new Date(weekStartStr + 'T00:00:00');
+  if(isNaN(d.getTime())) return '';
+  d.setDate(d.getDate() + (weeks * 7));
+  // Local calendar parts (same as isoToday) — never toISOString, which would shift a day on UTC offsets.
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const day = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
 }
 const PRIORITY_MAX = 5;
 // Walks the whole goal tree looking for anything marked with a `priority:true` flag — either a
@@ -3187,11 +3212,17 @@ function goodTodaySectionHTML(){
   const weekStart = weekStartISO(todayStr);
   const weekRefl = goodTodayWeekReflectionsFor(weekStart);
   const hasWeekReflection = !!weekRefl;
+  const hasAnyWeekReflection = Array.isArray(state.goodTodayWeekReflections) && state.goodTodayWeekReflections.length > 0;
   html += `<div class="section-title-row" style="margin-top:24px;">
     <div class="section-title" id="goodTodayWeekToggle" style="flex:1;">
       <span class="wheel-arrow">${goodTodayWeekPauseOpen ? '▾' : '▸'}</span>${t('goodTodayWeekPauseTitle')}
     </div>
+    ${hasAnyWeekReflection ? `<button id="btnGoodTodayWeekHistory" class="icon-btn" data-tip="${t('goodTodayWeekHistory')}" aria-label="${t('goodTodayWeekHistory')}"><i class="ti ti-history" aria-hidden="true"></i></button>` : ''}
   </div>`;
+  if(goodTodayWeekHistoryOpen){
+    html += goodTodayWeekHistoryHTML();
+    return html;
+  }
   if(goodTodayWeekPauseOpen){
     if(hasWeekReflection && !goodTodayWeekEditing){
       // Show saved reflection
@@ -3224,6 +3255,68 @@ function goodTodaySectionHTML(){
       </div></div>`;
     }
   }
+  return html;
+}
+
+// Weekly reflection history: ONE report on screen, navigation moves week by week.
+// Bounded by the oldest saved report (cannot go further back) and today's week (cannot go future).
+function goodTodayWeekHistoryHTML(){
+  const todayWeek = weekStartISO(isoToday());
+  // Weeks that carry a report — used for the "go to oldest boundary" rule.
+  const savedWeeks = (Array.isArray(state.goodTodayWeekReflections) ? state.goodTodayWeekReflections : [])
+    .map(r => r && r.week).filter(w => typeof w === 'string' && w)
+    .sort((a,b)=>a.localeCompare(b));
+  const oldestWeek = savedWeeks.length ? savedWeeks[0] : todayWeek;
+  // Default to the newest saved report the first time the view opens.
+  if(!goodTodayWeekHistoryWeek){
+    goodTodayWeekHistoryWeek = savedWeeks.length ? savedWeeks[savedWeeks.length - 1] : todayWeek;
+  }
+  const shownWeek = goodTodayWeekHistoryWeek;
+  const canGoPrev = shownWeek > oldestWeek;    // an older report exists
+  const canGoNext = shownWeek < todayWeek;     // we are looking at a past week
+  const refl = goodTodayWeekReflectionsFor(shownWeek);
+  let html = '';
+  html += `<div class="section-title-row" style="margin-top:24px;">
+    <div class="section-title" id="goodTodayWeekToggle">
+      <span class="wheel-arrow">${goodTodayWeekPauseOpen ? '▾' : '▸'}</span>${t('goodTodayWeekPauseTitle')}
+    </div>
+  </div>`;
+  html += `<div class="good-today-subtitle">${t('goodTodayWeekHistory')}</div>`;
+  // Week navigation — one report at a time.
+  html += `<div class="good-today-week-history-nav" style="display:flex; gap:8px; align-items:center; justify-content:center; margin-bottom:12px;">
+    ${canGoPrev ? `<button id="btnGoodTodayWeekPrev" type="button" class="icon-btn"><i class="ti ti-chevron-left" aria-hidden="true"></i> ${t('goodTodayWeekPrev')}</button>` : '<div style="width:8px;"></div>'}
+    <span class="good-today-week-label">${formatWeekLabel(shownWeek)}</span>
+    ${canGoNext ? `<button id="btnGoodTodayWeekNext" type="button" class="icon-btn">${t('goodTodayWeekNext')} <i class="ti ti-chevron-right" aria-hidden="true"></i></button>` : '<div style="width:8px;"></div>'}
+  </div>`;
+  if(goodTodayWeekHistoryEditing){
+    // Edit form for the week currently shown (creates the report if it did not exist).
+    html += `<div class="good-today-week-form">`;
+    html += `<div class="good-today-week-label">${t('goodTodayWeekPauseQ1')}</div>`;
+    html += `<textarea id="goodTodayWeekHistoryQ1" class="good-today-textarea" maxlength="500" placeholder="${t('goodTodayWeekPauseQ1')}">${esc(goodTodayWeekDrafts.q1)}</textarea>`;
+    html += `<div class="good-today-week-label">${t('goodTodayWeekPauseQ2')}</div>`;
+    html += `<textarea id="goodTodayWeekHistoryQ2" class="good-today-textarea" maxlength="500" placeholder="${t('goodTodayWeekPauseQ2')}">${esc(goodTodayWeekDrafts.q2)}</textarea>`;
+    html += `<div class="good-today-week-label">${t('goodTodayWeekPauseQ3')}</div>`;
+    html += `<textarea id="goodTodayWeekHistoryQ3" class="good-today-textarea" maxlength="500" placeholder="${t('goodTodayWeekPauseQ3')}">${esc(goodTodayWeekDrafts.q3)}</textarea>`;
+    html += `<div class="good-today-btn-row" style="margin-top:10px;">
+      <button id="btnGoodTodayWeekHistorySave" type="button" class="good-today-primary">${t('goodTodayWeekPauseSave')}</button>
+      <button id="btnGoodTodayWeekHistoryEditCancel" type="button">${t('goodTodayEntriesCancel')}</button>
+    </div></div>`;
+  }else if(refl){
+    html += `<div class="good-today-week-saved">
+      <div class="good-today-week-label">${t('goodTodayWeekPauseSaved')}</div>
+      <div class="good-today-week-q"><strong>${t('goodTodayWeekPauseQ1')}</strong><div>${esc(refl.q1 || '')}</div></div>
+      <div class="good-today-week-q"><strong>${t('goodTodayWeekPauseQ2')}</strong><div>${esc(refl.q2 || '')}</div></div>
+      <div class="good-today-week-q"><strong>${t('goodTodayWeekPauseQ3')}</strong><div>${esc(refl.q3 || '')}</div></div>
+      <div class="good-today-btn-row">
+        <button id="btnGoodTodayWeekHistoryEdit" type="button" class="good-today-primary">${t('goodTodayEntriesEdit')}</button>
+      </div></div>`;
+  }else{
+    html += `<div class="good-today-history-empty">${t('goodTodayWeekHistoryNoReport')}</div>`;
+    html += `<div class="good-today-btn-row" style="margin-top:8px;">
+      <button id="btnGoodTodayWeekHistoryEdit" type="button" class="good-today-primary">${t('goodTodayEntriesEdit')}</button>
+    </div>`;
+  }
+  html += ` <div class="good-today-btn-row" style="margin-top:12px;"><button id="btnGoodTodayWeekHistoryBack" type="button">${t('back')}</button></div>`;
   return html;
 }
 
@@ -4629,10 +4722,88 @@ function attachGoodTodayHandlers(){
   });
   // Weekly reflection toggle.
   on('goodTodayWeekToggle', 'click', ()=>{
+    // While the weekly history view is open, the title acts as «back».
+    if(goodTodayWeekHistoryOpen){
+      goodTodayWeekHistoryOpen = false;
+      goodTodayWeekHistoryWeek = null;
+      goodTodayWeekHistoryEditing = false;
+      render();
+      return;
+    }
     goodTodayWeekPauseOpen = !goodTodayWeekPauseOpen;
     if(!goodTodayWeekPauseOpen){
       goodTodayWeekEditing = false;
     }
+    render();
+  });
+  // Weekly reflection history: open (defaults to the newest saved report).
+  on('btnGoodTodayWeekHistory', 'click', ()=>{
+    goodTodayWeekHistoryOpen = true;
+    goodTodayWeekHistoryWeek = null;   // null → newest saved report on first paint
+    goodTodayWeekHistoryEditing = false;
+    render();
+  });
+  // Weekly history: back to the weekly section.
+  on('btnGoodTodayWeekHistoryBack', 'click', ()=>{
+    goodTodayWeekHistoryOpen = false;
+    goodTodayWeekHistoryWeek = null;
+    goodTodayWeekHistoryEditing = false;
+    render();
+  });
+  // Weekly history: week by week navigation. Older stops at the oldest saved report,
+  // newer stops at today's week (no future reports to show).
+  on('btnGoodTodayWeekPrev', 'click', ()=>{
+    if(!goodTodayWeekHistoryWeek) return;
+    const next = weekShiftISO(goodTodayWeekHistoryWeek, -1);
+    if(next){ goodTodayWeekHistoryWeek = next; goodTodayWeekHistoryEditing = false; render(); }
+  });
+  on('btnGoodTodayWeekNext', 'click', ()=>{
+    if(!goodTodayWeekHistoryWeek) return;
+    const next = weekShiftISO(goodTodayWeekHistoryWeek, 1);
+    if(next){ goodTodayWeekHistoryWeek = next; goodTodayWeekHistoryEditing = false; render(); }
+  });
+  // Weekly history: edit the week shown.
+  on('btnGoodTodayWeekHistoryEdit', 'click', ()=>{
+    const week = goodTodayWeekHistoryWeek;
+    if(!week) return;
+    const refl = goodTodayWeekReflectionsFor(week);
+    goodTodayWeekDrafts = refl
+      ? { q1: refl.q1 || '', q2: refl.q2 || '', q3: refl.q3 || '' }
+      : { q1: '', q2: '', q3: '' };
+    goodTodayWeekHistoryEditing = true;
+    render();
+  });
+  on('btnGoodTodayWeekHistoryEditCancel', 'click', ()=>{
+    goodTodayWeekHistoryEditing = false;
+    goodTodayWeekDrafts = { q1: '', q2: '', q3: '' };
+    render();
+  });
+  // Weekly history: save edits for the week shown (creates a report when there was none).
+  on('btnGoodTodayWeekHistorySave', 'click', ()=>{
+    const week = goodTodayWeekHistoryWeek;
+    if(!week) return;
+    const q1 = document.getElementById('goodTodayWeekHistoryQ1');
+    const q2 = document.getElementById('goodTodayWeekHistoryQ2');
+    const q3 = document.getElementById('goodTodayWeekHistoryQ3');
+    const now = Date.now();
+    const existing = goodTodayWeekReflectionsFor(week);
+    const reflection = {
+      week: week,
+      q1: q1 ? q1.value.trim() : '',
+      q2: q2 ? q2.value.trim() : '',
+      q3: q3 ? q3.value.trim() : '',
+      createdAt: existing ? existing.createdAt : now,
+      updatedAt: now
+    };
+    state.goodTodayWeekReflections = state.goodTodayWeekReflections || [];
+    if(existing){
+      Object.assign(existing, reflection);
+    }else{
+      state.goodTodayWeekReflections.push(reflection);
+    }
+    goodTodayWeekHistoryEditing = false;
+    goodTodayWeekDrafts = { q1: '', q2: '', q3: '' };
+    saveState();
     render();
   });
   // Weekly reflection save.

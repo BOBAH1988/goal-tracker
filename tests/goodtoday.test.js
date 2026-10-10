@@ -542,3 +542,113 @@ test('goodTodaySectionHTML: entry form auto-opens while editing an entry', () =>
   assert.ok(html.includes('id="goodTodayTextarea"'), 'textarea must appear while editing');
   assert.ok(html.includes('id="btnGoodTodayCancel"'), 'cancel button must appear while editing');
 });
+
+test('weekShiftISO: moves Monday-start ISO by whole weeks', () => {
+  const t = boot();
+  assert.equal(vm.runInContext('weekShiftISO("2026-10-05", -1)', t.ctx), '2026-09-28', 'one week earlier');
+  assert.equal(vm.runInContext('weekShiftISO("2026-10-05", 1)', t.ctx), '2026-10-12', 'one week later');
+  assert.equal(vm.runInContext('weekShiftISO("2026-10-05", 0)', t.ctx), '2026-10-05', 'zero weeks is a no-op');
+  assert.equal(vm.runInContext('weekShiftISO("", 1)', t.ctx), '', 'empty input stays empty');
+  assert.equal(vm.runInContext('weekShiftISO("not-a-date", 1)', t.ctx), '', 'bad input stays empty');
+});
+
+test('goodTodayWeekHistoryHTML: shows one report with prev/next week navigation', () => {
+  const t = boot();
+  t.app.setState({
+    name: 'root',
+    children: [],
+    goodTodayWeekReflections: [
+      { week: '2026-09-28', q1: 'A1', q2: 'A2', q3: 'A3', createdAt: 1, updatedAt: 1 },
+      { week: '2026-10-05', q1: 'B1', q2: 'B2', q3: 'B3', createdAt: 2, updatedAt: 2 },
+    ],
+  });
+  // Defaults to the newest saved report.
+  const html = vm.runInContext('goodTodayWeekHistoryOpen = true; goodTodayWeekHistoryWeek = null; goodTodayWeekHistoryEditing = false; goodTodayWeekHistoryHTML()', t.ctx);
+  assert.ok(html.includes('История побед'), 'history subtitle must render');
+  assert.ok(html.includes('B1') && html.includes('B2') && html.includes('B3'), 'the newest report is shown');
+  assert.ok(!html.includes('A1'), 'the older report is not mixed in');
+  assert.ok(html.includes('id="btnGoodTodayWeekPrev"'), 'prev week button must be present (older report exists)');
+  assert.ok(html.includes('id="btnGoodTodayWeekNext"') === false, 'no next week on the newest report up to today');
+  assert.ok(html.includes('id="btnGoodTodayWeekHistoryBack"'), 'back button must render');
+});
+
+test('goodTodayWeekHistoryHTML: oldest report hides the prev button', () => {
+  const t = boot();
+  t.app.setState({
+    name: 'root',
+    children: [],
+    goodTodayWeekReflections: [
+      { week: '2026-09-28', q1: 'A1', q2: 'A2', q3: 'A3', createdAt: 1, updatedAt: 1 },
+    ],
+  });
+  const html = vm.runInContext('goodTodayWeekHistoryWeek = "2026-09-28"; goodTodayWeekHistoryEditing = false; goodTodayWeekHistoryHTML()', t.ctx);
+  assert.ok(html.includes('A1'), 'the oldest report is shown');
+  assert.ok(html.includes('id="btnGoodTodayWeekPrev"') === false, 'no prev week past the oldest report');
+  // Today's week is newer than the report → next week is available.
+  assert.ok(html.includes('id="btnGoodTodayWeekNext"'), 'next week is available towards today');
+});
+
+test('goodTodayWeekHistoryHTML: week without a report says so', () => {
+  const t = boot();
+  t.app.setState({
+    name: 'root',
+    children: [],
+    goodTodayWeekReflections: [
+      { week: '2026-09-28', q1: 'A1', q2: '', q3: '', createdAt: 1, updatedAt: 1 },
+    ],
+  });
+  const html = vm.runInContext('goodTodayWeekHistoryWeek = "2026-10-12"; goodTodayWeekHistoryEditing = false; goodTodayWeekHistoryHTML()', t.ctx);
+  assert.ok(html.includes('За эту неделю отчёта нет'), 'empty week gets a friendly note');
+  assert.ok(html.includes('A1') === false, 'no report content leaks into an empty week');
+});
+
+test('goodTodayWeekHistoryHTML: edit form renders for the shown week', () => {
+  const t = boot();
+  t.app.setState({
+    name: 'root',
+    children: [],
+    goodTodayWeekReflections: [
+      { week: '2026-09-28', q1: 'A1', q2: 'A2', q3: 'A3', createdAt: 1, updatedAt: 1 },
+    ],
+  });
+  const html = vm.runInContext('goodTodayWeekHistoryWeek = "2026-09-28"; goodTodayWeekHistoryEditing = true; goodTodayWeekDrafts = {q1:"A1",q2:"A2",q3:"A3"}; goodTodayWeekHistoryHTML()', t.ctx);
+  assert.ok(html.includes('id="goodTodayWeekHistoryQ1"'), 'q1 textarea must render');
+  assert.ok(html.includes('id="btnGoodTodayWeekHistorySave"'), 'save button must render');
+  assert.ok(html.includes('id="btnGoodTodayWeekHistoryEditCancel"'), 'cancel button must render');
+  assert.ok(html.includes('A1'), 'the draft value must be inside the textarea');
+});
+
+test('goodTodayWeekHistoryHTML: no reports at all renders the empty note', () => {
+  const t = boot();
+  t.app.setState({
+    name: 'root',
+    children: [],
+    goodTodayWeekReflections: [],
+  });
+  const html = vm.runInContext('goodTodayWeekHistoryWeek = null; goodTodayWeekHistoryEditing = false; goodTodayWeekHistoryHTML()', t.ctx);
+  assert.ok(html.includes('История побед'), 'history subtitle still renders');
+  assert.ok(html.includes('За эту неделю отчёта нет'), 'current week has no report → note');
+});
+
+test('goodTodaySectionHTML: weekly history view replaces the weekly section', () => {
+  const t = boot();
+  t.app.setState({
+    name: 'root',
+    children: [],
+    goodTodayWeekReflections: [
+      { week: '2026-09-14', q1: 'A1', q2: 'A2', q3: 'A3', createdAt: 1, updatedAt: 1 },
+      { week: '2026-09-21', q1: 'B1', q2: 'B2', q3: 'B3', createdAt: 2, updatedAt: 2 },
+    ],
+  });
+  // Normal view: the weekly section and its history button are on screen.
+  vm.runInContext('goodTodayEntriesOpen = false; goodTodayWeekHistoryOpen = false; goodTodayWeekHistoryWeek = null;', t.ctx);
+  const normal = vm.runInContext('goodTodaySectionHTML()', t.ctx);
+  assert.ok(normal.includes('id="btnGoodTodayWeekHistory"'), 'history button must sit in the weekly header');
+  // History view: the weekly section is replaced by the history viewer.
+  vm.runInContext('goodTodayWeekHistoryOpen = true;', t.ctx);
+  const hist = vm.runInContext('goodTodaySectionHTML()', t.ctx);
+  assert.ok(hist.includes('id="btnGoodTodayWeekHistoryBack"'), 'the weekly history view takes over the section');
+  // Both saved weeks are in the past → both directions are available from the newest one.
+  assert.ok(hist.includes('id="btnGoodTodayWeekPrev"'), 'prev week navigation is present');
+  assert.ok(hist.includes('id="btnGoodTodayWeekNext"'), 'next week navigation is present');
+});
