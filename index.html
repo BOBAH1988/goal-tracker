@@ -638,7 +638,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.1.4';
+const APP_VERSION = '1.1.5';
 /* ===== Seed data (transcribed from the Excel table) =====
    emptyGoals/emptySteps take the noun to use for auto-generated names, so items added later via
    the UI can be named in whichever language is active at the time (default: Russian for the
@@ -793,8 +793,9 @@ const LANG_KEY = "goal_tracker_lang";
 const STRINGS = {
   ru: {
     appTitle: '🎯 Трекер целей с колесом баланса',
-    updateApp: 'Обновить приложение',
-    appUpdatedMsg: 'У вас последняя версия.',
+    updateReadyTitle: 'Доступно обновление',
+    updateReadyText: 'Загружена новая версия приложения. Обновить сейчас?',
+    updateReadyApply: 'Обновить',
     home: 'Главная',
     back: 'Назад',
     tipBack: 'На уровень выше',
@@ -949,8 +950,9 @@ const STRINGS = {
   },
   en: {
     appTitle: '🎯 Goal Tracker with Balance Wheel',
-    updateApp: 'Update app',
-    appUpdatedMsg: "You're on the latest version.",
+    updateReadyTitle: 'Update available',
+    updateReadyText: 'A new version of the app has been downloaded. Update now?',
+    updateReadyApply: 'Update',
     home: 'Home',
     back: 'Back',
     tipBack: 'Go up one level',
@@ -1139,10 +1141,6 @@ function capWord(key){
 
 /* ===== State ===== */
 const STORAGE_KEY = "goal_tracker_state_v7";
-// Set right before doHardUpdate() reloads the page, so the fresh load can show a one-time
-// "update complete" confirmation — a plain in-page message would otherwise vanish along with the
-// old page the instant reload() fires.
-const APP_UPDATED_KEY = "goal_tracker_just_updated";
 let state = loadState();
 // Seed a random motivational quote on first run (or if quotes array is empty).
 if(!state.quoteText && QUOTES.length){ state.quoteText = randomQuote(); }
@@ -1194,6 +1192,10 @@ let checklistEditIdx = null;
 let installPanelOpen = false;
 let deferredInstallPrompt = null;
 let aboutPanelOpen = false;
+// "Update available" dialog: open while a freshly downloaded service worker waits for consent.
+let updatePanelOpen = false;
+// The waiting worker to activate (SKIP_WAITING) once the user confirms the update.
+let pendingUpdateWorker = null;
 let instructionsPanelOpen = false;
 let checklistDeletePanelOpen = false;
 // Timers for the temporary "Максимум 10 целей" toasts (cleared/reset so rapid repeat clicks
@@ -2415,6 +2417,21 @@ function systemPanelsHTML(){
       </div>
     </div>`;
   }
+  // "Update available" offer: shown when a new service worker is downloaded and waiting.
+  // ✕ (or a click on the backdrop) postpones it — the update stays pending and will be offered
+  // again on the next load; the app keeps running on the current version either way.
+  if(updatePanelOpen){
+    html += `<div class="auth-modal-overlay" id="updateOverlay">
+      <div class="auth-panel">
+        <button class="auth-close" id="btnUpdateClose" aria-label="close" title="${t('done')}">✕</button>
+        <h2 style="margin:0 0 4px; font-size:16px;">${esc(t('updateReadyTitle'))}</h2>
+        <p style="margin:0 0 12px; font-size:14px; color:var(--muted);">${esc(t('updateReadyText'))}</p>
+        <div class="auth-btn-row">
+          <button id="btnUpdateApply">${t('updateReadyApply')}</button>
+        </div>
+      </div>
+    </div>`;
+  }
   if(aboutPanelOpen){
     html += `<div class="auth-modal-overlay" id="aboutOverlay">
       <div class="auth-panel">
@@ -2471,7 +2488,6 @@ function topbarHTML(){
         <button id="btnAboutMenuItem" class="menu-item">${t('aboutTitle')}</button>
         <button id="btnInstructionsMenuItem" class="menu-item">${t('instructionsTitle')}</button>
         ${!isStandalonePwa() ? `<button id="btnInstallAppMenuItem" class="menu-item">${t('installAppTitle')}</button>` : ''}
-        <button id="btnUpdateApp" class="menu-item">${t('updateApp')}</button>
         ${!authUser ? `<button id="btnResetData" class="menu-item">${t('tipReset')}</button>` : ''}
         <div class="menu-lang-row">
           ${Object.keys(LANG_FLAGS).map(code => `<button class="lang-option ${lang===code?'active':''}" data-lang="${code}" title="${code==='ru'?'Русский':'English'}">${LANG_FLAGS[code]}</button>`).join('')}
@@ -4299,14 +4315,6 @@ function attachTopMenuHandlers(){
       render();
     });
   }
-  const btnUpdateApp = document.getElementById('btnUpdateApp');
-  if(btnUpdateApp){
-    btnUpdateApp.addEventListener('click', (e)=>{
-      e.stopPropagation();
-      topMenuOpen = false;
-      doHardUpdate();
-    });
-  }
   const btnResetData = document.getElementById('btnResetData');
   if(btnResetData){
     btnResetData.addEventListener('click', (e)=>{
@@ -4351,6 +4359,35 @@ function attachModalHandlers(){
       deferredInstallPrompt = null;
       installPanelOpen = false;
       render();
+    });
+  }
+  const updateOverlay = document.getElementById('updateOverlay');
+  if(updateOverlay){
+    updateOverlay.addEventListener('click', (e)=>{
+      // Click on the backdrop = "not now": the update stays pending (worker keeps waiting) and
+      // will be offered again on the next load.
+      if(e.target === updateOverlay){
+        updatePanelOpen = false;
+        render();
+      }
+    });
+  }
+  const btnUpdateClose = document.getElementById('btnUpdateClose');
+  if(btnUpdateClose){
+    btnUpdateClose.addEventListener('click', ()=>{
+      updatePanelOpen = false;
+      render();
+    });
+  }
+  const btnUpdateApply = document.getElementById('btnUpdateApply');
+  if(btnUpdateApply){
+    btnUpdateApply.addEventListener('click', ()=>{
+      updatePanelOpen = false;
+      render();
+      // Consent given: activate the waiting worker. The guarded controllerchange listener reloads
+      // this tab onto the fresh version once. Without a waiting worker this is a no-op — the app
+      // just keeps running, nothing breaks offline.
+      try{ if(pendingUpdateWorker) pendingUpdateWorker.postMessage({type:'SKIP_WAITING'}); }catch(e){}
     });
   }
   if(topMenuOpen){
@@ -4486,16 +4523,23 @@ if('serviceWorker' in navigator){
     navigator.serviceWorker.register('./sw.js', { updateViaCache:'none' })
       .then(reg => {
         try{ reg.update(); }catch(e){}
-        // Safety net for auto-reload: if a new worker is found but sits in "waiting" (the page's
-        // controller never changes on its own — e.g. another tab already holds this one), kick it
-        // via skipWaiting() so controllerchange fires and the single guarded reload runs.
+        // A worker sitting in "waiting" is a fully downloaded update awaiting consent — OFFER it
+        // in a modal instead of activating silently (the old auto-SKIP_WAITING kicked the reload
+        // at an arbitrary moment). The user may be on a metered plan or a carrier whitelist, so
+        // they decide when the reload happens; declining just leaves the worker waiting.
         try{
-          if(reg.waiting && navigator.serviceWorker.controller) reg.waiting.postMessage({type:'SKIP_WAITING'});
+          const offer = (worker) => {
+            pendingUpdateWorker = worker;
+            offerAppUpdate();
+          };
+          if(reg.waiting && hadControllerAtLoad) offer(reg.waiting);
           reg.addEventListener('updatefound', ()=>{
             const nw = reg.installing;
             if(nw) nw.addEventListener('statechange', ()=>{
-              if(nw.state === 'waiting' && navigator.serviceWorker.controller){
-                nw.postMessage({type:'SKIP_WAITING'});
+              // hadControllerAtLoad guards the very first install: a brand-new visitor must not be
+              // asked to "update" right after the first worker registers.
+              if(nw.state === 'waiting' && hadControllerAtLoad && navigator.serviceWorker.controller){
+                offer(nw);
               }
             });
           });
@@ -4504,33 +4548,17 @@ if('serviceWorker' in navigator){
       .catch(()=>{});
   });
 }
-// "Обновить приложение" in the menu — lets someone on an installed PWA pull the latest version
-// without deleting and re-adding the home-screen icon. Clears the service worker's cached assets
-// and unregisters it (so the next fetch has nothing stale to serve from) before reloading; the
-// confirmation message is shown on the page that comes back up, via APP_UPDATED_KEY, since any
-// on-screen message here would just disappear along with this page the instant reload() runs.
-async function doHardUpdate(){
-  try{ localStorage.setItem(APP_UPDATED_KEY, '1'); }catch(e){}
-  try{
-    if('caches' in window){
-      const keys = await caches.keys();
-      await Promise.all(keys.map(k => caches.delete(k)));
-    }
-  }catch(e){}
-  try{
-    if('serviceWorker' in navigator){
-      const regs = await navigator.serviceWorker.getRegistrations();
-      await Promise.all(regs.map(r => r.unregister()));
-    }
-  }catch(e){}
-  window.location.reload();
+// "Update available" dialog — the ONLY way to update now that the manual "Update app" menu item
+// (hard cache wipe + unregister, which left the app unopenable without a network) is gone. The new
+// worker and its fresh cache are already fully staged by the time this is offered; confirming only
+// activates the worker (SKIP_WAITING) and the guarded controllerchange reloads the tab once. If the
+// network dies mid-update, activate() in sw.js backfills anything missing from the old cache first,
+// so the reload always lands on a working app — offline or on a carrier whitelist included.
+function offerAppUpdate(){
+  if(updatePanelOpen) return; // one prompt at a time
+  updatePanelOpen = true;
+  render();
 }
-try{
-  if(localStorage.getItem(APP_UPDATED_KEY)){
-    localStorage.removeItem(APP_UPDATED_KEY);
-    alert(t('appUpdatedMsg'));
-  }
-}catch(e){}
 // Captures Chrome/Android's native install prompt so the "Установить сейчас" button in the
 // install-instructions modal can trigger it directly instead of only showing manual steps.
 window.addEventListener('beforeinstallprompt', (e)=>{

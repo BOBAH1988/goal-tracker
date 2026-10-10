@@ -47,6 +47,7 @@ const EXPORT_SRC = `
   setState: (v) => { state = v; },
   getPath: () => path,
   setPath: (v) => { path = v; },
+  offerAppUpdate,
 };`;
 
 function makeElementStub() {

@@ -575,6 +575,38 @@ test('install app: a captured beforeinstallprompt installs directly instead of s
   assert.ok(!t.document.getElementById('installOverlay'), 'the instructions modal must NOT open when installing natively');
 });
 
+// ===== "Доступно обновление" offer modal (replaces the manual "Update app" menu item) =====
+test('update offer: modal opens, ✕ postpones it, apply button closes it safely', () => {
+  const t = bootDom();
+  assert.ok(!t.document.getElementById('updateOverlay'), 'offer modal must start closed');
+  t.app.offerAppUpdate();
+  const overlay = t.document.getElementById('updateOverlay');
+  assert.ok(overlay, 'offerAppUpdate() must open the modal');
+  assert.match(overlay.textContent, /Доступно обновление/, 'ru title must be rendered');
+  assert.match(overlay.textContent, /Обновить/, 'the confirm button label must be rendered');
+  assert.ok(t.document.getElementById('btnUpdateClose'), '✕ (close) button must be present in the top-right');
+  // ✕ = "not now": the modal hides and the pending update is simply left waiting.
+  t.click('#btnUpdateClose');
+  assert.ok(!t.document.getElementById('updateOverlay'), '✕ must dismiss the modal');
+  // Confirming without a waiting worker (jsdom has no serviceWorker) must be a safe no-op:
+  // no exception, modal closes, the app keeps running.
+  t.app.offerAppUpdate();
+  t.click('#btnUpdateApply');
+  assert.ok(!t.document.getElementById('updateOverlay'), 'apply must close the modal');
+  // Re-offering while already open must not stack a second prompt.
+  t.app.offerAppUpdate();
+  t.app.offerAppUpdate();
+  assert.ok(t.document.getElementById('updateOverlay'), 'the modal stays open after a repeat offer');
+});
+
+test('menu: the manual "Update app" item is removed', () => {
+  const t = bootDom();
+  t.click('#btnTopMenu');
+  assert.ok(t.document.querySelector('.lang-menu'), 'top menu must open');
+  assert.ok(!t.document.getElementById('btnUpdateApp'), 'btnUpdateApp must be gone from the menu');
+  assert.ok(t.document.getElementById('btnInstallAppMenuItem'), 'install item must stay untouched');
+});
+
 // ===== Home goals sort dropdown (#btnFilter) =====
 function cardNavOrder(t) {
   return Array.from(t.document.querySelectorAll('.grid-goals [data-nav]')).map(el => el.dataset.nav);

@@ -14,7 +14,7 @@ const { boot, readProjectFile } = require('./helpers');
 const PANEL_FLAGS = [
   'topMenuOpen', 'installPanelOpen', 'aboutPanelOpen', 'instructionsPanelOpen',
   'checklistDeletePanelOpen', 'searchPanelOpen', 'authPanelOpen', 'signupPanelOpen',
-  'accountMenuOpen', 'editAccountOpen',
+  'accountMenuOpen', 'editAccountOpen', 'updatePanelOpen',
 ];
 
 /* document.getElementById hands out a FRESH stub per call, so the HTML render() builds is

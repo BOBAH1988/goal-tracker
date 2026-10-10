@@ -4,7 +4,7 @@
 //
 // Версия кэша = версия приложения (см. APP_VERSION в index.html): каждый бамп версии
 // гарантированно сносит старый кэш у всех, кто уже установил приложение, и тянет свежие файлы.
-const CACHE_NAME = 'goal-tracker-v1.1.4';
+const CACHE_NAME = 'goal-tracker-v1.1.5';
 const ASSETS = [
   './',
   './index.html',
@@ -70,7 +70,10 @@ async function cacheIfAppShell(request, cache, response) {
 self.addEventListener('install', (event) => {
   // Кэшируем каждый ассет по отдельности: один недоступный URL (например, заблокированный
   // «белым списком») НЕ должен ронять всю установку через addAll(), иначе новый воркер не
-  // активируется и приложение навсегда остаётся на старом кэше. skipWaiting() активирует сразу.
+  // активируется и приложение навсегда остаётся на старом кэше. skipWaiting() НЕ вызываем:
+  // новый воркер ждёт в состоянии waiting, пока пользователь подтвердит обновление в диалоге
+  // index.html (сообщение SKIP_WAITING) — так обновление не перезагружает приложение в самый
+  // неподходящий момент и не ломает работу без сети.
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE_NAME);
     await Promise.all(ASSETS.map(async (url) => {
@@ -84,25 +87,24 @@ self.addEventListener('install', (event) => {
       } catch (e) { /* офлайн/блокировка — догрузим фоновым запросом позже */ }
     }));
   })());
-  self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE_NAME);
-    // Защита от «пустого» обновления: если новый кэш не получил рабочую оболочку (сеть пропала
-    // или была заблокирована прямо в момент установки), подтягиваем её из старого кэша ДО его
-    // удаления — иначе activate стёр бы рабочий кэш, и пользователь увидел бы офлайн-заглушку
-    // вместо приложения (чёрный экран при обновлении без сети).
-    const hasShell = !!(await cache.match('./index.html') || await cache.match('./'));
-    if (!hasShell) {
-      const keys = await caches.keys();
-      for (const key of keys) {
+    // Защита от «пустого» обновления: всё, что не удалось скачать при установке (обрыв или
+    // блокировка сети в момент установки), подтягиваем из старого кэша ДО его удаления — иначе
+    // activate стёр бы рабочий файл, и пользователь без сети увидел бы офлайн-заглушку вместо
+    // приложения (чёрный экран при обновлении без сети). Оболочка, цитаты, манифест и иконки
+    // переезжают под теми же ключами; каждый перенос проходит ту же валидацию маркером.
+    for (const url of ASSETS) {
+      if (await cache.match(url)) continue;
+      for (const key of await caches.keys()) {
         if (key === CACHE_NAME) continue;
         const old = await caches.open(key);
-        const shell = (await old.match('./index.html')) || (await old.match('./'));
-        if (shell && await isExpectedPayload(shell.url || './index.html', shell)) {
-          await cache.put('./index.html', shell);
+        const saved = await old.match(url);
+        if (saved && await isExpectedPayload(saved.url || url, saved)) {
+          await cache.put(url, saved);
           break;
         }
       }
@@ -113,8 +115,9 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Allow an updated worker to take over open tabs on demand: index.html posts this message when a
-// new worker is stuck in "waiting", so controllerchange fires there and the page reloads once.
+// Activate a waiting worker only on the user's consent: index.html shows an "update available"
+// dialog when this worker sits in "waiting", and posts this message when the user confirms.
+// The guarded controllerchange listener in index.html then reloads the tab once.
 self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting();
 });
