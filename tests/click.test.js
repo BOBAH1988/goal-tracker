@@ -575,3 +575,55 @@ test('install app: a captured beforeinstallprompt installs directly instead of s
   assert.ok(!t.document.getElementById('installOverlay'), 'the instructions modal must NOT open when installing natively');
 });
 
+// ===== Home goals sort dropdown (#btnFilter) =====
+function cardNavOrder(t) {
+  return Array.from(t.document.querySelectorAll('.grid-goals [data-nav]')).map(el => el.dataset.nav);
+}
+test('goals sort: filter button opens a menu; picking an order re-ranks the cards and persists', () => {
+  const t = bootDom();
+  // children deliberately out of percent order: low(0), full(100), half(50), plus an archived one.
+  t.app.setState({
+    name: 'root',
+    children: [
+      leaf(false, { name: 'Низкая' }),
+      container([leaf(true), leaf(true)], { name: 'Полная', total: 2 }),
+      container([leaf(true), leaf(false)], { name: 'Половина', total: 2 }),
+      container([leaf(true), leaf(true)], { name: 'В архиве', total: 2, archived: true }),
+    ],
+  });
+  t.window.render();
+
+  // Default is custom (stored) order; menu is closed until the button is pressed.
+  assert.ok(!t.document.getElementById('filterMenu'), 'sort menu must be closed by default');
+  assert.deepEqual(cardNavOrder(t), ['0', '1', '2', '3'], 'custom order keeps stored sequence (archived already last here)');
+
+  t.click('#btnFilter');
+  const menu = t.document.getElementById('filterMenu');
+  assert.ok(menu, 'clicking the filter button must open the sort menu');
+  assert.ok(t.document.querySelector('[data-sort="desc"]'), 'menu must offer descending');
+  assert.ok(t.document.querySelector('[data-sort="asc"]'), 'menu must offer ascending');
+  assert.ok(t.document.querySelector('[data-sort="custom"]'), 'menu must offer custom order');
+  // Custom is the active default → its button carries .active.
+  assert.ok(t.document.querySelector('[data-sort="custom"]').classList.contains('active'), 'custom must be marked active by default');
+
+  // Pick "по убыванию": highest completion first, archived sinks to the end.
+  t.click('[data-sort="desc"]');
+  assert.equal(t.app.getState().goalsSort, 'desc', 'chosen sort must be written to state');
+  assert.ok(!t.document.getElementById('filterMenu'), 'picking an option must close the menu');
+  // indices: Полная(1,100%) → Половина(2,50%) → Низкая(0,0%) → В архиве(3, archived last)
+  assert.deepEqual(cardNavOrder(t), ['1', '2', '0', '3'], 'desc must rank by completion high→low, archived last');
+
+  // Pick "по возрастанию": reversed active order, archived still last.
+  t.click('#btnFilter');
+  t.click('[data-sort="asc"]');
+  assert.deepEqual(cardNavOrder(t), ['0', '2', '1', '3'], 'asc must rank by completion low→high, archived last');
+
+  // Choice persists across a reload (round-trips like the other home-screen toggles).
+  const raw = t.window.localStorage.getItem(t.app.STORAGE_KEY);
+  assert.ok(raw && raw.includes('"goalsSort":"asc"'), 'sort choice must serialize to localStorage');
+  const t2 = bootDom({ [t.app.STORAGE_KEY]: raw });
+  assert.equal(t2.app.getState().goalsSort, 'asc', 'persisted sort must read back');
+  assert.deepEqual(cardNavOrder(t2), ['0', '2', '1', '3'], 'restored sort must re-rank on boot');
+});
+
+

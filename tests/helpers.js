@@ -41,7 +41,7 @@ const EXPORT_SRC = `
   polarToCartesian, wedgePath, arcPath, wheelHTML,
   emptyTemplate, emptyGoals, emptySteps, leafGoals, checklistLeaf,
   protectedCountFor, minChildrenFor, collectPriorityItems,
-  resolve, validatePath, loadState, saveState,
+  resolve, validatePath, loadState, saveState, sortHomeGoals,
    STRINGS, SEED, LANG_KEY, STORAGE_KEY, QUOTES,
   getState: () => state,
   setState: (v) => { state = v; },

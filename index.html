@@ -238,6 +238,21 @@
   }
   .account-menu button:hover{background:var(--card);}
   .account-menu button.danger{color:var(--red);}
+  /* Home goals sort dropdown — opened by the #btnFilter button next to reorder. Mirrors
+     .account-menu styling; options get a check mark when active. */
+  .filter-dropdown{position:relative; display:inline-flex; z-index:11;}
+  .filter-menu{
+    position:absolute; top:calc(100% + 4px); right:0; background:var(--card2); border:1px solid var(--border);
+    border-radius:10px; padding:4px; display:flex; flex-direction:column; gap:2px; z-index:10;
+    min-width:180px; box-shadow:0 8px 24px rgba(0,0,0,.35);
+  }
+  .filter-menu button{
+    background:none; border:none; color:var(--text); border-radius:6px; padding:9px 12px; font-size:13px;
+    cursor:pointer; text-align:left; white-space:nowrap; display:flex; align-items:center; justify-content:space-between; gap:10px;
+  }
+  .filter-menu button:hover{background:var(--card);}
+  .filter-menu button.active{color:var(--accent); font-weight:600;}
+  .filter-menu button.active::after{content:'✓';}
   .verify-banner{
     display:flex; align-items:center; flex-wrap:wrap; gap:8px; background:rgba(230,180,60,.12);
     border:1px solid var(--yellow); color:var(--text); border-radius:10px; padding:8px 12px;
@@ -594,7 +609,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.0.31';
+const APP_VERSION = '1.0.32';
 /* ===== Seed data (transcribed from the Excel table) =====
    emptyGoals/emptySteps take the noun to use for auto-generated names, so items added later via
    the UI can be named in whichever language is active at the time (default: Russian for the
@@ -805,6 +820,10 @@ const STRINGS = {
     tipMove: 'Изменить порядок',
     moveHint: '— зажмите карточку и перетащите её на новое место',
     tipRelocate: 'Переместить в другую цель',
+    tipSort: 'Сортировка списка',
+    sortDesc: 'По убыванию',
+    sortAsc: 'По возрастанию',
+    sortCustom: 'Пользовательский',
     relocateHint: '— выберите карточку, чтобы перенести её в другую цель или подцель',
     relocateTitle: 'Куда перенести?',
     relocateMoving: 'Переносим:',
@@ -957,6 +976,10 @@ const STRINGS = {
     tipMove: 'Reorder',
     moveHint: '— press and hold a card, then drag it to a new spot',
     tipRelocate: 'Move to another goal',
+    tipSort: 'Sort list',
+    sortDesc: 'Descending',
+    sortAsc: 'Ascending',
+    sortCustom: 'Custom order',
     relocateHint: '— pick a card to move it to a different goal or subgoal',
     relocateTitle: 'Move where?',
     relocateMoving: 'Moving:',
@@ -1099,6 +1122,9 @@ let path = [];
   let mainGoalsOpen = state.mainGoalsOpen !== false;
   let wheelOpen = state.wheelOpen !== false;
   let todayOpen = state.todayOpen !== false;
+  // Home goals sort order. Persisted on state.goalsSort (round-trips + cloud-syncs like the
+  // other toggle flags). Defaults to 'custom' = the stored drag-reorderable order.
+  let goalsSort = (state.goalsSort === 'desc' || state.goalsSort === 'asc' || state.goalsSort === 'custom') ? state.goalsSort : 'custom';
 let editMode = false;
 let deleteMode = false;
 // Press-and-hold drag-to-reorder state (see attachDragHandlers below).
@@ -1260,6 +1286,9 @@ let nameCheckStatus = '';
 let nameCheckTimer = null;
 let nameCheckToken = 0;
 let accountMenuOpen = false;
+// Home goals sort dropdown (#btnFilter). Transient UI state, not persisted (unlike the
+// chosen goalsSort, which lives on state.goalsSort so it round-trips like mainGoalsOpen).
+let filterMenuOpen = false;
 let editAccountOpen = false;
 let editAccountError = '';
 let editAccountBusy = false;
@@ -2200,6 +2229,14 @@ function homeViewHTML(overallPct, hintHTML, mode, protectedCount){
       <button id="btnAddGoal" class="icon-btn" data-tip="${t('tipAdd')}" aria-label="${t('tipAdd')}">+</button>
       <button id="btnDelete" class="${deleteMode?'active':'icon-btn'}" data-tip="${deleteMode?t('done'):t('tipDelete')}" aria-label="${deleteMode?t('done'):t('tipDelete')}">${deleteMode ? t('done') : '−'}</button>
       <button id="btnMove" class="${moveMode?'active':'icon-btn'}" data-tip="${moveMode?t('done'):t('tipMove')}" aria-label="${moveMode?t('done'):t('tipMove')}">${moveMode ? t('done') : '↕'}</button>
+      <div class="filter-dropdown">
+        <button id="btnFilter" class="icon-btn" data-tip="${t('tipSort')}" aria-label="${t('tipSort')}"><i class="ti ti-arrows-sort" aria-hidden="true"></i></button>
+        ${filterMenuOpen ? `<div class="filter-menu" id="filterMenu">
+          <button data-sort="desc" class="${goalsSort==='desc'?'active':''}">${t('sortDesc')}</button>
+          <button data-sort="asc" class="${goalsSort==='asc'?'active':''}">${t('sortAsc')}</button>
+          <button data-sort="custom" class="${goalsSort==='custom'?'active':''}">${t('sortCustom')}</button>
+        </div>` : ''}
+      </div>
       <button id="btnRelocate" class="${relocateMode?'active':'icon-btn'}" data-tip="${relocateMode?t('done'):t('tipRelocate')}" aria-label="${relocateMode?t('done'):t('tipRelocate')}">${relocateMode ? t('done') : '<i class="ti ti-folder-symlink" aria-hidden="true"></i>'}</button>
       <button id="btnEdit" class="${editMode?'active':'icon-btn'}" data-tip="${editMode?t('done'):t('tipEdit')}" aria-label="${editMode?t('done'):t('tipEdit')}">${editMode ? t('done') : '<i class="ti ti-edit" aria-hidden="true"></i>'}</button>
       <span id="deleteMsg" class="add-goal-msg"></span>
@@ -2207,7 +2244,7 @@ function homeViewHTML(overallPct, hintHTML, mode, protectedCount){
   </div>`;
   if(mainGoalsOpen){
     html += `<div class="grid grid-goals">`;
-    state.children.forEach((cat, i) => { html += cardOrLeafHTML(cat, i, mode, protectedCount); });
+    sortHomeGoals(state.children, goalsSort).forEach(({ node, idx }) => { html += cardOrLeafHTML(node, idx, mode, protectedCount); });
     html += `</div>`;
   }
    html += `<div class="section-title" id="wheelToggle" style="margin-top:24px;">
@@ -2478,6 +2515,28 @@ function cardModeTitle(node, idx, mode, defaultArrow, protectedCount){
     return `<span>${esc(node.name)}</span><span class="arrow"><i class="ti ti-folder-symlink" aria-hidden="true"></i></span>`;
   }
   return `<span>${esc(node.name)}</span><span class="arrow">${defaultArrow}</span>`;
+}
+
+// Home goals ordering for the sort dropdown. Returns {node, idx} pairs — idx is each goal's
+// ORIGINAL index in state.children, which cardOrLeafHTML bakes into data-nav / data-drag-idx /
+// data-delete-idx (all resolved back against the live array). Sorting only changes display
+// order, never the underlying data, so navigation / drag / delete keep hitting the right goal.
+// Rules: 'desc'/'asc' sort active goals by completion (computePercent) high→low / low→high;
+// 'custom' keeps the stored (drag-reorderable) order. Archived goals ALWAYS sink to the bottom,
+// in every mode, so a paused goal never floats up among active ones (and an un-archive brings
+// it back to the end of the active group, matching the archive sink in the leaf handler).
+function sortHomeGoals(children, sortMode){
+  const entries = children.map((node, idx) => ({ node, idx }));
+  const archived = entries.filter(e => e.node.archived);
+  let active = entries.filter(e => !e.node.archived);
+  if(sortMode === 'desc'){
+    active = active.sort((a, b) => computePercent(b.node) - computePercent(a.node));
+  } else if(sortMode === 'asc'){
+    active = active.sort((a, b) => computePercent(a.node) - computePercent(b.node));
+  }
+  // 'custom' (or anything unknown): leave active in stored order. Ties in desc/asc keep their
+  // relative stored order because Array.sort is stable in modern engines.
+  return active.concat(archived);
 }
 
 function cardHTML(node, idx, mode, protectedCount){
@@ -3102,6 +3161,33 @@ function attachMainViewHandlers(){
       wheelOpen = !wheelOpen;
       state.wheelOpen = wheelOpen;
       saveState();
+      render();
+    });
+  }
+  // Home goals sort dropdown. stopPropagation so the toggle doesn't immediately bubble into
+  // the document click-away listener registered below (which would close it in the same tick).
+  const btnFilter = document.getElementById('btnFilter');
+  if(btnFilter){
+    btnFilter.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      filterMenuOpen = !filterMenuOpen;
+      render();
+    });
+  }
+  document.querySelectorAll('[data-sort]').forEach(el=>{
+    el.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      goalsSort = el.dataset.sort;
+      state.goalsSort = goalsSort;
+      filterMenuOpen = false;
+      saveState();
+      render();
+    });
+  });
+  if(filterMenuOpen){
+    document.addEventListener('click', function closeFilterMenu(){
+      filterMenuOpen = false;
+      document.removeEventListener('click', closeFilterMenu);
       render();
     });
   }
