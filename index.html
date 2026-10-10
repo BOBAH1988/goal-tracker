@@ -577,6 +577,44 @@
     font-size:18px; cursor:pointer; line-height:1;
   }
   .wish-lightbox-close:hover{background:rgba(6,9,16,.9);}
+  /* Personal photo («isUserPhoto»): same size/ratio/rectangular format as every other card —
+     only a light accent frame plus a small corner badge tell it apart. */
+  .wish-card-me{outline:2px solid var(--accent); outline-offset:-2px;}
+  .wish-you-badge{
+    position:absolute; left:6px; top:6px; z-index:1;
+    background:var(--accent); color:#fff; font-size:11px; font-weight:700;
+    padding:3px 8px; border-radius:999px; line-height:1.3; pointer-events:none;
+  }
+  /* Card whose image lives in Firebase Storage but isn't downloaded yet (other device / offline). */
+  .wish-img-pending{
+    display:flex; align-items:center; justify-content:center; text-align:center;
+    color:var(--muted); font-size:12px; padding:12px; background:var(--card2);
+  }
+  /* Calm limit note: the board holds at most WISH_MAX_CARDS images. */
+  .wish-limit-note{margin-top:10px; color:var(--muted); font-size:12.5px; text-align:center;}
+  /* «Это моё фото» checkbox row (add form + caption editor). */
+  .wish-check{
+    display:flex; align-items:center; gap:8px; font-size:13px; color:var(--text); cursor:pointer;
+    min-height:32px;
+  }
+  .wish-check input[type=checkbox]{width:18px; height:18px; accent-color:var(--accent); cursor:pointer;}
+  /* Crop dialog: square frame with the card's 1:1 ratio (rectangular, never round). The image
+     can be dragged and zoomed inside the frame; only the framed area is encoded afterwards. */
+  .wish-crop{display:flex; flex-direction:column; gap:12px; width:min(88vw,400px);}
+  .wish-crop-title{font-size:15px; font-weight:600; color:var(--text);}
+  .wish-crop-hint{color:var(--muted); font-size:12.5px;}
+  .wish-crop-stage{
+    position:relative; width:100%; aspect-ratio:1/1; overflow:hidden;
+    border:2px solid rgba(255,255,255,.85); border-radius:10px;
+    background:#0b0f16; touch-action:none; cursor:grab; user-select:none;
+  }
+  .wish-crop-stage:active{cursor:grabbing;}
+  .wish-crop-stage img{
+    position:absolute; max-width:none; pointer-events:none;
+    -webkit-user-drag:none; user-select:none;
+  }
+  .wish-crop-zoom{display:flex; align-items:center; gap:10px; color:var(--muted); font-size:13px;}
+  .wish-crop-zoom input[type=range]{flex:1; accent-color:var(--accent);}
   .add-sub{margin-top:14px;}
   .add-sub button{
     background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:8px; padding:8px 14px; font-size:13px; cursor:pointer;
@@ -702,6 +740,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
 <script src="quotes.js"></script>
 
 <script>
@@ -712,7 +751,15 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.1.10';
+const APP_VERSION = '1.1.12';
+/* ===== Wish board constants =====
+   Declared high up on purpose: loadState() runs near the top of this script and calls
+   ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
+   temporal dead zone (ReferenceError on boot / reload with a saved board). */
+const WISH_MAX_CARDS = 12;    // hard cap: 12 cards on the board, personal photo included
+const WISH_IMG_SIZE = 720;    // card bitmap side (px): crop frame, stored copy, everything is 1:1
+const WISH_MAX_SRC_BYTES = 12 * 1024 * 1024; // sane cap for a picked source file
+const WISH_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
 /* ===== Seed data (transcribed from the Excel table) =====
    emptyGoals/emptySteps take the noun to use for auto-generated names, so items added later via
    the UI can be named in whichever language is active at the time (default: Russian for the
@@ -1034,7 +1081,17 @@ const STRINGS = {
     wishEditTitle: 'Редактировать подпись',
     wishEditTip: 'Редактировать подпись',
     wishDeleteTip: 'Удалить карточку',
-    wishDeleteConfirm: 'Удалить эту карточку?'
+    wishDeleteConfirm: 'Удалить эту карточку?',
+    wishLimitMsg: 'На карте уже {max} изображений. Удалите или замените одно, если хотите добавить новое.',
+    wishMyPhoto: 'Это моё фото',
+    wishReplaceUserPhoto: 'Отметить это фото личным? Текущее личное фото будет снято с отметки, но останется на карте.',
+    wishYouBadge: 'Я',
+    wishCropTitle: 'Обрежьте изображение',
+    wishCropHint: 'Перетащите изображение и настройте масштаб, чтобы в кадр попала важная область.',
+    wishCropDone: 'Готово',
+    wishImageTooBig: 'Файл слишком большой — максимум 12 МБ.',
+    wishFileTypeError: 'Нужен файл PNG, JPEG или WebP.',
+    wishImagePending: 'Изображение загрузится при появлении сети'
   },
   en: {
     appTitle: '🎯 Goal Tracker with Balance Wheel',
@@ -1205,7 +1262,17 @@ const STRINGS = {
     wishEditTitle: 'Edit caption',
     wishEditTip: 'Edit caption',
     wishDeleteTip: 'Delete card',
-    wishDeleteConfirm: 'Delete this card?'
+    wishDeleteConfirm: 'Delete this card?',
+    wishLimitMsg: 'The board already has {max} images. Delete or replace one if you want to add another.',
+    wishMyPhoto: 'This is my photo',
+    wishReplaceUserPhoto: 'Mark this as your photo? The current personal photo will be unmarked but stays on the board.',
+    wishYouBadge: 'Me',
+    wishCropTitle: 'Crop the image',
+    wishCropHint: 'Drag the image and adjust the zoom so the important part is inside the frame.',
+    wishCropDone: 'Done',
+    wishImageTooBig: 'The file is too big — 12 MB max.',
+    wishFileTypeError: 'A PNG, JPEG or WebP file is required.',
+    wishImagePending: 'The image will download when you are online'
   }
 };
 function loadLang(){
@@ -1294,6 +1361,15 @@ let wishAddOpen = false;      // add-card form (file picker + caption) is open
 let wishDraftSrc = null;      // dataURL of the picked image, pending Save
 let wishCaptionDraft = '';    // caption typed into the add form (survives re-renders)
 let wishFormError = '';       // add-form error (missing / unreadable image)
+let wishIsUserPhotoDraft = false; // «Это моё фото» checkbox state in the add form
+// Crop dialog state: wishCropSrc is non-null only while the crop overlay is open (top-level so
+// render() can paint it and the render-guard tests can poke it like the other panel flags).
+// wishCropImg keeps the decoded source bitmap; zoom/offset are in 720-unit card coordinates.
+let wishCropSrc = null;       // data: URL of the full-size picked file (crop overlay open)
+let wishCropImg = null;       // decoded HTMLImageElement for cropping
+let wishCropZoom = 1;         // 1..4 multiplier over the base (frame-covering) scale
+let wishCropOx = 0;           // horizontal pan in WISH_IMG_SIZE units (clamped by cropMetrics)
+let wishCropOy = 0;           // vertical pan in WISH_IMG_SIZE units
 let wishEditIdx = null;       // index of the card whose caption is being edited
 let wishLightboxIdx = null;   // index of the card enlarged in the lightbox
 // Global search panel (opened from the top menu). Results are recomputed on each keystroke and
@@ -1503,9 +1579,10 @@ function scheduleCloudPush(){
   clearTimeout(cloudSyncTimer);
   cloudSyncTimer = setTimeout(()=>{
     // merge:true so this doesn't wipe out the account's `name`/`consent` fields — this call
-    // only ever needs to touch `state`.
+    // only ever needs to touch `state`. The wish board is written as METADATA ONLY (no image
+    // data-URLs): the bytes live in Firebase Storage, see stateForCloud/wishMapForCloud.
     firebase.firestore().collection('users').doc(authUser.uid)
-      .set({ state, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge:true })
+      .set({ state: stateForCloud(state), updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge:true })
       .catch(()=>{});
   }, 800);
 }
@@ -1525,6 +1602,10 @@ function startCloudSync(uid){
     if(doc.exists){
       const data = doc.data();
       if(data && data.state){
+        // Image data-URLs never reach the cloud doc (metadata only), so a local board always
+        // "differs" from the cloud one by src — strip it from the conflict comparison along
+        // with the wheel's totalGoalsAdded bookkeeping churn.
+        const strip = (k, v) => (k === 'totalGoalsAdded' || k === 'src') ? undefined : v;
         // Guard against silently overwriting real local edits made while logged out: only runs
         // once, right after sign-in (preSyncLocalState is cleared as soon as it's been checked
         // once, so it never blocks a later legitimate real-time update from another device).
@@ -1532,10 +1613,7 @@ function startCloudSync(uid){
           const localSnapshot = preSyncLocalState;
           preSyncLocalState = null;
           let differs = true;
-          // Same totalGoalsAdded stripping as isProtectableState(): wheel bookkeeping churn must
-          // not force a conflict modal when the actual goals are identical.
           try{
-            const strip = (k, v) => k === 'totalGoalsAdded' ? undefined : v;
             differs = JSON.stringify(localSnapshot, strip) !== JSON.stringify(data.state, strip);
           }catch(e){}
           if(differs && isProtectableState(localSnapshot)){
@@ -1544,13 +1622,21 @@ function startCloudSync(uid){
             return;
           }
         }
+        const localWishCards = (Array.isArray(state.wishMap) ? state.wishMap : []);
         applyingRemoteUpdate = true;
         state = data.state;
         // Cloud docs written by older app versions may lack the wheel counter — backfill it
         // the same way as loadState()/import so the wheel never divides by a missing zero.
-        if(isValidGoalTree(state)){ sanitizeGoalTree(state); sanitizeEmptyChecklists(state); ensureWheelTotals(state); ensureToday(state); }
+        if(isValidGoalTree(state)){
+          sanitizeGoalTree(state); sanitizeEmptyChecklists(state); ensureWheelTotals(state); ensureToday(state);
+          // The cloud board carries metadata only; keep local cached images for cards we
+          // already have and queue Storage downloads for the rest (syncWishBoard below).
+          if(Array.isArray(data.state.wishMap)) state.wishMap = mergeWishMapCloud(data.state.wishMap, localWishCards);
+          else state.wishMap = localWishCards;
+        }
         saveState();
         applyingRemoteUpdate = false;
+        syncWishBoard();
       }
       if(data && authUser){
         if(data.name) authUser.name = data.name;
@@ -2015,16 +2101,184 @@ function ensureToday(node){
     node.today = node.today.slice(0, 3);
   }
 }
-// The wish map («Карта желаний») is a plain array of {src, caption} cards; src is a
-// self-contained data: URL so the board renders fully offline. Backfills older saves,
-// hand-trimmed backups and cloud docs that predate (or mangle) the feature, and drops
-// anything that isn't a real image card.
+// The wish map («Карта желаний») is an array of cards:
+//   {id, title, src, imagePath, order, isUserPhoto, createdAt, updatedAt}
+// `src` is a self-contained data: URL (local cache → the board renders fully offline),
+// `imagePath` is the Firebase Storage object (users/{uid}/vision-board/{id}.webp) — the cloud
+// document itself stores ONLY the metadata (see wishMapForCloud), never the image bytes.
+// ensureWishMap backfills older saves (legacy {src, caption}), hand-trimmed backups and cloud
+// docs, drops anything that isn't a real image card, enforces the 12-card cap and guarantees
+// at most one isUserPhoto card.
 function ensureWishMap(node){
   if(!node) return;
   if(!Array.isArray(node.wishMap)){ node.wishMap = []; return; }
+  const seenIds = new Set();
+  let userPhotoTaken = false;
   node.wishMap = node.wishMap
-    .filter(c => !!c && typeof c === 'object' && typeof c.src === 'string' && c.src.startsWith('data:image/'))
-    .map(c => ({ src: c.src, caption: typeof c.caption === 'string' ? c.caption : '' }));
+    .filter(c => !!c && typeof c === 'object'
+      && ((typeof c.src === 'string' && c.src.startsWith('data:image/'))
+          || (typeof c.imagePath === 'string' && c.imagePath)))
+    .slice(0, WISH_MAX_CARDS)
+    .map((c, i) => {
+      let id = (typeof c.id === 'string' && c.id)
+        ? c.id
+        : 'wish-' + Date.now().toString(36) + '-' + i + Math.random().toString(36).slice(2, 6);
+      while(seenIds.has(id)) id += 'x';
+      seenIds.add(id);
+      // Only ONE personal photo: the first marked card keeps the flag, later duplicates lose it.
+      let isUserPhoto = !!c.isUserPhoto;
+      if(isUserPhoto && userPhotoTaken) isUserPhoto = false;
+      if(isUserPhoto) userPhotoTaken = true;
+      return {
+        id,
+        src: (typeof c.src === 'string' && c.src.startsWith('data:image/')) ? c.src : '',
+        title: typeof c.title === 'string' ? c.title : (typeof c.caption === 'string' ? c.caption : ''),
+        imagePath: (typeof c.imagePath === 'string' && c.imagePath) ? c.imagePath : null,
+        order: Number.isInteger(c.order) ? c.order : i,
+        isUserPhoto,
+        createdAt: Number.isFinite(c.createdAt) ? c.createdAt : null,
+        updatedAt: Number.isFinite(c.updatedAt) ? c.updatedAt : null
+      };
+    });
+}
+// Cloud projection of the board: metadata only — Firestore stores no image data at all, the
+// bytes live in Firebase Storage (keyed by imagePath). Used by scheduleCloudPush.
+function wishMapForCloud(node){
+  const cards = (node && Array.isArray(node.wishMap)) ? node.wishMap : [];
+  return cards.map((c, i) => ({
+    id: c.id,
+    title: c.title || '',
+    imagePath: c.imagePath || null,
+    order: Number.isInteger(c.order) ? c.order : i,
+    isUserPhoto: !!c.isUserPhoto,
+    createdAt: c.createdAt || null,
+    updatedAt: c.updatedAt || null
+  }));
+}
+// Top-level state with the wish map replaced by its cloud projection (what gets written to
+// the users/{uid} Firestore document).
+function stateForCloud(s){
+  const copy = Object.assign({}, s);
+  copy.wishMap = wishMapForCloud(s);
+  return copy;
+}
+// Merges the cloud board (metadata) with the local one (image cache): cloud wins for metadata
+// (title/order/isUserPhoto/dates), local src is kept for cards we already have, cards known
+// only by imagePath wait for downloadWishImage. Result is fully sanitized (ids, cap, one mark).
+function mergeWishMapCloud(cloudCards, localCards){
+  const local = new Map((Array.isArray(localCards) ? localCards : []).filter(c => c && c.id).map(c => [c.id, c]));
+  const merged = (Array.isArray(cloudCards) ? cloudCards : []).map(cc => {
+    const card = Object.assign({}, cc || {});
+    const keep = card.id ? local.get(card.id) : null;
+    if(keep && typeof keep.src === 'string' && keep.src.startsWith('data:image/')) card.src = keep.src;
+    return card;
+  });
+  const holder = { wishMap: merged };
+  ensureWishMap(holder);
+  return holder.wishMap;
+}
+// Display order for the grid: the personal photo (isUserPhoto) always sits in the centre slot
+// of the matrix (floor(n/2)); everything else keeps its stored order. Returns state indices.
+function wishMapDisplayOrder(cards){
+  const n = Array.isArray(cards) ? cards.length : 0;
+  const order = [];
+  for(let i = 0; i < n; i++) order.push(i);
+  if(!n) return order;
+  let meIdx = -1;
+  for(let i = 0; i < n; i++){ if(cards[i] && cards[i].isUserPhoto){ meIdx = i; break; } }
+  if(meIdx < 0) return order;
+  order.splice(order.indexOf(meIdx), 1);
+  order.splice(Math.min(Math.floor(n / 2), order.length), 0, meIdx);
+  return order;
+}
+// Attempts to make the CURRENT save the personal photo: if another card already holds the
+// mark, asks for a replacement confirmation. On confirm the OLD card only loses the flag
+// (it is never deleted); on decline the caller saves without the flag.
+function claimUserPhoto(){
+  const cards = Array.isArray(state.wishMap) ? state.wishMap : [];
+  const current = cards.find(c => c && c.isUserPhoto);
+  if(!current) return true;
+  if(!confirm(t('wishReplaceUserPhoto'))) return false;
+  current.isUserPhoto = false;
+  current.updatedAt = Date.now();
+  return true;
+}
+// ===== Firebase Storage (optional, same policy as the rest of the cloud sync) =====
+// Optimised card images live at users/{uid}/vision-board/{id}.webp — a private path guarded by
+// storage.rules (owner-only read/write, jpeg/png/webp only, size cap). getDownloadURL returns a
+// long-lived unguessable token URL, but access is still checked against those rules: nothing
+// here works without an authenticated owner. Everything degrades to "no-op" when the SDK,
+// sign-in or network is missing — the board keeps working offline from local data-URLs.
+function wishStorageReady(){
+  return cloudEnabled && authUser && typeof firebase !== 'undefined'
+    && typeof firebase.storage === 'function';
+}
+function wishStoragePath(card){
+  return 'users/' + authUser.uid + '/vision-board/' + card.id + '.webp';
+}
+function dataUrlToBlob(dataUrl){
+  return fetch(dataUrl).then(r => r.blob());
+}
+function blobToDataUrl(blob){
+  return new Promise((resolve, reject)=>{
+    const reader = new FileReader();
+    reader.onload = ()=>resolve(String(reader.result));
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+// Uploads a freshly saved card's optimised WebP to Storage and records imagePath on success.
+function uploadWishImage(card){
+  if(!wishStorageReady() || !card || !(typeof card.src === 'string' && card.src)) return;
+  const path = wishStoragePath(card);
+  dataUrlToBlob(card.src)
+    .then(blob => firebase.storage().ref(path).put(blob, { contentType: blob.type || 'image/webp' }))
+    .then(()=>{
+      const live = (state.wishMap || []).find(c => c.id === card.id);
+      if(live){
+        live.imagePath = path;
+        live.updatedAt = Date.now();
+        saveState();
+        scheduleCloudPush();
+        render();
+      }
+    })
+    .catch(()=>{}); // offline or rules rejected — the card stays local, syncWishBoard retries later
+}
+// Downloads the Storage object for a card that has metadata but no local image cache yet.
+function downloadWishImage(card){
+  if(!wishStorageReady() || !card || !card.imagePath) return;
+  firebase.storage().ref(card.imagePath).getDownloadURL()
+    .then(url => fetch(url))
+    .then(res => { if(!res.ok) throw new Error('http ' + res.status); return res.blob(); })
+    .then(blob => blobToDataUrl(blob))
+    .then(dataUrl => {
+      const live = (state.wishMap || []).find(c => c.id === card.id);
+      if(live && typeof dataUrl === 'string' && dataUrl.startsWith('data:image/')){
+        live.src = dataUrl;
+        saveState();
+        render();
+      }
+    })
+    .catch(()=>{}); // offline — retried by the next syncWishBoard (sign-in / snapshot / save)
+}
+// One pass over the board: upload cards that only exist locally, download cards that only
+// exist in the cloud. Safe to call often — every card is already in its final state or one
+// async step away from it.
+function syncWishBoard(){
+  if(!wishStorageReady()) return;
+  (state.wishMap || []).forEach(c => {
+    if(c.imagePath){
+      if(!(typeof c.src === 'string' && c.src.startsWith('data:image/'))) downloadWishImage(c);
+    }else if(typeof c.src === 'string' && c.src.startsWith('data:image/')){
+      uploadWishImage(c);
+    }
+  });
+}
+// Best-effort removal of the Storage object when its card is deleted (never blocks the UI).
+function deleteWishImageFile(card){
+  if(!wishStorageReady() || !card || !card.imagePath) return;
+  firebase.storage().ref(card.imagePath).delete().catch(()=>{});
 }
 // percent = 100% * (1 - fractionalIncomplete / max(totalGoalsAdded, activeLeaves)),
 // clamped to 0..100. Incomplete is fractional: an open plain leaf contributes 1,
@@ -2437,7 +2691,7 @@ function homeViewHTML(overallPct, hintHTML, mode, protectedCount){
       <div class="section-title" id="wishToggle">
         <span class="wheel-arrow">${wishMapOpen ? '▾' : '▸'}</span>${t('wishMapTitle')}
       </div>
-      ${wishAddOpen ? '' : `<button id="btnWishAdd" class="icon-btn" data-tip="${t('wishAdd')}" aria-label="${t('wishAdd')}">+</button>`}
+      ${(wishAddOpen || (Array.isArray(state.wishMap) && state.wishMap.length >= WISH_MAX_CARDS)) ? '' : `<button id="btnWishAdd" class="icon-btn" data-tip="${t('wishAdd')}" aria-label="${t('wishAdd')}">+</button>`}
     </div>`;
     if(wishMapOpen){
       html += wishMapSectionHTML();
@@ -2450,20 +2704,55 @@ function homeViewHTML(overallPct, hintHTML, mode, protectedCount){
 function wishCardAt(idx){
   return (Number.isInteger(idx) && idx >= 0 && Array.isArray(state.wishMap)) ? (state.wishMap[idx] || null) : null;
 }
-// Downscale a picked image to ≤720px on the longest side and re-encode it as JPEG. Cards store
-// the image as a self-contained data: URL, so the board works fully offline — but keeping it
-// small matters too (localStorage quota, backup size, optional Firestore document limit).
-function shrinkWishImage(img){
-  const maxSide = 720;
-  const iw = img.naturalWidth || img.width || 1;
-  const ih = img.naturalHeight || img.height || 1;
-  const scale = Math.min(1, maxSide / Math.max(iw, ih));
-  const w = Math.max(1, Math.round(iw * scale));
-  const h = Math.max(1, Math.round(ih * scale));
+// ===== Crop + encode for picked images =====
+// Geometry of the open crop dialog, all in WISH_IMG_SIZE (720) units: the base scale covers the
+// square frame (so zoom ≥ 1 never reveals empty space), pan is clamped so the frame stays filled.
+function cropMetrics(){
+  const iw = (wishCropImg && (wishCropImg.naturalWidth || wishCropImg.width)) || 1;
+  const ih = (wishCropImg && (wishCropImg.naturalHeight || wishCropImg.height)) || 1;
+  const base = WISH_IMG_SIZE / Math.min(iw, ih);
+  const scale = base * Math.max(1, wishCropZoom);
+  const dw = iw * scale;
+  const dh = ih * scale;
+  const maxOx = Math.max(0, (dw - WISH_IMG_SIZE) / 2);
+  const maxOy = Math.max(0, (dh - WISH_IMG_SIZE) / 2);
+  const ox = Math.max(-maxOx, Math.min(maxOx, wishCropOx));
+  const oy = Math.max(-maxOy, Math.min(maxOy, wishCropOy));
+  return { dw, dh, dx: (WISH_IMG_SIZE - dw) / 2 + ox, dy: (WISH_IMG_SIZE - dh) / 2 + oy };
+}
+// Repositions the preview image inside the square stage (percentages of the stage box).
+function drawCrop(){
+  const img = document.getElementById('wishCropImg');
+  if(!img || !wishCropImg) return;
+  const m = cropMetrics();
+  img.style.width = (m.dw / WISH_IMG_SIZE * 100) + '%';
+  img.style.height = (m.dh / WISH_IMG_SIZE * 100) + '%';
+  img.style.left = (m.dx / WISH_IMG_SIZE * 100) + '%';
+  img.style.top = (m.dy / WISH_IMG_SIZE * 100) + '%';
+}
+// Renders exactly the framed area into a WISH_IMG_SIZE square and encodes it as WebP — the
+// optimised copy that is stored locally and uploaded to Firebase Storage. The original file is
+// never kept. Fallback to JPEG for browsers without canvas WebP encoding.
+function applyCrop(){
+  const m = cropMetrics();
   const c = document.createElement('canvas');
-  c.width = w; c.height = h;
-  c.getContext('2d').drawImage(img, 0, 0, w, h);
-  return c.toDataURL('image/jpeg', 0.82);
+  c.width = WISH_IMG_SIZE;
+  c.height = WISH_IMG_SIZE;
+  const ctx = c.getContext('2d');
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(wishCropImg, m.dx, m.dy, m.dw, m.dh);
+  let out = '';
+  try{ out = c.toDataURL('image/webp', 0.82); }catch(e){ out = ''; }
+  if(!out.startsWith('data:image/webp')) out = c.toDataURL('image/jpeg', 0.82);
+  return out;
+}
+function closeCrop(){
+  wishCropSrc = null;
+  wishCropImg = null;
+  wishCropZoom = 1;
+  wishCropOx = 0;
+  wishCropOy = 0;
 }
 // Home-screen section under the balance wheel: the add form (preview + caption), the card
 // grid (or a friendly empty state) and the two dialogs (lightbox, caption editor).
@@ -2474,9 +2763,10 @@ function wishMapSectionHTML(){
     html += `<div class="wish-form">
       <div class="wish-preview">${wishDraftSrc ? `<img src="${esc(wishDraftSrc)}" alt="">` : esc(t('wishNoImageYet'))}</div>
       <label class="wish-file-label">${t('wishImageLabel')}
-        <input type="file" id="wishFile" accept="image/*">
+        <input type="file" id="wishFile" accept="image/png,image/jpeg,image/webp">
       </label>
       <input type="text" id="wishCaptionInput" maxlength="80" value="${esc(wishCaptionDraft)}" placeholder="${t('wishCaptionPlaceholder')}">
+      <label class="wish-check"><input type="checkbox" id="wishIsUserPhoto" ${wishIsUserPhotoDraft ? 'checked' : ''}> ${t('wishMyPhoto')}</label>
       ${wishFormError ? `<div class="auth-error">${esc(wishFormError)}</div>` : ''}
       <div class="wish-btn-row">
         <button id="btnWishSave" type="button" class="wish-primary">${t('wishSave')}</button>
@@ -2489,15 +2779,28 @@ function wishMapSectionHTML(){
       <button id="btnWishAddEmpty" type="button" class="wish-add-btn">${t('wishAdd')}</button>
     </div>`;
   }else{
-    html += `<div class="wish-grid">` + cards.map((c, i) => `
-      <div class="wish-card" data-wish-open="${i}">
-        <img class="wish-img" src="${esc(c.src)}" alt="${esc(c.caption || '')}">
-        <div class="wish-caption">${esc(c.caption || '')}</div>
+    // Render in display order: the personal photo sits in the centre slot of the matrix.
+    const displayOrder = wishMapDisplayOrder(cards);
+    html += `<div class="wish-grid">` + displayOrder.map(i => {
+      const c = cards[i];
+      const hasImage = typeof c.src === 'string' && c.src;
+      return `
+      <div class="wish-card${c.isUserPhoto ? ' wish-card-me' : ''}" data-wish-open="${i}">
+        ${hasImage
+          ? `<img class="wish-img" src="${esc(c.src)}" alt="${esc(c.title || '')}">`
+          : `<div class="wish-img wish-img-pending">${esc(t('wishImagePending'))}</div>`}
+        <div class="wish-caption">${esc(c.title || '')}</div>
+        ${c.isUserPhoto ? `<span class="wish-you-badge">${esc(t('wishYouBadge'))}</span>` : ''}
         <div class="wish-actions">
           <button class="wish-action" type="button" data-wish-edit="${i}" title="${t('wishEditTip')}" aria-label="${t('wishEditTip')}"><i class="ti ti-pencil" aria-hidden="true"></i></button>
           <button class="wish-action" type="button" data-wish-del="${i}" title="${t('wishDeleteTip')}" aria-label="${t('wishDeleteTip')}"><i class="ti ti-trash" aria-hidden="true"></i></button>
         </div>
-      </div>`).join('') + `</div>`;
+      </div>`;
+    }).join('') + `</div>`;
+    // At the cap: no add button anywhere, just a calm explanation (add it or replace one).
+    if(!wishAddOpen && cards.length >= WISH_MAX_CARDS){
+      html += `<div class="wish-limit-note">${esc(t('wishLimitMsg').replace('{max}', String(WISH_MAX_CARDS)))}</div>`;
+    }
   }
   // Lightbox: the picked card enlarged. ✕ or a backdrop click closes it.
   const bigCard = wishCardAt(wishLightboxIdx);
@@ -2505,22 +2808,47 @@ function wishMapSectionHTML(){
     html += `<div class="auth-modal-overlay" id="wishLightbox">
       <div class="wish-lightbox">
         <button class="wish-lightbox-close" id="btnWishLightboxClose" type="button" title="${t('done')}" aria-label="${t('done')}">✕</button>
-        <img class="wish-lightbox-img" src="${esc(bigCard.src)}" alt="${esc(bigCard.caption || '')}">
-        ${bigCard.caption ? `<div class="wish-lightbox-caption">${esc(bigCard.caption)}</div>` : ''}
+        ${bigCard.src
+          ? `<img class="wish-lightbox-img" src="${esc(bigCard.src)}" alt="${esc(bigCard.title || '')}">`
+          : `<div class="wish-lightbox-img wish-img-pending">${esc(t('wishImagePending'))}</div>`}
+        ${bigCard.title ? `<div class="wish-lightbox-caption">${esc(bigCard.title)}</div>` : ''}
       </div>
     </div>`;
   }
-  // Caption editor dialog.
+  // Caption editor dialog (+ the «Это моё фото» flag).
   const editCard = wishCardAt(wishEditIdx);
   if(editCard){
     html += `<div class="auth-modal-overlay" id="wishEditOverlay">
       <div class="auth-panel">
         <button class="auth-close" id="btnWishEditClose" type="button" title="${t('done')}" aria-label="${t('done')}">✕</button>
         <div class="wish-edit-title">${t('wishEditTitle')}</div>
-        <input type="text" id="wishEditInput" maxlength="80" value="${esc(editCard.caption || '')}" placeholder="${t('wishCaptionPlaceholder')}">
+        <input type="text" id="wishEditInput" maxlength="80" value="${esc(editCard.title || '')}" placeholder="${t('wishCaptionPlaceholder')}">
+        <label class="wish-check"><input type="checkbox" id="wishEditIsUserPhoto" ${editCard.isUserPhoto ? 'checked' : ''}> ${t('wishMyPhoto')}</label>
         <div class="wish-btn-row">
           <button id="btnWishEditSave" type="button" class="wish-primary">${t('wishSave')}</button>
           <button id="btnWishEditCancel" type="button">${t('wishCancel')}</button>
+        </div>
+      </div>
+    </div>`;
+  }
+  // Crop dialog: shown right after a file is picked — square 1:1 frame (the card's format),
+  // drag to pan, slider to zoom; only what stays inside the frame gets encoded on «Готово».
+  if(wishCropSrc){
+    html += `<div class="auth-modal-overlay" id="wishCropOverlay">
+      <div class="wish-crop">
+        <div class="wish-crop-title">${t('wishCropTitle')}</div>
+        <div class="wish-crop-hint">${t('wishCropHint')}</div>
+        <div class="wish-crop-stage" id="wishCropStage">
+          <img id="wishCropImg" src="${esc(wishCropSrc)}" alt="">
+        </div>
+        <div class="wish-crop-zoom">
+          <span>−</span>
+          <input type="range" id="wishCropZoom" min="100" max="400" value="${Math.round(wishCropZoom * 100)}">
+          <span>+</span>
+        </div>
+        <div class="wish-btn-row">
+          <button id="btnWishCropDone" type="button" class="wish-primary">${t('wishCropDone')}</button>
+          <button id="btnWishCropCancel" type="button">${t('wishCancel')}</button>
         </div>
       </div>
     </div>`;
@@ -3306,64 +3634,134 @@ function refreshWheel(){
   const wheelWrap = document.getElementById('wheelWrap');
   if(wheelWrap){ wheelWrap.innerHTML = wheelHTML(activeChildren(resolve(path))); adjustWheelLabels(); }
 }
-// «Карта желаний» handlers: add form (file → dataURL preview → save), card lightbox,
-// caption editing and confirmed deletion. Cards only mutate state.wishMap — never goals,
-// the wheel, ratings or any other calculation.
+// «Карта желаний» handlers: add form (file → crop dialog → optimised WebP → save), card
+// lightbox, caption editing (+ personal-photo flag with replacement confirm) and confirmed
+// deletion. Cards only mutate state.wishMap — never goals, the wheel, ratings or any other
+// calculation.
 function attachWishMapHandlers(){
   const syncWishDraft = ()=>{
     const input = document.getElementById('wishCaptionInput');
     if(input) wishCaptionDraft = input.value;
+    const meBox = document.getElementById('wishIsUserPhoto');
+    if(meBox) wishIsUserPhotoDraft = !!meBox.checked;
   };
   const closeAddForm = ()=>{
-    wishAddOpen = false; wishDraftSrc = null; wishFormError = ''; wishCaptionDraft = '';
+    wishAddOpen = false; wishDraftSrc = null; wishFormError = '';
+    wishCaptionDraft = ''; wishIsUserPhotoDraft = false;
   };
+  const atLimit = ()=> Array.isArray(state.wishMap) && state.wishMap.length >= WISH_MAX_CARDS;
   // Section toggle — same behaviour as the wheel: clicking the title flips it and the choice
   // persists in state. Collapsing also closes any wish dialog so no hidden overlay lingers.
   on('wishToggle', 'click', ()=>{
     wishMapOpen = !wishMapOpen;
     state.wishMapOpen = wishMapOpen;
-    if(!wishMapOpen){ closeAddForm(); wishEditIdx = null; wishLightboxIdx = null; }
+    if(!wishMapOpen){ closeAddForm(); closeCrop(); wishEditIdx = null; wishLightboxIdx = null; }
     saveState();
     render();
   });
   // The «+» always expands the section first — otherwise the form would open behind a
-  // collapsed header with no way to see it.
+  // collapsed header with no way to see it. At the cap it does nothing: the button is
+  // hidden and the board shows the calm limit note instead.
   const expandForForm = ()=>{ wishMapOpen = true; state.wishMapOpen = true; };
-  on('btnWishAdd', 'click', ()=>{ closeAddForm(); expandForForm(); wishAddOpen = true; saveState(); render(); });
-  on('btnWishAddEmpty', 'click', ()=>{ closeAddForm(); expandForForm(); wishAddOpen = true; saveState(); render(); });
+  on('btnWishAdd', 'click', ()=>{ if(atLimit()) return; closeAddForm(); expandForForm(); wishAddOpen = true; saveState(); render(); });
+  on('btnWishAddEmpty', 'click', ()=>{ if(atLimit()) return; closeAddForm(); expandForForm(); wishAddOpen = true; saveState(); render(); });
   const fileInput = document.getElementById('wishFile');
   if(fileInput){
     fileInput.addEventListener('change', ()=>{
       const file = fileInput.files && fileInput.files[0];
       if(!file) return;
       syncWishDraft();
+      // Only the three types the card/storage pipeline accepts, and a sane source size —
+      // checked BEFORE decoding, so a huge file never reaches the image decoder.
+      if(WISH_TYPES.indexOf(file.type) < 0){ wishFormError = t('wishFileTypeError'); render(); return; }
+      if(file.size > WISH_MAX_SRC_BYTES){ wishFormError = t('wishImageTooBig'); render(); return; }
       const reader = new FileReader();
       reader.onload = ()=>{
         const img = new Image();
         img.onload = ()=>{
-          try{
-            wishDraftSrc = shrinkWishImage(img);
-            wishFormError = '';
-          }catch(e){
-            wishDraftSrc = null;
-            wishFormError = t('wishImageError');
-          }
+          // Open the crop dialog instead of encoding right away: the user pans/zooms the
+          // image inside the square frame, and only «Готово» produces the stored copy —
+          // the original file itself is never kept.
+          wishCropImg = img;
+          wishCropSrc = String(reader.result);
+          wishCropZoom = 1; wishCropOx = 0; wishCropOy = 0;
+          wishFormError = '';
           render();
+          drawCrop();
         };
-        img.onerror = ()=>{ wishDraftSrc = null; wishFormError = t('wishImageError'); render(); };
+        img.onerror = ()=>{ wishFormError = t('wishImageError'); render(); };
         img.src = String(reader.result);
       };
       reader.onerror = ()=>{ wishFormError = t('wishImageError'); render(); };
       reader.readAsDataURL(file);
     });
   }
+  // Crop dialog: drag to pan (pointer events → touch + mouse), slider to zoom. Geometry lives
+  // in cropMetrics()/drawCrop(); applyCrop() encodes the framed square into an optimised WebP.
+  const cropStage = document.getElementById('wishCropStage');
+  if(cropStage && wishCropImg){
+    let dragging = false, lastX = 0, lastY = 0;
+    cropStage.addEventListener('pointerdown', (e)=>{
+      dragging = true; lastX = e.clientX; lastY = e.clientY;
+      try{ cropStage.setPointerCapture(e.pointerId); }catch(_){}
+    });
+    cropStage.addEventListener('pointermove', (e)=>{
+      if(!dragging) return;
+      const rect = cropStage.getBoundingClientRect();
+      if(!rect.width) return;
+      const k = WISH_IMG_SIZE / rect.width; // screen px → 720-unit card space
+      wishCropOx += (e.clientX - lastX) * k;
+      wishCropOy += (e.clientY - lastY) * k;
+      lastX = e.clientX; lastY = e.clientY;
+      drawCrop();
+    });
+    ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev=>{
+      cropStage.addEventListener(ev, ()=>{ dragging = false; });
+    });
+  }
+  on('wishCropZoom', 'input', (e)=>{
+    const v = Number(e && e.target ? e.target.value : 0);
+    wishCropZoom = Math.max(1, Math.min(4, (v || 100) / 100));
+    drawCrop();
+  });
+  on('btnWishCropDone', 'click', ()=>{
+    try{
+      const out = applyCrop();
+      if(out){ wishDraftSrc = out; wishFormError = ''; }
+      else { wishDraftSrc = null; wishFormError = t('wishImageError'); }
+    }catch(e){ wishDraftSrc = null; wishFormError = t('wishImageError'); }
+    closeCrop();
+    render();
+  });
+  on('btnWishCropCancel', 'click', ()=>{ closeCrop(); render(); });
+  // Re-apply preview geometry after ANY re-render while the dialog is open.
+  if(wishCropSrc && wishCropImg) drawCrop();
   on('btnWishSave', 'click', ()=>{
     syncWishDraft();
     if(!wishDraftSrc){ wishFormError = t('wishNeedImage'); render(); return; }
     if(!Array.isArray(state.wishMap)) state.wishMap = [];
-    state.wishMap.push({ src: wishDraftSrc, caption: (wishCaptionDraft || '').trim() });
+    if(atLimit()){
+      wishFormError = t('wishLimitMsg').replace('{max}', String(WISH_MAX_CARDS));
+      render(); return;
+    }
+    const now = Date.now();
+    const card = {
+      id: 'wish-' + now.toString(36) + '-' + Math.random().toString(36).slice(2, 7),
+      src: wishDraftSrc,
+      title: (wishCaptionDraft || '').trim(),
+      imagePath: null,
+      order: state.wishMap.length,
+      isUserPhoto: false,
+      createdAt: now,
+      updatedAt: now
+    };
+    // «Это моё фото»: if another card already holds the mark, claimUserPhoto() asks for
+    // confirmation and clears the OLD flag on yes (the old card stays on the board).
+    if(wishIsUserPhotoDraft) card.isUserPhoto = claimUserPhoto();
+    state.wishMap.push(card);
     closeAddForm();
     saveState();
+    uploadWishImage(card); // no-op without cloud/sign-in
     render();
   });
   on('btnWishCancel', 'click', ()=>{ closeAddForm(); render(); });
@@ -3390,9 +3788,11 @@ function attachWishMapHandlers(){
     el.addEventListener('click', (e)=>{
       e.stopPropagation();
       const idx = parseInt(el.dataset.wishDel, 10);
-      if(!wishCardAt(idx)) return;
+      const card = wishCardAt(idx);
+      if(!card) return;
       if(!confirm(t('wishDeleteConfirm'))) return;
       state.wishMap.splice(idx, 1);
+      deleteWishImageFile(card); // best-effort Storage cleanup, never blocks the UI
       saveState();
       render();
     });
@@ -3409,8 +3809,17 @@ function attachWishMapHandlers(){
   on('btnWishEditSave', 'click', ()=>{
     const card = wishCardAt(wishEditIdx);
     const input = document.getElementById('wishEditInput');
+    const meBox = document.getElementById('wishEditIsUserPhoto');
     if(card && input){
-      card.caption = input.value.trim();
+      card.title = input.value.trim();
+      const wantMe = !!(meBox && meBox.checked);
+      if(wantMe && !card.isUserPhoto){
+        // Becoming the personal photo may require moving the mark off another card.
+        card.isUserPhoto = claimUserPhoto();
+      }else if(!wantMe){
+        card.isUserPhoto = false;
+      }
+      card.updatedAt = Date.now();
       saveState();
     }
     wishEditIdx = null;
@@ -4822,6 +5231,9 @@ if(cloudEnabled){
       authError = '';
       authBusy = false;
       startCloudSync(user.uid);
+      // Push any cards saved while signed out to Storage and pull the ones this device is
+      // missing — the vision board follows the account across devices (when online).
+      syncWishBoard();
     } else {
       authUser = null;
       verifyMsg = '';

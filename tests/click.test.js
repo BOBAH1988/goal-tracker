@@ -722,7 +722,7 @@ test('wish map: card opens the lightbox, caption edits persist, delete asks firs
   assert.ok(t.document.getElementById('wishEditOverlay'), 'pencil must open the caption dialog');
   t.document.getElementById('wishEditInput').value = 'Южное побережье';
   t.click('#btnWishEditSave');
-  assert.equal(t.app.getState().wishMap[0].caption, 'Южное побережье', 'new caption must persist in state');
+  assert.equal(t.app.getState().wishMap[0].title, 'Южное побережье', 'new caption must persist in state');
   const raw = t.window.localStorage.getItem(t.app.STORAGE_KEY);
   assert.ok(raw && raw.includes('Южное побережье'), 'caption must round-trip through localStorage');
   // Trash → confirmation; declining keeps the card, confirming removes it.
@@ -754,11 +754,11 @@ test('wish map: cards never touch the wheel math and ride along in the backup im
   t.app.doImportData(file);
   // FileReader is async — wait for the import itself to land (max ~2s), keyed on the
   // backup's distinctive caption so a pre-existing local card can't end the wait early.
-  for (let i = 0; i < 200 && t.app.getState().wishMap[0]?.caption !== 'Из бэкапа'; i++) {
+  for (let i = 0; i < 200 && t.app.getState().wishMap[0]?.title !== 'Из бэкапа'; i++) {
     await new Promise((r) => setTimeout(r, 10));
   }
   assert.equal(t.app.getState().wishMap.length, 1, 'imported backup must restore the wish map');
-  assert.equal(t.app.getState().wishMap[0].caption, 'Из бэкапа', 'restored caption must match');
+  assert.equal(t.app.getState().wishMap[0].title, 'Из бэкапа', 'restored caption must match');
   assert.ok(t.document.querySelector('.wish-card'), 'restored card must render on the board');
 });
 
@@ -773,6 +773,79 @@ test('wish map: section collapses like the wheel and the choice persists', () =>
   t.click('#wishToggle');
   assert.equal(t.app.getState().wishMapOpen, true, 'clicking again must persist wishMapOpen=true');
   assert.ok(t.document.getElementById('btnWishAddEmpty'), 'empty state must come back when expanded');
+});
+
+test('wish map: at 12 cards «+» disappears and a calm note explains the limit', () => {
+  const t = bootDom();
+  const mk = (i) => ({
+    id: 'c' + i, src: 'data:image/png;base64,AA', title: 'К' + i, imagePath: null,
+    order: i, isUserPhoto: false, createdAt: 1, updatedAt: 1,
+  });
+  t.app.setState(Object.assign(t.app.getState(), {
+    wishMap: Array.from({ length: 11 }, (_, i) => mk(i)),
+  }));
+  t.window.render();
+  assert.ok(t.document.getElementById('btnWishAdd'), 'at 11 cards «+» is still offered');
+  assert.ok(!t.document.querySelector('.wish-limit-note'), 'no note below the cap');
+  t.app.setState(Object.assign(t.app.getState(), {
+    wishMap: Array.from({ length: 12 }, (_, i) => mk(i)),
+  }));
+  t.window.render();
+  assert.ok(!t.document.getElementById('btnWishAdd'), 'at the cap the header «+» must be hidden');
+  const note = t.document.querySelector('.wish-limit-note');
+  assert.ok(note, 'the calm limit note must render under the grid');
+  assert.match(note.textContent, /12 изображений/, 'the note states the actual cap');
+  assert.equal(t.document.querySelectorAll('.wish-card').length, 12, 'all 12 cards still render');
+});
+
+test('wish map: «Это моё фото» moves the mark only after confirmation', () => {
+  const t = bootDom();
+  t.app.setState(Object.assign(t.app.getState(), {
+    wishMap: [
+      { id: 'a', src: 'data:image/png;base64,AA', title: 'Личное', imagePath: null, order: 0, isUserPhoto: true, createdAt: 1, updatedAt: 1 },
+      { id: 'b', src: 'data:image/png;base64,BB', title: 'Второе', imagePath: null, order: 1, isUserPhoto: false, createdAt: 2, updatedAt: 2 },
+    ],
+  }));
+  t.window.render();
+  assert.equal(t.document.querySelectorAll('.wish-you-badge').length, 1, 'exactly one «Я» badge renders');
+  // Declined replacement: nothing changes.
+  t.window.confirm = () => false;
+  t.click('[data-wish-edit="1"]');
+  assert.ok(t.document.getElementById('wishEditIsUserPhoto'), 'the editor must carry the checkbox');
+  t.document.getElementById('wishEditIsUserPhoto').checked = true;
+  t.click('#btnWishEditSave');
+  assert.equal(t.app.getState().wishMap[0].isUserPhoto, true, 'declined replacement keeps the old mark');
+  assert.equal(t.app.getState().wishMap[1].isUserPhoto, false, 'the new card stays unmarked after a decline');
+  // Confirmed replacement: the flag MOVES, the old card is never deleted.
+  t.window.confirm = () => true;
+  t.click('[data-wish-edit="1"]');
+  t.document.getElementById('wishEditIsUserPhoto').checked = true;
+  t.click('#btnWishEditSave');
+  assert.equal(t.app.getState().wishMap[0].isUserPhoto, false, 'the old card loses the flag');
+  assert.equal(t.app.getState().wishMap[1].isUserPhoto, true, 'the new card takes the flag');
+  assert.equal(t.app.getState().wishMap.length, 2, 'the old card stays on the board');
+  assert.equal(t.document.querySelectorAll('.wish-you-badge').length, 1, 'still exactly one badge');
+  // The add form carries the checkbox too.
+  t.click('#btnWishAdd');
+  assert.ok(t.document.getElementById('wishIsUserPhoto'), 'the add form must offer the checkbox');
+});
+
+test('wish map: the personal photo renders in the centre of the grid order', () => {
+  const t = bootDom();
+  t.app.setState(Object.assign(t.app.getState(), {
+    wishMap: [
+      { id: 'a', src: 'data:image/png;base64,AA', title: 'Личное', isUserPhoto: true },
+      { id: 'b', src: 'data:image/png;base64,BB', title: 'Второе' },
+      { id: 'c', src: 'data:image/png;base64,CC', title: 'Третье' },
+      { id: 'd', src: 'data:image/png;base64,DD', title: 'Четвёртое' },
+    ],
+  }));
+  t.window.render();
+  const order = Array.from(t.document.querySelectorAll('.wish-card')).map(el => el.dataset.wishOpen);
+  assert.deepEqual(order, ['1', '2', '0', '3'], 'the marked card sits in the centre slot');
+  const marked = t.document.querySelector('.wish-card-me');
+  assert.ok(marked, 'the marked card must carry the accent frame class');
+  assert.equal(marked.dataset.wishOpen, '0', 'the frame is on the isUserPhoto card');
 });
 
 

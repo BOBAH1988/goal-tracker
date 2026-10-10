@@ -1,0 +1,26 @@
+// Firebase Storage rules for the vision board images («Карта желаний»).
+// Files live at users/{uid}/vision-board/{imageId}.webp — only the authenticated OWNER of that
+// uid may read, write or delete them. Writes accept only optimised image uploads (jpeg/png/webp)
+// within a sane size; nothing here is public and no open download URL is a security boundary
+// (getDownloadURL tokens still pass every check below on each request).
+// Deploy with: firebase deploy --only storage  (owner does this from the Firebase console/CLI).
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /users/{uid}/{filePath=**} {
+      // Read: signed-in owner only.
+      allow read: if request.auth != null && request.auth.uid == uid;
+      // Delete: signed-in owner only (card removed from the board).
+      allow delete: if request.auth != null && request.auth.uid == uid;
+      // Create/update: owner only, images only, ≤ 1 MB (optimised 720×720 WebP is ~100–300 KB).
+      allow create, update: if request.auth != null
+        && request.auth.uid == uid
+        && request.resource.size <= 1024 * 1024
+        && request.resource.contentType in ['image/jpeg', 'image/png', 'image/webp'];
+    }
+    // Everything else in the bucket stays locked down.
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

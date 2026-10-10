@@ -44,6 +44,7 @@ const EXPORT_SRC = `
   resolve, validatePath, loadState, saveState, sortHomeGoals,
    STRINGS, SEED, LANG_KEY, STORAGE_KEY, QUOTES,
   ensureWishMap, wishCardAt, doImportData,
+  WISH_MAX_CARDS, wishMapForCloud, mergeWishMapCloud, wishMapDisplayOrder,
   getState: () => state,
   setState: (v) => { state = v; },
   getPath: () => path,
