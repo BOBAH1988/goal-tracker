@@ -329,11 +329,14 @@ test('global search: matches checklist item text and reports empty for no match'
   assert.match(box.textContent, /Ничего не найдено/, 'empty state must be rendered');
 });
 
-// ===== Main goals collapsible («Главные цели» — open by default, click collapses, state saved) =====
+// ===== Main goals collapsible («Важные сферы жизни» — open by default, click collapses, state saved) =====
 test('main goals list: open by default, click collapses and persists across reload', () => {
   const t = bootDom();
   t.app.setState({ name: 'root', children: [leaf(false, { name: 'Цель 1' }), leaf(false, { name: 'Цель 2' })] });
   t.window.render();
+  // The section carries the renamed title (owner: «Главные цели» → «Важные сферы жизни»).
+  assert.ok(t.document.querySelector('#mainGoalsToggle').textContent.includes('Важные сферы жизни'),
+    'the section title must use the new name');
   // By default the grid is open: cards are visible.
   assert.ok(t.document.querySelector('.grid-goals'), 'main goals grid must be visible by default (open)');
   assert.ok(t.document.querySelector('.grid-goals').children.length > 0, 'cards must render when open');
@@ -530,6 +533,11 @@ test('overall progress block: shows quote row with refresh button, clicking refr
   assert.ok(refreshBtn, 'quote refresh button must exist in overall progress block');
   // Quote lives under the progress bar, not in the collapsible today list.
   assert.ok(quoteInput.closest('.overall'), 'quote row must sit inside the overall progress card');
+
+  // The field is a TEXTAREA, not an <input>: an input cannot wrap, and a quote that does not fit
+  // the narrow PWA width must take a second line instead of being cut off.
+  assert.equal(quoteInput.tagName, 'TEXTAREA', 'the motivation line must wrap — <input> cannot');
+  assert.ok(quoteInput.readOnly, 'the quote field stays display-only');
 
   // Input shows the quote text from state.
   assert.match(quoteInput.value, /Тестовая цитата/, 'quote input must show state.quoteText');

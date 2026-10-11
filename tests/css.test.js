@@ -82,6 +82,47 @@ test('CSS guard: the compact list exists and the painted list is not accidentall
   assert.ok(basePainted.length > 0, 'the base action-button rule must still exist');
 });
 
-/* The DOM-side twin of the CSS guards lives in click.test.js (it needs jsdom's real DOM, so it
-   is written next to the bootDom harness that provides it). */
+/* The DOM-side twin of the CSS guards lives in click.test.js (it needs jsdom's real DOM, so it is
+   written next to the bootDom harness that provides it). */
+
+test('CSS guard: PWA tooltips time out — a .tip-live bubble exists and the stuck :hover one is off', () => {
+  const rules = splitCss(HTML);
+  // The class-driven bubble: JS adds .tip-live on tap and removes it after 1s.
+  const bubble = rules.filter(r => r.selectors.some(s => /\[data-tip\]\.tip-live::after/.test(s)));
+  assert.ok(bubble.length > 0, 'the PWA tooltip needs a [data-tip].tip-live::after bubble rule');
+  // Touch has no hover to leave: without this the bubble hangs forever after a tap (owner report).
+  const suppressed = rules.filter(r =>
+    /@media \(display-mode: standalone\) and \(hover: none\)/.test(r.selectors.join(' ')) &&
+    /\[data-tip\]:hover::after[^}]*\{[^}]*content:none/.test(r.body.replace(/\s+/g, ' ')));
+  assert.equal(suppressed.length, 1, 'a touch standalone PWA must suppress the hanging :hover tooltip');
+});
+
+test('CSS guard: the narrow/PWA topbar moves the whole title wrap and puts ☰ last on its row', () => {
+  const rules = splitCss(HTML);
+  const narrow = rules.find(r => /@media \(max-width:480px\)/.test(r.selectors.join(' ')));
+  assert.ok(narrow, 'the 480px block must exist');
+  const body = narrow.body.replace(/\s+/g, ' ');
+  // order/width must sit on .app-title-wrap — the actual flex item of .topbar. On .topbar h1 they
+  // do nothing at topbar level AND reorder the wrap's own column, putting the subtitle ABOVE the
+  // title (the reported bug). The ☰ then lands mid-row instead of at the right edge.
+  assert.match(body, /\.app-title-wrap\{[^}]*order:1[^}]*width:100%/,
+    'the title wrap must get order+width, not .topbar h1');
+  assert.match(body, /\.top-menu-dropdown\{order:3;?\}/,
+    'the menu button must come last (right) in the narrow layout');
+  assert.doesNotMatch(body, /\.topbar h1\{[^}]*order:/,
+    'an order on h1 re-orders the wrap column — subtitle above title');
+  assert.match(body, /\.lang-menu\{left:auto; right:0;?\}/,
+    'a right-edge ☰ needs its dropdown anchored right');
+});
+
+test('CSS guard: touch standalone PWA neutralizes the stuck hover on the goal action buttons', () => {
+  const rules = splitCss(HTML);
+  const block = rules.find(r =>
+    /@media \(display-mode: standalone\) and \(hover: none\)/.test(r.selectors.join(' ')) &&
+    /#btnMove:hover:not\(\.active\)/.test(r.body));
+  assert.ok(block, 'the ↕ button must not stay stuck blue (accent border) after a tap in a touch PWA');
+  // Real mode colours survive: an ACTIVE ↕ is still blue and says «Готово».
+  assert.doesNotMatch(block.body, /#btnMove:hover\{/,
+    'a blanket #btnMove:hover override would also erase the real move-mode colour');
+});
 

@@ -263,3 +263,12 @@ test('locales: ru and en carry the same key set', () => {
     );
   }
 });
+
+test('locales: the home section is the renamed «Важные сферы жизни» in both languages', () => {
+  const t = boot();
+  assert.equal(t.app.STRINGS.ru.mainGoals, 'Важные сферы жизни');
+  assert.equal(t.app.STRINGS.en.mainGoals, 'Important Life Areas');
+  // The in-app instructions name the section too — they must follow the rename.
+  assert.ok(t.app.STRINGS.ru.instructionsText.includes('Важные сферы жизни'));
+  assert.ok(t.app.STRINGS.en.instructionsText.includes('Important Life Areas'));
+});

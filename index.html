@@ -108,11 +108,18 @@
      padding-left:env(safe-area-inset-left);
      padding-right:env(safe-area-inset-right);
    }
-   /* Top/bottom insets only matter where the system UI actually overlaps (a standalone PWA);
-      in a plain browser tab env() resolves to 0 and the page is unchanged. */
-   @media (display-mode: standalone){
-     body{ padding-top:env(safe-area-inset-top); padding-bottom:env(safe-area-inset-bottom); }
-   }
+    /* Top/bottom insets only matter where the system UI actually overlaps (a standalone PWA);
+       in a plain browser tab env() resolves to 0 and the page is unchanged. */
+    @media (display-mode: standalone){
+      body{ padding-top:env(safe-area-inset-top); padding-bottom:env(safe-area-inset-bottom); }
+      /* The standalone account button shows only the user icon (the name lives in its data-tip
+         bubble, since a native title never appears on touch) — give the glyph a proper size. */
+      #btnAccount{min-width:34px; padding:6px 10px; font-size:18px; display:inline-flex; align-items:center; justify-content:center;}
+      /* Motivation line: at the full 18px a quote does not fit the narrow standalone width —
+         smaller font here, and the field itself is a <textarea>, so a long quote wraps to a
+         second line instead of being cut off (see .quote-input). */
+      .quote-input{font-size:14px;}
+    }
   html[data-theme="light"] body{ background:linear-gradient(160deg,#f5f7fb,#eef1f7 60%,#f5f7fb); }
   html[data-theme="pink"] body{ background:linear-gradient(160deg,#fff0f5,#ffe4ef 60%,#fff5f9); }
   #app{max-width:920px; margin:0 auto; padding:28px 20px 80px;}
@@ -194,7 +201,22 @@
   #btnRelocate:hover{color:var(--text); border-color:var(--accent);}
   #btnRelocate.active{background:var(--accent); color:#fff; border-color:var(--accent);}
   .add-child-row #btnArchive:hover, .add-goal-wrap #btnArchive:hover{color:var(--text); border-color:var(--accent);}
-  .add-child-row #btnArchive.active, .add-goal-wrap #btnArchive.active{background:var(--accent); color:#fff; border-color:var(--accent);}
+   .add-child-row #btnArchive.active, .add-goal-wrap #btnArchive.active{background:var(--accent); color:#fff; border-color:var(--accent);}
+   /* Touch has no hover to LEAVE: after a tap a button stays stuck in :hover, and the accent
+      border + brighter glyph make the «↕» reorder button in «Важные сферы жизни» look blue —
+      different from the web version, where hover ends when the mouse moves away. Neutralize the
+      stuck hover on a touch-only standalone PWA (hover:none); a desktop-installed PWA driven by
+      a mouse keeps normal hover feedback. `:not(.active)` keeps the REAL mode colours (move /
+      delete / rename) visible — they signal an active mode and must not be washed out. */
+   @media (display-mode: standalone) and (hover: none){
+     .topbar button:hover{color:var(--muted); border-color:var(--border);}
+     #btnEdit:hover:not(.active), #btnDelete:hover:not(.active), #btnMove:hover:not(.active),
+     #btnMoveChecklist:hover:not(.active), #btnAddSubgoal:hover:not(.active),
+     #btnRelocate:hover:not(.active), #btnFilter:hover, #btnAddGoal:hover:not(.active),
+     #btnAddChild:hover:not(.active), #btnChecklistAdd:hover, #btnWishAdd:hover, #btnWishManage:hover,
+     #btnGoodTodayAdd:hover, .add-child-row #btnArchive:hover:not(.active),
+     .add-goal-wrap #btnArchive:hover:not(.active){color:var(--muted); border-color:var(--border);}
+   }
   .edit-hint{color:var(--muted); font-weight:400; font-size:12px;}
   .edit-hint.delete-hint{color:var(--red);}
   /* ===== Modal overlays & panels (auth, install, about, confirm) ===== */
@@ -538,15 +560,21 @@
      drop to a single column per row instead, same as installed PWA / narrow phone screens. */
   @media (max-width:480px){
     .grid-goals, .grid-hero-first{grid-template-columns:1fr;}
-    /* Narrow/PWA screens: menu + account button used to fall onto their own separate lines below
-       the title (source order: menu, h1, actions), stacking three rows and looking cramped. Instead
-       keep the two buttons together on the top row (flex-wrap still applies, but `order` reshuffles
-       who's on it) and push the title to its own centered row underneath. */
-    .top-menu-dropdown{order:1;}
-    .actions{order:2;}
-    .topbar h1{order:3; width:100%; justify-content:center; margin-top:2px; font-size:17px;}
-    .app-title-wrap{align-items:center;}
+    /* Narrow/PWA screens (installed app on a phone): the title gets its OWN full-width centered
+       row and the buttons sit on the row below, right-aligned with ☰ last.
+       Two bugs fixed here at once:
+       1. order/width used to target .topbar h1, but h1 is a child of .app-title-wrap — the actual
+          flex item of .topbar. The wrap therefore kept order 0 and stayed FIRST, so ☰ landed in
+          the middle of the row right after the title. The wrap is the element that must move.
+       2. that same misplaced `h1{order:3}` reordered the wrap's OWN column: the subtitle (order 0)
+          jumped ABOVE the title («описание над названием сайта»). */
+    .app-title-wrap{order:1; width:100%; align-items:center;}
+    .actions{order:2; margin-left:auto;}
+    .top-menu-dropdown{order:3;}
+    .topbar h1{justify-content:center; margin-top:2px; font-size:17px;}
     .app-subtitle{text-align:center;}
+    /* ☰ now sits at the right edge, so its dropdown must anchor to that edge, not to its left. */
+    .lang-menu{left:auto; right:0;}
     .account-dropdown #btnAccount{max-width:44vw; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   }
   .card{
@@ -612,9 +640,12 @@
   }
    .today-action.has-text{color:var(--green); font-size:18px;}
    .quote-row{border-top:1px solid var(--border); margin-top:8px; padding-top:10px;}
-   .quote-input{
-      flex:1; background:none; border:none; color:var(--muted); font-style:italic; font-size:18px;
-     outline:none; resize:none; min-height:20px;
+    .quote-input{
+       flex:1; background:none; border:none; color:var(--muted); font-style:italic; font-size:18px;
+      outline:none; resize:none; min-height:20px;
+      /* <textarea>: inherit the app font (the UA default is monospace) and let the text wrap —
+         fitQuoteInput() grows the box to 1–2 lines after each render. */
+      font-family:inherit; line-height:1.3; padding:0; overflow:hidden;
    }
    .quote-btn{
      background:none; border:none; color:var(--muted); font-size:16px; cursor:pointer;
@@ -821,12 +852,14 @@
   footer{color:var(--muted); font-size:11px; text-align:center; margin-top:4px; opacity:.7;}
   .cat-label{font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin:2px 0 10px;}
   .section-title{font-size:15px; font-weight:600; color:var(--text); margin:4px 0 12px;}
-  /* Custom tooltip bubble for [data-tip] elements (the "Главные цели" action buttons).
-     Replaces the browser's native title tooltip, which is slow, plain-styled and never shows on
-     touch devices / installed PWA. The label comes from the data-tip attribute; on hover or
-     keyboard focus a small bubble fades in above the control. */
-  [data-tip]{position:relative;}
-  [data-tip]:hover::after, [data-tip]:focus-visible::after{
+   /* Custom tooltip bubble for [data-tip] elements (the "Важные сферы жизни" action buttons).
+      Replaces the browser's native title tooltip, which is slow, plain-styled and never shows on
+      touch devices / installed PWA. The label comes from the data-tip attribute; on hover or
+      keyboard focus a small bubble fades in above the control. In a standalone PWA the bubble is
+      driven by the .tip-live class instead: the JS adds it on tap and removes it after 1s,
+      because touch has no hover to leave and a CSS :hover bubble would hang forever. */
+   [data-tip]{position:relative;}
+   [data-tip]:hover::after, [data-tip]:focus-visible::after, [data-tip].tip-live::after{
     content:attr(data-tip);
     position:absolute; left:50%; bottom:calc(100% + 8px); transform:translateX(-50%);
     background:var(--card2); color:var(--text); border:1px solid var(--border);
@@ -834,20 +867,25 @@
     white-space:nowrap; pointer-events:none; z-index:1000;
     box-shadow:0 6px 18px rgba(0,0,0,.3);
   }
-  [data-tip]:hover::before, [data-tip]:focus-visible::before{
+   [data-tip]:hover::before, [data-tip]:focus-visible::before, [data-tip].tip-live::before{
     content:''; position:absolute; left:50%; bottom:calc(100% + 2px); transform:translateX(-50%);
     border:6px solid transparent; border-top-color:var(--border);
     pointer-events:none; z-index:1000;
   }
+   /* Installed PWA on a touch screen: after a tap the element stays in :hover indefinitely, so
+      the hover bubble would never go away. Only the timed .tip-live bubble (JS, 1s) shows. */
+   @media (display-mode: standalone) and (hover: none){
+     [data-tip]:hover::after, [data-tip]:hover::before{content:none;}
+   }
   .section-title-row{display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:8px;}
   .section-title-row .section-title{margin:0;}
-  /* Collapsing "Главные цели" / "Main goals" — the arrow toggles the grid below. */
+  /* Collapsing "Важные сферы жизни" / "Important Life Areas" — the arrow toggles the grid below. */
   #mainGoalsToggle{cursor:pointer; user-select:none;}
   #mainGoalsToggle .main-goals-arrow{color:var(--muted); font-size:13px; margin-right:6px;}
   #wheelToggle,#wishToggle,#goodTodayEntriesToggle,#goodTodayWeekToggle{cursor:pointer; user-select:none;}
   #wheelToggle .wheel-arrow,#wishToggle .wheel-arrow,#goodTodayEntriesToggle .wheel-arrow,#goodTodayWeekToggle .wheel-arrow{color:var(--muted); font-size:13px; margin-right:6px;}
   /* Header action group for the wish map — same right-aligned button group pattern as
-     .add-goal-wrap in «Главные цели», so «+» and the manager never drift apart. */
+     .add-goal-wrap in «Важные сферы жизни», so «+» and the manager never drift apart. */
   .wish-header-actions{display:flex; align-items:center; gap:10px;}
   .add-goal-wrap{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
   #btnAddGoal, #btnWishAdd, #btnGoodTodayAdd{
@@ -884,7 +922,7 @@
     min-width:32px; display:inline-flex; align-items:center; justify-content:center;
   }
    #btnAddGoal.icon-btn, #btnWishAdd.icon-btn, #btnGoodTodayAdd.icon-btn, #btnAddChild.icon-btn, #btnDelete.icon-btn, #btnChecklistAdd.icon-btn{ font-size:18px; }
-  /* The wish «Исправить» button mirrors #btnEdit in «Главные цели» — the same rename pencil
+  /* The wish «Исправить» button mirrors #btnEdit in «Важные сферы жизни» — the same rename pencil
      glyph and the same 24px/2px box, so the two sections read alike. No colour override here:
      the base action-button rule's --muted is what #btnEdit uses, and overriding it to --text made
      the glyph near-white (#eef2f8) on the dark button — a white icon with nothing to read it. */
@@ -965,7 +1003,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.1.51';
+const APP_VERSION = '1.1.52';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -1143,7 +1181,7 @@ const STRINGS = {
     back: 'Назад',
     tipBack: 'На уровень выше',
     overallProgress: 'Общий прогресс',
-    mainGoals: 'Главные цели',
+    mainGoals: 'Важные сферы жизни',
     addGoal: 'Добавить',
     editGoal: 'Изменить',
     deleteGoal: 'Удалить',
@@ -1331,7 +1369,7 @@ const STRINGS = {
     aboutTitle: 'О проекте',
     aboutText: 'Только важное помогает двигаться к важному без дедлайнов, давления и лишней сложности.\n\nВыберите цель, разделите её на подцели и маленькие шаги. Делайте главное в своём темпе — каждый завершённый шаг приближает к результату.\n\nЕсли сил или ресурсов стало меньше, цель можно архивировать: она не будет давить и влиять на прогресс. Вернитесь к ней позже, измените или отпустите.\n\nНе нужно успевать всё. Главное — бережно двигаться вперёд.\n\n— Владимир Соколов',
     instructionsTitle: 'Инструкция',
-    instructionsText: 'ЦЕЛИ И ПОДЦЕЛИ\nНажмите «+» рядом с «Главные цели», чтобы создать первую цель. Откройте её и нажмите «+» ещё раз, чтобы разбить на подцели — так можно дробить сколько угодно уровней вглубь, пока задача не станет по-настоящему простой. У цели без подцелей на её странице есть чек-бокс «выполнено».\n\nЧЕК-ЛИСТ\nВместо простого чек-бокса цель можно превратить в список пунктов — кнопка «Добавить чек-лист» на её странице. Процент выполнения тогда считается по отмеченным пунктам, а не по одному общему флажку.\n\nСРОК ВЫПОЛНЕНИЯ\nНа странице цели можно указать дату (день, месяц, год — поля переключаются сами по мере ввода). Дату раньше сегодняшнего дня система не примет.\n\nПРИОРИТЕТНЫЕ ЦЕЛИ\nЗвёздочка ☆ на странице цели или пункта чек-листа добавляет его в блок «Приоритетные цели» на главном экране — не больше 5 одновременно, чтобы список не превращался в ещё один общий список дел. Так самое важное всегда под рукой, не надо искать его в глубине дерева целей.\n\nАРХИВ\nЗначок архива на странице цели скрывает её (делает бледной) и убирает из расчёта процента выполнения — удобно для целей, которые отложены, но удалять не хочется. Архивная цель автоматически уходит в конец списка.\n\nРЕДАКТИРОВАНИЕ, УДАЛЕНИЕ, ПОРЯДОК, ПЕРЕНОС\nНад списком целей есть кнопки: карандаш — переименовать, «−» — удалить, «↕» — включить режим перемещения (после этого зажмите и перетащите карточку, чтобы изменить порядок). Кнопка-перенос перемещает цель вместе со всем содержимым в другую цель или подцель.\n\nСОРТИРОВКА\nКнопка-фильтр (воронка) рядом с «↕» открывает меню порядка списка: «По убыванию» (сначала самые выполненные цели), «По возрастанию» (наоборот) и «Пользовательский» — ваш собственный порядок перетаскиванием, он включён по умолчанию. Работает и на главном экране, и внутри любой подцели. Архивированные цели всегда остаются в конце списка, пока не станут активными.\n\nРАЗВЕРНУТЬ И РАЗБИТЬ\nКнопка «Развернуть» превращает цель без подцелей в цель с двумя подцелями-чекбоксами, а «Разбить на 6 подшагов» делит её сразу на шесть шагов.\n\nКОЛЕСО БАЛАНСА\nВнизу главного экрана — колесо со всеми целями верхнего уровня: сектор заполнен, когда в сфере нет незавершённых целей. Выполнение цели заполняет сектор, частично отмеченный чек-лист даёт дробный вклад (2 из 4 — половина), новая невыполненная цель уменьшает сектор, а удаление выполненной цели показатель не снижает.\n\nЛИЧНЫЙ КАБИНЕТ И СИНХРОНИЗАЦИЯ\nБез аккаунта тоже можно пользоваться — все данные хранятся прямо в этом браузере. Если нужно видеть свои цели на нескольких устройствах, создайте аккаунт (значок 🔐) — дальше всё синхронизируется само. Если на устройстве уже были несохранённые локальные цели, при входе появится выбор, что оставить — данные без предупреждения никогда не перезаписываются.\n\nРЕЗЕРВНАЯ КОПИЯ\nВ меню (☰) есть «Экспорт данных» — сохраняет файл с полной копией целей, и «Импорт данных» — восстанавливает из такого файла. Полезно делать копию время от времени, даже если вы пользуетесь аккаунтом.\n\nУСТАНОВКА И ОБНОВЛЕНИЕ\nНа телефоне сайт можно добавить на главный экран как отдельное приложение — шаги есть в меню («Установить приложение»). Если после обновления сайта что-то выглядит по-старому, нажмите «Обновить приложение» в меню — иконку с экрана удалять не придётся.\n\nТЕМЫ И ЯЗЫК\nВ меню можно переключить оформление (тёмная, светлая, розовая тема) и язык интерфейса.',
+    instructionsText: 'ЦЕЛИ И ПОДЦЕЛИ\nНажмите «+» рядом с «Важные сферы жизни», чтобы создать первую цель. Откройте её и нажмите «+» ещё раз, чтобы разбить на подцели — так можно дробить сколько угодно уровней вглубь, пока задача не станет по-настоящему простой. У цели без подцелей на её странице есть чек-бокс «выполнено».\n\nЧЕК-ЛИСТ\nВместо простого чек-бокса цель можно превратить в список пунктов — кнопка «Добавить чек-лист» на её странице. Процент выполнения тогда считается по отмеченным пунктам, а не по одному общему флажку.\n\nСРОК ВЫПОЛНЕНИЯ\nНа странице цели можно указать дату (день, месяц, год — поля переключаются сами по мере ввода). Дату раньше сегодняшнего дня система не примет.\n\nПРИОРИТЕТНЫЕ ЦЕЛИ\nЗвёздочка ☆ на странице цели или пункта чек-листа добавляет его в блок «Приоритетные цели» на главном экране — не больше 5 одновременно, чтобы список не превращался в ещё один общий список дел. Так самое важное всегда под рукой, не надо искать его в глубине дерева целей.\n\nАРХИВ\nЗначок архива на странице цели скрывает её (делает бледной) и убирает из расчёта процента выполнения — удобно для целей, которые отложены, но удалять не хочется. Архивная цель автоматически уходит в конец списка.\n\nРЕДАКТИРОВАНИЕ, УДАЛЕНИЕ, ПОРЯДОК, ПЕРЕНОС\nНад списком целей есть кнопки: карандаш — переименовать, «−» — удалить, «↕» — включить режим перемещения (после этого зажмите и перетащите карточку, чтобы изменить порядок). Кнопка-перенос перемещает цель вместе со всем содержимым в другую цель или подцель.\n\nСОРТИРОВКА\nКнопка-фильтр (воронка) рядом с «↕» открывает меню порядка списка: «По убыванию» (сначала самые выполненные цели), «По возрастанию» (наоборот) и «Пользовательский» — ваш собственный порядок перетаскиванием, он включён по умолчанию. Работает и на главном экране, и внутри любой подцели. Архивированные цели всегда остаются в конце списка, пока не станут активными.\n\nРАЗВЕРНУТЬ И РАЗБИТЬ\nКнопка «Развернуть» превращает цель без подцелей в цель с двумя подцелями-чекбоксами, а «Разбить на 6 подшагов» делит её сразу на шесть шагов.\n\nКОЛЕСО БАЛАНСА\nВнизу главного экрана — колесо со всеми целями верхнего уровня: сектор заполнен, когда в сфере нет незавершённых целей. Выполнение цели заполняет сектор, частично отмеченный чек-лист даёт дробный вклад (2 из 4 — половина), новая невыполненная цель уменьшает сектор, а удаление выполненной цели показатель не снижает.\n\nЛИЧНЫЙ КАБИНЕТ И СИНХРОНИЗАЦИЯ\nБез аккаунта тоже можно пользоваться — все данные хранятся прямо в этом браузере. Если нужно видеть свои цели на нескольких устройствах, создайте аккаунт (значок 🔐) — дальше всё синхронизируется само. Если на устройстве уже были несохранённые локальные цели, при входе появится выбор, что оставить — данные без предупреждения никогда не перезаписываются.\n\nРЕЗЕРВНАЯ КОПИЯ\nВ меню (☰) есть «Экспорт данных» — сохраняет файл с полной копией целей, и «Импорт данных» — восстанавливает из такого файла. Полезно делать копию время от времени, даже если вы пользуетесь аккаунтом.\n\nУСТАНОВКА И ОБНОВЛЕНИЕ\nНа телефоне сайт можно добавить на главный экран как отдельное приложение — шаги есть в меню («Установить приложение»). Если после обновления сайта что-то выглядит по-старому, нажмите «Обновить приложение» в меню — иконку с экрана удалять не придётся.\n\nТЕМЫ И ЯЗЫК\nВ меню можно переключить оформление (тёмная, светлая, розовая тема) и язык интерфейса.',
     menuTitle: 'Меню',
     themeDark: 'Тёмная тема',
     themeLight: 'Светлая тема',
@@ -1386,7 +1424,7 @@ const STRINGS = {
     back: 'Back',
     tipBack: 'Go up one level',
     overallProgress: 'Overall Progress',
-    mainGoals: 'Main Goals',
+    mainGoals: 'Important Life Areas',
     addGoal: 'Add',
     editGoal: 'Edit',
     deleteGoal: 'Delete',
@@ -1574,7 +1612,7 @@ const STRINGS = {
     aboutTitle: 'About',
     aboutText: 'Only What Matters helps you move toward what matters — without deadlines, pressure, or needless complexity.\n\nPick a goal, break it into subgoals and small steps. Do the important things at your own pace — every completed step brings you closer to the result.\n\nIf your energy or resources run low, archive the goal: it will not weigh on you or affect your progress. Come back to it later — change it or let it go.\n\nYou don\'t have to do everything. The point is to move forward, gently.\n\n— Vladimir Sokolov',
     instructionsTitle: 'Instructions',
-    instructionsText: 'GOALS AND SUBGOALS\nTap "+" next to "Main Goals" to create your first goal. Open it and tap "+" again to break it into subgoals — you can nest as many levels as you like, until a task feels genuinely simple. A goal with no subgoals has a "done" checkbox on its own page.\n\nCHECKLIST\nInstead of a single checkbox, a goal can become a list of items — the "Add checklist" button on its page. Its completion percentage is then based on checked items, not one overall flag.\n\nDUE DATE\nA goal’s page lets you set a date (day, month, year — the fields advance automatically as you type). A date earlier than today won’t be accepted.\n\nPRIORITY GOALS\nThe ☆ star on a goal’s page or a checklist item adds it to the "Priority goals" block on the home screen — capped at 5 at a time, so it never turns into just another to-do list. That keeps the most important things within reach without digging through the whole tree.\n\nARCHIVE\nThe archive icon on a goal’s page dims it and excludes it from every completion percentage — handy for goals you’re pausing but don’t want to delete. An archived goal automatically moves to the end of its list.\n\nEDITING, DELETING, REORDERING, MOVING\nAbove the goal list: the pencil renames, "−" deletes, and "↕" turns on move mode (press and drag a card to reorder once it’s on). The relocate button moves a goal with all its contents into another goal or subgoal.\n\nSORTING\nThe filter button (funnel) next to "↕" opens a list-order menu: "Descending" (most complete goals first), "Ascending" (the reverse) and "Custom" — your own drag order, on by default. It works both on the home screen and inside any subgoal. Archived goals always stay at the end of the list until they become active again.\n\nEXPAND AND SPLIT\nThe "Expand" button turns a goal with no subgoals into one with two checkbox subgoals, and "Split into 6 steps" breaks it into six steps at once.\n\nBALANCE WHEEL\nAt the bottom of the home screen, the wheel shows every top-level goal at a glance: a sector is full when its area has no open goals. Completing a goal fills its sector, a half-ticked checklist counts fractionally (2 of 4 is half), a new open goal shrinks it, and deleting a completed goal never lowers it.\n\nACCOUNT AND SYNC\nYou don’t need an account — everything is stored right in this browser. To see your goals on more than one device, create an account (the 🔐 icon) and it syncs automatically from then on. If a device already had unsaved local goals, signing in shows a choice of what to keep — data is never overwritten without asking first.\n\nBACKUP\nThe menu (☰) has "Export data", which saves a file with a full copy of your goals, and "Import data", which restores from one. Worth doing now and then even if you use an account.\n\nINSTALLING AND UPDATING\nOn a phone, the site can be added to the home screen as its own app — steps are in the menu ("Install app"). If something looks out of date after a site update, tap "Update app" in the menu — no need to remove the home-screen icon.\n\nTHEMES AND LANGUAGE\nThe menu also switches the look (dark, light, pink) and the interface language.',
+    instructionsText: 'GOALS AND SUBGOALS\nTap "+" next to "Important Life Areas" to create your first goal. Open it and tap "+" again to break it into subgoals — you can nest as many levels as you like, until a task feels genuinely simple. A goal with no subgoals has a "done" checkbox on its own page.\n\nCHECKLIST\nInstead of a single checkbox, a goal can become a list of items — the "Add checklist" button on its page. Its completion percentage is then based on checked items, not one overall flag.\n\nDUE DATE\nA goal’s page lets you set a date (day, month, year — the fields advance automatically as you type). A date earlier than today won’t be accepted.\n\nPRIORITY GOALS\nThe ☆ star on a goal’s page or a checklist item adds it to the "Priority goals" block on the home screen — capped at 5 at a time, so it never turns into just another to-do list. That keeps the most important things within reach without digging through the whole tree.\n\nARCHIVE\nThe archive icon on a goal’s page dims it and excludes it from every completion percentage — handy for goals you’re pausing but don’t want to delete. An archived goal automatically moves to the end of its list.\n\nEDITING, DELETING, REORDERING, MOVING\nAbove the goal list: the pencil renames, "−" deletes, and "↕" turns on move mode (press and drag a card to reorder once it’s on). The relocate button moves a goal with all its contents into another goal or subgoal.\n\nSORTING\nThe filter button (funnel) next to "↕" opens a list-order menu: "Descending" (most complete goals first), "Ascending" (the reverse) and "Custom" — your own drag order, on by default. It works both on the home screen and inside any subgoal. Archived goals always stay at the end of the list until they become active again.\n\nEXPAND AND SPLIT\nThe "Expand" button turns a goal with no subgoals into one with two checkbox subgoals, and "Split into 6 steps" breaks it into six steps at once.\n\nBALANCE WHEEL\nAt the bottom of the home screen, the wheel shows every top-level goal at a glance: a sector is full when its area has no open goals. Completing a goal fills its sector, a half-ticked checklist counts fractionally (2 of 4 is half), a new open goal shrinks it, and deleting a completed goal never lowers it.\n\nACCOUNT AND SYNC\nYou don’t need an account — everything is stored right in this browser. To see your goals on more than one device, create an account (the 🔐 icon) and it syncs automatically from then on. If a device already had unsaved local goals, signing in shows a choice of what to keep — data is never overwritten without asking first.\n\nBACKUP\nThe menu (☰) has "Export data", which saves a file with a full copy of your goals, and "Import data", which restores from one. Worth doing now and then even if you use an account.\n\nINSTALLING AND UPDATING\nOn a phone, the site can be added to the home screen as its own app — steps are in the menu ("Install app"). If something looks out of date after a site update, tap "Update app" in the menu — no need to remove the home-screen icon.\n\nTHEMES AND LANGUAGE\nThe menu also switches the look (dark, light, pink) and the interface language.',
     menuTitle: 'Menu',
     themeDark: 'Dark theme',
     themeLight: 'Light theme',
@@ -3250,6 +3288,18 @@ function render(){
   app.innerHTML = html;
   attachHandlers();
   adjustWheelLabels();
+  fitQuoteInput();
+}
+
+/* The motivation line is a <textarea> (an <input> cannot wrap), so its height must follow the
+   text: a one-line quote stays one line, a longer one takes the second line instead of being
+   cut off. Runs after every render() — including the one right after «Обновить цитату». */
+function fitQuoteInput(){
+  const el = document.querySelector('.quote-input');
+  if(!el || el.tagName !== 'TEXTAREA') return;
+  el.style.height = 'auto';
+  if(!el.scrollHeight) return; // jsdom / non-layout environment: nothing to measure
+  el.style.height = (el.scrollHeight + 2) + 'px';
 }
 
 function nodeViewHTML(node, mode, protectedCount, hintHTML){
@@ -3311,7 +3361,7 @@ function homeViewHTML(overallPct, hintHTML, mode, protectedCount){
     <div class="row"><h2>${t('overallProgress')}</h2><div class="pct" style="color:${barColor(overallPct)}">${overallPct}%</div></div>
     <div class="bar"><div style="width:${overallPct}%; background:${barColor(overallPct)}"></div></div>
     <div class="priority-row quote-row">
-      <input type="text" class="quote-input" data-quote-display readonly value="${state.quoteText ? esc(state.quoteText) : ''}" placeholder="${t('quoteRefresh')}">
+      <textarea class="quote-input" data-quote-display readonly rows="1" placeholder="${t('quoteRefresh')}">${state.quoteText ? esc(state.quoteText) : ''}</textarea>
       <button class="quote-btn" data-quote-refresh data-tip="${t('quoteRefresh')}" aria-label="${t('quoteRefresh')}">
         <i class="ti ti-refresh" aria-hidden="true"></i>
       </button>
@@ -4097,7 +4147,7 @@ function topbarHTML(){
       <button id="btnSearch" class="icon-btn" data-tip="${t('search')}" aria-label="${t('search')}"><i class="ti ti-search" aria-hidden="true"></i></button>
       ${cloudEnabled ? (authUser
         ? `<div class="account-dropdown">
-            <button id="btnAccount" title="${esc(authUser.email)}">${esc(authUser.name || authUser.email)}</button>
+            <button id="btnAccount" ${isStandalonePwa() ? `data-tip="${esc(authUser.name || authUser.email)}" aria-label="${esc(authUser.name || authUser.email)}"` : `title="${esc(authUser.email)}"`}>${isStandalonePwa() ? '<i class="ti ti-user" aria-hidden="true"></i>' : esc(authUser.name || authUser.email)}</button>
             ${accountMenuOpen ? `<div class="account-menu">
               <button id="btnSignOutMenu" class="danger">${t('accountSignOut')}</button>
             </div>` : ''}
@@ -6810,6 +6860,23 @@ function attachModalHandlers(){
 }
 
 render();
+
+/* PWA tooltips: the [data-tip] bubble is hover/focus driven, and touch has no hover to LEAVE —
+   after a tap it used to hang on screen forever. In an installed PWA the visible bubble is
+   therefore this .tip-live class: added on tap, removed after 1 second (the :hover variant is
+   suppressed there in CSS). Desktop hover/focus behaviour is unchanged. Registered ONCE per
+   page, not per render(), so re-renders never stack duplicate listeners. */
+document.addEventListener('pointerdown', (e)=>{
+  if(!isStandalonePwa()) return;
+  const el = e.target && e.target.closest ? e.target.closest('[data-tip]') : null;
+  if(!el) return;
+  if(el.__tipTimer){ clearTimeout(el.__tipTimer); }
+  el.classList.add('tip-live');
+  el.__tipTimer = setTimeout(()=>{
+    el.classList.remove('tip-live');
+    el.__tipTimer = null;
+  }, 1000);
+});
 
 // Rebuild the in-memory blob URLs from the local image cache on EVERY boot — not only when a
 // cloud session exists. The vision board must render its pixels for a signed-out, local-only
