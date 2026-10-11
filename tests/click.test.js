@@ -1211,15 +1211,19 @@ test('wish map: board survives a reload by rebuilding pixels from the local cach
   assert.ok(!t.document.querySelector('.wish-img-pending'), 'no pending placeholder after a reload');
 });
 
-test('top menu: shows the build version and a manual update check', () => {
+/* The version lives in the page footer (the owner: «у кнопки сбросить кэш удали версию, она есть
+   в строке сайта»), and the update check is automatic — the manual menu item had no reason to
+   exist and was removed together with the menu version line. */
+test('top menu: no manual update check and no version line (footer carries the version)', () => {
   const t = bootDom();
   t.click('#btnTopMenu');
-  const html = t.document.getElementById('app').innerHTML;
-  assert.ok(t.document.getElementById('btnCheckUpdateMenuItem'), 'the menu offers an update check');
-  assert.match(html, /v\d+\.\d+\.\d+/, 'the running build version is visible in the menu');
-  // Clicking it must not explode when there is no service worker (jsdom has none).
-  t.click('#btnCheckUpdateMenuItem');
-  assert.ok(!t.document.getElementById('btnCheckUpdateMenuItem'), 'the menu closes after the click');
+  assert.equal(t.document.getElementById('btnCheckUpdateMenuItem'), null,
+    'the manual "check for update" item is gone — the check runs on its own');
+  assert.equal(t.document.querySelector('.menu-version'), null,
+    'the menu no longer repeats the version — the page footer shows it');
+  // What the menu DOES still offer: the recovery item and navigation.
+  assert.ok(t.document.getElementById('btnResetPwaCacheMenuItem'), '«Сбросить кэш» stays');
+  assert.ok(t.document.getElementById('btnAboutMenuItem'), '«О проекте» stays');
 });
 
 test('update modal: confirming applies the waiting worker', async () => {

@@ -192,12 +192,6 @@
     cursor:pointer; text-align:left; white-space:normal; word-break:break-word;
   }
    .topbar .menu-item:hover{background:var(--card);}
-  /* Version shown in the top menu: the quickest way to tell an installed PWA's build from the
-     one the main site is serving ("PWA версия отличается от основной"). */
-  .menu-version{
-    color:var(--muted); font-size:11px; text-align:right;
-    padding:2px 8px 0; margin:0;
-  }
   /* Same horizontal padding (8px) as .menu-item above, so the flag/theme rows line up flush with
      the text items instead of sitting slightly indented relative to them. */
   .menu-lang-row{display:flex; gap:4px; justify-content:flex-start; padding:8px 8px 0; margin-top:4px; border-top:1px solid var(--border);}
@@ -1077,7 +1071,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.1.71';
+const APP_VERSION = '1.1.72';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -1248,7 +1242,6 @@ const STRINGS = {
     appSubtitle: 'Твой путь к счастливой жизни.',
     updateReadyTitle: 'Доступно обновление',
     updateReadyText: 'Загружена новая версия приложения. Обновить сейчас?',
-    updateCheck: 'Проверить обновление',
     updateCurrentVersion: 'Текущая версия',
     resetPwaCache: 'Сбросить кэш',
     resetPwaCacheHint: 'Если приложение застряло на старой версии: закройте его и откройте заново — данные сохранятся.',
@@ -1496,7 +1489,6 @@ const STRINGS = {
     appSubtitle: 'Your path to a happy life.',
     updateReadyTitle: 'Update available',
     updateReadyText: 'A new version of the app has been downloaded. Update now?',
-    updateCheck: 'Check for update',
     updateCurrentVersion: 'Current version',
     resetPwaCache: 'Clear cache',
     resetPwaCacheHint: 'If the app is stuck on an old version: close it and open it again — your data stays.',
@@ -4397,9 +4389,7 @@ function topbarHTML(){
         <button id="btnExportData" class="menu-item">${t('exportData')}</button>
         <button id="btnImportData" class="menu-item">${t('importData')}</button>
         <input type="file" id="importFileInput" accept="application/json,.json" style="display:none">` : ''}
-        <button id="btnCheckUpdateMenuItem" class="menu-item">${t('updateCheck')}</button>
         <button id="btnResetPwaCacheMenuItem" class="menu-item">${t('resetPwaCache')}</button>
-        <div class="menu-version">v${APP_VERSION}</div>
         <button id="btnAboutMenuItem" class="menu-item">${t('aboutTitle')}</button>
         <button id="btnInstructionsMenuItem" class="menu-item">${t('instructionsTitle')}</button>
         ${!isStandalonePwa() ? `<button id="btnInstallAppMenuItem" class="menu-item">${t('installAppTitle')}</button>` : ''}
@@ -6902,17 +6892,6 @@ function attachTopMenuHandlers(){
       topMenuOpen = false;
       aboutPanelOpen = true;
       render();
-    });
-  }
-  // Manual update check from the top menu: the guaranteed path when the automatic prompt was
-  // missed (e.g. the PWA was installed before this fix and never got offered an update).
-  const btnCheckUpdate = document.getElementById('btnCheckUpdateMenuItem');
-  if(btnCheckUpdate){
-    btnCheckUpdate.addEventListener('click', (e)=>{
-      e.stopPropagation();
-      topMenuOpen = false;
-      render();
-      checkForAppUpdate();
     });
   }
   // Last-resort recovery for a PWA stuck on an old build: the early builds (≤ v1.1.49) gated the
