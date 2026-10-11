@@ -761,9 +761,11 @@ test('wish map: header card manager replaces per-card edit/delete buttons', () =
   assert.ok(group.contains(t.document.getElementById('btnWishManage')), 'the manager belongs to the same group');
   // Кнопка плотности (сетка 2/3/4) лежит в той же группе — между «+» и управлением.
   assert.ok(group.contains(t.document.getElementById('btnWishGrid')), 'the grid-density button belongs to the group');
-  assert.equal(group.children.length, 3, 'the group holds «+», the grid button and the manager');
+  assert.equal(group.children.length, 4, 'the group holds «+», the grid button, print and the manager');
   assert.ok(group.children[1].querySelector('#btnWishGrid'),
-    'the grid button sits between «+» and the manager (inside its dropdown wrapper)');
+    'the grid button sits between «+» and the rest (inside its dropdown wrapper)');
+  assert.equal(group.children[2].id, 'btnWishPrint', 'the print button follows the grid button');
+  assert.ok(group.children[3].id === 'btnWishManage', 'the manager stays last');
   // The group is the LAST child of the header row → pushed to the right by space-between.
   const headerRow = t.document.querySelector('.section-title-row:has(#wishToggle)');
   assert.ok(headerRow && headerRow.lastElementChild === group, 'the group must sit on the right edge');
@@ -982,6 +984,60 @@ test('wish map: the grid-density button picks 2/3/4 per row', () => {
   t.click('.wish-caption');
   assert.equal(t.document.getElementById('wishGridMenu'), null, 'an outside tap closes the menu');
   assert.equal(t.app.getState().wishGridCols, 3, 'and changes nothing');
+});
+
+/* Печать доски: кнопка-принтер собирает отдельную страницу A4 (#wishPrintRoot) в ТОЙ ЖЕ матрице,
+   что на экране, и убирает её после печати. Браузера в тесте нет, поэтому проверяем именно сборку
+   макета и чистку за собой. */
+test('wish map: the print button builds one A4 page in the current matrix', async () => {
+  const t = bootDom();
+  const cards = ['a', 'b', 'c', 'd', 'e', 'f', 'g'].map((id, i) =>
+    ({ id, title: 'Карточка ' + (i + 1), imagePath: 'wishImages/' + id, order: i, uploadState: 'uploaded' }));
+  t.app.setState(Object.assign(t.app.getState(), { wishMap: cards }));
+  t.window.render();
+  assert.equal(t.document.querySelector('.wish-grid').dataset.cols, '4', 'web default is 4 per row');
+
+  let printed = 0;
+  t.window.print = () => { printed++; };
+  t.click('#btnWishPrint');
+  assert.equal(printed, 1, 'the button calls the browser print dialog');
+
+  const root = t.document.querySelector('#wishPrintRoot');
+  assert.ok(root, 'a dedicated print node is built');
+  assert.equal(root.parentNode, t.document.body, 'and it lives outside #app so a re-render cannot drop it');
+  const pageGrid = root.querySelector('[style*="grid-template-columns"]');
+  assert.equal(pageGrid.children.length, 7, 'every card is on the page');
+  assert.match(pageGrid.getAttribute('style'), /repeat\(4,1fr\)/,
+    'the page uses the SAME matrix as the board (4 per row)');
+  // Карточка без локальных пикселей не превращается в дыру: там честная пометка.
+  assert.equal(root.querySelectorAll('img').length, 0, 'no cached bytes → no <img>');
+  assert.ok([...pageGrid.children].some(el => /изображение/i.test(el.textContent)),
+    'and the placeholder says so in words instead of printing an empty box');
+  assert.equal(t.document.body.classList.contains('wish-printing'), true,
+    'the body is marked, so the print CSS can hide everything else');
+
+  // Тот же макет, но выбор пользователя — 2 в ряду.
+  t.click('#btnWishGrid');
+  t.click('[data-wish-cols="2"]');
+  t.click('#btnWishPrint');
+  assert.match(t.document.querySelector('#wishPrintRoot [style*="grid-template-columns"]').getAttribute('style'),
+    /repeat\(2,1fr\)/, 'the page follows an explicit 2-per-row choice');
+
+  // С закэшированными байтами на страницу уходит именно картинка.
+  t.window.URL.createObjectURL = () => 'blob:saved';
+  await (async () => {
+    const blob = new t.window.Blob(['x'], { type: 'image/webp' });
+    await t.app.wishCachePut('a', blob);
+    t.app.wishRememberBlob('a', blob);
+  })();
+  t.click('#btnWishPrint');
+  assert.equal(t.document.querySelectorAll('#wishPrintRoot img').length, 1,
+    'a card with cached pixels prints as a real image');
+
+  // После печати — чисто: узел и класс убраны.
+  t.window.dispatchEvent(new t.window.Event('afterprint'));
+  assert.equal(t.document.querySelector('#wishPrintRoot'), null, 'the print node is removed afterwards');
+  assert.equal(t.document.body.classList.contains('wish-printing'), false, 'and the marker class is gone');
 });
 
 test('wish map: the grid-density default is 3 in an installed PWA', () => {
