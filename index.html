@@ -1195,7 +1195,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.1.93';
+const APP_VERSION = '1.1.94';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -5462,6 +5462,8 @@ function attachWheelSectorHandlers(){
       if(!Number.isFinite(idx)) return;
       toggleSphereTree(idx);
     };
+    // iOS Safari: click на SVG не срабатывает без touchend + preventDefault
+    el.addEventListener('touchend', (e)=>{ e.preventDefault(); toggle(e); }, {passive:false});
     el.addEventListener('click', toggle);
     // Клавиатура: роль кнопки + Enter/Space (Space иначе скроллит страницу).
     el.addEventListener('keydown', (e)=>{
