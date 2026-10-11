@@ -51,7 +51,12 @@ function bootDom(seedStorage) {
     click(sel) {
       const el = typeof sel === 'string' ? this.document.querySelector(sel) : sel;
       assert.ok(el, `element not found: ${sel}`);
-      el.click();
+      // SVG elements in jsdom don't have .click(); use dispatchEvent for all elements.
+      if (typeof el.click === 'function') {
+        el.click();
+      } else {
+        el.dispatchEvent(new this.window.MouseEvent('click', { bubbles: true, cancelable: true }));
+      }
       return el;
     },
   };
@@ -1677,4 +1682,178 @@ test('share: a failing clipboard shows the link instead of a false «copied»', 
   assert.ok(toast, 'something must be shown');
   assert.ok(!/Ссылка скопирована/.test(toast.textContent), 'no false «copied» claim');
   assert.ok(toast.textContent.includes('https://bobah1988.github.io/goal-tracker/'), 'the link itself is shown');
+});
+
+// ===== Интерактивное «Колесо баланса»: сектора-кнопки с раскрытием дерева сферы =====
+test('wheel: home page sectors are interactive buttons with role/aria/tabindex', () => {
+  const t = bootDom();
+  t.click('#btnTopMenu');
+  const sectors = t.document.querySelectorAll('[data-wheel-sector]');
+  assert.ok(sectors.length >= 1, 'sectors rendered as clickable elements');
+  sectors.forEach((s) => {
+    assert.equal(s.getAttribute('role'), 'button', 'role=button');
+    assert.equal(s.getAttribute('tabindex'), '0', 'tabindex=0 for keyboard');
+    assert.ok(s.getAttribute('aria-label').includes('Открыть сферу'), 'aria-label for open');
+    assert.ok(s.getAttribute('data-wheel-sector') !== '', 'data-wheel-sector present');
+  });
+});
+
+test('wheel: clicking a sector opens the sphere tree panel and highlights the sector', () => {
+  const t = bootDom();
+  t.click('#btnTopMenu');
+  t.click('[data-wheel-sector]');
+  const panel = t.document.getElementById('sphereTreePanel');
+  assert.ok(panel, 'sphere tree panel appears');
+  assert.match(panel.textContent, /Здоровье/, 'panel shows the sphere name');
+  const active = t.document.querySelector('.wheel-sector-hit.is-active');
+  assert.ok(active, 'the clicked sector is highlighted');
+  assert.match(active.getAttribute('aria-label'), /Свернуть сферу/, 'active sector label says collapse');
+  const cardOpen = t.document.querySelector('.grid-goals .card.is-open');
+  assert.ok(cardOpen, 'the corresponding sphere card is highlighted');
+});
+
+test('wheel: clicking the same sector again collapses the panel and removes highlight', () => {
+  const t = bootDom();
+  t.click('#btnTopMenu');
+  t.click('[data-wheel-sector]');
+  assert.ok(t.document.getElementById('sphereTreePanel'), 'panel open');
+  t.click('[data-wheel-sector]');
+  assert.ok(!t.document.getElementById('sphereTreePanel'), 'panel closed');
+  assert.equal(t.document.querySelectorAll('.wheel-sector-hit.is-active').length, 0, 'no active sector');
+  assert.equal(t.document.querySelectorAll('.grid-goals .card.is-open').length, 0, 'card highlight removed');
+});
+
+test('wheel: opening a second sphere closes the first (accordion)', () => {
+  const t = bootDom();
+  // Wheel is open by default (wheelOpen=true by default), no need to toggle menu
+  const sectors = t.document.querySelectorAll('[data-wheel-sector]');
+  t.click(sectors[0]);
+  assert.ok(t.document.getElementById('sphereTreePanel'), 'first open');
+  // Re-query after re-render from the first click
+  const sectorsAfter = t.document.querySelectorAll('[data-wheel-sector]');
+  // SEED has spheres: Энергия(0), Здоровье(1), Финансы(2), ... — clicking sector 1 opens Здоровье
+  t.click(sectorsAfter[1]);
+  const panel = t.document.getElementById('sphereTreePanel');
+  assert.ok(panel, 'second panel open');
+  // SEED: sector 1 = Здоровье, whose first child is "Достаток"
+  assert.match(panel.textContent, /Достаток/, 'shows the second sphere (Здоровье)');
+  assert.equal(t.document.querySelectorAll('.wheel-sector-hit.is-active').length, 1, 'only one active');
+  assert.equal(t.document.querySelectorAll('.grid-goals .card.is-open').length, 1, 'only one card highlighted');
+});
+
+test('wheel: keyboard Enter and Space toggle the panel', () => {
+  const t = bootDom();
+  t.click('#btnTopMenu');
+  const sector = t.document.querySelector('[data-wheel-sector]');
+  sector.dispatchEvent(new t.window.KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+  assert.ok(t.document.getElementById('sphereTreePanel'), 'Enter opens');
+  sector.dispatchEvent(new t.window.KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }));
+  assert.ok(!t.document.getElementById('sphereTreePanel'), 'Space closes');
+  sector.dispatchEvent(new t.window.KeyboardEvent('keydown', { key: 'Spacebar', bubbles: true, cancelable: true }));
+  assert.ok(t.document.getElementById('sphereTreePanel'), 'Spacebar opens again');
+});
+
+test('wheel: panel has its own close button and it works even if the wheel is collapsed', () => {
+  const t = bootDom();
+  t.click('#btnTopMenu');
+  t.click('[data-wheel-sector]');
+  assert.ok(t.document.getElementById('sphereTreePanel'), 'panel open');
+  t.click('#btnSphereTreeClose');
+  assert.ok(!t.document.getElementById('sphereTreePanel'), 'panel closed by its own button');
+});
+
+test('wheel: panel child click navigates into the child goal and closes the panel', () => {
+  const t = bootDom();
+  t.click('#btnTopMenu');
+  t.click('[data-wheel-sector]');
+  t.click('.sphere-tree-item');
+  const path = t.app.getPath();
+  assert.deepEqual(Array.from(path), [0, 0], 'navigated into the child goal');
+  assert.ok(!t.document.getElementById('sphereTreePanel'), 'panel closed after navigation');
+});
+
+test('wheel: empty sphere shows empty state and a button to open the sphere page', () => {
+  const t = bootDom();
+  t.app.setState({ name: 'root', children: [{ name: 'Пустая', sphereActivityAt: Date.now(), children: [] }] });
+  t.window.render();
+  t.click('[data-wheel-sector]');
+  assert.ok(t.document.querySelector('.sphere-tree-empty'), 'empty state shown');
+  assert.ok(t.document.querySelector('[data-sphere-open]'), 'open-page button present');
+  t.click('[data-sphere-open]');
+  assert.deepEqual(Array.from(t.app.getPath()), [0], 'navigated to the sphere page');
+});
+
+test('wheel: node page wheel stays decorative (no data-wheel-sector)', () => {
+  const t = bootDom();
+  t.app.setState({ name: 'root', children: [{ name: 'Здоровье', children: [{ name: 'Бегать', done: false, children: [] }] }] });
+  t.app.setPath([0]);
+  t.window.render();
+  assert.equal(t.document.querySelectorAll('[data-wheel-sector]').length, 0, 'no interactive sectors on node page');
+  assert.ok(t.document.querySelector('#wheelWrap svg'), 'decorative wheel still drawn');
+});
+
+test('wheel: refreshWheel keeps interactive sectors and highlight after inline rename on home', () => {
+  const t = bootDom();
+  t.click('[data-wheel-sector]');
+  const before = t.document.querySelectorAll('[data-wheel-sector]').length;
+  const activeBefore = t.document.querySelectorAll('.wheel-sector-hit.is-active').length;
+  assert.ok(t.document.getElementById('sphereTreePanel'), 'panel open before refreshWheel');
+  t.app.refreshWheel();
+  assert.equal(t.document.querySelectorAll('[data-wheel-sector]').length, before, 'sectors preserved');
+  assert.equal(t.document.querySelectorAll('.wheel-sector-hit.is-active').length, 1, 'highlight preserved');
+  assert.ok(t.document.getElementById('sphereTreePanel'), 'panel still open after refreshWheel');
+  // Clicking the same sector again toggles it CLOSED (expected toggle behavior)
+  t.click('[data-wheel-sector]');
+  assert.ok(!t.document.getElementById('sphereTreePanel'), 'clicking again toggles closed (expected)');
+});
+
+test('wheel: archived spheres are skipped in sectors (index mapping correct)', () => {
+  const t = bootDom();
+  const now = Date.now();
+  t.app.setState({ name: 'root', children: [
+    { name: 'Архивная', sphereActivityAt: Date.now(), archived: true, children: [] },
+    { name: 'Здоровье', sphereActivityAt: Date.now(), children: [{ name: 'Бегать', done: false, children: [] }] }
+  ]});
+  t.window.render();
+  const sectors = t.document.querySelectorAll('[data-wheel-sector]');
+  assert.equal(sectors.length, 1, 'archived sphere skipped');
+  assert.equal(sectors[0].dataset.wheelSector, '1', 'sector maps to the right sphere index');
+  assert.match(sectors[0].getAttribute('aria-label'), /Здоровье/, 'label points to the right sphere');
+  t.click(sectors[0]);
+  assert.match(t.document.getElementById('sphereTreePanel').textContent, /Здоровье/, 'opens the correct sphere');
+});
+
+test('wheel: collapsing the spheres section closes the tree and removes highlight', () => {
+  const t = bootDom();
+  t.click('[data-wheel-sector]');
+  assert.ok(t.document.getElementById('sphereTreePanel'), 'panel open');
+  t.click('#mainGoalsToggle');
+  assert.ok(!t.document.getElementById('sphereTreePanel'), 'tree closed when section collapsed');
+  assert.equal(t.document.querySelectorAll('.wheel-sector-hit.is-active').length, 0, 'highlight removed');
+});
+
+test('wheel: state and localStorage unchanged by open/close (no sync triggered)', () => {
+  const t = bootDom();
+  const before = JSON.stringify(t.app.getState());
+  t.click('[data-wheel-sector]');
+  const afterOpen = JSON.stringify(t.app.getState());
+  assert.equal(before, afterOpen, 'state unchanged after open');
+  t.click('[data-wheel-sector]');
+  const afterClose = JSON.stringify(t.app.getState());
+  assert.equal(afterOpen, afterClose, 'state unchanged after close');
+  // localStorage unchanged
+  const storageKey = t.app.STORAGE_KEY;
+  const beforeLS = t.window.localStorage.getItem(storageKey);
+  t.click('[data-wheel-sector]');
+  t.click('[data-wheel-sector]');
+  const afterLS = t.window.localStorage.getItem(storageKey);
+  assert.equal(beforeLS, afterLS, 'localStorage unchanged by wheel interaction');
+});
+
+test('wheel: visual hint under the wheel explains the interaction', () => {
+  const t = bootDom();
+  t.click('#btnTopMenu');
+  const hint = t.document.querySelector('.wheel-hint');
+  assert.ok(hint, 'hint element exists');
+  assert.match(hint.textContent, /Нажмите на сектор/, 'hint text present');
 });

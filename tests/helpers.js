@@ -62,6 +62,10 @@ const EXPORT_SRC = `
     pickSphereReminder, hideSphereReminder, openSphereTree, homeViewHTML,
     getSphereDataReady: () => sphereDataReady,
     setSphereDataReady: (v) => { sphereDataReady = !!v; },
+    // Интерактивное колесо
+    wheelHTML, adjustWheelLabels, refreshWheel, sphereTreeHTML, toggleSphereTree,
+    scrollSphereTreeIntoView, attachWheelSectorHandlers,
+    getExpandedSphereIdx: () => expandedSphereIdx,
   getState: () => state,
   setState: (v) => { state = v; },
   // The crop dialog's output is a lexical let in the app script, so a plain window assignment

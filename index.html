@@ -235,9 +235,12 @@
      #btnMove:hover, #btnMoveChecklist:hover{color:var(--text); border-color:var(--accent);}
      #btnAddSubgoal:hover{color:var(--text); border-color:var(--accent);}
      #btnRelocate:hover{color:var(--text); border-color:var(--accent);}
-     .add-child-row #btnArchive:hover, .add-goal-wrap #btnArchive:hover{color:var(--text); border-color:var(--accent);}
-     .sphere-reminder-actions button:not(.sphere-reminder-open):hover{border-color:var(--accent);}
-   }
+      .add-child-row #btnArchive:hover, .add-goal-wrap #btnArchive:hover{color:var(--text); border-color:var(--accent);}
+      .sphere-reminder-actions button:not(.sphere-reminder-open):hover{border-color:var(--accent);}
+      .wheel-sector-hit:hover{fill:var(--accent); fill-opacity:.10;}
+      .sphere-tree-item:hover{border-color:var(--accent);}
+      .sphere-tree-close:hover{color:var(--text); border-color:var(--accent);}
+    }
    /* The REAL mode colours: OUTSIDE the gate on purpose — they signal a working mode (move /
       delete / rename), not a hover affordance, and a touch user must see them just like a mouse
       user does. They use .active, never :hover, so the sticky-hover problem cannot touch them. */
@@ -296,6 +299,10 @@
     // Мягкое напоминание: у его второй кнопки hover меняет только рамку, поэтому в тач-режиме
     // гасим именно её (акцентная кнопка «Открыть сферу» вне списка — её цвет не ховерный).
     .touch-mode .sphere-reminder-actions button:not(.sphere-reminder-open):hover{border-color:var(--border);}
+    // Тач-режим гасит и ховеры нового колеса/панели: сектор, строки дерева и кнопка «Свернуть».
+    .touch-mode .wheel-sector-hit:hover{fill-opacity:0;}
+    .touch-mode .sphere-tree-item:hover{border-color:var(--border);}
+    .touch-mode .sphere-tree-close:hover{color:var(--text); border-color:var(--border);}
   .edit-hint{color:var(--muted); font-weight:400; font-size:12px;}
   .edit-hint.delete-hint{color:var(--red);}
   /* ===== Modal overlays & panels (auth, install, about, confirm) ===== */
@@ -1140,8 +1147,34 @@
     padding:8px 10px; font-size:16px; outline:none;
   }
   .checklist-add-row input:focus{border-color:var(--accent);}
-  /* ===== Balance wheel ===== */
-  .wheel-wrap{background:var(--card); border:1px solid var(--border); border-radius:16px; padding:7px 22px; text-align:center;}
+   /* ===== Balance wheel ===== */
+   .wheel-wrap{background:var(--card); border:1px solid var(--border); border-radius:16px; padding:7px 22px; text-align:center;}
+   /* Сектора колеса — кнопки. Прозрачная область на весь сектор ловит клик/касание и при
+      нулевом заполнении (архивная/пустая сфера); выделение активного — на переменных тем. */
+   .wheel-sector-hit{fill:transparent; cursor:pointer; transition:fill-opacity .15s ease, stroke .15s ease; stroke:transparent;}
+   .wheel-sector-hit:focus-visible{outline:2px solid var(--accent); outline-offset:1px;}
+   .wheel-sector-hit.is-active{fill:var(--accent); fill-opacity:.14; stroke:var(--accent); stroke-width:2;}
+   .wheel-hint{font-size:12px; color:var(--muted); text-align:center; margin:-6px 0 0; padding:0 8px 2px;}
+   /* Карточка сферы с раскрытым деревом — акцентная рамка, связь «сектор ↔ карточка». */
+   .grid-goals .card.is-open{border-color:var(--accent); box-shadow:0 0 0 1px var(--accent);}
+   /* Дерево сферы: аккордеон между сеткой сфер и колесом. Цвета — только переменные тем. */
+   .sphere-tree{background:var(--card); border:1px solid var(--border); border-radius:14px; padding:14px 16px; margin:0 0 16px; animation:sphere-tree-in .18s ease;}
+   @keyframes sphere-tree-in{from{opacity:0; transform:translateY(-6px);} to{opacity:1; transform:none;}}
+   .sphere-tree-head{display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:10px;}
+   .sphere-tree-arrow{color:var(--muted); font-size:13px;}
+   .sphere-tree-name{font-size:15px; font-weight:700; min-width:0; overflow-wrap:break-word;}
+   .sphere-tree-pct{font-size:12px; color:var(--muted); margin-left:auto;}
+   .sphere-tree-close{background:var(--card2); border:1px solid var(--border); color:var(--text); border-radius:8px; padding:6px 12px; font-size:12px; cursor:pointer; min-height:32px;}
+   .sphere-tree-list{display:flex; flex-direction:column; gap:6px;}
+   .sphere-tree-item{display:grid; grid-template-columns:auto 1fr auto; align-items:center; gap:4px 8px; background:var(--card2); border:1px solid var(--border); border-radius:10px; padding:9px 12px; cursor:pointer; text-align:left; color:var(--text); font-size:14px; width:100%; min-height:44px;}
+   .sphere-tree-item.archived{opacity:.55;}
+   .sphere-tree-item-mark{color:var(--muted); flex:none;}
+   .sphere-tree-item-name{min-width:0; overflow-wrap:break-word;}
+   .sphere-tree-item-pct{font-size:12px; color:var(--muted);}
+   .sphere-tree-item-bar{grid-column:1 / -1; height:4px; border-radius:2px; background:var(--border); overflow:hidden; margin-top:2px;}
+   .sphere-tree-item-bar > span{display:block; height:100%;}
+   .sphere-tree-empty{font-size:13px; color:var(--muted); padding:2px 0 8px;}
+   .sphere-tree-open-page{background:none; border:none; color:var(--accent); font-weight:600; font-size:13px; cursor:pointer; padding:6px 0; min-height:44px;}
 </style>
 </head>
 <body>
@@ -1162,7 +1195,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.1.90';
+const APP_VERSION = '1.1.91';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -1419,6 +1452,12 @@ const STRINGS = {
     tipUnarchive: 'Вернуть из архива',
     tipRemovePriority: 'Убрать из приоритета',
     balanceWheel: 'Колесо баланса',
+    wheelSectorOpen: name => `Открыть сферу ${name}`,
+    wheelSectorClose: name => `Свернуть сферу ${name}`,
+    wheelSectorHint: 'Нажмите на сектор — раскроется дерево сферы',
+    sphereTreeEmpty: 'В этой сфере пока нет целей.',
+    sphereTreeClose: 'Свернуть',
+    sphereTreeOpenPage: 'Открыть страницу сферы',
     completedOf: 'выполнено',
     addLabel: 'Добавить',
     deleteLabel: 'Удалить',
@@ -1676,6 +1715,12 @@ const STRINGS = {
     tipUnarchive: 'Unarchive',
     tipRemovePriority: 'Remove from priority',
     balanceWheel: 'Balance Wheel',
+    wheelSectorOpen: name => `Open the ${name} sphere`,
+    wheelSectorClose: name => `Collapse the ${name} sphere`,
+    wheelSectorHint: 'Tap a sector to open that sphere’s tree',
+    sphereTreeEmpty: 'No goals in this sphere yet.',
+    sphereTreeClose: 'Collapse',
+    sphereTreeOpenPage: 'Open the sphere page',
     completedOf: 'done',
     addLabel: 'Add',
     deleteLabel: 'Delete',
@@ -1852,6 +1897,10 @@ function loadLang(){
 }
 let lang = loadLang();
 let topMenuOpen = false;
+// Интерактивное «Колесо баланса»: индекс сферы, дерево которой раскрыто на главной
+// (path.length === 0). Только вид — в state не пишется, saveState и синхронизацию не вызывает:
+// открытие/закрытие сферы не меняет пользовательские данные. null = ничего не раскрыто.
+let expandedSphereIdx = null;
 const LANG_FLAGS = { ru: '🇷🇺', en: '🇺🇸' };
 function t(key){ return STRINGS[lang][key]; }
 // Pick a random motivational quote from the embedded database (500 quotes).
@@ -4265,15 +4314,34 @@ function homeViewHTML(overallPct, hintHTML, mode, protectedCount){
    </div>`;
   if(mainGoalsOpen){
     html += `<div class="grid grid-goals">`;
-    sortHomeGoals(state.children, goalsSort).forEach(({ node, idx }) => { html += cardOrLeafHTML(node, idx, mode, protectedCount); });
+    sortHomeGoals(state.children, goalsSort).forEach(({ node, idx }) => {
+      let cardHTML = cardOrLeafHTML(node, idx, mode, protectedCount);
+      // Сфера, дерево которой раскрыто колесом, получает акцентную рамку — связь «сектор ↔ карточка»
+      // видна без прокрутки. Правка строкой: cardOrLeafHTML общий для всех уровней, менять его нельзя.
+      if(expandedSphereIdx === idx){
+        cardHTML = cardHTML.replace('class="card ', 'class="card is-open ');
+      }
+      html += cardHTML;
+    });
     html += `</div>`;
+    // Дерево раскрытой сферы — аккордеон под сеткой: одновременно открыта максимум одна
+    // (expandedSphereIdx), поэтому блок здесь ровно один или отсутствует.
+    const expandedSphere = expandedSphereIdx !== null ? state.children[expandedSphereIdx] : null;
+    if(expandedSphere){
+      html += sphereTreeHTML(expandedSphere, expandedSphereIdx);
+    }
   }
    html += `<div class="section-title" id="wheelToggle" style="margin-top:24px;">
       <span class="wheel-arrow">${wheelOpen ? '▾' : '▸'}</span>
       ${t('balanceWheel')}
     </div>`;
     if(wheelOpen){
-      html += `<div class="wheel-wrap" id="wheelWrap">${wheelHTML(activeChildren(state))}</div>`;
+      // Сектора на главной — кнопки: targets[i] номер сферы в state.children для сектора i
+      // (activeChildren выбрасывает архивные, индексы сдвигаются), activeIdx — раскрытая сфера.
+      const targets = [];
+      state.children.forEach((c, i) => { if(!c.archived) targets.push(i); });
+      html += `<div class="wheel-wrap" id="wheelWrap">${wheelHTML(activeChildren(state), { targets, activeIdx: expandedSphereIdx, interactive: !!targets.length })}</div>`;
+      html += `<div class="wheel-hint">${t('wheelSectorHint')}</div>`;
     }
     // «Карта желаний» — optional vision board directly under the wheel. Fully independent:
     // cards live in state.wishMap only and never feed the wheel, ratings or any totals.
@@ -5199,7 +5267,16 @@ function wheelFilledSteps(pct){
   const RING_STEPS = 10;
   return Math.min(RING_STEPS, Math.floor(pct / (100 / RING_STEPS)));
 }
-function wheelHTML(items){
+function wheelHTML(items, opts){
+  opts = opts || {};
+  // Интерактивные сектора (главная страница): opts.targets[i] — индекс сферы в state.children,
+  // которому соответствует сектор i (activeChildren отфильтровывает архивные, так что номера
+  // съезжают — без карты соответствия клик ушёл бы не в ту сферу). opts.activeIdx — раскрытая
+  // сейчас сфера: её сектор подсвечивается и получает aria-expanded. Без opts колесо остаётся
+  // прежним декоративным (страницы целей).
+  const targets = Array.isArray(opts.targets) ? opts.targets : null;
+  const activeIdx = Number.isFinite(opts.activeIdx) ? opts.activeIdx : null;
+  const interactive = !!targets;
   const n = items.length;
   if(!n) return '';
   const width = 572, height = 320, cx = 286, cy = 160, maxR = 119;
@@ -5229,7 +5306,7 @@ function wheelHTML(items){
     return id;
   });
 
-  let svg = `<svg viewBox="0 0 ${width} ${height}" width="100%" style="max-width:580px; height:auto; display:block; margin:0 auto;" xmlns:xlink="http://www.w3.org/1999/xlink">`;
+  let svg = `<svg viewBox="0 0 ${width} ${height}" width="100%" style="max-width:580px; height:auto; display:block; margin:0 auto;" role="group" aria-label="${esc(t('balanceWheel'))}" xmlns:xlink="http://www.w3.org/1999/xlink">`;
   svg += `<defs>${defsInner}</defs>`;
   const RING_STEPS = 10;
   items.forEach((item, i) => {
@@ -5243,6 +5320,7 @@ function wheelHTML(items){
     const center = i * sectorSpan;
     const start = center - sectorSpan / 2, end = center + sectorSpan / 2;
     const color = colors[i % colors.length];
+    const active = interactive && activeIdx === targets[i];
     if(r > 1){
       // A single item spans the full 360°, which degenerates an SVG arc command (start/end
       // points coincide) into a barely-visible sliver. Draw a plain filled circle instead.
@@ -5253,8 +5331,20 @@ function wheelHTML(items){
       }
     }
     // Rendered in full, left-aligned to the start of the arc for now — adjustWheelLabels() fixes
-    // this up for real once the SVG is actually in the DOM and can be measured (see note above).
+    // this up for real once the SVG is in the DOM and can be measured (see note above).
     svg += `<text font-size="${fontSize}" font-weight="700" fill="var(--text)"><textPath href="#${arcIds[i]}" xlink:href="#${arcIds[i]}" startOffset="0%" text-anchor="start">${esc(item.name)}</textPath></text>`;
+    // Интерактивный сектор: прозрачная область на весь радиус сектора — она ловит клик/касание
+    // и там, где заполненная часть колеса пустая (сфера 0%). Роль кнопки, фокус с клавиатуры и
+    // подпись для скринридера («Открыть сферу Здоровье» / «Свернуть сферу …»).
+    if(interactive){
+      const label = active ? t('wheelSectorClose')(item.name) : t('wheelSectorOpen')(item.name);
+      const common = `class="wheel-sector-hit${active ? ' is-active' : ''}" data-wheel-sector="${targets[i]}" role="button" tabindex="0" aria-expanded="${active ? 'true' : 'false'}" aria-label="${esc(label)}"`;
+      if(n === 1){
+        svg += `<circle cx="${cx}" cy="${cy}" r="${maxR}" fill="transparent" ${common}/>`;
+      } else {
+        svg += `<path d="${wedgePath(cx, cy, maxR, start, end)}" fill="transparent" ${common}/>`;
+      }
+    }
   });
   // Grid rings + radial dividers are drawn last, on top of the filled wedges (in a lighter tone
   // than before), so the fill level always reads clearly against the scale instead of hiding under it.
@@ -5297,6 +5387,117 @@ function adjustWheelLabels(){
         tp.textContent = base + '…';
       }
     }catch(e){}
+  });
+}
+
+/* ===== Интерактивное колесо: дерево сферы прямо на главной =====
+   Сектор колеса — кнопка: раскрывает дерево своей сферы (одновременно только одну — раскрытие
+   новой закрывает предыдущую), повторное нажатие сворачивает. Панель — аккордеон между сеткой
+   сфер и самим колесом; закрывается и своей кнопкой «Свернуть», потому что колесо может быть
+   свёрнуто (wheelOpen=false) и кнопку-сектор тогда не достать. Никаких saveState/синка: это вид. */
+function sphereTreeHTML(sphere, sphereIdx){
+  const pct = computePercent(sphere);
+  const kids = (sphere.children || []).map((node, idx) => ({ node, idx }));
+  // Архивные — в конец списка, тем же правилом, что и остальные списки приложения.
+  kids.sort((a, b) => (a.node.archived ? 1 : 0) - (b.node.archived ? 1 : 0));
+  const rows = kids.length ? kids.map(({ node, idx }) => {
+    const cp = computePercent(node);
+    const mark = node.archived ? '<i class="ti ti-folder" aria-hidden="true"></i>'
+      : (isLeaf(node) ? (node.checklist ? '<i class="ti ti-list-check" aria-hidden="true"></i>' : (node.done ? '✅' : '❌')) : '›');
+    return `<button type="button" class="sphere-tree-item${node.archived ? ' archived' : ''}" data-tree-nav="${sphereIdx}:${idx}">
+        <span class="sphere-tree-item-mark">${mark}</span>
+        <span class="sphere-tree-item-name">${esc(node.name)}</span>
+        <span class="sphere-tree-item-pct">${cp}%</span>
+        <span class="sphere-tree-item-bar"><span style="width:${cp}%; background:${barColor(cp)}"></span></span>
+      </button>`;
+  }).join('') : `<div class="sphere-tree-empty">${t('sphereTreeEmpty')}</div>
+      <button type="button" class="sphere-tree-open-page" data-sphere-open="${sphereIdx}">${t('sphereTreeOpenPage')}</button>`;
+  return `<div class="sphere-tree" id="sphereTreePanel" data-sphere-tree="${sphereIdx}">
+      <div class="sphere-tree-head">
+        <span class="sphere-tree-arrow" aria-hidden="true">▾</span>
+        <span class="sphere-tree-name">${esc(sphere.name)}</span>
+        <span class="sphere-tree-pct">${pct}%</span>
+        <button type="button" id="btnSphereTreeClose" class="sphere-tree-close">${t('sphereTreeClose')}</button>
+      </div>
+      <div class="sphere-tree-list">${rows}</div>
+    </div>`;
+}
+function toggleSphereTree(idx){
+  const sphere = state.children[idx];
+  if(!sphere) return;
+  // Только вид: expandedSphereIdx живёт вне state, saveState и синхронизация не вызываются.
+  expandedSphereIdx = (expandedSphereIdx === idx) ? null : idx;
+  render();
+  // Прокрутка — только при РАСКРЫТИИ: сворачивание не должно дёргать страницу.
+  if(expandedSphereIdx !== null) scrollSphereTreeIntoView();
+}
+/* Плавная прокрутка к дереву сферы так, чтобы её заголовок был виден. Высота «прилипшей»
+   шапки вычитается, если такая есть (сейчас .topbar статичен, но правило будущее — и на
+   случай тем, где шапка фиксирована). */
+function scrollSphereTreeIntoView(){
+  try{
+    const panel = document.getElementById('sphereTreePanel');
+    if(!panel) return;
+    let headerH = 0;
+    const topbar = document.querySelector('.topbar');
+    if(topbar){
+      const pos = window.getComputedStyle(topbar).position;
+      if(pos === 'fixed' || pos === 'sticky') headerH = topbar.offsetHeight || 0;
+    }
+    const y = panel.getBoundingClientRect().top + (window.pageYOffset || document.documentElement.scrollTop || 0) - headerH - 16;
+    window.scrollTo({ top: Math.max(y, 0), behavior: 'smooth' });
+  }catch(e){}
+}
+// Привязка секторов колеса и элементов панели. Вынесена из attachMainViewHandlers, потому что
+// refreshWheel() пересобирает innerHTML колеса (инлайн-переименование карточки) — слушатели
+// на секторах после этого надо вернуть.
+function attachWheelSectorHandlers(){
+  document.querySelectorAll('[data-wheel-sector]').forEach(el=>{
+    const idx = parseInt(el.dataset.wheelSector, 10);
+    const toggle = (e)=>{
+      if(e && e.stopPropagation) e.stopPropagation();
+      if(!Number.isFinite(idx)) return;
+      toggleSphereTree(idx);
+    };
+    el.addEventListener('click', toggle);
+    // Клавиатура: роль кнопки + Enter/Space (Space иначе скроллит страницу).
+    el.addEventListener('keydown', (e)=>{
+      if(e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar'){
+        e.preventDefault();
+        toggle(e);
+      }
+    });
+  });
+  const btnClose = document.getElementById('btnSphereTreeClose');
+  if(btnClose){
+    btnClose.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      expandedSphereIdx = null;
+      render();
+    });
+  }
+  document.querySelectorAll('[data-tree-nav]').forEach(el=>{
+    el.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      const parts = (el.dataset.treeNav || '').split(':');
+      const s = parseInt(parts[0], 10), c = parseInt(parts[1], 10);
+      const sphere = state.children[s];
+      if(!sphere || !Array.isArray(sphere.children) || !sphere.children[c]) return;
+      // Переход внутрь сферы — как тап по карточке внутри неё ( data-nav ): отмечаем
+      // взаимодействие для напоминаний, но без saveState — синхронизацию не трогаем.
+      touchSphereAtPath([s]);
+      path = [s, c];
+      expandedSphereIdx = null;
+      render();
+    });
+  });
+  document.querySelectorAll('[data-sphere-open]').forEach(el=>{
+    el.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      const idx = parseInt(el.dataset.sphereOpen, 10);
+      expandedSphereIdx = null;
+      openSphereTree(idx);
+    });
   });
 }
 
@@ -5606,7 +5807,20 @@ function hideUndoToast(){
 // <input> mid-edit, but the wheel must still reflect the fresh name right away.
 function refreshWheel(){
   const wheelWrap = document.getElementById('wheelWrap');
-  if(wheelWrap){ wheelWrap.innerHTML = wheelHTML(activeChildren(resolve(path))); adjustWheelLabels(); }
+  if(!wheelWrap) return;
+  if(path.length){
+    // Страница цели: колесо декоративное, как и было.
+    wheelWrap.innerHTML = wheelHTML(activeChildren(resolve(path)));
+  }else{
+    // Главная: та же карта «сектор → сфера», что и в homeViewHTML, иначе инлайн-переименование
+    // карточки вернуло бы мёртвые секторы и потеряло подсветку раскрытой сферы.
+    const targets = [];
+    state.children.forEach((c, i) => { if(!c.archived) targets.push(i); });
+    wheelWrap.innerHTML = wheelHTML(activeChildren(state), { targets, activeIdx: expandedSphereIdx, interactive: !!targets.length });
+  }
+  adjustWheelLabels();
+  // Колесо пересобрано через innerHTML — слушатели сектора надо навесить заново.
+  attachWheelSectorHandlers();
 }
 // «Карта желаний» handlers: add form (file → crop dialog → optimised WebP → save), card
 // lightbox, caption editing (+ personal-photo flag with replacement confirm) and confirmed
@@ -6486,6 +6700,8 @@ function attachMainViewHandlers(){
     mainGoalsToggle.addEventListener('click', ()=>{
       mainGoalsOpen = !mainGoalsOpen;
       state.mainGoalsOpen = mainGoalsOpen;
+      // Секция свёрнута — дерево сферы скрывается вместе с ней, подсветка сектора снимается.
+      if(!mainGoalsOpen) expandedSphereIdx = null;
       saveState();
       render();
     });
@@ -6531,6 +6747,9 @@ function attachMainViewHandlers(){
       render();
     });
   }
+  // Интерактивные сектора колеса (главная) + панель дерева сферы. Здесь и на каждом render():
+  // элементы пересоздаются, поэтому слушатели навешиваются заново.
+  attachWheelSectorHandlers();
   // Home goals sort dropdown. stopPropagation so the toggle doesn't immediately bubble into
   // the document click-away listener registered below (which would close it in the same tick).
   const btnFilter = document.getElementById('btnFilter');
