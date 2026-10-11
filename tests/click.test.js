@@ -1022,6 +1022,12 @@ test('wish map: the print button builds one A4 page in the current matrix', asyn
     'and the placeholder says so in words instead of printing an empty box');
   assert.equal(t.document.body.classList.contains('wish-printing'), true,
     'the body is marked, so the print CSS can hide everything else');
+  // Регресс присланного бага: приложение НИЧЕГО не прячет на экране — скрытие живёт только в
+  // @media print. До фикса тап «Печать» оставлял пустой экран, который нельзя было закрыть.
+  assert.ok(t.document.getElementById('app').children.length > 0,
+    'the app must stay on screen after tapping Print (only @media print hides it)');
+  assert.notEqual(t.window.getComputedStyle(t.document.getElementById('app')).display, 'none',
+    'and it is not display:none — the hiding rule is not active outside print');
 
   // Тот же макет, но выбор пользователя — 2 в ряду.
   t.click('#btnWishGrid');

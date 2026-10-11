@@ -772,11 +772,19 @@
      трогал) и зовёт window.print(). На экране узел скрыт; в печати скрывается всё приложение и
      остаётся одна страница A4 — та же матрица, что на доске. */
   @page{ size:A4 portrait; margin:10mm; }
+  /* Печатный узел на экране невидим — он существует ТОЛЬКО на время печати. */
   #wishPrintRoot{display:none;
     /* Принтеры не печатают фон, пока это не попросить явно: иначе «как на экране» не получится
        и тема на бумаге потеряется (особенно тёмная). */
     -webkit-print-color-adjust:exact; print-color-adjust:exact; }
-  body.wish-printing > *:not(#wishPrintRoot){ display:none !important; }
+  /* Скрывать приложение ради печати можно ТОЛЬКО внутри @media print. Без этой обёртки правило
+     срабатывало сразу на экране: тап «Печать» убирал всё приложение, а печатный узел всё равно
+     оставался display:none — получался пустой экран, который нельзя ни закрыть, ни отправить на
+     печать (баг, присланный владельцем 11.10.2026). */
+  @media print{
+    body.wish-printing > *:not(#wishPrintRoot){ display:none !important; }
+    #wishPrintRoot{ display:flex !important; }
+  }
   .wish-grid-dropdown{position:relative; display:inline-flex;}
   .wish-grid-menu{min-width:64px;}
   .wish-grid-menu button{justify-content:center; font-size:15px; font-weight:600;}
@@ -1106,7 +1114,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.1.76';
+const APP_VERSION = '1.1.77';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -3344,6 +3352,7 @@ function printWishBoard(){
   const cleanup = () => {
     if(done) return;
     done = true;
+    clearTimeout(fallback);
     document.body.classList.remove('wish-printing');
     if(root && root.parentNode) root.parentNode.removeChild(root);
     window.removeEventListener('afterprint', cleanup);
@@ -3353,7 +3362,11 @@ function printWishBoard(){
   // Страховка: часть движков не присылает afterprint (или печать отменена) — убираем узел, когда
   // окно снова получает фокус, чтобы он не остался висеть в документе.
   window.addEventListener('focus', cleanup);
-  try{ window.print(); }catch(e){ cleanup(); }
+  // Страховка от «печать не открылась»: даже если окно печати не появилось (или ушло в себя),
+  // через 2.5 c метка снимается — приложение остаётся рабочим в любом случае.
+  const fallback = setTimeout(cleanup, 2500);
+  if(typeof window.print === 'function'){ try{ window.print(); }catch(e){ cleanup(); } }
+  else cleanup();   // движок без печати — просто убираем узел, показывать нечего
 }
 
 // Removes a card everywhere it exists: local cache + cloud image document. Firestore follows because the

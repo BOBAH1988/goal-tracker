@@ -187,6 +187,33 @@ test('CSS guard: the tip bubble wraps instead of running off the screen', () => 
   assert.ok(hasRight, 'a bubble at the right edge must be able to hug it');
 });
 
+/* Репорт владельца: тап «Печать» в PWA убирал всё приложение с экрана и оставлял пустой экран,
+   который нельзя ни закрыть, ни отправить на печать. Причина: правило, скрывающее приложение ради
+   печати, висело ВНЕ @media print, поэтому срабатывало сразу на экране, а печатный узел оставался
+   display:none. Оно обязано жить внутри @media print — и только там. */
+test('CSS guard: hiding the app for print happens ONLY inside @media print', () => {
+  const rules = splitCss(HTML);
+  // Внутри @media print скрытие приложения и показ печатного узла.
+  const printBlocks = rules.filter(r => /@media print/.test(r.selectors.join(' ')));
+  assert.ok(printBlocks.length >= 1, 'the @media print block must exist');
+  const hiding = printBlocks.filter(r => /body\.wish-printing/.test(r.body));
+  assert.ok(hiding.length >= 1, 'the print block must hide the app');
+  assert.ok(printBlocks.some(r => /#wishPrintRoot\{[^}]*display:flex/.test(r.body.replace(/\s+/g, ' '))),
+    'and must show the print node there');
+  // И НИГДЕ больше: вне печати это правило не имеет права существовать — именно оно, висевшее без
+  // обёртки, убирало всё приложение с экрана сразу после тапа «Печать» (репорт владельца).
+  const strayHide = rules.filter(r => !/@media print/.test(r.selectors.join(' '))
+    && /body\.wish-printing/.test(r.body));
+  assert.equal(strayHide.length, 0,
+    'no hide rule outside @media print — on screen it blanked the whole app');
+  // Экранное правило узла (невидим + print-color-adjust). Парсер правил здесь грубоват из-за
+  // соседнего @page, поэтому проверяем прямо по CSS.
+  assert.match(HTML, /#wishPrintRoot\{[^}]*display:none[^}]*\}/s,
+    'on screen the print node must stay display:none');
+  assert.match(HTML, /#wishPrintRoot\{[^}]*-webkit-print-color-adjust:exact[^}]*\}/s,
+    'and must ask the printer to keep the theme background');
+});
+
 test('CSS guard: hover feedback is gated to real pointers, so no touch button can stay blue', () => {
   const rules = splitCss(HTML);
   const gated = rules.filter(r => /@media \(hover: hover\) and \(pointer: fine\)/.test(r.selectors.join(' ')));
