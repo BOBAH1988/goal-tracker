@@ -1857,3 +1857,142 @@ test('wheel: visual hint under the wheel explains the interaction', () => {
   assert.ok(hint, 'hint element exists');
   assert.match(hint.textContent, /Нажмите на сектор/, 'hint text present');
 });
+
+/* ===== Templates modal (шаблоны быстрого старта) ===== */
+
+test('templates: button opens the modal with six templates and an empty preview', () => {
+  const t = bootDom();
+  assert.ok(!t.document.getElementById('templatesOverlay'), 'modal closed initially');
+  t.click('#btnTemplates');
+  assert.ok(t.document.getElementById('templatesOverlay'), 'modal opens');
+  assert.equal(t.document.querySelectorAll('[data-template-id]').length, 6, 'six template checkboxes');
+  assert.equal(t.document.getElementById('templatesPreviewList').textContent.trim(), '', 'preview empty with nothing selected');
+});
+
+test('templates: cancel, ✕ and overlay click close without touching state', () => {
+  const t = bootDom();
+  const before = JSON.stringify(t.app.getState());
+  const beforeLS = t.window.localStorage.getItem(t.app.STORAGE_KEY);
+  t.click('#btnTemplates');
+  t.click('#btnTemplatesCancel');
+  assert.ok(!t.document.getElementById('templatesOverlay'), '«Позже» closes');
+  t.click('#btnTemplates');
+  t.click('#btnTemplatesClose');
+  assert.ok(!t.document.getElementById('templatesOverlay'), '✕ closes');
+  t.click('#btnTemplates');
+  t.click('#templatesOverlay');
+  assert.ok(!t.document.getElementById('templatesOverlay'), 'overlay click closes');
+  assert.equal(JSON.stringify(t.app.getState()), before, 'state untouched');
+  assert.equal(t.window.localStorage.getItem(t.app.STORAGE_KEY), beforeLS, 'localStorage untouched');
+});
+
+test('templates: checkbox selection builds the preview with sphere and goals', () => {
+  const t = bootDom();
+  t.click('#btnTemplates');
+  const cb = t.document.querySelector('[data-template-id="health"]');
+  cb.checked = true;
+  cb.dispatchEvent(new t.window.Event('change', { bubbles: true }));
+  const preview = t.document.getElementById('templatesPreviewList').textContent;
+  assert.match(preview, /Здоровье/, 'preview names the sphere');
+  assert.match(preview, /Сон/, 'preview names a goal');
+  assert.doesNotMatch(preview, /сфера есть/, 'no merge note for a missing sphere');
+});
+
+test('templates: confirm adds the sphere with goals and honest wheel totals', () => {
+  const t = bootDom();
+  const rootBefore = t.app.getState().totalGoalsAdded || 0;
+  t.click('#btnTemplates');
+  const cb = t.document.querySelector('[data-template-id="health"]');
+  cb.checked = true;
+  cb.dispatchEvent(new t.window.Event('change', { bubbles: true }));
+  t.click('#btnTemplatesConfirm');
+  assert.ok(!t.document.getElementById('templatesOverlay'), 'confirm closes the modal');
+  const st = t.app.getState();
+  const health = st.children.find(s => s.name === 'Здоровье');
+  assert.ok(health, 'sphere created');
+  assert.equal(health.children.length, 4, 'four template goals');
+  assert.ok(health.children.every(g => g.children.length === 2), 'each goal has two subgoals');
+  assert.ok(health.children.every(g => g.children.every(sub => sub.children.length === 1)), 'each subgoal has one leaf');
+  assert.equal(health.totalGoalsAdded, 8, 'sticky sphere total = 8 leaves');
+  assert.equal(st.totalGoalsAdded, rootBefore + 8, 'root total bumped by 8');
+  assert.equal(t.app.computePercent(health), 0, 'fresh sphere reads 0%');
+});
+
+test('templates: re-applying merges into the existing sphere without duplicates', () => {
+  const t = bootDom();
+  const applyHealth = () => {
+    t.click('#btnTemplates');
+    const cb = t.document.querySelector('[data-template-id="health"]');
+    cb.checked = true;
+    cb.dispatchEvent(new t.window.Event('change', { bubbles: true }));
+    t.click('#btnTemplatesConfirm');
+  };
+  applyHealth();
+  applyHealth();
+  const st = t.app.getState();
+  const healthSpheres = st.children.filter(s => s.name === 'Здоровье');
+  assert.equal(healthSpheres.length, 1, 'no duplicate sphere');
+  assert.equal(healthSpheres[0].children.length, 4, 'same-name goals skipped (merge)');
+});
+
+test('templates: preview marks an existing sphere and survives a re-render', () => {
+  const t = bootDom();
+  t.app.setState({ name: 'root', children: [
+    { name: 'Здоровье', sphereActivityAt: Date.now(), children: [] }
+  ]});
+  t.window.render();
+  t.click('#btnTemplates');
+  const cb = t.document.querySelector('[data-template-id="health"]');
+  cb.checked = true;
+  cb.dispatchEvent(new t.window.Event('change', { bubbles: true }));
+  assert.match(t.document.getElementById('templatesPreviewList').textContent, /сфера есть/, 'merge note shown');
+  t.window.render();
+  assert.ok(t.document.getElementById('templatesOverlay'), 'modal still open after re-render');
+  assert.match(t.document.getElementById('templatesPreviewList').textContent, /сфера есть/, 'preview survives re-render');
+});
+
+test('templates: added goals behave as normal goals (done toggle counts in the wheel)', () => {
+  const t = bootDom();
+  t.click('#btnTemplates');
+  const cb = t.document.querySelector('[data-template-id="health"]');
+  cb.checked = true;
+  cb.dispatchEvent(new t.window.Event('change', { bubbles: true }));
+  t.click('#btnTemplatesConfirm');
+  const health = t.app.getState().children.find(s => s.name === 'Здоровье');
+  const leafGoal = health.children[0].children[0].children[0];
+  assert.equal(leafGoal.done, false, 'template leaf starts undone');
+  leafGoal.done = true;
+  assert.equal(t.app.computePercent(leafGoal), 100, 'leaf toggles done like any goal');
+  assert.equal(t.app.computePercent(health), 13, 'sphere percent reflects one done leaf of eight (1/8 ≈ 13%)');
+});
+
+test('templates: the ten-sphere cap is respected', () => {
+  const t = bootDom();
+  const kids = [];
+  for (let i = 0; i < 9; i++) kids.push({ name: `Сфера ${i}`, sphereActivityAt: Date.now(), children: [] });
+  t.app.setState({ name: 'root', children: kids });
+  t.click('#btnTemplates');
+  for (const id of ['work', 'learning', 'finance', 'relationships', 'leisure']) {
+    const cb = t.document.querySelector(`[data-template-id="${id}"]`);
+    cb.checked = true;
+    cb.dispatchEvent(new t.window.Event('change', { bubbles: true }));
+  }
+  t.click('#btnTemplatesConfirm');
+  assert.ok(t.app.getState().children.length <= 10, 'sphere cap respected');
+});
+
+test('templates: an archived same-name sphere does not swallow the merge', () => {
+  const t = bootDom();
+  t.app.setState({ name: 'root', children: [
+    { name: 'Здоровье', sphereActivityAt: Date.now(), archived: true, children: [] }
+  ]});
+  t.click('#btnTemplates');
+  const cb = t.document.querySelector('[data-template-id="health"]');
+  cb.checked = true;
+  cb.dispatchEvent(new t.window.Event('change', { bubbles: true }));
+  t.click('#btnTemplatesConfirm');
+  const st = t.app.getState();
+  const active = st.children.filter(s => s.name === 'Здоровье' && !s.archived);
+  assert.equal(active.length, 1, 'a fresh active sphere is created');
+  assert.equal(active[0].children.length, 4, 'with the full template');
+});
