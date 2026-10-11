@@ -214,6 +214,24 @@ test('CSS guard: hiding the app for print happens ONLY inside @media print', () 
     'and must ask the printer to keep the theme background');
 });
 
+/* Репорт владельца: меню кнопки «Аккаунт» рисовало слово «Выйти» вертикально —
+   по букве на строку. Причина: .account-menu абсолютно позиционирован БЕЗ
+   width/min-width, поэтому его ширина сжималась до ширины триггера (#btnAccount
+   — 38 px в PWA и на узком экране), а внутренние отступы кнопки (24 px)
+   съедали почти всю её. Меню обязано размериться по содержимому (как .lang-menu),
+   а слова — не переноситься. */
+test('CSS guard: the account menu sizes to its content, words stay horizontal', () => {
+  const rules = splitCss(HTML);
+  const menu = rules.find(r => r.selectors.includes('.account-menu'));
+  assert.ok(menu, 'the .account-menu rule must exist');
+  assert.match(menu.body, /width:max-content/,
+    'the menu must size to its content, not to the narrow #btnAccount');
+  const btn = rules.find(r => r.selectors.includes('.account-menu button'));
+  assert.ok(btn, 'the .account-menu button rule must exist');
+  assert.match(btn.body, /white-space:nowrap/,
+    'every word in the account menu stays horizontal');
+});
+
 test('CSS guard: hover feedback is gated to real pointers, so no touch button can stay blue', () => {
   const rules = splitCss(HTML);
   const gated = rules.filter(r => /@media \(hover: hover\) and \(pointer: fine\)/.test(r.selectors.join(' ')));

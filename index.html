@@ -353,11 +353,11 @@
   .account-menu{
     position:absolute; top:calc(100% + 4px); right:0; background:var(--card2); border:1px solid var(--accent);
     border-radius:10px; padding:4px; display:flex; flex-direction:column; gap:2px; z-index:10;
-    max-width:calc(100vw - 32px); box-shadow:0 8px 24px rgba(0,0,0,.35);
+    width:max-content; max-width:calc(100vw - 32px); box-shadow:0 8px 24px rgba(0,0,0,.35);
   }
   .account-menu button{
     background:none; border:none; color:var(--text); border-radius:6px; padding:9px 12px; font-size:13px;
-    cursor:pointer; text-align:left; white-space:normal; word-break:break-word;
+    cursor:pointer; text-align:left; white-space:nowrap;
   }
   .account-menu button:hover{background:var(--card);}
   .account-menu button.danger{color:var(--red);}
@@ -1117,7 +1117,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.1.81';
+const APP_VERSION = '1.1.82';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
