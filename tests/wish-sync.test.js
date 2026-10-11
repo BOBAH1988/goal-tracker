@@ -1,8 +1,10 @@
 /* «Карта желаний» persistence & cloud sync — the part the click tests cannot reach: the order of
-   operations (file up BEFORE metadata in Firestore), the local image cache, deletion everywhere,
-   the single isUserPhoto mark, and the error/retry path.
+   operations (the image document up BEFORE metadata in the account document), the local image
+   cache, deletion everywhere, the single isUserPhoto mark, and the error/retry path.
    A fake Firebase + the real inline script: same mechanics as the other suites (vm sandbox),
-   with firebase/cloudEnabled/authUser injected so wishStorageReady() is exercised for real. */
+   with firebase/cloudEnabled/authUser injected so wishCloudReady() is exercised for real.
+   Cloud Storage is deliberately NOT faked — the project has no bucket (Storage needs the paid
+   Blaze plan), the bytes travel as Firestore documents (users/{uid}/wishImages/{cardId}). */
 'use strict';
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
@@ -11,38 +13,79 @@ const fs = require('fs');
 const path = require('path');
 const { boot, EXPORT_SRC } = require('./helpers');
 
-// Minimal fake of the two SDK surfaces the board uses: storage() and the Firestore push
-// (captured here so the test can assert what WOULD be written to the cloud).
+// A tiny in-memory Firestore with arbitrarily nested collections/documents, so the fake can
+// serve both users/{uid} (metadata) and users/{uid}/wishImages/{cardId} (bytes).
+function makeDocStore() {
+  const store = new Map();
+  const listeners = new Map();
+  const refs = new Map();          // one stable ref object per key, so tests can wrap it
+  const emit = (key) => {
+    const data = store.get(key);
+    (listeners.get(key) || []).forEach(cb => cb({ exists: !!data, data: () => data }, () => {}));
+  };
+  const docRef = (key) => {
+    if (refs.has(key)) return refs.get(key);
+    const ref = {
+    set: (payload) => { store.set(key, payload); emit(key); return Promise.resolve(); },
+    get: () => Promise.resolve({ exists: store.has(key), data: () => store.get(key) }),
+    delete: () => { store.delete(key); emit(key); return Promise.resolve(); },
+    onSnapshot: (cb) => {
+      if (!listeners.has(key)) listeners.set(key, []);
+      listeners.get(key).push(cb);
+      cb({ exists: store.has(key), data: () => store.get(key) }, () => {});
+      return () => {};
+    },
+      collection: (name) => ({ doc: (id) => docRef(key + '/' + name + '/' + id) }),
+    };
+    refs.set(key, ref);
+    return ref;
+  };
+  return {
+    store, emit,
+    doc: (collection, id) => docRef(collection + '/' + id),
+    docRef,
+  };
+}
+// Minimal fake of the surfaces the board uses (captured so the test can assert what WOULD be
+// written to the cloud).
 function installFakeFirebase(ctx, opts) {
   opts = opts || {};
-  const calls = { puts: [], deletes: [], downloads: [], firestoreSets: [] };
+  const calls = opts.calls || { images: [], imageReads: [], imageDeletes: [], firestoreSets: [] };
   const failUpload = !!opts.failUpload;
+  const failDownload = !!opts.failDownload;
+  const db = makeDocStore();
   // firestore() is a factory in the real SDK, and FieldValue hangs off the factory itself.
   const firestoreFactory = () => ({
-    collection: () => ({ doc: () => ({
-      set: (payload) => { calls.firestoreSets.push(payload); return Promise.resolve(); },
-    }) }),
+    collection: (name) => ({ doc: (id) => db.doc(name, id) }),
   });
   firestoreFactory.FieldValue = { serverTimestamp: () => 'server-ts' };
-  ctx.firebase = {
-    firestore: firestoreFactory,
-    storage: () => ({
-      ref: (p) => ({
-        put: (blob, meta) => {
-          calls.puts.push({ path: p, size: blob ? blob.size : 0, type: meta && meta.contentType });
-          if (failUpload) return Promise.reject(new Error('storage/unauthorized'));
-          return Promise.resolve({});
-        },
-        getDownloadURL: () => {
-          calls.downloads.push(p);
-          if (opts.failDownload) return Promise.reject(new Error('storage/object-not-found'));
-          return Promise.resolve('https://example.invalid/' + encodeURIComponent(p));
-        },
-        delete: () => { calls.deletes.push(p); return Promise.resolve(); },
-      }),
-    }),
-  };
+  ctx.firebase = { firestore: firestoreFactory };
+  // The image documents: writes/reads/deletes are counted, with the failure switches.
+  const wrapDoc = (ref, key) => ({
+    set: (payload) => {
+      calls.images.push({ path: key, payload });
+      if (failUpload) return Promise.reject(Object.assign(new Error('denied'), { code: 'permission-denied' }));
+      return ref.set(payload);
+    },
+    get: () => {
+      calls.imageReads.push(key);
+      if (failDownload) return Promise.reject(Object.assign(new Error('denied'), { code: 'permission-denied' }));
+      return ref.get();
+    },
+    delete: () => { calls.imageDeletes.push(key); return ref.delete(); },
+  });
+  const usersDoc = db.doc('users', 'u1');
+  const realCollection = usersDoc.collection.bind(usersDoc);
+  usersDoc.collection = (name) => ({
+    doc: (id) => wrapDoc(realCollection(name).doc(id), 'users/u1/' + name + '/' + id),
+  });
+  // And the metadata writes on the account document itself.
+  const realSet = usersDoc.set;
+  usersDoc.set = (payload) => { calls.firestoreSets.push(payload); return realSet(payload); };
+  ctx.firebaseFirestore = db;
+  ctx.seedCloudDoc = (key, data) => { db.store.set(key, data); };
   ctx.getCloudCalls = () => calls;
+  ctx.getCloudDoc = (key) => db.store.get(key);
   return calls;
 }
 function signedIn(ctx) {
@@ -54,59 +97,39 @@ function fakeBlob(bytes, type) {
   if (B) return new B([bytes], { type: type || 'image/webp' });
   return { size: bytes.length, type: type || 'image/webp' };
 }
-// One Firebase project shared by SEVERAL boots: the Storage bucket, the users/{uid} document and
+// One Firebase project shared by SEVERAL boots: the image documents, the users/{uid} document and
 // the live snapshot listeners. This is what makes a real two-device test possible — device B
 // calls the app's own startCloudSync() and receives exactly what device A pushed.
 function makeSharedCloud() {
-  const bucket = new Map();
-  const docs = new Map();
-  const listeners = new Map();
-  const calls = { puts: [], deletes: [], downloads: [], sets: [] };
-  const emit = (key) => {
-    const data = docs.get(key);
-    (listeners.get(key) || []).forEach(cb => cb({ exists: !!data, data: () => data }, () => {}));
-  };
+  const db = makeDocStore();
+  const calls = { images: [], imageReads: [], imageDeletes: [], sets: [] };
   const firestoreFactory = () => ({
-    collection: (name) => ({
-      doc: (id) => {
-        const key = name + '/' + id;
-        return {
-          set: (payload) => { docs.set(key, payload); calls.sets.push(key); emit(key); return Promise.resolve(); },
-          onSnapshot: (cb) => {
-            if (!listeners.has(key)) listeners.set(key, []);
-            listeners.get(key).push(cb);
-            cb({ exists: docs.has(key), data: () => docs.get(key) }, () => {});
-            return () => {};
+    collection: (name) => ({ doc: (id) => {
+      const ref = db.doc(name, id);
+      if (name === 'users' && id === 'u1') {
+        const realSet = ref.set;
+        ref.set = (payload) => { calls.sets.push(name + '/' + id); return realSet(payload); };
+        const realCollection = ref.collection;
+        ref.collection = (coll) => ({
+          doc: (cid) => {
+            const inner = realCollection(coll).doc(cid);
+            const realSet2 = inner.set;
+            inner.set = (payload) => { calls.images.push('users/u1/' + coll + '/' + cid); return realSet2(payload); };
+            return inner;
           },
-        };
-      },
-    }),
+        });
+      }
+      return ref;
+    } }),
   });
   firestoreFactory.FieldValue = { serverTimestamp: () => 'server-ts' };
-  return {
-    bucket, docs, calls,
-    firebase: {
-      firestore: firestoreFactory,
-      storage: () => ({
-        ref: (p) => ({
-          put: (blob, meta) => {
-            calls.puts.push({ path: p, size: blob ? blob.size : 0, type: meta && meta.contentType });
-            bucket.set(p, blob);
-            return Promise.resolve({});
-          },
-          getDownloadURL: () => { calls.downloads.push(p); return Promise.resolve('https://example.invalid/' + encodeURIComponent(p)); },
-          delete: () => { calls.deletes.push(p); bucket.delete(p); return Promise.resolve(); },
-        }),
-      }),
-    },
-    emit,
-  };
+  return { db, calls, firebase: { firestore: firestoreFactory },
+           seedDoc: (key, data) => { db.store.set(key, data); } };
 }
 function wireDevice(t, cloud) {
   t.ctx.firebase = cloud.firebase;
   signedIn(t.ctx);
   t.ctx.URL = { createObjectURL: () => "blob:fake-" + Math.random().toString(36).slice(2), revokeObjectURL: () => {} };
-  t.ctx.fetch = () => Promise.resolve({ ok: true, blob: () => Promise.resolve(t.ctx.__blob) });
   t.ctx.__blob = fakeBlob("imagedata");
   return t;
 }
@@ -130,13 +153,15 @@ test('save order: the file is uploaded BEFORE the metadata reaches Firestore', a
   t.app.wishRememberBlob("w1", t.ctx.__blob);
   t.app.setState(Object.assign(t.app.getState(), { wishMap: [card] }));
   await t.app.uploadWishCard(t.ctx.__card);
-  // 1) exactly one put, to the required object path, as webp
-  assert.equal(calls.puts.length, 1, 'one Storage upload');
-  assert.equal(calls.puts[0].path, 'users/u1/vision-board/w1.webp', 'Storage path is users/{uid}/vision-board/{cardId}.webp');
-  assert.equal(calls.puts[0].type, 'image/webp', 'the uploaded object is WebP');
+  // 1) exactly one image document, in the card's own path
+  assert.equal(calls.images.length, 1, 'one image document written');
+  assert.equal(calls.images[0].path, 'users/u1/wishImages/w1', 'image doc is users/{uid}/wishImages/{cardId}');
+  assert.equal(calls.images[0].payload.type, 'image/webp', 'the document records WebP');
+  assert.equal(calls.images[0].payload.uid, 'u1', 'the document carries its owner uid (rules check it)');
+  assert.equal(calls.images[0].payload.bytes.length, t.ctx.__blob.size, 'the raw bytes are stored, not base64');
   // 2) the card only became an uploaded one after the put resolved
   const after = t.app.getState().wishMap[0];
-  assert.equal(after.imagePath, 'users/u1/vision-board/w1.webp', 'imagePath set after upload');
+  assert.equal(after.imagePath, 'wishImages/w1', 'imagePath set after upload');
   assert.equal(after.uploadState, 'uploaded', 'uploadState flips to uploaded');
   // 3) nothing may be pushed to Firestore while the file was still pending
   const projected = vm.runInContext('wishMapForCloud(state)', t.ctx);
@@ -154,7 +179,7 @@ test('state holds metadata only — no image bytes ever reach storage or Firesto
   const t = boot();
   t.app.setState({
     name: 'root', children: [],
-    wishMap: [{ id: 'c1', title: 'Т', imagePath: 'users/u1/vision-board/c1.webp', uploadState: 'uploaded' }],
+    wishMap: [{ id: 'c1', title: 'Т', imagePath: 'wishImages/c1', uploadState: 'uploaded' }],
   });
   const json = JSON.stringify(t.app.getState());
   assert.equal(json.includes('data:image'), false, 'no data: URL in state');
@@ -164,16 +189,16 @@ test('state holds metadata only — no image bytes ever reach storage or Firesto
   assert.deepEqual(Object.keys(cloud[0]).sort(),
     ['createdAt', 'id', 'imagePath', 'isUserPhoto', 'order', 'title', 'updatedAt'],
     'the Firestore doc carries exactly the required metadata fields');
-  assert.equal(cloud[0].imagePath, 'users/u1/vision-board/c1.webp', 'imagePath is the join key');
+  assert.equal(cloud[0].imagePath, 'wishImages/c1', 'imagePath is the join key');
 });
 
 test('upload failure: the image is kept, the card is flagged and retryable', async () => {
   const t = boot();
-  installFakeFirebase(t.ctx, { failUpload: true });
+  const calls = { images: [], imageReads: [], imageDeletes: [], firestoreSets: [] };
+  installFakeFirebase(t.ctx, { failUpload: true, calls });
   signedIn(t.ctx);
   // jsdom/vm has no object URLs — the app only needs the surface to remember a card has pixels.
   t.ctx.URL = { createObjectURL: () => "blob:fake-" + Math.random().toString(36).slice(2), revokeObjectURL: () => {} };
-  t.ctx.fetch = () => Promise.resolve({ ok: true, blob: () => Promise.resolve(t.ctx.__blob) });
   t.ctx.__blob = fakeBlob("imagedata");
   const card = {
     id: 'w2', title: 'Дом', imagePath: null, order: 0, isUserPhoto: false,
@@ -190,9 +215,8 @@ test('upload failure: the image is kept, the card is flagged and retryable', asy
   const cached = await t.app.wishCacheGet("w2");
   assert.ok(cached, 'the chosen image is NOT lost on a failed upload');
   // A retry with the network back uploads the very same bytes.
-  const calls = t.ctx.getCloudCalls();
-  assert.equal(calls.puts.length, 1, 'the failed attempt did upload once');
-  installFakeFirebase(t.ctx, {});   // now the upload succeeds
+  assert.equal(calls.images.length, 1, 'the failed attempt wrote the document once');
+  installFakeFirebase(t.ctx, { calls });   // now the upload succeeds
   signedIn(t.ctx);
   // jsdom/vm has no object URLs — the app only needs the surface to remember a card has pixels.
   t.ctx.URL = { createObjectURL: () => "blob:fake-" + Math.random().toString(36).slice(2), revokeObjectURL: () => {} };
@@ -200,8 +224,8 @@ test('upload failure: the image is kept, the card is flagged and retryable', asy
   t.ctx.__blob = fakeBlob("imagedata");
   await vm.runInContext('uploadWishCard(state.wishMap[0])', t.ctx);
   assert.equal(t.app.getState().wishMap[0].uploadState, 'uploaded', 'retry succeeds');
-  assert.equal(t.app.getState().wishMap[0].imagePath, 'users/u1/vision-board/w2.webp', 'imagePath set');
-  assert.equal(t.ctx.getCloudCalls().puts.length, 1, 'the retry uploaded once more');
+  assert.equal(t.app.getState().wishMap[0].imagePath, 'wishImages/w2', 'imagePath set');
+  assert.equal(t.ctx.getCloudCalls().images.length, 2, 'the retry wrote the document once more');
 });
 
 test('download failure (object-not-found / unauthorized / offline) keeps the card pending', async () => {
@@ -214,7 +238,7 @@ test('download failure (object-not-found / unauthorized / offline) keeps the car
   t.ctx.__blob = fakeBlob("imagedata");
   t.app.setState({
     name: 'root', children: [],
-    wishMap: [{ id: 'c9', title: 'С облака', imagePath: 'users/u1/vision-board/c9.webp', uploadState: 'pending' }],
+    wishMap: [{ id: 'c9', title: 'С облака', imagePath: 'wishImages/c9', uploadState: 'pending' }],
   });
   await vm.runInContext('downloadWishImage(state.wishMap[0])', t.ctx);
   const after = t.app.getState().wishMap[0];
@@ -231,27 +255,29 @@ test('syncWishBoard: uploads cached-only cards, downloads cloud-only cards, and 
   t.ctx.URL = { createObjectURL: () => "blob:fake-" + Math.random().toString(36).slice(2), revokeObjectURL: () => {} };
   t.ctx.fetch = () => Promise.resolve({ ok: true, blob: () => Promise.resolve(t.ctx.__blob) });
   t.ctx.__blob = fakeBlob("imagedata");
+  // The cloud card exists as a document with real bytes (what the other device uploaded).
+  t.ctx.seedCloudDoc('users/u1/wishImages/cloud1', { uid: 'u1', type: 'image/webp', size: 3, bytes: new Uint8Array([1, 2, 3]) });
   t.app.setState({
     name: 'root', children: [],
     wishMap: [
       { id: 'local1', title: 'Локальная', imagePath: null, order: 0, isUserPhoto: false, createdAt: 1, updatedAt: 1, uploadState: 'pending' },
-      { id: 'cloud1', title: 'Облачная', imagePath: 'users/u1/vision-board/cloud1.webp', order: 1, isUserPhoto: false, createdAt: 1, updatedAt: 1, uploadState: 'pending' },
+      { id: 'cloud1', title: 'Облачная', imagePath: 'wishImages/cloud1', order: 1, isUserPhoto: false, createdAt: 1, updatedAt: 1, uploadState: 'pending' },
     ],
   });
   await t.app.wishCachePut("local1", t.ctx.__blob);
   t.app.wishRememberBlob("local1", t.ctx.__blob);
   vm.runInContext('syncWishBoard()', t.ctx);
   await new Promise(r => setTimeout(r, 30));
-  const puts = calls.puts.map(p => p.path);
-  assert.deepEqual(puts, ['users/u1/vision-board/local1.webp'], 'the local-only card is uploaded');
-  assert.equal(calls.downloads.length, 1, 'the cloud-only card is downloaded');
+  assert.deepEqual(calls.images.map(i => i.path), ['users/u1/wishImages/local1'], 'the local-only card is uploaded');
+  assert.equal(calls.imageReads.length, 1, 'the cloud-only card is downloaded');
+  assert.equal(calls.imageReads[0], 'users/u1/wishImages/cloud1');
   assert.equal(t.app.getState().wishMap[0].uploadState, 'uploaded', 'local card becomes uploaded');
   // Second pass: everything is already reconciled → no redundant work.
-  const before = { puts: calls.puts.length, deletes: calls.deletes.length, downloads: calls.downloads.length };
+  const before = { writes: calls.images.length, reads: calls.imageReads.length };
   vm.runInContext('syncWishBoard()', t.ctx);
   await new Promise(r => setTimeout(r, 30));
-  assert.equal(calls.puts.length, before.puts, 'no re-upload of an already uploaded card');
-  assert.equal(calls.downloads.length, before.downloads, 'no re-download of a card we already have');
+  assert.equal(calls.images.length, before.writes, 'no re-upload of an already uploaded card');
+  assert.equal(calls.imageReads.length, before.reads, 'no re-download of a card we already have');
 });
 
 test('delete: drops the Firestore projection AND removes the Storage object', async () => {
@@ -266,10 +292,10 @@ test('delete: drops the Firestore projection AND removes the Storage object', as
   t.app.wishRememberBlob("d1", t.ctx.__blob);
   t.app.setState({
     name: 'root', children: [],
-    wishMap: [{ id: 'd1', title: 'Удалить', imagePath: 'users/u1/vision-board/d1.webp', order: 0, isUserPhoto: true, createdAt: 1, updatedAt: 1, uploadState: 'uploaded' }],
+    wishMap: [{ id: 'd1', title: 'Удалить', imagePath: 'wishImages/d1', order: 0, isUserPhoto: true, createdAt: 1, updatedAt: 1, uploadState: 'uploaded' }],
   });
   await vm.runInContext('deleteWishCard(state.wishMap[0])', t.ctx);
-  assert.deepEqual(calls.deletes, ['users/u1/vision-board/d1.webp'], 'the Storage object is deleted');
+  assert.deepEqual(calls.imageDeletes, ['users/u1/wishImages/d1'], 'the cloud image document is deleted');
   const cached = await t.app.wishCacheGet("d1");
   assert.ok(!cached, 'the local cache entry is deleted too');
   assert.ok(!vm.runInContext('wishHasLocalBytes(state.wishMap[0])', t.ctx), 'the blob URL is released');
@@ -306,12 +332,12 @@ test('no cloud / not signed in: everything is a safe no-op, nothing throws', asy
     name: 'root', children: [],
     wishMap: [
       { id: 'n1', title: 'Без облака', imagePath: null, order: 0, isUserPhoto: false, createdAt: 1, updatedAt: 1, uploadState: 'pending' },
-      { id: 'n2', title: 'Облако', imagePath: 'p/n2.webp', order: 1, isUserPhoto: false, createdAt: 1, updatedAt: 1, uploadState: 'pending' },
+      { id: 'n2', title: 'Облако', imagePath: 'wishImages/n2', order: 1, isUserPhoto: false, createdAt: 1, updatedAt: 1, uploadState: 'pending' },
     ],
   });
   await t.app.wishCachePut("n1", t.ctx.__blob);
   t.app.wishRememberBlob("n1", t.ctx.__blob);
-  assert.equal(vm.runInContext('wishStorageReady()', t.ctx), false, 'no SDK / no sign-in → not ready');
+  assert.equal(vm.runInContext('wishCloudReady()', t.ctx), false, 'no SDK / no sign-in → not ready');
   await vm.runInContext('uploadWishCard(state.wishMap[0])', t.ctx);
   await vm.runInContext('downloadWishImage(state.wishMap[1])', t.ctx);
   assert.equal(t.app.getState().wishMap[0].uploadState, 'pending', 'stays pending, no crash');
@@ -355,7 +381,7 @@ test('boot: a signed-out reload of a cloud card keeps showing its cached pixels'
   await t.app.wishCachePut('cloudc', blob);
   t.app.setState({
     name: 'root', children: [],
-    wishMap: [{ id: 'cloudc', title: 'С облака', imagePath: 'users/u1/vision-board/cloudc.webp',
+    wishMap: [{ id: 'cloudc', title: 'С облака', imagePath: 'wishImages/cloudc',
                 order: 0, isUserPhoto: false, createdAt: 1, updatedAt: 1, uploadState: 'uploaded' }],
   });
   await vm.runInContext('wishCacheWarm()', t.ctx);
@@ -366,14 +392,13 @@ test('boot: a signed-out reload of a cloud card keeps showing its cached pixels'
   assert.equal(t.app.getState().wishMap[0].uploadState, 'uploaded');
 });
 
-test('the object keeps the content type of the bytes it stores (jpeg fallback engines)', async () => {
+test('the image document records the real content type (jpeg fallback engines)', async () => {
   const t = boot();
   const calls = installFakeFirebase(t.ctx);
   signedIn(t.ctx);
   t.ctx.URL = { createObjectURL: () => "blob:fake", revokeObjectURL: () => {} };
-  // applyCrop() falls back to JPEG where the engine cannot encode WebP — those bytes must be
-  // uploaded as image/jpeg under a matching path, never as a jpeg pretending to be webp (the
-  // rules would reject it and the photo would stay on the device it was added on).
+  // applyCrop() falls back to JPEG where the engine cannot encode WebP — the other device must
+  // rebuild the very same Blob from that type, never guess webp.
   const jpeg = fakeBlob('jpegbytes', 'image/jpeg');
   await t.app.wishCachePut('j1', jpeg);
   t.app.wishRememberBlob('j1', jpeg);
@@ -383,9 +408,9 @@ test('the object keeps the content type of the bytes it stores (jpeg fallback en
                 createdAt: 1, updatedAt: 1, uploadState: 'pending' }],
   });
   await t.app.uploadWishCard(t.app.getState().wishMap[0]);
-  assert.equal(calls.puts.length, 1, 'one upload');
-  assert.equal(calls.puts[0].path, 'users/u1/vision-board/j1.jpg', 'jpeg bytes get a .jpg object');
-  assert.equal(calls.puts[0].type, 'image/jpeg', 'and are uploaded as image/jpeg');
+  assert.equal(calls.images.length, 1, 'one image document written');
+  assert.equal(calls.images[0].path, 'users/u1/wishImages/j1', 'one document per card id');
+  assert.equal(calls.images[0].payload.type, 'image/jpeg', 'a jpeg card is stored as image/jpeg');
   assert.equal(t.app.getState().wishMap[0].uploadState, 'uploaded', 'the card still reaches the cloud');
   // WebP stays WebP (the normal path).
   const webp = fakeBlob('webpbytes', 'image/webp');
@@ -396,20 +421,23 @@ test('the object keeps the content type of the bytes it stores (jpeg fallback en
     { id: 'w9', title: 'Дом', imagePath: null, order: 1, isUserPhoto: false, createdAt: 1, updatedAt: 1, uploadState: 'pending' },
   ] }));
   await t.app.uploadWishCard(t.app.getState().wishMap[1]);
-  assert.equal(calls.puts[1].path, 'users/u1/vision-board/w9.webp', 'webp bytes stay .webp');
-  assert.equal(calls.puts[1].type, 'image/webp');
+  assert.equal(calls.images[1].payload.type, 'image/webp', 'webp bytes stay image/webp');
 });
 
-test('storage.rules accept exactly the objects the app uploads', () => {
-  const rules = fs.readFileSync(path.join(__dirname, '..', 'storage.rules'), 'utf8');
-  // The rules are the deploy-time half of the sync: if they are not deployed (or tightened back
-  // to webp-only) every upload fails with storage/unauthorized and the board breaks silently.
-  assert.match(rules, /contentType\.matches\('image\/\(webp\|jpeg\|png\)'\)/,
-    'the bucket must accept the webp/jpeg/png the crop dialog can produce');
-  assert.match(rules, /request\.resource\.size <= 3 \* 1024 \* 1024/, 'the 3 MB cap stays');
-  assert.match(rules, /request\.auth\.uid == uid/, 'owner-only access stays');
-  assert.doesNotMatch(rules, /allow read, write: if false;\s*$[\s\S]*$/,
-    'the catch-all deny rule must stay at the bottom');
+test('firestore.rules guard the image documents (deploy-time half of the sync)', () => {
+  const rules = fs.readFileSync(path.join(__dirname, '..', 'firestore.rules'), 'utf8');
+  // Without these rules the image documents are denied and the photos silently stay on the
+  // device they were added on. They must cover the subcollection, the owner only, the uid the
+  // document carries, and a size cap under Firestore's 1 MiB document limit.
+  assert.match(rules, /match \/users\/\{userId\} \{/, 'the account document rule stays');
+  assert.match(rules, /match \/wishImages\/\{cardId\} \{/, 'the image subcollection has its own rule');
+  assert.match(rules, /allow read: if request\.auth != null && request\.auth\.uid == userId;/, 'owner-only reads');
+  assert.match(rules, /request\.resource\.data\.uid == request\.auth\.uid/, 'the document must name its owner');
+  assert.match(rules, /request\.resource\.data\.bytes\.size\(\) <= 800 \* 1024/,
+    'the byte cap stays — and uses the method form the rules compiler actually accepts');
+  // Nothing about Storage anymore: the project runs on the free Spark plan, it cannot even
+  // create a bucket (the Storage API answers 403 "billing account ... disabled in state absent").
+  assert.doesNotMatch(rules, /firebase\.storage/, 'no Storage service in the Firestore rules');
 });
 
 test('two devices: a card uploaded on one device renders on the other', async () => {
@@ -426,23 +454,27 @@ test('two devices: a card uploaded on one device renders on the other', async ()
   await A.app.uploadWishCard(card);
   await new Promise(r => setTimeout(r, 60));   // the 800 ms debounce is flushed below, as on pagehide
   A.app.flushCloudPush();
-  // The file is in the bucket AND the metadata in Firestore — the two halves other devices need.
-  assert.ok(cloud.bucket.has('users/u1/vision-board/w1.webp'), 'the bytes are in Storage');
-  const doc = cloud.docs.get('users/u1');
-  assert.equal(doc.state.wishMap.length, 1, 'the metadata is in Firestore');
-  assert.equal(doc.state.wishMap[0].imagePath, 'users/u1/vision-board/w1.webp');
+  // The image document AND the metadata — the two halves other devices need.
+  const img = cloud.db.store.get('users/u1/wishImages/w1');
+  assert.ok(img, 'the bytes live in their own document');
+  assert.equal(img.type, 'image/webp');
+  assert.equal(img.bytes.length, A.ctx.__blob.size);
+  const doc = cloud.db.store.get('users/u1');
+  assert.equal(doc.state.wishMap.length, 1, 'the metadata is in the account document');
+  assert.equal(doc.state.wishMap[0].imagePath, 'wishImages/w1');
 
   // Device B: a fresh install that signs in and receives the snapshot.
+  const writesSoFar = cloud.calls.images.length;
   const B = wireDevice(boot(), cloud);
   vm.runInContext('startCloudSync("u1")', B.ctx);
   await new Promise(r => setTimeout(r, 60));
   const cards = B.app.getState().wishMap || [];
   assert.equal(cards.length, 1, 'the card itself appears on the other device');
-  assert.equal(cards[0].imagePath, 'users/u1/vision-board/w1.webp');
+  assert.equal(cards[0].imagePath, 'wishImages/w1');
   assert.equal(cards[0].uploadState, 'uploaded');
-  assert.ok(B.app.wishHasLocalBytes(cards[0]), 'and its pixels were downloaded from Storage');
+  assert.ok(B.app.wishHasLocalBytes(cards[0]), 'and its pixels were read from its document');
   assert.ok(B.app.wishBlobUrlFor(cards[0]), 'so the card renders the image, not a placeholder');
-  assert.equal(cloud.calls.downloads.length, 1, 'one download for the cloud-only card');
+  assert.equal(cloud.calls.images.length, writesSoFar, 'the second device downloads, never re-uploads');
 });
 
 test('flushCloudPush: a page closed inside the debounce does not lose the metadata', async () => {
@@ -468,7 +500,8 @@ test('the cloud document holds no uploadState — the board still becomes downlo
   t.ctx.URL = { createObjectURL: () => 'blob:from-cloud', revokeObjectURL: () => {} };
   t.ctx.fetch = () => Promise.resolve({ ok: true, blob: () => Promise.resolve(t.ctx.__blob) });
   t.ctx.__blob = fakeBlob('pixels');
-  const rawCloudDoc = [{ id: 'c1', title: 'С облака', imagePath: 'users/u1/vision-board/c1.webp', order: 0, isUserPhoto: false, createdAt: 1, updatedAt: 1 }];
+  t.ctx.seedCloudDoc('users/u1/wishImages/c1', { uid: 'u1', type: 'image/webp', size: 3, bytes: new Uint8Array([7, 7, 7]) });
+  const rawCloudDoc = [{ id: 'c1', title: 'С облака', imagePath: 'wishImages/c1', order: 0, isUserPhoto: false, createdAt: 1, updatedAt: 1 }];
   const merged = Array.from(vm.runInContext(
     'mergeWishMapCloud(' + JSON.stringify(rawCloudDoc) + ', [])', t.ctx));
   assert.equal(merged.length, 1);
@@ -487,18 +520,19 @@ test('wishSyncRetry: an outstanding card gets another attempt without a reload',
   t.ctx.URL = { createObjectURL: () => 'blob:retry', revokeObjectURL: () => {} };
   t.ctx.fetch = () => Promise.resolve({ ok: true, blob: () => Promise.resolve(t.ctx.__blob) });
   t.ctx.__blob = fakeBlob('pixels');
+  t.ctx.seedCloudDoc('users/u1/wishImages/r1', { uid: 'u1', type: 'image/webp', size: 4, bytes: new Uint8Array([4, 5, 6, 7]) });
   t.app.setState({
     name: 'root', children: [],
-    wishMap: [{ id: 'r1', title: 'Повтор', imagePath: 'users/u1/vision-board/r1.webp',
+    wishMap: [{ id: 'r1', title: 'Повтор', imagePath: 'wishImages/r1',
                 order: 0, isUserPhoto: false, createdAt: 1, updatedAt: 1, uploadState: 'uploaded' }],
   });
-  assert.equal(calls.downloads.length, 0, 'nothing has happened yet');
+  assert.equal(calls.imageReads.length, 0, 'nothing has happened yet');
   vm.runInContext('wishSyncRetry()', t.ctx);
   await new Promise(r => setTimeout(r, 30));
-  assert.equal(calls.downloads.length, 1, 'coming back online retries the download on its own');
+  assert.equal(calls.imageReads.length, 1, 'coming back online retries the download on its own');
   assert.ok(t.app.wishHasLocalBytes(t.app.getState().wishMap[0]), 'and the card shows its image');
   // Second pass with nothing outstanding: no extra network calls.
   vm.runInContext('wishSyncRetry()', t.ctx);
   await new Promise(r => setTimeout(r, 30));
-  assert.equal(calls.downloads.length, 1, 'and it is a no-op once everything is in place');
+  assert.equal(calls.imageReads.length, 1, 'and it is a no-op once everything is in place');
 });

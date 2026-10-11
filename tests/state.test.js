@@ -188,10 +188,10 @@ test('ensureWishMap: caps the board at 15 cards and keeps a single personal phot
 test('ensureWishMap: a cloud card (imagePath, no local src) is valid', () => {
   const t = boot();
   const st = { name: 'root', children: [] };
-  st.wishMap = [{ imagePath: 'users/u1/vision-board/c1.webp', title: 'С облака' }];
+  st.wishMap = [{ imagePath: 'wishImages/c1', title: 'С облака' }];
   t.app.ensureWishMap(st);
   assert.equal(st.wishMap.length, 1, 'metadata-only card survives the sanitize');
-  assert.equal(st.wishMap[0].imagePath, 'users/u1/vision-board/c1.webp', 'Storage path kept');
+  assert.equal(st.wishMap[0].imagePath, 'wishImages/c1', 'the cloud join key is kept');
   assert.equal(st.wishMap[0].uploadState, 'uploaded', 'an imagePath means the file is already up');
   assert.equal('src' in st.wishMap[0], false, 'no image bytes (no src) may live in state');
   assert.equal(JSON.stringify(st.wishMap).includes('data:image'), false, 'state stays metadata only');
@@ -202,7 +202,7 @@ test('wishMapForCloud: metadata only — no image data in the Firestore doc', ()
   const node = {
     wishMap: [{
       id: 'c1', src: 'data:image/webp;base64,HUGE', title: 'Дом',
-      imagePath: 'users/u1/vision-board/c1.webp', order: 0,
+      imagePath: 'wishImages/c1', order: 0,
       isUserPhoto: true, createdAt: 1, updatedAt: 2,
     }],
   };
@@ -212,7 +212,7 @@ test('wishMapForCloud: metadata only — no image data in the Firestore doc', ()
   assert.equal(c.src, undefined, 'src (image bytes) must never reach Firestore');
   assert.equal(c.id, 'c1');
   assert.equal(c.title, 'Дом');
-  assert.equal(c.imagePath, 'users/u1/vision-board/c1.webp');
+  assert.equal(c.imagePath, 'wishImages/c1');
   assert.equal(c.order, 0);
   assert.equal(c.isUserPhoto, true);
   assert.equal(c.createdAt, 1);
@@ -225,8 +225,8 @@ test('mergeWishMapCloud: local image cache wins for src, cloud wins for metadata
   // side is metadata too — uploadState is what remembers "bytes are here, file is not up yet".
   const local = [{ id: 'c1', title: 'Старая', imagePath: null, uploadState: 'pending' }];
   const cloud = [
-    { id: 'c1', title: 'Новая', imagePath: 'users/u/vision-board/c1.webp', isUserPhoto: true },
-    { id: 'c2', title: 'Только облако', imagePath: 'users/u/vision-board/c2.webp' },
+    { id: 'c1', title: 'Новая', imagePath: 'wishImages/c1', isUserPhoto: true },
+    { id: 'c2', title: 'Только облако', imagePath: 'wishImages/c2' },
   ];
   const merged = Array.from(t.app.mergeWishMapCloud(cloud, local));
   assert.equal(merged.length, 2, 'both cloud cards are adopted');
@@ -235,7 +235,7 @@ test('mergeWishMapCloud: local image cache wins for src, cloud wins for metadata
   assert.equal(merged[0].title, 'Новая', 'cloud metadata overwrites local');
   assert.equal('src' in merged[1], false, 'a card from another device carries no bytes in state');
   assert.equal(merged[1].uploadState, 'uploaded', 'its file is already in the cloud');
-  assert.equal(merged[1].imagePath, 'users/u/vision-board/c2.webp');
+  assert.equal(merged[1].imagePath, 'wishImages/c2');
 });
 
 test('wishMapDisplayOrder: the personal photo sits in the centre slot', () => {

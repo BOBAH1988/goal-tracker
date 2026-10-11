@@ -44,11 +44,11 @@ const EXPORT_SRC = `
   resolve, validatePath, loadState, saveState, sortHomeGoals,
    STRINGS, SEED, LANG_KEY, STORAGE_KEY, QUOTES,
    ensureWishMap, wishCardAt, doImportData,
-  wishMapForCloud, mergeWishMapCloud, wishStorageReady, wishStoragePath, wishCachePut, wishCacheGet,
+  wishMapForCloud, mergeWishMapCloud, wishCachePut, wishCacheGet,
    wishCacheDelete, wishRememberBlob, wishBlobUrlFor, wishHasLocalBytes, uploadWishCard,
    markWishUploadError, syncWishBoard, wishClearUserPhoto, WISH_MAX_UPLOAD_BYTES,
     WISH_MAX_CARDS, wishMapForCloud, mergeWishMapCloud, wishMapDisplayOrder,
-    wishStorageExt, wishBoardReady, wishSyncRetry, startCloudSync,
+    wishCloudReady, wishImagePath, wishImageType, wishBoardReady, wishSyncRetry, startCloudSync,
     flushCloudPush, pushCloudStateNow, stateForCloud, scheduleCloudPush,
     getWishLastUploadError: () => wishLastUploadError,
    ensureGoodToday, goodTodayAllEntries, goodTodayEntriesFor, goodTodayTodayEntries,
@@ -121,6 +121,9 @@ function boot() {
 
   const sandbox = {
     console, localStorage, document, window, navigator, setTimeout, clearTimeout,
+    // The wish board rebuilds its Blobs from cloud bytes inside this sandbox — a browser
+    // built-in, so it belongs next to the other browser stubs.
+    Blob,
   };
   const ctx = vm.createContext(sandbox);
   // Throws on syntax errors AND on runtime errors during initial render() — both must

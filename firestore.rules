@@ -8,6 +8,18 @@ service cloud.firestore {
   match /databases/{database}/documents {
     match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
+      // «Карта желаний»: one document per card image (raw bytes, ≤ 800 KB — a 720×720 card is
+      // 20–100 KB). Lives under the owner's uid, so nobody else can read or touch another
+      // account's pictures. Cloud Storage is intentionally NOT used: it requires the paid
+      // Blaze plan, while Firestore stays free on Spark.
+      match /wishImages/{cardId} {
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow create, update: if request.auth != null
+          && request.auth.uid == userId
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.bytes.size() <= 800 * 1024;
+        allow delete: if request.auth != null && request.auth.uid == userId;
+      }
     }
     // Usernames must be unique across the whole app. Anyone can read the collection
     // (needed to check availability before an account even exists). A name can only be
