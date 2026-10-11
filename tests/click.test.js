@@ -886,6 +886,11 @@ test('wish map: section collapses like the wheel and the choice persists', () =>
   const countLabel = t.document.querySelector('.wish-count');
   assert.ok(countLabel, 'the card-count label rides with the title when open');
   assert.ok(/У меня 0 карточек/.test(countLabel.textContent), 'and counts the cards (none yet)');
+  // v1.1.81: надпись в стиле заголовка «Карта желаний» — тот же кегль и вес.
+  const titleStyle = t.window.getComputedStyle(t.document.getElementById('wishToggle'));
+  const countStyle = t.window.getComputedStyle(countLabel);
+  assert.equal(countStyle.fontSize, titleStyle.fontSize, 'the label shares the title font size');
+  assert.equal(countStyle.fontWeight, titleStyle.fontWeight, 'and its font weight');
   t.click('#wishToggle');
   assert.equal(t.app.getState().wishMapOpen, false, 'clicking the title must persist wishMapOpen=false');
   assert.ok(!t.document.querySelector('.wish-grid'), 'the card grid must disappear when collapsed');

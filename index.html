@@ -953,9 +953,9 @@
   footer a:active{color:var(--accent);}
   .cat-label{font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin:2px 0 10px;}
   .section-title{font-size:15px; font-weight:600; color:var(--text); margin:4px 0 12px;}
-  /* «У меня N карточек» — тихая надпись рядом с заголовком «Карта желаний»,
-     только в развернутом состоянии (при сворачивании доски её нет в DOM). */
-  .wish-count{color:var(--muted); font-weight:400; font-size:12px; margin-left:8px; white-space:nowrap;}
+  /* «У меня N карточек» — рядом с заголовком «Карта желаний», в его стиле:
+     тот же размер, вес и цвет. Только в развернутом состоянии. */
+  .wish-count{color:var(--text); font-weight:600; font-size:15px; margin-left:8px; white-space:nowrap;}
    /* Custom tooltip bubble for [data-tip] elements (the "Важные сферы жизни" action buttons).
       Replaces the browser's native title tooltip, which is slow, plain-styled and never shows on
       touch devices / installed PWA. The label comes from the data-tip attribute; on hover or
@@ -1117,7 +1117,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.1.80';
+const APP_VERSION = '1.1.81';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
