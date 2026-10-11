@@ -1195,7 +1195,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.1.92';
+const APP_VERSION = '1.1.93';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -5333,21 +5333,8 @@ function wheelHTML(items, opts){
     // Rendered in full, left-aligned to the start of the arc for now — adjustWheelLabels() fixes
     // this up for real once the SVG is in the DOM and can be measured (see note above).
     svg += `<text font-size="${fontSize}" font-weight="700" fill="var(--text)"><textPath href="#${arcIds[i]}" xlink:href="#${arcIds[i]}" startOffset="0%" text-anchor="start">${esc(item.name)}</textPath></text>`;
-    // Интерактивный сектор: прозрачная область на весь радиус сектора — она ловит клик/касание
-    // и там, где заполненная часть колеса пустая (сфера 0%). Роль кнопки, фокус с клавиатуры и
-    // подпись для скринридера («Открыть сферу Здоровье» / «Свернуть сферу …»).
-    if(interactive){
-      const label = active ? t('wheelSectorClose')(item.name) : t('wheelSectorOpen')(item.name);
-      const common = `class="wheel-sector-hit${active ? ' is-active' : ''}" data-wheel-sector="${targets[i]}" role="button" tabindex="0" aria-expanded="${active ? 'true' : 'false'}" aria-label="${esc(label)}"`;
-      if(n === 1){
-        svg += `<circle cx="${cx}" cy="${cy}" r="${maxR}" fill="transparent" ${common}/>`;
-      } else {
-        svg += `<path d="${wedgePath(cx, cy, maxR, start, end)}" fill="transparent" ${common}/>`;
-      }
-    }
   });
-  // Grid rings + radial dividers are drawn last, on top of the filled wedges (in a lighter tone
-  // than before), so the fill level always reads clearly against the scale instead of hiding under it.
+  // Grid rings + radial dividers are drawn on top of the filled wedges.
   for(let lvl = 1; lvl <= RING_STEPS; lvl++){
     const r = maxR * lvl / RING_STEPS;
     svg += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--muted)" stroke-width="1"/>`;
@@ -5360,6 +5347,22 @@ function wheelHTML(items, opts){
     }
   }
   svg += `<circle cx="${cx}" cy="${cy}" r="3" fill="var(--text)"/>`;
+  // Интерактивные хит-пути — ПОСЛЕДНИЕ, поверх всех декоративных элементов,
+  // чтобы клики/касания не блокировались кольцами и линиями.
+  if(interactive){
+    items.forEach((item, i) => {
+      const center = i * sectorSpan;
+      const start = center - sectorSpan / 2, end = center + sectorSpan / 2;
+      const active = activeIdx === targets[i];
+      const label = active ? t('wheelSectorClose')(item.name) : t('wheelSectorOpen')(item.name);
+      const common = `class="wheel-sector-hit${active ? ' is-active' : ''}" data-wheel-sector="${targets[i]}" role="button" tabindex="0" aria-expanded="${active ? 'true' : 'false'}" aria-label="${esc(label)}"`;
+      if(n === 1){
+        svg += `<circle cx="${cx}" cy="${cy}" r="${maxR}" fill="transparent" ${common}/>`;
+      } else {
+        svg += `<path d="${wedgePath(cx, cy, maxR, start, end)}" fill="transparent" ${common}/>`;
+      }
+    });
+  }
   svg += `</svg>`;
   return svg;
 }
