@@ -275,3 +275,22 @@ test('CSS guard: touch standalone PWA neutralizes the stuck hover on the goal ac
     'a blanket #btnMove:hover override would also erase the real move-mode colour');
 });
 
+/* Репорт владельца: клик по сектору колеса рисует вокруг SVG фокусный
+   прямоугольник. Базовое правило обязано гасить outline (никакого
+   прямоугольника ни мышью, ни тачем), а :focus-visible — оставаться
+   для клавиатуры (Tab + Enter/Space): доступность не жертвуется. */
+test('CSS guard: wheel sectors show no focus rectangle on click, but keep a keyboard ring', () => {
+  const rules = splitCss(HTML);
+  // splitCss keeps a leading comment inside the selector text, so match the
+  // selector ENDING: the base rule ends with the bare class, the others with
+  // :hover / :focus-visible / .is-active.
+  const base = rules.find(r => r.selectors.some(s => /\.wheel-sector-hit\s*$/.test(s)));
+  assert.ok(base, 'the base .wheel-sector-hit rule must exist');
+  assert.match(base.body, /outline\s*:\s*none/,
+    'the base rule must suppress the outline — a click on a sector must not draw a focus rectangle');
+  const kb = rules.find(r => r.selectors.some(s => /\.wheel-sector-hit:focus-visible/.test(s)));
+  assert.ok(kb, 'the :focus-visible rule must exist for keyboard users');
+  assert.match(kb.body, /outline\s*:\s*2px solid var\(--accent\)/,
+    'keyboard focus keeps a visible accent ring');
+});
+
