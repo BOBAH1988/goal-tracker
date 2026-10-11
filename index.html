@@ -850,6 +850,11 @@
   }
   .add-sub button:hover{color:var(--text); border-color:var(--accent);}
   footer{color:var(--muted); font-size:11px; text-align:center; margin-top:4px; opacity:.7;}
+  /* The feedback link is part of the footer text, not a button: it inherits the muted 11px look in
+     both themes, adds only a thin underline as an affordance, and turns accent on tap — no padding,
+     no border, no background, so it can never read as a separate control on a phone. */
+  footer a{color:inherit; font-size:inherit; line-height:inherit; text-decoration:underline; text-decoration-thickness:1px; text-underline-offset:2px;}
+  footer a:active{color:var(--accent);}
   .cat-label{font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin:2px 0 10px;}
   .section-title{font-size:15px; font-weight:600; color:var(--text); margin:4px 0 12px;}
    /* Custom tooltip bubble for [data-tip] elements (the "Важные сферы жизни" action buttons).
@@ -1272,7 +1277,7 @@ const STRINGS = {
     rename: 'Переименовать',
     renamePrompt: 'Новое название шага:',
     footer: 'Войдите в аккаунт, чтобы данные сохранились.',
-    footerLoggedIn: 'Все данные конфиденциальны, доступ имеете только вы.',
+    footerLoggedIn: 'Автор проекта Владимир Соколов · <a href="mailto:79042044926@ya.ru">Обратная связь</a>',
     addSubgoal: 'Развернуть',
     addSubHint: '— нажмите на цель без подцелей, чтобы добавить к ней 2 подцели-чекбокса',
     tipMove: 'Изменить порядок',
@@ -1516,7 +1521,7 @@ const STRINGS = {
     rename: 'Rename',
     renamePrompt: 'New step name:',
     footer: 'Sign in to sync it across devices.',
-    footerLoggedIn: 'All data is private — only you have access to it.',
+    footerLoggedIn: 'Project author Vladimir Sokolov · <a href="mailto:79042044926@ya.ru">Feedback</a>',
     addSubgoal: 'Expand',
     addSubHint: '— click a goal with no subgoals yet to add 2 checkbox subgoals to it',
     tipMove: 'Reorder',
