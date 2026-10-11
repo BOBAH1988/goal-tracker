@@ -953,6 +953,9 @@
   footer a:active{color:var(--accent);}
   .cat-label{font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin:2px 0 10px;}
   .section-title{font-size:15px; font-weight:600; color:var(--text); margin:4px 0 12px;}
+  /* «У меня N карточек» — тихая надпись рядом с заголовком «Карта желаний»,
+     только в развернутом состоянии (при сворачивании доски её нет в DOM). */
+  .wish-count{color:var(--muted); font-weight:400; font-size:12px; margin-left:8px; white-space:nowrap;}
    /* Custom tooltip bubble for [data-tip] elements (the "Важные сферы жизни" action buttons).
       Replaces the browser's native title tooltip, which is slow, plain-styled and never shows on
       touch devices / installed PWA. The label comes from the data-tip attribute; on hover or
@@ -1114,7 +1117,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.1.78';
+const APP_VERSION = '1.1.79';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -1490,6 +1493,10 @@ const STRINGS = {
     themeLight: 'Светлая тема',
     themePink: 'Розовая тема',
     wishMapTitle: 'Карта желаний',
+    wishCount: 'У меня {n} {w}',
+    wishCardOne: 'карточка',
+    wishCardFew: 'карточки',
+    wishCardMany: 'карточек',
     wishEmpty: 'Пока нет карточек — добавьте картинку с мечтой, чтобы она всегда была под рукой.',
     wishAdd: '+ Добавить желание',
     wishImageLabel: 'Изображение',
@@ -1739,6 +1746,10 @@ const STRINGS = {
     themeLight: 'Light theme',
     themePink: 'Pink theme',
     wishMapTitle: 'Vision Board',
+    wishCount: 'I have {n} {w}',
+    wishCardOne: 'card',
+    wishCardFew: 'cards',
+    wishCardMany: 'cards',
     wishEmpty: 'No cards yet — add a picture of your dream so it is always within reach.',
     wishAdd: '+ Add a wish',
     wishImageLabel: 'Image',
@@ -3830,7 +3841,7 @@ function homeViewHTML(overallPct, hintHTML, mode, protectedCount){
     // cards live in state.wishMap only and never feed the wheel, ratings or any totals.
       html += `<div class="section-title-row" style="margin-top:24px;">
         <div class="section-title" id="wishToggle">
-          <span class="wheel-arrow">${wishMapOpen ? '▾' : '▸'}</span>${t('wishMapTitle')}
+          <span class="wheel-arrow">${wishMapOpen ? '▾' : '▸'}</span>${t('wishMapTitle')}${wishMapOpen ? `<span class="wish-count">${wishCountLabel()}</span>` : ''}
         </div>
         ${/* Header buttons belong to the OPEN board, same rule as «Важные сферы жизни» (v1.1.53):
              with the board collapsed its dialogs are closed too (see the wishToggle handler), so
@@ -4190,6 +4201,17 @@ function closeCrop(){
   wishCropZoom = 1;
   wishCropOx = 0;
   wishCropOy = 0;
+}
+// Надпись «У меня N карточек» в заголовке секции: живёт только в развернутом
+// состоянии (при сворачивании доски скрывается вместе с её содержимым).
+// Русские формы слова «карточка» выбираются по правилам склонения.
+function wishCountLabel(){
+  const n = Array.isArray(state.wishMap) ? state.wishMap.length : 0;
+  const mod10 = n % 10, mod100 = n % 100;
+  const word = (n === 1 || (mod10 === 1 && mod100 !== 11)) ? t('wishCardOne')
+    : ((mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) ? t('wishCardFew')
+    : t('wishCardMany'));
+  return t('wishCount').replace('{n}', String(n)).replace('{w}', word);
 }
 // Home-screen section under the balance wheel: the add form (preview + caption), the card
 // grid (or a friendly empty state) and the two dialogs (lightbox, caption editor).

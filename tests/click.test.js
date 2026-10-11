@@ -747,6 +747,9 @@ test('wish map: header card manager replaces per-card edit/delete buttons', () =
   t.window.render();
   // Cards no longer carry their own action buttons.
   assert.ok(t.document.querySelectorAll('.wish-card').length === 2, 'both cards render');
+  // v1.1.79: заголовок секции считает карточки — «У меня 2 карточки».
+  assert.ok(/У меня 2 карточки/.test(t.document.getElementById('wishToggle').textContent),
+    'the header counts the cards with the few plural form');
   assert.ok(!t.document.querySelector('[data-wish-edit]'), 'cards must not carry an edit button');
   assert.ok(!t.document.querySelector('[data-wish-del]'), 'cards must not carry a delete button');
   assert.ok(!t.document.querySelector('.wish-actions'), 'the corner action group is gone');
@@ -879,6 +882,10 @@ test('wish map: cards never touch the wheel math and ride along in the backup im
 test('wish map: section collapses like the wheel and the choice persists', () => {
   const t = bootDom();
   assert.ok(t.document.getElementById('btnWishAddEmpty'), 'open by default — empty state visible');
+  // v1.1.79: «У меня N карточек» живёт в заголовке только в развернутом состоянии.
+  const countLabel = t.document.querySelector('.wish-count');
+  assert.ok(countLabel, 'the card-count label rides with the title when open');
+  assert.ok(/У меня 0 карточек/.test(countLabel.textContent), 'and counts the cards (none yet)');
   t.click('#wishToggle');
   assert.equal(t.app.getState().wishMapOpen, false, 'clicking the title must persist wishMapOpen=false');
   assert.ok(!t.document.querySelector('.wish-grid'), 'the card grid must disappear when collapsed');
@@ -886,10 +893,12 @@ test('wish map: section collapses like the wheel and the choice persists', () =>
   // v1.1.55: header buttons hide with the collapsed board, same rule as «Важные сферы жизни».
   assert.ok(!t.document.getElementById('btnWishAdd'), 'the «+» button must go with the collapsed board');
   assert.ok(!t.document.querySelector('.wish-header-actions'), 'the whole header button group disappears');
+  assert.ok(!t.document.querySelector('.wish-count'), 'the card-count label hides with the collapsed board');
   t.click('#wishToggle');
   assert.equal(t.app.getState().wishMapOpen, true, 'clicking again must persist wishMapOpen=true');
   assert.ok(t.document.getElementById('btnWishAddEmpty'), 'empty state must come back when expanded');
   assert.ok(t.document.getElementById('btnWishAdd'), 'the «+» returns on expand');
+  assert.ok(t.document.querySelector('.wish-count'), 'and the card-count label returns too');
 });
 
 test('wish map: at 15 cards «+» disappears and a calm note explains the limit', () => {
