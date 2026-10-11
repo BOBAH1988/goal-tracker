@@ -797,6 +797,11 @@
      plainly that the next tap decides where it lands. */
   .wish-manage-row.is-moving{border-color:var(--accent); box-shadow:0 0 0 1px var(--accent);}
   .wish-move-hint{font-size:12px; color:var(--accent); white-space:nowrap;}
+  /* While a move is in progress every other row says so in words AND is the drop target as a
+     whole (a corner icon alone was too small a target on a phone). */
+  .wish-manage-row[data-wish-place]{cursor:pointer;}
+  .wish-place-hint{flex:1; min-width:0; font-size:12px; color:var(--muted); text-align:right; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .wish-place-glyph{flex:none; color:var(--accent); font-size:20px; line-height:1;}
   [data-wish-manage-del].wish-manage-btn:hover{color:var(--red); border-color:var(--red);}
   .wish-form{
     background:var(--card); border:1px solid var(--border); border-radius:12px;
@@ -1072,7 +1077,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.1.70';
+const APP_VERSION = '1.1.71';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -1464,9 +1469,9 @@ const STRINGS = {
     wishEditTip: 'Редактировать подпись',
     wishDeleteTip: 'Удалить карточку',
     wishMoveTip: 'Переместить',
-    wishMoveHereTip: 'Переместить сюда',
+    wishMoveHereTip: 'Переместить сюда — нажмите на строку',
     wishMoveCancelTip: 'Отменить перемещение',
-    wishMovingHint: 'Перемещение…',
+    wishMovingHint: 'Куда поставить? Выберите карточку',
     wishDeleteConfirm: 'Удалить эту карточку?',
     wishLimitMsg: 'На карте уже {max} изображений. Удалите или замените одно, если хотите добавить новое.',
     wishMyPhoto: 'Это я. Фото будет первым на карте.',
@@ -1712,9 +1717,9 @@ const STRINGS = {
     wishEditTip: 'Edit caption',
     wishDeleteTip: 'Delete card',
     wishMoveTip: 'Move',
-    wishMoveHereTip: 'Move here',
+    wishMoveHereTip: 'Move here — tap the row',
     wishMoveCancelTip: 'Cancel move',
-    wishMovingHint: 'Moving…',
+    wishMovingHint: 'Where to? Pick a card',
     wishDeleteConfirm: 'Delete this card?',
     wishLimitMsg: 'The board already has {max} images. Delete or replace one if you want to add another.',
     wishMyPhoto: 'It’s me. The photo will be first on the board.',
@@ -4157,11 +4162,14 @@ function wishMapSectionHTML(){
                ? `<span class="wish-move-hint">${esc(t('wishMovingHint'))}</span>
                   <button type="button" class="icon-btn wish-manage-btn" data-wish-move-cancel data-tip="${t('wishMoveCancelTip')}" aria-label="${t('wishMoveCancelTip')}"><i class="ti ti-x" aria-hidden="true"></i></button>`
                : moving
-                 ? `<button type="button" class="icon-btn wish-manage-btn" data-wish-place="${i}" data-tip="${t('wishMoveHereTip')}" aria-label="${t('wishMoveHereTip')}"><i class="ti ti-corner-down-right" aria-hidden="true"></i></button>`
+                 ? `<span class="wish-place-hint">${esc(t('wishMoveHereTip'))}</span><i class="ti ti-corner-down-right wish-place-glyph" aria-hidden="true"></i>`
                  : `<button type="button" class="icon-btn wish-manage-btn" data-wish-move="${i}" data-tip="${t('wishMoveTip')}" aria-label="${t('wishMoveTip')}"><i class="ti ti-arrows-vertical" aria-hidden="true"></i></button>
                     <button type="button" class="icon-btn wish-manage-btn" data-wish-manage-edit="${i}" data-tip="${t('wishEditTip')}" aria-label="${t('wishEditTip')}"><i class="ti ti-pencil" aria-hidden="true"></i></button>
                     <button type="button" class="icon-btn wish-manage-btn" data-wish-manage-del="${i}" data-tip="${t('wishDeleteTip')}" aria-label="${t('wishDeleteTip')}"><i class="ti ti-trash" aria-hidden="true"></i></button>`;
-             return `<div class="wish-manage-row${movingTag}">
+             // While a card is picked up, the WHOLE row is the drop target — a 36px icon in the
+             // corner was easy to miss on a phone, and the owner reported "nothing happens".
+             const rowAttrs = (moving && !isSource) ? ` data-wish-place="${i}" data-tip="${t('wishMoveHereTip')}" role="button"` : '';
+             return `<div class="wish-manage-row${movingTag}"${rowAttrs}>
                ${rowThumb}
                <span class="wish-manage-caption">${esc(c.title || '')}${errTag}${retryBtn}</span>
                ${actions}

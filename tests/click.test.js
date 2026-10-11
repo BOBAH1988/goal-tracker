@@ -961,8 +961,12 @@ test('wish map manager: «↕» picks a card up and «here» puts it in that slo
     'the picked-up row is marked, and the other actions are hidden while it is');
   assert.equal(t.document.querySelectorAll('[data-wish-manage-del]').length, 0,
     'no delete/edit button while a move is in progress');
-  // ставим на место «Первое»
-  t.click('[data-wish-place="0"]');
+  // В режиме переноса целью является ВСЯ строка, а не маленькая иконка: тап по подписи или
+  // превью должен срабатывать так же (событие всплывает до строки).
+  const target = t.document.querySelector('.wish-manage-row[data-wish-place]');
+  assert.ok(target, 'the other rows become drop targets as a whole');
+  assert.ok(target.querySelector('.wish-place-hint'), 'and they say so in words, not just an icon');
+  t.click('.wish-manage-row[data-wish-place]:nth-of-type(1) .wish-manage-caption');
   assert.deepEqual(titles(), ['Третье', 'Первое', 'Второе'], 'the card took the target slot');
   assert.deepEqual(Array.from(t.app.getState().wishMap.map(c => c.order)).map(Number), [0, 1, 2],
     'the order field is renumbered with the move');
