@@ -1016,6 +1016,11 @@ const WISH_MAX_CARDS = 15;    // hard cap: 15 cards on the board, personal photo
 const WISH_IMG_SIZE = 720;    // card bitmap side (px): crop frame, stored copy, everything is 1:1
 const WISH_MAX_SRC_BYTES = 12 * 1024 * 1024; // sane cap for a picked source file
 const WISH_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
+/* «3 важных дела» line cap. Same dead-zone reason as the wish constants above: loadState() runs
+   near the top of this script and calls ensureToday(), which clamps these lines. The row is one
+   line tall, so an essay in it breaks the block's rhythm — 80 is the same cap the wish caption
+   already uses. Enforced in the markup (maxlength), on every save, and on load/import/cloud. */
+const TODAY_TEXT_MAX = 80;
 /* ===== Seed data (transcribed from the Excel table) =====
    emptyGoals/emptySteps take the noun to use for auto-generated names, so items added later via
    the UI can be named in whichever language is active at the time (default: Russian for the
@@ -2630,6 +2635,12 @@ function ensureToday(node){
     while(node.today.length < 3){ node.today.push({text:"",done:false}); }
     node.today = node.today.slice(0, 3);
   }
+  node.today = node.today.map(item => {
+    if(!item || typeof item !== 'object') return { text: '', done: false };
+    if(typeof item.text !== 'string'){ item.text = ''; }
+    else if(item.text.length > TODAY_TEXT_MAX){ item.text = item.text.slice(0, TODAY_TEXT_MAX); }
+    return item;
+  });
   if(node.goodToday === undefined) node.goodToday = node.today.some(item => item.done);
 }
 // Backfill for the «Хорошее сегодня» journal entries array — guarantees a well-formed array of
@@ -3483,7 +3494,7 @@ function homeViewHTML(overallPct, hintHTML, mode, protectedCount){
           ${todayItems.map((item, i) => {
            return `<div class="priority-row">
              <div class="chk ${item.done?'done':''}" data-today-toggle="${i}">${item.done?'✓':''}</div>
-             <input type="text" class="today-input ${item.done?'done':''}" data-today-edit="${i}" value="${esc(item.text || '')}" placeholder="${t('todayPlaceholder')}">
+             <input type="text" class="today-input ${item.done?'done':''}" data-today-edit="${i}" maxlength="${TODAY_TEXT_MAX}" value="${esc(item.text || '')}" placeholder="${t('todayPlaceholder')}">
               <button class="today-action" data-today-action="${i}" data-tip="${t('todayClear')}" aria-label="${t('todayClear')}">
                 <i class="ti ti-trash" aria-hidden="true"></i>
               </button>
@@ -5580,7 +5591,7 @@ function attachMainViewHandlers(){
     el.addEventListener('input', ()=>{
       const idx = parseInt(el.dataset.todayEdit,10);
       if(!Array.isArray(state.today) || idx >= state.today.length) return;
-      state.today[idx].text = el.value;
+      state.today[idx].text = el.value.slice(0, TODAY_TEXT_MAX);
       syncTodayAction(el);
     });
      el.addEventListener('focus', ()=>{ el.classList.add('editing'); syncTodayAction(el); });
@@ -5594,7 +5605,7 @@ function attachMainViewHandlers(){
       if(e.key === 'Enter'){
         const idx = parseInt(el.dataset.todayEdit,10);
         if(!Array.isArray(state.today) || idx >= state.today.length) return;
-        state.today[idx].text = el.value;
+        state.today[idx].text = el.value.slice(0, TODAY_TEXT_MAX);
         saveState();
         el.blur();
         render();
@@ -5613,7 +5624,7 @@ function attachMainViewHandlers(){
       if(hasText && isActive){
         // Green checkmark (active input with text) → finalize.
         if(!Array.isArray(state.today) || idx >= state.today.length) return;
-        state.today[idx].text = input.value;
+        state.today[idx].text = input.value.slice(0, TODAY_TEXT_MAX);
         saveState();
         render();
       }else{
