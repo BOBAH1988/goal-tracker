@@ -1073,6 +1073,28 @@ test('wish map: the print button builds one A4 page in the current matrix', asyn
   assert.equal(t.document.body.classList.contains('wish-printing'), false, 'and the marker class is gone');
 });
 
+/* iOS PWA: window.print в Safari/standalone не существует — раньше тап
+   «Печать» молча ничего не делал (узел создавался и сразу удалялся).
+   Теперь: страница рисуется в PNG и уходит в экран «Поделиться», где
+   есть «Печать» (AirPrint). jsdom не умеет 2d-canvas — поэтому здесь
+   проверяется честная деградация: подсказка вместо молчания. */
+test('wish map: where window.print is missing (iOS PWA), Print offers the share sheet, not silence', async () => {
+  const t = bootDom();
+  const cards = ['a', 'b', 'c', 'd'].map((id, i) =>
+    ({ id, title: 'Карточка ' + (i + 1), imagePath: 'wishImages/' + id, order: i, uploadState: 'uploaded' }));
+  t.app.setState(Object.assign(t.app.getState(), { wishMap: cards }));
+  t.window.render();
+  // iOS: window.print отсутствует — только экран «Поделиться».
+  t.window.print = undefined;
+  t.click('#btnWishPrint');
+  await new Promise(r => setTimeout(r, 0));   // shareWishBoardPng — async
+  assert.ok(!t.document.querySelector('#wishPrintRoot'),
+    'the DOM print node is not built on this path');
+  assert.ok([...t.document.querySelectorAll('.undo-toast')]
+    .some(el => /Печать недоступна|Printing is not available/.test(el.textContent)),
+    'and the hint explains the Safari path instead of doing nothing');
+});
+
 test('wish map: the grid-density default is 3 in an installed PWA', () => {
   const t = bootDom();
   // Установленное приложение: matchMedia отвечает «standalone» — ровно как на телефоне.

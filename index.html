@@ -1118,7 +1118,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.1.83';
+const APP_VERSION = '1.1.84';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -1508,6 +1508,7 @@ const STRINGS = {
     wishManage: 'Управление картинками',
     wishGridTip: 'Карточек в ряду',
     wishPrint: 'Печать',
+    wishPrintHint: 'Печать недоступна в этом приложении — откройте сайт в Safari и выберите «Поделиться» → «Печать».',
     wishManageTitle: 'Картинки',
     wishEditTip: 'Редактировать подпись',
     wishDeleteTip: 'Удалить карточку',
@@ -1758,6 +1759,7 @@ const STRINGS = {
     wishManage: 'Manage pictures',
     wishGridTip: 'Cards per row',
     wishPrint: 'Print',
+    wishPrintHint: 'Printing is not available in this app — open the site in Safari and choose Share → Print.',
     wishManageTitle: 'Pictures',
     wishEditTip: 'Edit caption',
     wishDeleteTip: 'Delete card',
@@ -3279,6 +3281,15 @@ function printWishBoard(){
   if(!cards.length) return;
   const cols = wishGridCols === null ? (isStandalonePwa() ? 3 : 4) : wishGridCols;
   const order = Array.from(wishMapDisplayOrder(cards));
+  // iOS PWA: window.print в Safari (и в standalone-приложении тем более) не
+  // существует — печать там живёт только в экране «Поделиться». Рисуем
+  // страницу в PNG и предлагаем её через navigator.share: в листе есть
+  // «Печать» (AirPrint). Без share — честная подсказка, а не молчание.
+  if(typeof window.print !== 'function'){
+    shareWishBoardPng(order.map(i => cards[i]).filter(c => c && c.id), cols)
+      .then(shared => { if(!shared) showPrintHint(); });
+    return;
+  }
   // Узел создаётся здесь же и живёт вне #app, поэтому ищем его запросом, а не getElementById:
   // id-сторож в тестах требует, чтобы у каждого getElementById был парный id в разметке, а этот
   // элемент в разметке появляется только на время печати.
@@ -3303,7 +3314,10 @@ function printWishBoard(){
   root = document.createElement('div');
   root.id = 'wishPrintRoot';
   // A4 portrait, поля 10mm → 190×277mm под заголовок и сетку.
-  root.style.cssText = 'box-sizing:border-box; display:flex; flex-direction:column;' +
+  // display управляется таблицей стилей: на экране #wishPrintRoot{display:none},
+  // в печати — display:flex !important. Инлайн-стиль перебивал бы оба правила,
+  // и узел мелькал на экране на время диалога печати.
+  root.style.cssText = 'box-sizing:border-box; flex-direction:column;' +
     'width:190mm; height:277mm; margin:0; padding:0;' +
     'background:' + bodyBg + '; color:' + textC + ';';
   const title = document.createElement('div');
@@ -3367,8 +3381,156 @@ function printWishBoard(){
   // Страховка от «печать не открылась»: даже если окно печати не появилось (или ушло в себя),
   // через 2.5 c метка снимается — приложение остаётся рабочим в любом случае.
   const fallback = setTimeout(cleanup, 2500);
-  if(typeof window.print === 'function'){ try{ window.print(); }catch(e){ cleanup(); } }
-  else cleanup();   // движок без печати — просто убираем узел, показывать нечего
+  try{ window.print(); }catch(e){ cleanup(); }
+}
+// ===== Печать в iOS PWA: страница в PNG через canvas → экран «Поделиться» =====
+// Возвращает true, когда картинка ушла в navigator.share. False — если движок
+// не умеет 2d-canvas / share (или пользователь отменил): вызывающая сторона
+// тогда показывает подсказку. Каждый шаг деградирует честно: картинка не
+// догрузилась — печатаем пометку, как на DOM-странице.
+async function shareWishBoardPng(cards, cols){
+  const canvas = document.createElement('canvas');
+  if(!canvas || !canvas.getContext) return false;
+  const g = canvas.getContext('2d');
+  if(!g) return false;   // без 2d-canvas (jsdom, старые движки) рисовать нечем
+  const W = 1240, H = 1754;   // A4 portrait, ~150 dpi
+  canvas.width = W; canvas.height = H;
+  const rootVars = (typeof getComputedStyle === 'function') ? getComputedStyle(document.documentElement) : null;
+  const cssVar = (name, fallback) => (rootVars ? (rootVars.getPropertyValue(name) || '').trim() : '') || fallback;
+  const textC = cssVar('--text', '#111111');
+  const cardBg = cssVar('--card', '#ffffff');
+  const borderC = cssVar('--border', '#c9c9c9');
+  const mutedC = cssVar('--muted', '#6b6b6b');
+  const fontUi = '-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif';
+  const fontTitle = 'Georgia,"Iowan Old Style","Palatino Linotype","Book Antiqua",serif';
+  // Фон — тот же градиент body: стопы берём из вычисленного background-image;
+  // не распарсились — сплошной --bg.
+  const bodyVars = (typeof getComputedStyle === 'function') ? getComputedStyle(document.body) : null;
+  const bgImage = bodyVars ? (bodyVars.backgroundImage || '') : '';
+  const stops = [...bgImage.matchAll(/rgba?\(([^)]*)\)/g)].map(m => 'rgb(' + m[1] + ')');
+  if(stops.length >= 2){
+    const grad = g.createLinearGradient(0, 0, 0, H);
+    stops.forEach((c, i)=>{ grad.addColorStop(i / (stops.length - 1), c); });
+    g.fillStyle = grad;
+  }else{
+    g.fillStyle = cssVar('--bg', '#ffffff');
+  }
+  g.fillRect(0, 0, W, H);
+  // Заголовок — как на DOM-странице: крупный серифный, по центру.
+  const margin = 60;   // ~10 mm
+  const gap = 60;      // ~4 mm
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  g.fillStyle = textC;
+  g.font = '600 64px ' + fontTitle;
+  g.fillText(t('wishMapTitle'), W / 2, margin + 40);
+  const areaX = margin, areaW = W - margin * 2;
+  const areaY = margin + 100 + gap;
+  const areaH = H - margin - areaY;
+  const rows = Math.max(1, Math.ceil(cards.length / cols));
+  const cellW = (areaW - gap * (cols - 1)) / cols;
+  const cellH = (areaH - gap * (rows - 1)) / rows;
+  const capH = 56;   // место на подпись внутри ячейки
+  for(let i = 0; i < cards.length; i++){
+    const c = cards[i];
+    const r = Math.floor(i / cols), col = i % cols;
+    const x = areaX + col * (cellW + gap);
+    const y = areaY + r * (cellH + gap);
+    roundRectPath(g, x, y, cellW, cellH, 24);
+    g.fillStyle = cardBg;
+    g.fill();
+    g.lineWidth = 4;
+    g.strokeStyle = borderC;
+    g.stroke();
+    // Картинка с обрезкой cover — или честная пометка, как на экране.
+    const imgX = x + 8, imgY = y + 8;
+    const imgW = cellW - 16, imgH = cellH - 16 - capH;
+    const url = wishBlobUrlFor(c);
+    const img = url ? await loadWishImage(url) : null;
+    g.save();
+    roundRectPath(g, imgX, imgY, imgW, imgH, 16);
+    g.clip();
+    if(img){
+      const scale = Math.max(imgW / img.width, imgH / img.height);
+      const dw = img.width * scale, dh = img.height * scale;
+      g.drawImage(img, imgX + (imgW - dw) / 2, imgY + (imgH - dh) / 2, dw, dh);
+    }else{
+      g.fillStyle = cardBg;
+      g.fillRect(imgX, imgY, imgW, imgH);
+      g.fillStyle = mutedC;
+      g.font = '400 30px ' + fontUi;
+      wrapText(g, t('wishUploadMissing'), imgX + imgW / 2, imgY + imgH / 2, imgW - 24, 40);
+    }
+    g.restore();
+    // Подпись — по центру, до двух строк.
+    if(c.title){
+      g.fillStyle = textC;
+      g.font = '500 34px ' + fontUi;
+      wrapText(g, c.title, x + cellW / 2, y + cellH - capH / 2, cellW - 24, 42, 2);
+    }
+  }
+  const blob = await new Promise(res => canvas.toBlob(res, 'image/png'));
+  if(!blob || typeof File !== 'function') return false;
+  const file = new File([blob], 'wish-board.png', {type: 'image/png'});
+  if(!(navigator.canShare && navigator.canShare({files: [file]}))) return false;
+  try{
+    await navigator.share({files: [file], title: t('wishMapTitle')});
+    return true;
+  }catch(e){
+    return false;   // отмена или ошибка листа — покажем подсказку
+  }
+}
+// Скруглённый прямоугольный путь (ctx.roundRect есть не везде — рисуем руками).
+function roundRectPath(g, x, y, w, h, r){
+  g.beginPath();
+  if(g.roundRect){ g.roundRect(x, y, w, h, r); return; }
+  g.moveTo(x + r, y);
+  g.arcTo(x + w, y, x + w, y + h, r);
+  g.arcTo(x + w, y + h, x, y + h, r);
+  g.arcTo(x, y + h, x, y, r);
+  g.arcTo(x, y, x + w, y, r);
+  g.closePath();
+}
+// Переносит текст по словам в заданную ширину, центрируя по cx; maxLines
+// обрезает лишние строки (подписи карточек — до двух).
+function wrapText(g, text, cx, cy, maxW, lineH, maxLines){
+  const words = String(text).split(/\s+/).filter(Boolean);
+  const lines = [];
+  let line = '';
+  for(const w of words){
+    const test = line ? line + ' ' + w : w;
+    if(g.measureText(test).width > maxW && line){ lines.push(line); line = w; }
+    else line = test;
+  }
+  if(line) lines.push(line);
+  const shown = maxLines ? lines.slice(0, maxLines) : lines;
+  const y0 = cy - (shown.length - 1) * lineH / 2;
+  shown.forEach((l, i)=>{ g.fillText(l, cx, y0 + i * lineH); });
+}
+// Загрузка локальных байтов карточки в <img> для drawImage. Blob-URL
+// same-origin, canvas не «пачкается». Неудача — null, рисуется пометка.
+function loadWishImage(url){
+  return new Promise(res=>{
+    try{
+      const img = new Image();
+      img.onload = ()=>res(img);
+      img.onerror = ()=>res(null);
+      img.src = url;
+    }catch(e){ res(null); }
+  });
+}
+// Тот же приём, что у undo-toast: элемент в document.body (render() его
+// не пересоздаёт), управляется императивно, автоскрытие через 5 c.
+let printHintTimer = null;
+function showPrintHint(){
+  const toast = document.createElement('div');
+  toast.className = 'undo-toast';
+  const label = document.createElement('span');
+  label.textContent = t('wishPrintHint');
+  toast.appendChild(label);
+  document.body.appendChild(toast);
+  clearTimeout(printHintTimer);
+  printHintTimer = setTimeout(()=>{ if(toast.parentNode) toast.parentNode.removeChild(toast); }, 5000);
 }
 
 // Removes a card everywhere it exists: local cache + cloud image document. Firestore follows because the
