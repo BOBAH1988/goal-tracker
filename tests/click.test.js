@@ -759,7 +759,11 @@ test('wish map: header card manager replaces per-card edit/delete buttons', () =
   assert.ok(group, 'header buttons must share one group element');
   assert.ok(group.contains(t.document.getElementById('btnWishAdd')), '«+» belongs to the group');
   assert.ok(group.contains(t.document.getElementById('btnWishManage')), 'the manager belongs to the same group');
-  assert.equal(group.children.length, 2, 'the group holds exactly the two buttons');
+  // Кнопка плотности (сетка 2/3/4) лежит в той же группе — между «+» и управлением.
+  assert.ok(group.contains(t.document.getElementById('btnWishGrid')), 'the grid-density button belongs to the group');
+  assert.equal(group.children.length, 3, 'the group holds «+», the grid button and the manager');
+  assert.ok(group.children[1].querySelector('#btnWishGrid'),
+    'the grid button sits between «+» and the manager (inside its dropdown wrapper)');
   // The group is the LAST child of the header row → pushed to the right by space-between.
   const headerRow = t.document.querySelector('.section-title-row:has(#wishToggle)');
   assert.ok(headerRow && headerRow.lastElementChild === group, 'the group must sit on the right edge');
@@ -939,6 +943,62 @@ test('wish map: «Это моё фото» is locked while another card holds th
   assert.ok(addBox.disabled, 'the add-form checkbox is disabled while a mark exists');
   // No empty preview block before a file is picked.
   assert.ok(!t.document.querySelector('.wish-preview'), 'no empty preview until an image is chosen');
+});
+
+/* Grid density button (between «+» and the manager): 2/3/4 cards per row, default 4 on the web and
+   3 in an installed PWA, the choice saved in state so it survives a reload and travels to the
+   other devices. */
+test('wish map: the grid-density button picks 2/3/4 per row', () => {
+  const t = bootDom();
+  t.app.setState(Object.assign(t.app.getState(), {
+    wishMap: [
+      { id: 'a', title: 'A', imagePath: 'wishImages/a', order: 0, uploadState: 'uploaded' },
+      { id: 'b', title: 'B', imagePath: 'wishImages/b', order: 1, uploadState: 'uploaded' },
+      { id: 'c', title: 'C', imagePath: 'wishImages/c', order: 2, uploadState: 'uploaded' },
+      { id: 'd', title: 'D', imagePath: 'wishImages/d', order: 3, uploadState: 'uploaded' },
+      { id: 'e', title: 'E', imagePath: 'wishImages/e', order: 4, uploadState: 'uploaded' },
+    ],
+  }));
+  t.window.render();
+  // Веб-умолчание — 4.
+  assert.equal(t.document.querySelector('.wish-grid').dataset.cols, '4', 'the web default is 4 per row');
+  // Меню выбора.
+  t.click('#btnWishGrid');
+  const options = Array.from(t.document.querySelectorAll('[data-wish-cols]'));
+  assert.deepEqual(options.map(b => b.textContent), ['2', '3', '4'], 'the menu offers 2, 3 and 4');
+  t.click('[data-wish-cols="2"]');
+  assert.equal(t.document.querySelector('.wish-grid').dataset.cols, '2', 'the grid re-renders with 2');
+  assert.equal(t.document.getElementById('wishGridMenu'), null, 'the menu closes after the choice');
+  assert.equal(t.app.getState().wishGridCols, 2, 'the choice is stored (survives a reload, syncs)');
+  // Повторный выбор + отметка активного.
+  t.click('#btnWishGrid');
+  const active = Array.from(t.document.querySelectorAll('[data-wish-cols].active'));
+  assert.equal(active.length, 1, 'exactly one option is marked active');
+  assert.equal(active[0].textContent, '2', 'the stored choice is the active one');
+  t.click('[data-wish-cols="3"]');
+  assert.equal(t.document.querySelector('.wish-grid').dataset.cols, '3');
+  // Клик вне меню закрывает его, не меняя выбор.
+  t.click('#btnWishGrid');
+  t.click('.wish-caption');
+  assert.equal(t.document.getElementById('wishGridMenu'), null, 'an outside tap closes the menu');
+  assert.equal(t.app.getState().wishGridCols, 3, 'and changes nothing');
+});
+
+test('wish map: the grid-density default is 3 in an installed PWA', () => {
+  const t = bootDom();
+  // Установленное приложение: matchMedia отвечает «standalone» — ровно как на телефоне.
+  t.window.matchMedia = (q) => ({ matches: q === '(display-mode: standalone)', media: q });
+  t.window.navigator.standalone = true;
+  t.app.setState(Object.assign(t.app.getState(), {
+    wishMap: [
+      { id: 'a', title: 'A', imagePath: 'wishImages/a', order: 0, uploadState: 'uploaded' },
+      { id: 'b', title: 'B', imagePath: 'wishImages/b', order: 1, uploadState: 'uploaded' },
+      { id: 'c', title: 'C', imagePath: 'wishImages/c', order: 2, uploadState: 'uploaded' },
+      { id: 'd', title: 'D', imagePath: 'wishImages/d', order: 3, uploadState: 'uploaded' },
+    ],
+  }));
+  t.window.render();
+  assert.equal(t.document.querySelector('.wish-grid').dataset.cols, '3', 'the PWA default is 3 per row');
 });
 
 test('wish map manager: «↕» picks a card up and «here» puts it in that slot', () => {

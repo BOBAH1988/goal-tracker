@@ -217,7 +217,7 @@
      #btnTopMenu{ padding:0 !important; font-size:20px !important; }
    }
   /* ===== Action buttons (edit/delete/move/relocate/archive) ===== */
-   #btnEdit, #btnDelete, #btnAddSubgoal, #btnDeleteChecklist, #btnMove, #btnMoveChecklist, #btnRelocate, #btnChecklistAdd, #btnFilter, .add-child-row #btnArchive, .add-goal-wrap #btnArchive, #btnGoodTodayHistory, #btnGoodTodayWeekHistory, #btnGoodTodayWeekEdit, #btnWishManage, #btnGoodTodayHistoryPagePrev, #btnGoodTodayHistoryPageNext, #btnGoodTodayHistoryPagePrevBottom, #btnGoodTodayHistoryPageNextBottom{
+   #btnEdit, #btnDelete, #btnAddSubgoal, #btnDeleteChecklist, #btnMove, #btnMoveChecklist, #btnRelocate, #btnChecklistAdd, #btnFilter, .add-child-row #btnArchive, .add-goal-wrap #btnArchive, #btnGoodTodayHistory, #btnGoodTodayWeekHistory, #btnGoodTodayWeekEdit, #btnWishManage, #btnWishGrid, #btnGoodTodayHistoryPagePrev, #btnGoodTodayHistoryPageNext, #btnGoodTodayHistoryPagePrevBottom, #btnGoodTodayHistoryPageNextBottom{
     background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:8px;
     padding:6px 12px; font-size:12px; cursor:pointer; white-space:nowrap;
   }
@@ -264,6 +264,7 @@
      #btnMoveChecklist:hover:not(.active), #btnAddSubgoal:hover:not(.active),
      #btnRelocate:hover:not(.active), #btnFilter:hover, #btnAddGoal:hover:not(.active),
      #btnAddChild:hover:not(.active), #btnChecklistAdd:hover, #btnWishAdd:hover, #btnWishManage:hover,
+     #btnWishGrid:hover,
      #btnGoodTodayAdd:hover, .add-child-row #btnArchive:hover:not(.active),
      .add-goal-wrap #btnArchive:hover:not(.active){color:var(--muted); border-color:var(--border);}
    }
@@ -756,6 +757,20 @@
   @media (max-width:360px){ .wish-grid{grid-template-columns:1fr;} }
   @media (min-width:600px){ .wish-grid{grid-template-columns:repeat(3,1fr);} }
   @media (min-width:960px){ .wish-grid{grid-template-columns:repeat(4,1fr);} }
+  /* Явный выбор плотности (кнопка в шапке доски) сильнее адаптива по ширине — но не безусловно:
+     на совсем узком экране 3–4 в ряд сделали бы карточки нечитаемыми (карточка квадратная, с
+     подписью), поэтому там выбор сжимается до двух. */
+  .wish-grid[data-cols="2"]{grid-template-columns:repeat(2,1fr);}
+  .wish-grid[data-cols="3"]{grid-template-columns:repeat(3,1fr);}
+  .wish-grid[data-cols="4"]{grid-template-columns:repeat(4,1fr);}
+  @media (max-width:360px){
+    .wish-grid[data-cols="3"], .wish-grid[data-cols="4"]{grid-template-columns:repeat(2,1fr);}
+  }
+  /* Обёртка кнопки плотности — тот же приём, что у .filter-dropdown у целей: чтобы всплывающее
+     меню прижалось к своей кнопке, а не к блоку. */
+  .wish-grid-dropdown{position:relative; display:inline-flex;}
+  .wish-grid-menu{min-width:64px;}
+  .wish-grid-menu button{justify-content:center; font-size:15px; font-weight:600;}
   .wish-card{
     position:relative; background:var(--card); border:1px solid var(--border);
     border-radius:12px; overflow:hidden; cursor:pointer; min-width:0;
@@ -961,7 +976,7 @@
     background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:8px;
     padding:6px 12px; font-size:12px; cursor:pointer; white-space:nowrap;
   }
-  #btnAddGoal:hover, #btnWishAdd:hover, #btnWishManage:hover, #btnGoodTodayAdd:hover{color:var(--text); border-color:var(--accent);}
+  #btnAddGoal:hover, #btnWishAdd:hover, #btnWishManage:hover, #btnWishGrid:hover, #btnGoodTodayAdd:hover{color:var(--text); border-color:var(--accent);}
   #btnAddGoal:disabled{opacity:.5; cursor:not-allowed;}
   #btnAddGoal:disabled:hover{color:var(--muted); border-color:var(--border);}
   .add-goal-msg{color:var(--red); font-size:12px; white-space:nowrap;}
@@ -986,7 +1001,7 @@
   #btnAddChild:disabled:hover{color:var(--muted); border-color:var(--border);}
   /* Compact "+"/"−" icon style for Add/Delete, used instead of full text labels to save room on
      narrow (phone) screens. */
-   #btnAddGoal.icon-btn, #btnWishAdd.icon-btn, #btnWishManage.icon-btn, #btnAddChild.icon-btn, #btnDelete.icon-btn, #btnEdit.icon-btn, #btnAddSubgoal.icon-btn, #btnDeleteChecklist.icon-btn, #btnMove.icon-btn, #btnMoveChecklist.icon-btn, #btnRelocate.icon-btn, #btnChecklistAdd.icon-btn, #btnFilter.icon-btn, .add-child-row #btnArchive.icon-btn, .add-goal-wrap #btnArchive.icon-btn, #btnSearch.icon-btn, #btnGoodTodayHistory.icon-btn, #btnGoodTodayWeekHistory.icon-btn, #btnGoodTodayWeekEdit.icon-btn, #btnGoodTodayAdd.icon-btn, #btnGoodTodayHistoryPagePrevBottom.icon-btn, #btnGoodTodayHistoryPageNextBottom.icon-btn{
+   #btnAddGoal.icon-btn, #btnWishAdd.icon-btn, #btnWishManage.icon-btn, #btnWishGrid.icon-btn, #btnAddChild.icon-btn, #btnDelete.icon-btn, #btnEdit.icon-btn, #btnAddSubgoal.icon-btn, #btnDeleteChecklist.icon-btn, #btnMove.icon-btn, #btnMoveChecklist.icon-btn, #btnRelocate.icon-btn, #btnChecklistAdd.icon-btn, #btnFilter.icon-btn, .add-child-row #btnArchive.icon-btn, .add-goal-wrap #btnArchive.icon-btn, #btnSearch.icon-btn, #btnGoodTodayHistory.icon-btn, #btnGoodTodayWeekHistory.icon-btn, #btnGoodTodayWeekEdit.icon-btn, #btnGoodTodayAdd.icon-btn, #btnGoodTodayHistoryPagePrevBottom.icon-btn, #btnGoodTodayHistoryPageNextBottom.icon-btn{
     font-size:16px; font-weight:700; line-height:1; padding:5px 13px;
     min-width:32px; display:inline-flex; align-items:center; justify-content:center;
   }
@@ -995,7 +1010,7 @@
      glyph and the same 24px/2px box, so the two sections read alike. No colour override here:
      the base action-button rule's --muted is what #btnEdit uses, and overriding it to --text made
      the glyph near-white (#eef2f8) on the dark button — a white icon with nothing to read it. */
-   #btnEdit.icon-btn, #btnWishManage.icon-btn{ font-size:24px; padding:2px; }
+   #btnEdit.icon-btn, #btnWishManage.icon-btn, #btnWishGrid.icon-btn{ font-size:24px; padding:2px; }
   /* The wish header pair («+» and the pencil): one shared 42px box so the text glyph and
      the icon font line up exactly, like the «Хорошее сегодня» header pair. */
    #btnWishAdd.icon-btn{ min-width:42px; padding:5px 0; justify-content:center; }
@@ -1071,7 +1086,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.1.72';
+const APP_VERSION = '1.1.73';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -1441,7 +1456,7 @@ const STRINGS = {
     aboutTitle: 'О проекте',
     aboutText: 'Только важное помогает двигаться к важному без дедлайнов, давления и лишней сложности.\n\nВыберите цель, разделите её на подцели и маленькие шаги. Делайте главное в своём темпе — каждый завершённый шаг приближает к результату.\n\nЕсли сил или ресурсов стало меньше, цель можно архивировать: она не будет давить и влиять на прогресс. Вернитесь к ней позже, измените или отпустите.\n\nНе нужно успевать всё. Главное — бережно двигаться вперёд.\n\n— Владимир Соколов',
     instructionsTitle: 'Инструкция',
-    instructionsText: 'ЦЕЛИ И ПОДЦЕЛИ\nНажмите «+» рядом с «Важные сферы жизни», чтобы создать первую цель. Откройте её и нажмите «+» ещё раз, чтобы разбить на подцели — так можно дробить сколько угодно уровней вглубь, пока задача не станет по-настоящему простой. У цели без подцелей на её странице есть чек-бокс «выполнено».\n\nЧЕК-ЛИСТ\nВместо простого чек-бокса цель можно превратить в список пунктов — кнопка «Добавить чек-лист» на её странице. Процент выполнения тогда считается по отмеченным пунктам, а не по одному общему флажку.\n\nСРОК ВЫПОЛНЕНИЯ\nНа странице цели можно указать дату (день, месяц, год — поля переключаются сами по мере ввода). Дату раньше сегодняшнего дня система не примет.\n\nГЛАВНЫЕ ЦЕЛИ\nЗвёздочка ☆ на странице цели или пункта чек-листа добавляет его в блок «Главные цели» на главном экране — не больше 5 одновременно, чтобы список не превращался в ещё один общий список дел. Так самое важное всегда под рукой, не надо искать его в глубине дерева целей.\n\nАРХИВ\nЗначок архива на странице цели скрывает её (делает бледной) и убирает из расчёта процента выполнения — удобно для целей, которые отложены, но удалять не хочется. Архивная цель автоматически уходит в конец списка.\n\nРЕДАКТИРОВАНИЕ, УДАЛЕНИЕ, ПОРЯДОК, ПЕРЕНОС\nНад списком целей есть кнопки: карандаш — переименовать, «−» — удалить, «↕» — включить режим перемещения (после этого зажмите и перетащите карточку, чтобы изменить порядок). Кнопка-перенос перемещает цель вместе со всем содержимым в другую цель или подцель.\n\nСОРТИРОВКА\nКнопка-фильтр (воронка) рядом с «↕» открывает меню порядка списка: «По убыванию» (сначала самые выполненные цели), «По возрастанию» (наоборот) и «Пользовательский» — ваш собственный порядок перетаскиванием, он включён по умолчанию. Работает и на главном экране, и внутри любой подцели. Архивированные цели всегда остаются в конце списка, пока не станут активными.\n\nРАЗВЕРНУТЬ И РАЗБИТЬ\nКнопка «Развернуть» превращает цель без подцелей в цель с двумя подцелями-чекбоксами, а «Разбить на 6 подшагов» делит её сразу на шесть шагов.\n\nКОЛЕСО БАЛАНСА\nВнизу главного экрана — колесо со всеми целями верхнего уровня: сектор заполнен, когда в сфере нет незавершённых целей. Выполнение цели заполняет сектор, частично отмеченный чек-лист даёт дробный вклад (2 из 4 — половина), новая невыполненная цель уменьшает сектор, а удаление выполненной цели показатель не снижает.\n\nХорошее сегодня\nПод колесом — необязательный дневник: короткая запись о том, что было хорошего (форма открывается кнопкой «+» и сворачивается той же кнопкой), бейдж прогресса за день и мотивирующая строка. Кнопка «История» открывает все записи: по 7 на страницу, переход по страницам, иконка календаря для прыжка к нужной дате, правка и удаление с подтверждением прямо в истории. Ниже отдельным блоком идут «Победы за неделю» — три вопроса недельной рефлексии («Что было хорошего на этой неделе?», «Чему я научился на этой неделе?», «Что хочу продолжить на следующей неделе?»): один отчёт на экран, переход «← Предыдущая неделя» / «Следующая неделя →», пропущенную неделю можно заполнить позже.\n\nКарта желаний\nПод дневником — необязательная доска мечт: фото с подписью на карточке, крупный просмотр по тапу, правка подписи и удаление с подтверждением; блок сворачивается по тапу на заголовок, как колесо баланса. Фото с меткой «Это я» всегда идёт первым, а порядок остальных карточек меняется вручную: в меню доски (кнопка управления карточками) нажмите «↕» у нужной карточки, затем «→» на том месте, куда её поставить. Фото синхронизируются между устройствами через Firebase: байты лежат в Firestore, локальный кэш в IndexedDB работает офлайн; без входа в аккаунт доска остаётся только на этом устройстве. Файл больше 800 КБ в облако не уйдёт — приложение честно скажет об этом и предложит повторить.\n\nЛИЧНЫЙ КАБИНЕТ И СИНХРОНИЗАЦИЯ\nБез аккаунта тоже можно пользоваться — все данные хранятся прямо в этом браузере. Если нужно видеть свои цели на нескольких устройствах, создайте аккаунт (значок аккаунта в шапке) — дальше всё синхронизируется само. Если на устройстве уже были несохранённые локальные цели, при входе появится выбор, что оставить — данные без предупреждения никогда не перезаписываются.\n\nРЕЗЕРВНАЯ КОПИЯ\nЕсли вы вошли в аккаунт, в меню (☰) есть «Экспорт данных» — сохраняет файл с полной копией целей, и «Импорт данных» — восстанавливает из такого файла. Полезно делать копию время от времени, даже если вы пользуетесь аккаунтом.\n\nУСТАНОВКА И ОБНОВЛЕНИЕ\nНа телефоне сайт можно добавить на главный экран как отдельное приложение — шаги есть в меню («Установить приложение»). Если установленное приложение после обновления сайта выглядит по-старому, откройте меню (☰) и нажмите «Сбросить кэш» — иконку с домашнего экрана удалять не надо, обновление подтянется само.\n\nТЕМЫ И ЯЗЫК\nВ меню можно переключить оформление (тёмная, светлая, розовая тема) и язык интерфейса.',
+    instructionsText: 'ЦЕЛИ И ПОДЦЕЛИ\nНажмите «+» рядом с «Важные сферы жизни», чтобы создать первую цель. Откройте её и нажмите «+» ещё раз, чтобы разбить на подцели — так можно дробить сколько угодно уровней вглубь, пока задача не станет по-настоящему простой. У цели без подцелей на её странице есть чек-бокс «выполнено».\n\nЧЕК-ЛИСТ\nВместо простого чек-бокса цель можно превратить в список пунктов — кнопка «Добавить чек-лист» на её странице. Процент выполнения тогда считается по отмеченным пунктам, а не по одному общему флажку.\n\nСРОК ВЫПОЛНЕНИЯ\nНа странице цели можно указать дату (день, месяц, год — поля переключаются сами по мере ввода). Дату раньше сегодняшнего дня система не примет.\n\nГЛАВНЫЕ ЦЕЛИ\nЗвёздочка ☆ на странице цели или пункта чек-листа добавляет его в блок «Главные цели» на главном экране — не больше 5 одновременно, чтобы список не превращался в ещё один общий список дел. Так самое важное всегда под рукой, не надо искать его в глубине дерева целей.\n\nАРХИВ\nЗначок архива на странице цели скрывает её (делает бледной) и убирает из расчёта процента выполнения — удобно для целей, которые отложены, но удалять не хочется. Архивная цель автоматически уходит в конец списка.\n\nРЕДАКТИРОВАНИЕ, УДАЛЕНИЕ, ПОРЯДОК, ПЕРЕНОС\nНад списком целей есть кнопки: карандаш — переименовать, «−» — удалить, «↕» — включить режим перемещения (после этого зажмите и перетащите карточку, чтобы изменить порядок). Кнопка-перенос перемещает цель вместе со всем содержимым в другую цель или подцель.\n\nСОРТИРОВКА\nКнопка-фильтр (воронка) рядом с «↕» открывает меню порядка списка: «По убыванию» (сначала самые выполненные цели), «По возрастанию» (наоборот) и «Пользовательский» — ваш собственный порядок перетаскиванием, он включён по умолчанию. Работает и на главном экране, и внутри любой подцели. Архивированные цели всегда остаются в конце списка, пока не станут активными.\n\nРАЗВЕРНУТЬ И РАЗБИТЬ\nКнопка «Развернуть» превращает цель без подцелей в цель с двумя подцелями-чекбоксами, а «Разбить на 6 подшагов» делит её сразу на шесть шагов.\n\nКОЛЕСО БАЛАНСА\nВнизу главного экрана — колесо со всеми целями верхнего уровня: сектор заполнен, когда в сфере нет незавершённых целей. Выполнение цели заполняет сектор, частично отмеченный чек-лист даёт дробный вклад (2 из 4 — половина), новая невыполненная цель уменьшает сектор, а удаление выполненной цели показатель не снижает.\n\nХорошее сегодня\nПод колесом — необязательный дневник: короткая запись о том, что было хорошего (форма открывается кнопкой «+» и сворачивается той же кнопкой), бейдж прогресса за день и мотивирующая строка. Кнопка «История» открывает все записи: по 7 на страницу, переход по страницам, иконка календаря для прыжка к нужной дате, правка и удаление с подтверждением прямо в истории. Ниже отдельным блоком идут «Победы за неделю» — три вопроса недельной рефлексии («Что было хорошего на этой неделе?», «Чему я научился на этой неделе?», «Что хочу продолжить на следующей неделе?»): один отчёт на экран, переход «← Предыдущая неделя» / «Следующая неделя →», пропущенную неделю можно заполнить позже.\n\nКарта желаний\nПод дневником — необязательная доска мечт: фото с подписью на карточке, крупный просмотр по тапу, правка подписи и удаление с подтверждением; блок сворачивается по тапу на заголовок, как колесо баланса. Кнопка-сетка в шапке доски выбирает, сколько карточек в ряду — 2, 3 или 4 (по умолчанию 4, в установленном приложении 3), и запоминает выбор. Фото с меткой «Это я» всегда идёт первым, а порядок остальных карточек меняется вручную: в меню доски (кнопка управления карточками) нажмите «↕» у нужной карточки, затем «→» на том месте, куда её поставить. Фото синхронизируются между устройствами через Firebase: байты лежат в Firestore, локальный кэш в IndexedDB работает офлайн; без входа в аккаунт доска остаётся только на этом устройстве. Файл больше 800 КБ в облако не уйдёт — приложение честно скажет об этом и предложит повторить.\n\nЛИЧНЫЙ КАБИНЕТ И СИНХРОНИЗАЦИЯ\nБез аккаунта тоже можно пользоваться — все данные хранятся прямо в этом браузере. Если нужно видеть свои цели на нескольких устройствах, создайте аккаунт (значок аккаунта в шапке) — дальше всё синхронизируется само. Если на устройстве уже были несохранённые локальные цели, при входе появится выбор, что оставить — данные без предупреждения никогда не перезаписываются.\n\nРЕЗЕРВНАЯ КОПИЯ\nЕсли вы вошли в аккаунт, в меню (☰) есть «Экспорт данных» — сохраняет файл с полной копией целей, и «Импорт данных» — восстанавливает из такого файла. Полезно делать копию время от времени, даже если вы пользуетесь аккаунтом.\n\nУСТАНОВКА И ОБНОВЛЕНИЕ\nНа телефоне сайт можно добавить на главный экран как отдельное приложение — шаги есть в меню («Установить приложение»). Если установленное приложение после обновления сайта выглядит по-старому, откройте меню (☰) и нажмите «Сбросить кэш» — иконку с домашнего экрана удалять не надо, обновление подтянется само.\n\nТЕМЫ И ЯЗЫК\nВ меню можно переключить оформление (тёмная, светлая, розовая тема) и язык интерфейса.',
     menuTitle: 'Меню',
     themeDark: 'Тёмная тема',
     themeLight: 'Светлая тема',
@@ -1458,6 +1473,7 @@ const STRINGS = {
     wishImageError: 'Не удалось прочитать изображение — попробуйте другой файл.',
     wishEditTitle: 'Редактировать подпись',
     wishManage: 'Управление картинками',
+    wishGridTip: 'Карточек в ряду',
     wishManageTitle: 'Картинки',
     wishEditTip: 'Редактировать подпись',
     wishDeleteTip: 'Удалить карточку',
@@ -1688,7 +1704,7 @@ const STRINGS = {
     aboutTitle: 'About',
     aboutText: 'Only What Matters helps you move toward what matters — without deadlines, pressure, or needless complexity.\n\nPick a goal, break it into subgoals and small steps. Do the important things at your own pace — every completed step brings you closer to the result.\n\nIf your energy or resources run low, archive the goal: it will not weigh on you or affect your progress. Come back to it later — change it or let it go.\n\nYou don\'t have to do everything. The point is to move forward, gently.\n\n— Vladimir Sokolov',
     instructionsTitle: 'Instructions',
-    instructionsText: 'GOALS AND SUBGOALS\nTap "+" next to "Important Life Areas" to create your first goal. Open it and tap "+" again to break it into subgoals — you can nest as many levels as you like, until a task feels genuinely simple. A goal with no subgoals has a "done" checkbox on its own page.\n\nCHECKLIST\nInstead of a single checkbox, a goal can become a list of items — the "Add checklist" button on its page. Its completion percentage is then based on checked items, not one overall flag.\n\nDUE DATE\nA goal’s page lets you set a date (day, month, year — the fields advance automatically as you type). A date earlier than today won’t be accepted.\n\nMAIN GOALS\nThe ☆ star on a goal’s page or a checklist item adds it to the "Main Goals" block on the home screen — capped at 5 at a time, so it never turns into just another to-do list. That keeps the most important things within reach without digging through the whole tree.\n\nARCHIVE\nThe archive icon on a goal’s page dims it and excludes it from every completion percentage — handy for goals you’re pausing but don’t want to delete. An archived goal automatically moves to the end of its list.\n\nEDITING, DELETING, REORDERING, MOVING\nAbove the goal list: the pencil renames, "−" deletes, and "↕" turns on move mode (press and drag a card to reorder once it’s on). The relocate button moves a goal with all its contents into another goal or subgoal.\n\nSORTING\nThe filter button (funnel) next to "↕" opens a list-order menu: "Descending" (most complete goals first), "Ascending" (the reverse) and "Custom" — your own drag order, on by default. It works both on the home screen and inside any subgoal. Archived goals always stay at the end of the list until they become active again.\n\nEXPAND AND SPLIT\nThe "Expand" button turns a goal with no subgoals into one with two checkbox subgoals, and "Split into 6 steps" breaks it into six steps at once.\n\nBALANCE WHEEL\nAt the bottom of the home screen, the wheel shows every top-level goal at a glance: a sector is full when its area has no open goals. Completing a goal fills its sector, a half-ticked checklist counts fractionally (2 of 4 is half), a new open goal shrinks it, and deleting a completed goal never lowers it.\n\nGOOD TODAY AND WINS OF THE WEEK\nBelow the wheel sits an optional journal: a short note about what went well (the form opens with «+» and closes with the same button), a progress badge for the day and a motivation line. The History button opens every entry — seven per page, page navigation, a calendar icon to jump to a date, and editing/deleting (with confirmation) right there. Below it is Wins of the Week: three weekly reflection questions («What was good this week?», «What did I learn this week?», «What do I want to continue next week?») — one report per screen, «← Previous week» / «Next week →», and a missed week can be filled in later.\n\nWISH BOARD\nUnder the journal sits the optional dream board: a photo with a caption on a card, a large preview on tap, caption editing and deletion with confirmation; the block collapses by tapping its title, just like the balance wheel. The photo marked "It’s me" always comes first, and everything else can be reordered by hand: in the board menu (the card-manager button) tap «↕» on a card, then «→» on the slot it should take. Photos sync between devices through Firebase: the bytes live in Firestore, an IndexedDB cache keeps them offline; without an account the board stays on this device only. A file over 800 KB will not reach the cloud — the app says so and offers a retry.\n\nACCOUNT AND SYNC\nYou don’t need an account — everything is stored right in this browser. To see your goals on more than one device, create an account (the account button in the header) and it syncs automatically from then on. If a device already had unsaved local goals, signing in shows a choice of what to keep — data is never overwritten without asking first.\n\nBACKUP\nWhen you are signed in, the menu (☰) has "Export data", which saves a file with a full copy of your goals, and "Import data", which restores from one. Worth doing now and then even if you use an account.\n\nINSTALLING AND UPDATING\nOn a phone, the site can be added to the home screen as its own app — steps are in the menu ("Install app"). If the installed app still looks out of date after a site update, open the menu (☰) and tap "Clear cache" — you keep the home-screen icon, the update arrives by itself.\n\nTHEMES AND LANGUAGE\nThe menu also switches the look (dark, light, pink) and the interface language.',
+    instructionsText: 'GOALS AND SUBGOALS\nTap "+" next to "Important Life Areas" to create your first goal. Open it and tap "+" again to break it into subgoals — you can nest as many levels as you like, until a task feels genuinely simple. A goal with no subgoals has a "done" checkbox on its own page.\n\nCHECKLIST\nInstead of a single checkbox, a goal can become a list of items — the "Add checklist" button on its page. Its completion percentage is then based on checked items, not one overall flag.\n\nDUE DATE\nA goal’s page lets you set a date (day, month, year — the fields advance automatically as you type). A date earlier than today won’t be accepted.\n\nMAIN GOALS\nThe ☆ star on a goal’s page or a checklist item adds it to the "Main Goals" block on the home screen — capped at 5 at a time, so it never turns into just another to-do list. That keeps the most important things within reach without digging through the whole tree.\n\nARCHIVE\nThe archive icon on a goal’s page dims it and excludes it from every completion percentage — handy for goals you’re pausing but don’t want to delete. An archived goal automatically moves to the end of its list.\n\nEDITING, DELETING, REORDERING, MOVING\nAbove the goal list: the pencil renames, "−" deletes, and "↕" turns on move mode (press and drag a card to reorder once it’s on). The relocate button moves a goal with all its contents into another goal or subgoal.\n\nSORTING\nThe filter button (funnel) next to "↕" opens a list-order menu: "Descending" (most complete goals first), "Ascending" (the reverse) and "Custom" — your own drag order, on by default. It works both on the home screen and inside any subgoal. Archived goals always stay at the end of the list until they become active again.\n\nEXPAND AND SPLIT\nThe "Expand" button turns a goal with no subgoals into one with two checkbox subgoals, and "Split into 6 steps" breaks it into six steps at once.\n\nBALANCE WHEEL\nAt the bottom of the home screen, the wheel shows every top-level goal at a glance: a sector is full when its area has no open goals. Completing a goal fills its sector, a half-ticked checklist counts fractionally (2 of 4 is half), a new open goal shrinks it, and deleting a completed goal never lowers it.\n\nGOOD TODAY AND WINS OF THE WEEK\nBelow the wheel sits an optional journal: a short note about what went well (the form opens with «+» and closes with the same button), a progress badge for the day and a motivation line. The History button opens every entry — seven per page, page navigation, a calendar icon to jump to a date, and editing/deleting (with confirmation) right there. Below it is Wins of the Week: three weekly reflection questions («What was good this week?», «What did I learn this week?», «What do I want to continue next week?») — one report per screen, «← Previous week» / «Next week →», and a missed week can be filled in later.\n\nWISH BOARD\nUnder the journal sits the optional dream board: a photo with a caption on a card, a large preview on tap, caption editing and deletion with confirmation; the block collapses by tapping its title, just like the balance wheel. The grid button in the header picks how many cards per row — 2, 3 or 4 (4 by default, 3 in the installed app) — and remembers the choice. The photo marked "It’s me" always comes first, and everything else can be reordered by hand: in the board menu (the card-manager button) tap «↕» on a card, then «→» on the slot it should take. Photos sync between devices through Firebase: the bytes live in Firestore, an IndexedDB cache keeps them offline; without an account the board stays on this device only. A file over 800 KB will not reach the cloud — the app says so and offers a retry.\n\nACCOUNT AND SYNC\nYou don’t need an account — everything is stored right in this browser. To see your goals on more than one device, create an account (the account button in the header) and it syncs automatically from then on. If a device already had unsaved local goals, signing in shows a choice of what to keep — data is never overwritten without asking first.\n\nBACKUP\nWhen you are signed in, the menu (☰) has "Export data", which saves a file with a full copy of your goals, and "Import data", which restores from one. Worth doing now and then even if you use an account.\n\nINSTALLING AND UPDATING\nOn a phone, the site can be added to the home screen as its own app — steps are in the menu ("Install app"). If the installed app still looks out of date after a site update, open the menu (☰) and tap "Clear cache" — you keep the home-screen icon, the update arrives by itself.\n\nTHEMES AND LANGUAGE\nThe menu also switches the look (dark, light, pink) and the interface language.',
     menuTitle: 'Menu',
     themeDark: 'Dark theme',
     themeLight: 'Light theme',
@@ -1705,6 +1721,7 @@ const STRINGS = {
     wishImageError: "Couldn't read the image — try a different file.",
     wishEditTitle: 'Edit caption',
     wishManage: 'Manage pictures',
+    wishGridTip: 'Cards per row',
     wishManageTitle: 'Pictures',
     wishEditTip: 'Edit caption',
     wishDeleteTip: 'Delete card',
@@ -1814,6 +1831,12 @@ let relocatePickerPath = [];
 // dialog is open right now and reset on reload, like the other panel flags above.
 // Collapse state of the section itself — persisted like wheelOpen/mainGoalsOpen (default: open).
 let wishMapOpen = state.wishMapOpen !== false;
+// Плотность доски: 2/3/4 карточки в ряду. Пусто = умолчанию: 4 в вебе, 3 в установленном приложении
+// (на телефоне 4 в ряд — клетка, карточка квадратная). Выбор хранится в state, поэтому он
+// переживает перезагрузку и приезжает на другие устройства, как и свёрнутость доски.
+let wishGridCols = (state.wishGridCols === 2 || state.wishGridCols === 3 || state.wishGridCols === 4)
+  ? state.wishGridCols : null;
+let wishGridMenuOpen = false;   // всплывающий выбор плотности (кнопка в шапке доски)
 let wishAddOpen = false;      // add-card form (file picker + caption) is open
 let wishDraftSrc = null;      // dataURL of the picked image, pending Save
 let wishCaptionDraft = '';    // caption typed into the add form (survives re-renders)
@@ -3680,6 +3703,12 @@ function homeViewHTML(overallPct, hintHTML, mode, protectedCount){
              «+» and the manager would only clutter the header. They return on expand. */
           wishMapOpen ? `<div class="wish-header-actions">
           ${(wishAddOpen || (Array.isArray(state.wishMap) && state.wishMap.length >= WISH_MAX_CARDS)) ? '' : `<button id="btnWishAdd" class="icon-btn" data-tip="${t('wishAdd')}" aria-label="${t('wishAdd')}">+</button>`}
+          <div class="wish-grid-dropdown">
+            <button id="btnWishGrid" class="icon-btn" data-tip="${t('wishGridTip')}" aria-label="${t('wishGridTip')}"><i class="ti ti-layout-grid" aria-hidden="true"></i></button>
+            ${wishGridMenuOpen ? `<div class="filter-menu wish-grid-menu" id="wishGridMenu">
+              ${[2, 3, 4].map(n => `<button data-wish-cols="${n}" class="${wishGridCols === n ? 'active' : ''}">${n}</button>`).join('')}
+            </div>` : ''}
+          </div>
           ${(wishAddOpen || !(Array.isArray(state.wishMap) && state.wishMap.length)) ? '' : `<button id="btnWishManage" class="icon-btn" data-tip="${t('wishManage')}" aria-label="${t('wishManage')}"><i class="ti ti-edit" aria-hidden="true"></i></button>`}
         </div>` : ''}
       </div>`;
@@ -4057,7 +4086,8 @@ function wishMapSectionHTML(){
   }else{
     // Render in display order: the personal photo leads the board.
      const displayOrder = wishMapDisplayOrder(cards);
-     html += `<div class="wish-grid">` + displayOrder.map(i => {
+     const cols = wishGridCols === null ? (isStandalonePwa() ? 3 : 4) : wishGridCols;
+     html += `<div class="wish-grid" data-cols="${cols}">` + displayOrder.map(i => {
        const c = cards[i];
        const imgSrc = wishBlobUrlFor(c);
        // Every "no pixels on screen" case gets an explicit, honest state instead of a blank box.
@@ -5141,6 +5171,33 @@ function attachWishMapHandlers(){
       render();
     });
   });
+  // Плотность доски: кнопка-сетка открывает выбор 2/3/4, выбранное значение сохраняется (state →
+  // saveState → облако), как и свёрнутость доски. Закрытие по тапу вне — тот же приём, что у
+  // фильтра сортировки в «Важных сферах жизни».
+  on('btnWishGrid', 'click', (e)=>{
+    e.stopPropagation();
+    wishGridMenuOpen = !wishGridMenuOpen;
+    render();
+  });
+  document.querySelectorAll('[data-wish-cols]').forEach(el=>{
+    el.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      const n = parseInt(el.dataset.wishCols, 10);
+      if(n !== 2 && n !== 3 && n !== 4) return;
+      wishGridCols = n;
+      state.wishGridCols = n;
+      wishGridMenuOpen = false;
+      saveState();
+      render();
+    });
+  });
+  if(wishGridMenuOpen){
+    document.addEventListener('click', function closeWishGridMenu(){
+      wishGridMenuOpen = false;
+      document.removeEventListener('click', closeWishGridMenu);
+      render();
+    });
+  }
   // Card manager (header): one list of all pictures — pick one to edit or delete.
   on('btnWishManage', 'click', ()=>{
     wishManageOpen = !wishManageOpen;
