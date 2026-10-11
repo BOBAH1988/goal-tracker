@@ -94,6 +94,7 @@
        default canvas. */
     background:#0b0e17;
     overscroll-behavior:none;
+    touch-action:manipulation;
   }
   html[data-theme="light"]{ background:#f5f7fb; }
   html[data-theme="pink"]{ background:#fff0f5; }
@@ -102,6 +103,14 @@
      margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
      background:linear-gradient(160deg,#0b0e17,#141b2c 60%,#0f1420); color:var(--text); min-height:100vh;
      overscroll-behavior:none; overflow-x:hidden;
+     /* A double-tap must never zoom the page. It did: the app widened and ran off both edges, so
+        a stray double-tap left the user in a zoomed-in view with no way back except pinching.
+        `manipulation` keeps panning AND deliberate pinch-zoom (accessibility — someone with low
+        vision can still zoom on purpose) but takes the accidental double-tap zoom away, and as a
+        bonus removes the 300ms tap delay, so the PWA feels like a real app. The value is
+        intersected down the DOM: the drag handle (touch-action:none) and the cards (pan-y) keep
+        their own behaviour, nothing gets pan-locked. */
+     touch-action:manipulation;
      /* viewport-fit=cover lets the page use the full screen in an installed PWA, but then the
         notch / home-indicator area overlaps the content. These insets reserve it, so the header
         and the bottom of the list are never clipped or half-hidden ("шапка съезжает"). */
@@ -1048,7 +1057,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.1.62';
+const APP_VERSION = '1.1.63';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the

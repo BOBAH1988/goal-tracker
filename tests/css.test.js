@@ -97,6 +97,27 @@ test('CSS guard: PWA tooltips time out — a .tip-live bubble exists and the stu
   assert.equal(suppressed.length, 1, 'a touch standalone PWA must suppress the hanging :hover tooltip');
 });
 
+/* A double-tap used to zoom the page in the installed PWA: the app widened and ran off both
+   edges, and only a deliberate pinch-out got you back. touch-action:manipulation kills the
+   double-tap zoom while keeping panning and on-purpose pinch-zoom. */
+test('CSS guard: a double-tap never zooms the PWA (touch-action:manipulation on the shell)', () => {
+  const rules = splitCss(HTML);
+  for (const sel of ['html', 'body']) {
+    // splitCss keeps the leading comment inside the selector text, so match on the last token
+    const r = rules.find(x => x.selectors.some(s => s.split(/\s+/).pop() === sel));
+    assert.ok(r, sel + ' rule must exist');
+    assert.match(r.body, /touch-action:manipulation/,
+      sel + ' must set touch-action:manipulation — a missing one lets a double-tap zoom the app off-screen');
+  }
+  // The drag layer keeps its own gesture contract.
+  const drag = rules.find(x => /touch-action:none/.test(x.body));
+  assert.ok(drag, 'the drag handle must keep touch-action:none (drag-to-reorder)');
+  // Никакого maximum-scale/user-scalable в мете: они ломают зум для слабовидящих, а iOS их и так
+  // игнорирует — зум гасится жестом, а не запретом.
+  assert.doesNotMatch(HTML, /user-scalable\s*=\s*no|maximum-scale/,
+    'do not disable zoom in the viewport meta — touch-action is the right lever');
+});
+
 test('CSS guard: the narrow/PWA topbar moves the whole title wrap and puts ☰ last on its row', () => {
   const rules = splitCss(HTML);
   const narrow = rules.find(r => /@media \(max-width:480px\)/.test(r.selectors.join(' ')));
