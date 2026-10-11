@@ -355,6 +355,38 @@ test('merge: a card uploaded after the account document keeps its place (the van
   assert.deepEqual(Array.from(noTs.map(c => c.id)), ['old', 'new2'], 'no timestamps → keep, safer than losing');
 });
 
+/* Жалоба владельца: «подсказки длинные, у края вылазят за экран». Пузырь центрировался над
+   кнопкой, поэтому у кнопки у левого/правого края viewport он уходил за границу. Логика выбора
+   стороны вынесена в positionTip() — проверяем её на крайних положениях (ширина телефона). */
+test('tooltips: a bubble near the screen edge is pulled back inside (positionTip)', () => {
+  const t = boot();
+  vm.runInContext('window.innerWidth = 390;', t.ctx);
+  const mk = (left, width) => vm.runInContext(
+    '({ classList:{ _s:new Set(), add(c){ this._s.add(c); }, remove(c){ this._s.delete(c); }, contains(c){ return this._s.has(c); } },'
+    + ' getBoundingClientRect(){ return { left:' + left + ', right:' + (left + width) + ', width:' + width + ' }; } })', t.ctx);
+  const pos = vm.runInContext('positionTip', t.ctx);
+
+  const right = mk(330, 38);            // три кнопки шапки у правого края
+  pos(right);
+  assert.equal(right.classList.contains('tip-right'), true, 'a button at the right edge hugs the right');
+  assert.equal(right.classList.contains('tip-left'), false);
+
+  const left = mk(10, 38);              // кнопка у левого края
+  pos(left);
+  assert.equal(left.classList.contains('tip-left'), true, 'a button at the left edge hugs the left');
+
+  const mid = mk(160, 38);
+  pos(mid);
+  assert.equal(mid.classList.contains('tip-left'), false, 'a centred button is not shifted');
+  assert.equal(mid.classList.contains('tip-right'), false, 'a centred button is not shifted');
+
+  // Повторный вызов не копит классы и мусор на входе не роняет.
+  pos(right); pos(left); pos(mid);
+  assert.equal(right.classList.contains('tip-left'), false, 're-posicing replaces the classes');
+  pos(null); pos({}); pos(undefined);
+  assert.ok(true, 'garbage in does not throw');
+});
+
 test('manual move: the card takes the target slot, order is renumbered, the mark still leads', () => {
   const t = boot();
   t.app.setState(Object.assign(t.app.getState(), { wishMap: [

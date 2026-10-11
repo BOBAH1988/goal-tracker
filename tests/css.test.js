@@ -168,6 +168,25 @@ test('CSS guard: the narrow/PWA topbar moves the whole title wrap and puts ☰ l
    iOS reports `hover: hover` while still doing it, so a hover:none-only fix never fires there.
    Two independent defences must therefore exist: the hover painting is gated to real pointers,
    and the stuck-hover neutralisation also matches a coarse pointer. */
+/* Длинная подсказка у кнопки у краю вылезала за границу экрана (репорт владельца). Пузырь теперь
+   переносится по строкам с потолком ширины, а положение у края двигает positionTip(). */
+test('CSS guard: the tip bubble wraps instead of running off the screen', () => {
+  const rules = splitCss(HTML);
+  const tip = rules.find(r => r.selectors.some(s => /\[data-tip\]:hover::after/.test(s)));
+  assert.ok(tip, 'the tip bubble rule must exist');
+  const body = tip.body.replace(/\s+/g, ' ');
+  assert.match(body, /white-space:normal/, 'long labels must wrap instead of overflowing');
+  assert.match(body, /max-width:min\(64vw, ?240px\)/, 'and be capped so the wrap has a limit');
+  assert.match(body, /width:max-content/, 'short labels stay one line wide');
+  // Прижатие к краю: классы, которые вешает positionTip().
+  const hasLeft = rules.some(r => r.selectors.some(s => /\[data-tip\]\.tip-left::after/.test(s))
+    && /left:0/.test(r.body));
+  const hasRight = rules.some(r => r.selectors.some(s => /\[data-tip\]\.tip-right::after/.test(s))
+    && /right:0/.test(r.body));
+  assert.ok(hasLeft, 'a bubble at the left edge must be able to hug it');
+  assert.ok(hasRight, 'a bubble at the right edge must be able to hug it');
+});
+
 test('CSS guard: hover feedback is gated to real pointers, so no touch button can stay blue', () => {
   const rules = splitCss(HTML);
   const gated = rules.filter(r => /@media \(hover: hover\) and \(pointer: fine\)/.test(r.selectors.join(' ')));

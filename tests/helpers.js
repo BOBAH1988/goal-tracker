@@ -49,6 +49,7 @@ const EXPORT_SRC = `
    markWishUploadError, syncWishBoard, wishClearUserPhoto, WISH_MAX_UPLOAD_BYTES,
     WISH_MAX_CARDS, wishMapForCloud, mergeWishMapCloud, wishMapDisplayOrder, wishMoveCardTo,
     wishCloudReady, wishImagePath, wishImageType, wishBoardReady, wishSyncRetry, startCloudSync,
+    positionTip, printWishBoard,
     flushCloudPush, pushCloudStateNow, stateForCloud, scheduleCloudPush,
     getWishLastUploadError: () => wishLastUploadError,
    ensureGoodToday, goodTodayAllEntries, goodTodayEntriesFor, goodTodayTodayEntries,
