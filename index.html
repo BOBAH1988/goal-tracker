@@ -1118,7 +1118,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.1.84';
+const APP_VERSION = '1.1.85';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -3281,13 +3281,15 @@ function printWishBoard(){
   if(!cards.length) return;
   const cols = wishGridCols === null ? (isStandalonePwa() ? 3 : 4) : wishGridCols;
   const order = Array.from(wishMapDisplayOrder(cards));
-  // iOS PWA: window.print в Safari (и в standalone-приложении тем более) не
-  // существует — печать там живёт только в экране «Поделиться». Рисуем
-  // страницу в PNG и предлагаем её через navigator.share: в листе есть
-  // «Печать» (AirPrint). Без share — честная подсказка, а не молчание.
-  if(typeof window.print !== 'function'){
+  // iOS PWA: window.print в Safari (и в standalone-приложении тем более)
+  // либо отсутствует, либо не открывает диалог — надёжный путь к
+  // AirPrint на iPhone только через экран «Поделиться». Рисуем
+  // страницу в PNG и предлагаем её через navigator.share: в листе
+  // есть «Печать». Без share — честная подсказка, а не молчание.
+  if(typeof window.print !== 'function' || isIOSDevice()){
     shareWishBoardPng(order.map(i => cards[i]).filter(c => c && c.id), cols)
-      .then(shared => { if(!shared) showPrintHint(); });
+      .then(shared => { if(!shared) showPrintHint(); })
+      .catch(()=>showPrintHint());
     return;
   }
   // Узел создаётся здесь же и живёт вне #app, поэтому ищем его запросом, а не getElementById:
@@ -3384,11 +3386,18 @@ function printWishBoard(){
   try{ window.print(); }catch(e){ cleanup(); }
 }
 // ===== Печать в iOS PWA: страница в PNG через canvas → экран «Поделиться» =====
-// Возвращает true, когда картинка ушла в navigator.share. False — если движок
-// не умеет 2d-canvas / share (или пользователь отменил): вызывающая сторона
-// тогда показывает подсказку. Каждый шаг деградирует честно: картинка не
-// догрузилась — печатаем пометку, как на DOM-странице.
+// Возвращает true, когда картинка ушла в navigator.share. False — если
+// движок не умеет 2d-canvas / share (или пользователь отменил): вызывающая
+// сторона тогда показывает подсказку. Любая ошибка рисования ловится —
+// молчание недопустимо, владелец уже видел «ничего не происходит».
 async function shareWishBoardPng(cards, cols){
+  try{
+    return await drawWishBoardPng(cards, cols);
+  }catch(e){
+    return false;
+  }
+}
+async function drawWishBoardPng(cards, cols){
   const canvas = document.createElement('canvas');
   if(!canvas || !canvas.getContext) return false;
   const g = canvas.getContext('2d');
@@ -3472,13 +3481,11 @@ async function shareWishBoardPng(cards, cols){
   const blob = await new Promise(res => canvas.toBlob(res, 'image/png'));
   if(!blob || typeof File !== 'function') return false;
   const file = new File([blob], 'wish-board.png', {type: 'image/png'});
-  if(!(navigator.canShare && navigator.canShare({files: [file]}))) return false;
-  try{
-    await navigator.share({files: [file], title: t('wishMapTitle')});
-    return true;
-  }catch(e){
-    return false;   // отмена или ошибка листа — покажем подсказку
-  }
+  // canShare на части iOS отсутствует, хотя share({files}) работает —
+  // не гейтим на нём, а пробуем и ловим отказ (отмена пользователя — тоже false).
+  if(typeof navigator.share !== 'function') return false;
+  await navigator.share({files: [file], title: t('wishMapTitle')});
+  return true;
 }
 // Скруглённый прямоугольный путь (ctx.roundRect есть не везде — рисуем руками).
 function roundRectPath(g, x, y, w, h, r){

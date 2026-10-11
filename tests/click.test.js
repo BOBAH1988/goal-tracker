@@ -1073,19 +1073,24 @@ test('wish map: the print button builds one A4 page in the current matrix', asyn
   assert.equal(t.document.body.classList.contains('wish-printing'), false, 'and the marker class is gone');
 });
 
-/* iOS PWA: window.print в Safari/standalone не существует — раньше тап
-   «Печать» молча ничего не делал (узел создавался и сразу удалялся).
-   Теперь: страница рисуется в PNG и уходит в экран «Поделиться», где
-   есть «Печать» (AirPrint). jsdom не умеет 2d-canvas — поэтому здесь
-   проверяется честная деградация: подсказка вместо молчания. */
-test('wish map: where window.print is missing (iOS PWA), Print offers the share sheet, not silence', async () => {
-  const t = bootDom();
+/* iOS PWA: window.print в Safari не открывает диалог печати —
+   раньше тап «Печать» молча ничего не делал (узел создавался
+   и сразу удалялся). Теперь: страница рисуется в PNG и уходит
+   в экран «Поделиться», где есть «Печать» (AirPrint). jsdom
+   не умеет 2d-canvas — поэтому здесь проверяется честная
+   деградация: подсказка вместо молчания. */
+test('wish map: on iPhone, Print renders a PNG for the share sheet, not silence', async () => {
+  const t = bootDom(null, { userAgent: 'iPhone' });
   const cards = ['a', 'b', 'c', 'd'].map((id, i) =>
     ({ id, title: 'Карточка ' + (i + 1), imagePath: 'wishImages/' + id, order: i, uploadState: 'uploaded' }));
   t.app.setState(Object.assign(t.app.getState(), { wishMap: cards }));
   t.window.render();
-  // iOS: window.print отсутствует — только экран «Поделиться».
-  t.window.print = undefined;
+  // iPhone: путь принудительно share, даже если window.print
+  // формально существует (jsdom его определяет) — на нём
+  // диалог печати не открывается. Функции верхнего уровня
+  // классического скрипта — свойства window, так что ветвь
+  // переопределяется напрямую.
+  t.window.isIOSDevice = () => true;
   t.click('#btnWishPrint');
   await new Promise(r => setTimeout(r, 0));   // shareWishBoardPng — async
   assert.ok(!t.document.querySelector('#wishPrintRoot'),
