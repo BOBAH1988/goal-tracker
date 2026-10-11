@@ -59,6 +59,13 @@ function installFakeFirebase(ctx, opts) {
     collection: (name) => ({ doc: (id) => db.doc(name, id) }),
   });
   firestoreFactory.FieldValue = { serverTimestamp: () => 'server-ts' };
+  // The real SDK accepts bytes ONLY as its own Blob type — a raw Uint8Array is rejected with
+  // invalid-argument ("Unsupported field value: a custom Uint8Array object"). Mirror that here so
+  // the app's fromUint8Array() call is exercised and a regression to raw bytes fails loudly.
+  firestoreFactory.Blob = {
+    fromUint8Array: (u8) => ({ __cloudBlob: true, u8, toUint8Array: () => u8 }),
+    fromBase64String: (b) => ({ __cloudBlob: true, u8: Uint8Array.from(Buffer.from(b, 'base64')) }),
+  };
   ctx.firebase = { firestore: firestoreFactory };
   // The image documents: writes/reads/deletes are counted, with the failure switches.
   const wrapDoc = (ref, key) => ({
@@ -123,6 +130,7 @@ function makeSharedCloud() {
     } }),
   });
   firestoreFactory.FieldValue = { serverTimestamp: () => 'server-ts' };
+  firestoreFactory.Blob = { fromUint8Array: (u8) => ({ __cloudBlob: true, u8, toUint8Array: () => u8 }) };
   return { db, calls, firebase: { firestore: firestoreFactory },
            seedDoc: (key, data) => { db.store.set(key, data); } };
 }
@@ -158,7 +166,9 @@ test('save order: the file is uploaded BEFORE the metadata reaches Firestore', a
   assert.equal(calls.images[0].path, 'users/u1/wishImages/w1', 'image doc is users/{uid}/wishImages/{cardId}');
   assert.equal(calls.images[0].payload.type, 'image/webp', 'the document records WebP');
   assert.equal(calls.images[0].payload.uid, 'u1', 'the document carries its owner uid (rules check it)');
-  assert.equal(calls.images[0].payload.bytes.length, t.ctx.__blob.size, 'the raw bytes are stored, not base64');
+  assert.ok(calls.images[0].payload.bytes && calls.images[0].payload.bytes.__cloudBlob,
+    'bytes are wrapped in the Blob type Firestore accepts — raw Uint8Array is rejected with invalid-argument');
+  assert.equal(calls.images[0].payload.bytes.u8.length, t.ctx.__blob.size, 'the raw bytes are stored, not base64');
   // 2) the card only became an uploaded one after the put resolved
   const after = t.app.getState().wishMap[0];
   assert.equal(after.imagePath, 'wishImages/w1', 'imagePath set after upload');
@@ -411,6 +421,8 @@ test('the image document records the real content type (jpeg fallback engines)',
   assert.equal(calls.images.length, 1, 'one image document written');
   assert.equal(calls.images[0].path, 'users/u1/wishImages/j1', 'one document per card id');
   assert.equal(calls.images[0].payload.type, 'image/jpeg', 'a jpeg card is stored as image/jpeg');
+  assert.ok(calls.images[0].payload.bytes.__cloudBlob && calls.images[0].payload.bytes.u8.length === jpeg.size,
+    'and wrapped in the Blob type Firestore accepts');
   assert.equal(t.app.getState().wishMap[0].uploadState, 'uploaded', 'the card still reaches the cloud');
   // WebP stays WebP (the normal path).
   const webp = fakeBlob('webpbytes', 'image/webp');
@@ -458,7 +470,8 @@ test('two devices: a card uploaded on one device renders on the other', async ()
   const img = cloud.db.store.get('users/u1/wishImages/w1');
   assert.ok(img, 'the bytes live in their own document');
   assert.equal(img.type, 'image/webp');
-  assert.equal(img.bytes.length, A.ctx.__blob.size);
+  assert.ok(img.bytes && img.bytes.__cloudBlob, 'stored as the Blob type Firestore accepts');
+  assert.equal(img.bytes.u8.length, A.ctx.__blob.size);
   const doc = cloud.db.store.get('users/u1');
   assert.equal(doc.state.wishMap.length, 1, 'the metadata is in the account document');
   assert.equal(doc.state.wishMap[0].imagePath, 'wishImages/w1');

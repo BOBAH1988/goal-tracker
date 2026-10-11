@@ -1007,7 +1007,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.1.57';
+const APP_VERSION = '1.1.58';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -2998,12 +2998,15 @@ async function uploadWishCard(card){
   try{
     // Raw bytes, not base64: Firestore stores them natively, which keeps a card at its real size
     // instead of +33% for the encoding, and the document stays far below the 1 MiB limit.
+    // Firestore accepts bytes ONLY as its own Blob type — a raw Uint8Array is rejected with
+    // invalid-argument ("Unsupported field value: a custom Uint8Array object (found in field
+    // bytes)"), which is exactly what the «Фото не попало в облако (invalid-argument)» note was.
     const bytes = new Uint8Array(await blob.arrayBuffer());
     await wishImageDoc(card).set({
       uid: authUser.uid,
       type: wishImageType(blob),
       size: blob.size,
-      bytes: bytes,
+      bytes: firebase.firestore.Blob.fromUint8Array(bytes),
       updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     });
   }catch(e){
@@ -3044,9 +3047,12 @@ async function downloadWishImage(card){
     const snap = await wishImageDoc(card).get();
     if(!snap.exists) throw new Error('image-missing');
     const data = snap.data() || {};
-    const bytes = data.bytes;
-    if(!bytes || !bytes.length) throw new Error('image-empty');
-    const blob = new Blob([bytes], { type: data.type || 'image/webp' });
+    // Firestore hands bytes back as its OWN Blob (toUint8Array()). A plain typed array is
+    // accepted too, so a document written by any shape still restores on every device.
+    let raw = data.bytes;
+    if(raw && typeof raw.toUint8Array === 'function') raw = raw.toUint8Array();
+    if(!raw || !raw.length) throw new Error('image-empty');
+    const blob = new Blob([raw], { type: data.type || 'image/webp' });
     await wishCachePut(card.id, blob);
     wishRememberBlob(card.id, blob);
     const live = (state.wishMap || []).find(c => c.id === card.id);
