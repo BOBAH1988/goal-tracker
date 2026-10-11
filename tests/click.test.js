@@ -1564,3 +1564,117 @@ test('sphere reminder: interaction dates persist to localStorage and ride the cl
   const cloud = t2.app.stateForCloud(t2.app.getState());
   assert.equal(cloud.children[0].sphereActivityAt, old, 'other devices learn the date');
 });
+
+// ===== «Поделиться» (меню ☰): системное окно Web Share API с запасным копированием =====
+test('share: the menu item sits with the other items and reuses .menu-item', () => {
+  const t = bootDom();
+  t.click('#btnTopMenu');
+  const item = t.document.getElementById('btnShareMenuItem');
+  assert.ok(item, '«Поделиться» must be in the menu');
+  assert.match(item.textContent, /Поделиться/, 'the Russian label');
+  assert.ok(item.classList.contains('menu-item'), 'reuses the existing .menu-item styles — no new look');
+  assert.ok(t.document.getElementById('btnInstructionsMenuItem'), 'neighbour «Инструкция» stays');
+  assert.ok(t.document.getElementById('btnAboutMenuItem'), 'neighbour «О проекте» stays');
+  // Порядок в меню: сразу после «Инструкция» и до «Установить приложение».
+  const order = Array.from(t.document.querySelectorAll('.lang-menu .menu-item')).map((b) => b.id);
+  assert.ok(order.indexOf('btnShareMenuItem') === order.indexOf('btnInstructionsMenuItem') + 1,
+    'share sits right after Instructions');
+  const installAt = order.indexOf('btnInstallAppMenuItem');
+  assert.ok(installAt === -1 || installAt > order.indexOf('btnShareMenuItem'),
+    'share comes before the install item');
+});
+
+test('share: navigator.share opens the system sheet with the exact payload', async () => {
+  const t = bootDom();
+  const captured = [];
+  Object.defineProperty(t.window.navigator, 'share', {
+    value: async (data) => { captured.push(data); }, configurable: true,
+  });
+  t.click('#btnTopMenu');
+  t.click('#btnShareMenuItem');
+  await new Promise((r) => setTimeout(r, 30));
+  assert.equal(captured.length, 1, 'navigator.share called once');
+  // По полям: объект собран внутри realm jsdom, deepEqual против host-литерала не работает.
+  assert.equal(captured[0].title, 'Только важное — твой путь к счастливой жизни');
+  assert.equal(captured[0].text, 'Попробуй приложение “Только важное”: спокойный трекер целей без давления и сроков.');
+  assert.equal(captured[0].url, 'https://bobah1988.github.io/goal-tracker/');
+  assert.ok(!t.document.querySelector('.lang-menu'), 'the menu closes before the sheet opens');
+  assert.ok(!t.document.querySelector('.undo-toast'), 'no fallback toast when share works');
+});
+
+test('share: a user cancel (AbortError) is silent — no toast, nothing escapes', async () => {
+  const t = bootDom();
+  const errors = [];
+  t.window.addEventListener('error', (e) => errors.push(e.message));
+  Object.defineProperty(t.window.navigator, 'share', {
+    value: async () => { const err = new Error('cancelled'); err.name = 'AbortError'; throw err; },
+    configurable: true,
+  });
+  t.click('#btnTopMenu');
+  t.click('#btnShareMenuItem');
+  await new Promise((r) => setTimeout(r, 30));
+  assert.ok(!t.document.querySelector('.undo-toast'), 'a cancelled sheet shows nothing');
+  assert.deepEqual(errors, [], 'no console error on cancel');
+});
+
+test('share: without navigator.share the link is copied and a soft note appears', async () => {
+  const t = bootDom();
+  assert.equal(t.window.navigator.share, undefined, 'jsdom has no Web Share API');
+  const copied = [];
+  Object.defineProperty(t.window.navigator, 'clipboard', {
+    value: { writeText: async (s) => { copied.push(s); } }, configurable: true,
+  });
+  t.click('#btnTopMenu');
+  t.click('#btnShareMenuItem');
+  await new Promise((r) => setTimeout(r, 30));
+  assert.deepEqual(copied, ['https://bobah1988.github.io/goal-tracker/'], 'the link goes to the clipboard');
+  const toast = t.document.querySelector('.undo-toast');
+  assert.ok(toast, 'a soft notice appears');
+  assert.match(toast.textContent, /Ссылка скопирована/, 'and says the link was copied');
+});
+
+test('share: the Clipboard-API-less browser falls back to execCommand', async () => {
+  const t = bootDom();
+  const used = [];
+  t.document.execCommand = () => { used.push('exec'); return true; };
+  Object.defineProperty(t.window.navigator, 'clipboard', { value: undefined, configurable: true });
+  const before = t.document.querySelectorAll('textarea').length;
+  t.click('#btnTopMenu');
+  t.click('#btnShareMenuItem');
+  await new Promise((r) => setTimeout(r, 30));
+  assert.deepEqual(used, ['exec'], 'execCommand is the last-resort copy');
+  assert.match(t.document.querySelector('.undo-toast').textContent, /Ссылка скопирована/);
+  // Временный textarea удалён: их столько же, сколько было до клика (quote-input приложения).
+  assert.equal(t.document.querySelectorAll('textarea').length, before, 'the helper textarea is cleaned up');
+  const helper = Array.from(t.document.querySelectorAll('textarea'))
+    .find((ta) => ta.value === 'https://bobah1988.github.io/goal-tracker/');
+  assert.equal(helper, undefined, 'no textarea left holding the link');
+});
+
+test('share: English locale says Share and translates the fallback note', async () => {
+  const t = bootDom({ goal_tracker_lang: 'en' });
+  t.click('#btnTopMenu');
+  assert.match(t.document.getElementById('btnShareMenuItem').textContent, /Share/, 'the English label');
+  const copied = [];
+  Object.defineProperty(t.window.navigator, 'clipboard', {
+    value: { writeText: async (s) => { copied.push(s); } }, configurable: true,
+  });
+  t.click('#btnShareMenuItem');
+  await new Promise((r) => setTimeout(r, 30));
+  assert.deepEqual(copied, ['https://bobah1988.github.io/goal-tracker/'], 'the link goes to the clipboard');
+  assert.match(t.document.querySelector('.undo-toast').textContent, /Link copied/, 'translated note');
+});
+
+test('share: a failing clipboard shows the link instead of a false «copied»', async () => {
+  const t = bootDom();
+  Object.defineProperty(t.window.navigator, 'clipboard', {
+    value: { writeText: async () => { throw new Error('denied'); } }, configurable: true,
+  });
+  t.click('#btnTopMenu');
+  t.click('#btnShareMenuItem');
+  await new Promise((r) => setTimeout(r, 30));
+  const toast = t.document.querySelector('.undo-toast');
+  assert.ok(toast, 'something must be shown');
+  assert.ok(!/Ссылка скопирована/.test(toast.textContent), 'no false «copied» claim');
+  assert.ok(toast.textContent.includes('https://bobah1988.github.io/goal-tracker/'), 'the link itself is shown');
+});
