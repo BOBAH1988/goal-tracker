@@ -15,13 +15,15 @@ test('esc: neutralizes HTML metacharacters', () => {
   assert.equal(esc(undefined), '');
 });
 
-test('barColor: green >= 70, yellow >= 40, red below', () => {
+test('barColor: 75+ green, 50+ yellow, 25+ orange, below soft light red', () => {
   assert.equal(barColor(100), 'var(--green)');
-  assert.equal(barColor(70), 'var(--green)');
-  assert.equal(barColor(69), 'var(--yellow)');
-  assert.equal(barColor(40), 'var(--yellow)');
-  assert.equal(barColor(39), 'var(--red)');
-  assert.equal(barColor(0), 'var(--red)');
+  assert.equal(barColor(75), 'var(--green)');
+  assert.equal(barColor(74), 'var(--yellow)');
+  assert.equal(barColor(50), 'var(--yellow)');
+  assert.equal(barColor(49), 'var(--orange)');
+  assert.equal(barColor(25), 'var(--orange)');
+  assert.equal(barColor(24), 'var(--red-soft)');
+  assert.equal(barColor(0), 'var(--red-soft)');
 });
 
 test('isoToday: local YYYY-MM-DD, zero-padded', () => {

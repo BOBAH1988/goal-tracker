@@ -539,6 +539,25 @@ test('today block: action button is trash by default, checkmark only during acti
   assert.ok(t.document.querySelector('[data-today-edit="2"]').classList.contains('done'), 'done input must get .done class after toggle');
 });
 
+test('overall progress block: «Путь к балансу» title carries the percentage colour band', () => {
+  const t = bootDom();
+  // 0% (every goal open) → soft light red band.
+  t.app.setState({ name: 'root', children: [leaf(false), leaf(false)] });
+  t.window.render();
+  const h2 = () => t.document.querySelector('.overall h2');
+  assert.ok(h2().textContent.includes('Путь к балансу'),
+    'the block is «Путь к балансу» now (owner rename, was «Общий прогресс»)');
+  assert.match(h2().getAttribute('style'), /var\(--red-soft\)/, 'below 25% must paint the soft light red');
+  // 50% (half the goals done) → yellow.
+  t.app.setState({ name: 'root', children: [leaf(true), leaf(false)] });
+  t.window.render();
+  assert.match(h2().getAttribute('style'), /var\(--yellow\)/, '50–74% must paint yellow');
+  // 100% → green.
+  t.app.setState({ name: 'root', children: [leaf(true), leaf(true)] });
+  t.window.render();
+  assert.match(h2().getAttribute('style'), /var\(--green\)/, '75%+ must paint green');
+});
+
 // ===== Overall progress block: motivational quotes row =====
 test('overall progress block: shows quote row with refresh button, clicking refresh updates state', () => {
   const t = bootDom();

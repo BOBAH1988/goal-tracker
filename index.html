@@ -72,19 +72,19 @@
   /* ===== Design tokens: base colors + light/pink themes ===== */
   :root{
     --bg:#0f1420; --card:#1a2233; --card2:#20293d; --text:#eef2f8; --muted:#8a93a6;
-    --green:#3ecf8e; --yellow:#f2b84b; --red:#e5645a; --accent:#5b8cff; --border:#2a3348; --track:#0c1120;
+    --green:#3ecf8e; --yellow:#f2b84b; --orange:#dd8a4f; --red:#e5645a; --red-soft:#eb8478; --accent:#5b8cff; --border:#2a3348; --track:#0c1120;
     color-scheme: dark;
   }
   /* Light theme — clean, bright, high-contrast on white. */
   :root[data-theme="light"]{
     --bg:#f5f7fb; --card:#ffffff; --card2:#eef1f7; --text:#1a2233; --muted:#5c6577;
-    --green:#2fa876; --yellow:#c98a1f; --red:#d1483f; --accent:#3b6fe0; --border:#dbe1ea; --track:#e4e9f2;
+    --green:#2fa876; --yellow:#c98a1f; --orange:#c06d24; --red:#d1483f; --red-soft:#e06860; --accent:#3b6fe0; --border:#dbe1ea; --track:#e4e9f2;
     color-scheme: light;
   }
   /* Pink theme — soft pastel pink palette. */
   :root[data-theme="pink"]{
     --bg:#fff0f5; --card:#ffffff; --card2:#ffe4ef; --text:#5a2340; --muted:#a1657f;
-    --green:#3ecf9e; --yellow:#e0a23f; --red:#e0567e; --accent:#ff6fa5; --border:#f6c9dd; --track:#ffe0ec;
+    --green:#3ecf9e; --yellow:#e0a23f; --orange:#e08a55; --red:#e0567e; --red-soft:#ef7d9f; --accent:#ff6fa5; --border:#f6c9dd; --track:#ffe0ec;
     color-scheme: light;
   }
   *{box-sizing:border-box;}
@@ -1003,7 +1003,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.1.53';
+const APP_VERSION = '1.1.54';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -1180,7 +1180,7 @@ const STRINGS = {
     home: 'Главная',
     back: 'Назад',
     tipBack: 'На уровень выше',
-    overallProgress: 'Общий прогресс',
+    overallProgress: 'Путь к балансу',
     mainGoals: 'Важные сферы жизни',
     addGoal: 'Добавить',
     editGoal: 'Изменить',
@@ -1423,7 +1423,7 @@ const STRINGS = {
     home: 'Home',
     back: 'Back',
     tipBack: 'Go up one level',
-    overallProgress: 'Overall Progress',
+    overallProgress: 'Path to Balance',
     mainGoals: 'Important Life Areas',
     addGoal: 'Add',
     editGoal: 'Edit',
@@ -3135,10 +3135,14 @@ function doImportData(file){
   };
   reader.readAsText(file);
 }
+/* Progress colour bands (owner spec, v1.1.54): 75%+ green, 50%+ yellow, 25%+ orange, below a
+   soft light red. All four are theme variables, so the bands stay muted in every theme — no
+   bright, out-of-palette shades. Shared by every bar and percentage in the app. */
 function barColor(pct){
-  if(pct>=70) return "var(--green)";
-  if(pct>=40) return "var(--yellow)";
-  return "var(--red)";
+  if(pct>=75) return "var(--green)";
+  if(pct>=50) return "var(--yellow)";
+  if(pct>=25) return "var(--orange)";
+  return "var(--red-soft)";
 }
 function esc(s){
   return (s||"").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
@@ -3358,7 +3362,7 @@ function nodeViewHTML(node, mode, protectedCount, hintHTML){
 function homeViewHTML(overallPct, hintHTML, mode, protectedCount){
   let html = '';
   html += `<div class="overall">
-    <div class="row"><h2>${t('overallProgress')}</h2><div class="pct" style="color:${barColor(overallPct)}">${overallPct}%</div></div>
+    <div class="row"><h2 style="color:${barColor(overallPct)}">${t('overallProgress')}</h2><div class="pct" style="color:${barColor(overallPct)}">${overallPct}%</div></div>
     <div class="bar"><div style="width:${overallPct}%; background:${barColor(overallPct)}"></div></div>
     <div class="priority-row quote-row">
       <textarea class="quote-input" data-quote-display readonly rows="1" placeholder="${t('quoteRefresh')}">${state.quoteText ? esc(state.quoteText) : ''}</textarea>
