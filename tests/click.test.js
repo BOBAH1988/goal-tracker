@@ -1007,6 +1007,13 @@ test('wish map: the print button builds one A4 page in the current matrix', asyn
   assert.equal(root.parentNode, t.document.body, 'and it lives outside #app so a re-render cannot drop it');
   const pageGrid = root.querySelector('[style*="grid-template-columns"]');
   assert.equal(pageGrid.children.length, 7, 'every card is on the page');
+  // Цвета темы: фон — градиент body, а не белый лист; текст — переменная темы.
+  assert.match(root.style.background, /linear-gradient/, 'the page background is the theme gradient');
+  assert.equal(root.style.color, 'rgb(238, 242, 248)', 'the text is the theme text colour (dark theme)');
+  // Заголовок — серифный, с акцентной линией и подзаголовком.
+  const head = root.firstChild;
+  assert.match(head.innerHTML, /Georgia/, 'the title uses the serif display face');
+  assert.match(head.getAttribute('style'), /border-bottom/, 'and sits above an accent rule');
   assert.match(pageGrid.getAttribute('style'), /repeat\(4,1fr\)/,
     'the page uses the SAME matrix as the board (4 per row)');
   // Карточка без локальных пикселей не превращается в дыру: там честная пометка.
