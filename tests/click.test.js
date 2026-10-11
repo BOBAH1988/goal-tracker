@@ -877,10 +877,13 @@ test('wish map: section collapses like the wheel and the choice persists', () =>
   assert.equal(t.app.getState().wishMapOpen, false, 'clicking the title must persist wishMapOpen=false');
   assert.ok(!t.document.querySelector('.wish-grid'), 'the card grid must disappear when collapsed');
   assert.ok(!t.document.querySelector('.wish-form'), 'the add form must not survive a collapse');
-  assert.ok(t.document.getElementById('btnWishAdd'), 'the «+» button must stay in the collapsed header');
+  // v1.1.55: header buttons hide with the collapsed board, same rule as «Важные сферы жизни».
+  assert.ok(!t.document.getElementById('btnWishAdd'), 'the «+» button must go with the collapsed board');
+  assert.ok(!t.document.querySelector('.wish-header-actions'), 'the whole header button group disappears');
   t.click('#wishToggle');
   assert.equal(t.app.getState().wishMapOpen, true, 'clicking again must persist wishMapOpen=true');
   assert.ok(t.document.getElementById('btnWishAddEmpty'), 'empty state must come back when expanded');
+  assert.ok(t.document.getElementById('btnWishAdd'), 'the «+» returns on expand');
 });
 
 test('wish map: at 15 cards «+» disappears and a calm note explains the limit', () => {
@@ -967,7 +970,10 @@ test('Победы за неделю: history browses one report per week and ed
     ],
   }));
   t.window.render();
-  // The weekly header carries the history button.
+  // The weekly header carries the history button — but only while the section is expanded
+  // (v1.1.55: header buttons hide together with the collapsed section, like every other module).
+  assert.ok(!t.document.getElementById('btnGoodTodayWeekHistory'), 'collapsed section hides its buttons');
+  t.click('#goodTodayWeekToggle');
   assert.ok(t.document.getElementById('btnGoodTodayWeekHistory'), 'history button must sit in the weekly header');
   t.click('#btnGoodTodayWeekHistory');
   assert.ok(t.document.getElementById('btnGoodTodayWeekHistoryBack'), 'history view opens');
@@ -999,6 +1005,9 @@ test('Победы за неделю: history saves a brand new report for the s
     ],
   }));
   t.window.render();
+  // Section starts collapsed → expand it first, its header buttons hide while collapsed (v1.1.55).
+  assert.ok(!t.document.getElementById('btnGoodTodayWeekHistory'), 'collapsed section hides its buttons');
+  t.click('#goodTodayWeekToggle');
   t.click('#btnGoodTodayWeekHistory');
   // Navigate to a week without a report and fill it in from history.
   t.click('#btnGoodTodayWeekNext');
@@ -1032,7 +1041,23 @@ test('Хорошее сегодня: «+» opens the form and «−» collapses 
   assert.equal(t.document.getElementById('goodTodayTextarea').value, '', 'the abandoned draft is discarded');
 });
 
-test('Победы за неделю: header «Изменить» icon opens the form even when collapsed', () => {
+test('Хорошее сегодня: the history button hides with the collapsed entries list', () => {
+  const t = bootDom();
+  t.app.setState(Object.assign(t.app.getState(), {
+    goodTodayEntries: [{ id: 'e1', date: '2026-10-05', text: 'Запись' }],
+  }));
+  t.window.render();
+  assert.ok(t.document.getElementById('btnGoodTodayHistory'), 'open section offers the history button');
+  t.click('#goodTodayEntriesToggle');
+  assert.equal(t.app.getState().goodTodayEntriesOpen, false, 'collapse persists');
+  assert.ok(!t.document.getElementById('btnGoodTodayHistory'),
+    'the history button hides with the collapsed list (v1.1.55)');
+  assert.ok(!t.document.getElementById('btnGoodTodayAdd'), 'the «+» lives inside the list body');
+  t.click('#goodTodayEntriesToggle');
+  assert.ok(t.document.getElementById('btnGoodTodayHistory'), 'the button returns on expand');
+});
+
+test('Победы за неделю: header icons appear with the section and open the saved report', () => {
   const t = bootDom();
   const curWeek = t.window.weekStartISO(t.window.isoToday());
   t.app.setState(Object.assign(t.app.getState(), {
@@ -1041,10 +1066,13 @@ test('Победы за неделю: header «Изменить» icon opens the
     ],
   }));
   t.window.render();
-  // Collapse the weekly section — the header icons stay reachable.
-  t.click('#goodTodayWeekToggle');
+  // The section starts collapsed, and its header icons hide with it — same rule as every other
+  // collapsible module (v1.1.55: buttons disappear together with the collapsed content).
   assert.ok(!t.document.getElementById('goodTodayWeekQ1'), 'the section starts collapsed');
-  // The edit icon must still be in the header, ahead of the history icon.
+  assert.ok(!t.document.getElementById('btnGoodTodayWeekEdit'), 'the edit icon hides with the collapsed section');
+  assert.ok(!t.document.getElementById('btnGoodTodayWeekHistory'), 'the history icon hides with the collapsed section');
+  // Expand → the icons come back, edit ahead of history.
+  t.click('#goodTodayWeekToggle');
   assert.ok(t.document.getElementById('btnGoodTodayWeekEdit'), 'the edit icon is in the header');
   assert.ok(t.document.getElementById('btnGoodTodayWeekHistory'), 'the history icon is in the header');
   const order = [...t.document.querySelectorAll('.section-title-row')]
@@ -1052,7 +1080,7 @@ test('Победы за неделю: header «Изменить» icon opens the
     .pop().innerHTML;
   assert.ok(order.indexOf('btnGoodTodayWeekEdit') < order.indexOf('btnGoodTodayWeekHistory'),
     'edit comes before history');
-  // Tapping edit expands the section AND loads the saved answers into the form.
+  // Tapping edit loads the saved answers into the form.
   t.click('#btnGoodTodayWeekEdit');
   assert.ok(t.document.getElementById('goodTodayWeekQ1'), 'the form opens');
   assert.equal(t.document.getElementById('goodTodayWeekQ1').value, 'Q1a', 'the saved answer is loaded');
@@ -1060,6 +1088,9 @@ test('Победы за неделю: header «Изменить» icon opens the
   t.click('#btnGoodTodayWeekEdit');
   assert.ok(!t.document.getElementById('goodTodayWeekQ1'), 'the icon toggles back');
   assert.match(t.document.getElementById('app').innerHTML, /Q1a/, 'the saved report is shown again');
+  // Collapsing again takes the icons with it.
+  t.click('#goodTodayWeekToggle');
+  assert.ok(!t.document.getElementById('btnGoodTodayWeekEdit'), 'collapsing hides the icons again');
 });
 
 /* Companion to the CSS guards in css.test.js: jsdom gives us a real DOM here, so we can assert

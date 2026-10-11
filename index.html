@@ -1003,7 +1003,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.1.54';
+const APP_VERSION = '1.1.55';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -3466,15 +3466,18 @@ function homeViewHTML(overallPct, hintHTML, mode, protectedCount){
     }
     // «Карта желаний» — optional vision board directly under the wheel. Fully independent:
     // cards live in state.wishMap only and never feed the wheel, ratings or any totals.
-     html += `<div class="section-title-row" style="margin-top:24px;">
-       <div class="section-title" id="wishToggle">
-         <span class="wheel-arrow">${wishMapOpen ? '▾' : '▸'}</span>${t('wishMapTitle')}
-       </div>
-       <div class="wish-header-actions">
-         ${(wishAddOpen || (Array.isArray(state.wishMap) && state.wishMap.length >= WISH_MAX_CARDS)) ? '' : `<button id="btnWishAdd" class="icon-btn" data-tip="${t('wishAdd')}" aria-label="${t('wishAdd')}">+</button>`}
-         ${(wishAddOpen || !(Array.isArray(state.wishMap) && state.wishMap.length)) ? '' : `<button id="btnWishManage" class="icon-btn" data-tip="${t('wishManage')}" aria-label="${t('wishManage')}"><i class="ti ti-edit" aria-hidden="true"></i></button>`}
-       </div>
-     </div>`;
+      html += `<div class="section-title-row" style="margin-top:24px;">
+        <div class="section-title" id="wishToggle">
+          <span class="wheel-arrow">${wishMapOpen ? '▾' : '▸'}</span>${t('wishMapTitle')}
+        </div>
+        ${/* Header buttons belong to the OPEN board, same rule as «Важные сферы жизни» (v1.1.53):
+             with the board collapsed its dialogs are closed too (see the wishToggle handler), so
+             «+» and the manager would only clutter the header. They return on expand. */
+          wishMapOpen ? `<div class="wish-header-actions">
+          ${(wishAddOpen || (Array.isArray(state.wishMap) && state.wishMap.length >= WISH_MAX_CARDS)) ? '' : `<button id="btnWishAdd" class="icon-btn" data-tip="${t('wishAdd')}" aria-label="${t('wishAdd')}">+</button>`}
+          ${(wishAddOpen || !(Array.isArray(state.wishMap) && state.wishMap.length)) ? '' : `<button id="btnWishManage" class="icon-btn" data-tip="${t('wishManage')}" aria-label="${t('wishManage')}"><i class="ti ti-edit" aria-hidden="true"></i></button>`}
+        </div>` : ''}
+      </div>`;
      if(wishMapOpen){
        html += wishMapSectionHTML();
      }
@@ -3506,7 +3509,9 @@ function goodTodaySectionHTML(){
     <div class="section-title" id="goodTodayEntriesToggle">
       <span class="wheel-arrow">${goodTodayEntriesOpen ? '▾' : '▸'}</span>${t('goodTodayEntriesTitle')}
     </div>
-    ${entries.length > 0 ? `<button id="btnGoodTodayHistory" class="icon-btn" data-tip="${t('goodTodayEntriesHistory')}" aria-label="${t('goodTodayEntriesHistory')}"><i class="ti ti-history" aria-hidden="true"></i></button>` : ''}
+    ${/* The history button is a page over the OPEN list — hidden together with it when the
+         section is collapsed, same rule as «Важные сферы жизни» / «Карта желаний». */
+      (goodTodayEntriesOpen && entries.length > 0) ? `<button id="btnGoodTodayHistory" class="icon-btn" data-tip="${t('goodTodayEntriesHistory')}" aria-label="${t('goodTodayEntriesHistory')}"><i class="ti ti-history" aria-hidden="true"></i></button>` : ''}
   </div>`;
   if(goodTodayEntriesOpen){
     // Subtitle row: «Что было хорошего сегодня?» plus the expand/collapse button.
@@ -3566,8 +3571,10 @@ function goodTodaySectionHTML(){
     <div class="section-title" id="goodTodayWeekToggle" style="flex:1;">
       <span class="wheel-arrow">${goodTodayWeekPauseOpen ? '▾' : '▸'}</span>${t('goodTodayWeekPauseTitle')}
     </div>
-    ${hasWeekReflection ? `<button id="btnGoodTodayWeekEdit" class="icon-btn" data-tip="${t('goodTodayEntriesEdit')}" aria-label="${t('goodTodayEntriesEdit')}"><i class="ti ti-edit" aria-hidden="true"></i></button>` : ''}
-    ${hasAnyWeekReflection ? `<button id="btnGoodTodayWeekHistory" class="icon-btn" data-tip="${t('goodTodayWeekHistory')}" aria-label="${t('goodTodayWeekHistory')}"><i class="ti ti-history" aria-hidden="true"></i></button>` : ''}
+    ${/* Edit / history act on the saved report — hidden with it while the section is collapsed,
+         same rule as the other collapsible modules. */
+      (goodTodayWeekPauseOpen && hasWeekReflection) ? `<button id="btnGoodTodayWeekEdit" class="icon-btn" data-tip="${t('goodTodayEntriesEdit')}" aria-label="${t('goodTodayEntriesEdit')}"><i class="ti ti-edit" aria-hidden="true"></i></button>` : ''}
+    ${(goodTodayWeekPauseOpen && hasAnyWeekReflection) ? `<button id="btnGoodTodayWeekHistory" class="icon-btn" data-tip="${t('goodTodayWeekHistory')}" aria-label="${t('goodTodayWeekHistory')}"><i class="ti ti-history" aria-hidden="true"></i></button>` : ''}
   </div>`;
   if(goodTodayWeekHistoryOpen){
     html += goodTodayWeekHistoryHTML();

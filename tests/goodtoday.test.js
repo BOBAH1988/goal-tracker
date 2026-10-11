@@ -640,10 +640,16 @@ test('goodTodaySectionHTML: weekly history view replaces the weekly section', ()
       { week: '2026-09-21', q1: 'B1', q2: 'B2', q3: 'B3', createdAt: 2, updatedAt: 2 },
     ],
   });
-  // Normal view: the weekly section and its history button are on screen.
-  vm.runInContext('goodTodayEntriesOpen = false; goodTodayWeekHistoryOpen = false; goodTodayWeekHistoryWeek = null;', t.ctx);
+  // Normal view: the weekly section and its history button are on screen (section expanded —
+  // v1.1.55: header buttons render only while the section is open).
+  vm.runInContext('goodTodayEntriesOpen = false; goodTodayWeekPauseOpen = true; goodTodayWeekHistoryOpen = false; goodTodayWeekHistoryWeek = null;', t.ctx);
   const normal = vm.runInContext('goodTodaySectionHTML()', t.ctx);
   assert.ok(normal.includes('id="btnGoodTodayWeekHistory"'), 'history button must sit in the weekly header');
+  // Collapsed section: the header buttons go with it.
+  vm.runInContext('goodTodayWeekPauseOpen = false;', t.ctx);
+  const collapsed = vm.runInContext('goodTodaySectionHTML()', t.ctx);
+  assert.ok(!collapsed.includes('id="btnGoodTodayWeekHistory"'), 'collapsed section hides its header buttons');
+  assert.ok(!collapsed.includes('id="btnGoodTodayWeekEdit"'), 'collapsed section hides the edit icon too');
   // History view: the weekly section is replaced by the history viewer.
   vm.runInContext('goodTodayWeekHistoryOpen = true;', t.ctx);
   const hist = vm.runInContext('goodTodaySectionHTML()', t.ctx);
@@ -662,7 +668,7 @@ test('goodTodaySectionHTML: weekly history paints the block title exactly once',
       { week: '2026-09-21', q1: 'B1', q2: 'B2', q3: 'B3', createdAt: 2, updatedAt: 2 },
     ],
   });
-  vm.runInContext('goodTodayWeekHistoryOpen = true; goodTodayWeekHistoryWeek = null; goodTodayWeekHistoryEditing = false;', t.ctx);
+  vm.runInContext('goodTodayWeekPauseOpen = true; goodTodayWeekHistoryOpen = true; goodTodayWeekHistoryWeek = null; goodTodayWeekHistoryEditing = false;', t.ctx);
   const html = vm.runInContext('goodTodaySectionHTML()', t.ctx);
   // The header carries the title once; the history viewer only adds the subtitle.
   const titleHits = (html.match(/Победы за неделю/g) || []).length;
