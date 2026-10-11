@@ -1118,7 +1118,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.1.85';
+const APP_VERSION = '1.1.86';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -2073,6 +2073,11 @@ let nameCheckStatus = '';
 let nameCheckTimer = null;
 let nameCheckToken = 0;
 let accountMenuOpen = false;
+// «Аккаунт»: имя/email не влезло на ширину устройства —
+// кнопка показывается только иконкой (как в установленном
+// приложении), чтобы меню не «скакало» от длины текста.
+// Вычисляется замером после render() — fitAccountButton().
+let accountIconOnly = false;
 // Home goals sort dropdown (#btnFilter). Transient UI state, not persisted (unlike the
 // chosen goalsSort, which lives on state.goalsSort so it round-trips like mainGoalsOpen).
 let filterMenuOpen = false;
@@ -3828,6 +3833,7 @@ function render(){
   attachHandlers();
   adjustWheelLabels();
   fitQuoteInput();
+  fitAccountButton();
 }
 
 /* The motivation line is a <textarea> (an <input> cannot wrap), so its height must follow the
@@ -3840,6 +3846,36 @@ function fitQuoteInput(){
   if(!el.scrollHeight) return; // jsdom / non-layout environment: nothing to measure
   el.style.height = (el.scrollHeight + 2) + 'px';
 }
+
+/* Кнопка «Аккаунт» на экране показывает имя/email. На узком
+   устройстве длинное имя обрезается (max-width:44vw +
+   многоточие), и ширина кнопки — а с ней и привязанное
+   меню — «скакает» от длины текста. Если текст обрезан,
+   оставляем только иконку: фиксированный квадрат 38 px,
+   как в установленном приложении. Обратно к тексту —
+   только при изменении ширины (resize ниже). Односторонний
+   замер: иконка всегда влезает, поэтому render() сходится
+   за один дополнительный проход, без цикла. */
+function fitAccountButton(){
+  if(!authUser || isStandalonePwa() || accountIconOnly) return;
+  const btn = document.getElementById('btnAccount');
+  if(!btn || !btn.clientWidth) return; // jsdom / non-layout environment
+  if(btn.scrollWidth > btn.clientWidth + 1){
+    accountIconOnly = true;
+    render();
+  }
+}
+let accountResizeTimer = null;
+window.addEventListener('resize', ()=>{
+  clearTimeout(accountResizeTimer);
+  accountResizeTimer = setTimeout(()=>{
+    if(!accountIconOnly) return;
+    // Ширина изменилась — замерим заново: влезло — вернём
+    // текст, всё ещё нет — fitAccountButton снова поставит иконку.
+    accountIconOnly = false;
+    render();
+  }, 200);
+});
 
 function nodeViewHTML(node, mode, protectedCount, hintHTML){
   let html = '';
@@ -4718,6 +4754,9 @@ function systemPanelsHTML(){
 }
 
 function topbarHTML(){
+  // Иконка вместо имени: в установленном приложении — всегда,
+  // на экране — когда имя не влезает на ширину устройства.
+  const accAsIcon = isStandalonePwa() || accountIconOnly;
   return `<div class="topbar">
     <div class="top-menu-dropdown">
       <button id="btnTopMenu" title="${t('menuTitle')}" aria-label="${t('menuTitle')}">☰</button>
@@ -4746,7 +4785,7 @@ function topbarHTML(){
       <button id="btnSearch" class="icon-btn" data-tip="${t('search')}" aria-label="${t('search')}"><i class="ti ti-search" aria-hidden="true"></i></button>
       ${cloudEnabled ? (authUser
         ? `<div class="account-dropdown">
-            <button id="btnAccount" ${isStandalonePwa() ? `data-tip="${esc(authUser.name || authUser.email)}" aria-label="${esc(authUser.name || authUser.email)}"` : `title="${esc(authUser.email)}"`}>${isStandalonePwa() ? '<i class="ti ti-user" aria-hidden="true"></i>' : esc(authUser.name || authUser.email)}</button>
+            <button id="btnAccount" ${accAsIcon ? `data-tip="${esc(authUser.name || authUser.email)}" aria-label="${esc(authUser.name || authUser.email)}"` : `title="${esc(authUser.email)}"`}>${accAsIcon ? '<i class="ti ti-user" aria-hidden="true"></i>' : esc(authUser.name || authUser.email)}</button>
             ${accountMenuOpen ? `<div class="account-menu">
               <button id="btnSignOutMenu" class="danger">${t('accountSignOut')}</button>
             </div>` : ''}

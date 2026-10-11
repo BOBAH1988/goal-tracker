@@ -1100,6 +1100,24 @@ test('wish map: on iPhone, Print renders a PNG for the share sheet, not silence'
     'and the hint explains the Safari path instead of doing nothing');
 });
 
+test('account button: a name that does not fit becomes the user icon', () => {
+  const t = bootDom();
+  // Войденный аккаунт: Firebase в тестах вырезан — флаги ставим напрямую.
+  t.app.setCloudEnabled(true);
+  t.app.setAuthUser({ name: 'Владимир', email: 'v@example.com' });
+  t.window.render();
+  assert.match(t.document.getElementById('btnAccount').textContent, /Владимир/,
+    'a short name fits the width — shown as text');
+  // jsdom не считает layout — «не влезает» задаём напрямую.
+  t.app.setAccountIconOnly(true);
+  t.window.render();
+  const btn = t.document.getElementById('btnAccount');
+  assert.ok(btn.querySelector('.ti-user'), 'the icon-only button shows the user glyph');
+  assert.equal(btn.textContent.trim(), '', 'and carries no name text');
+  assert.equal(btn.getAttribute('data-tip'), 'Владимир',
+    'the tip keeps the name (touch PWA rule)');
+});
+
 test('wish map: the grid-density default is 3 in an installed PWA', () => {
   const t = bootDom();
   // Установленное приложение: matchMedia отвечает «standalone» — ровно как на телефоне.

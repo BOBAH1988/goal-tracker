@@ -64,6 +64,11 @@ const EXPORT_SRC = `
   setWishDraft: (src, cap, isMe) => { wishDraftSrc = src; wishCaptionDraft = cap || ''; wishIsUserPhotoDraft = !!isMe; },
   // service-worker update plumbing (swRegistration is a lexical let, same reason as above)
   setSwRegistration: (r) => { swRegistration = r; },
+  // account button fit (lexical lets — tests set them directly,
+  // jsdom has no layout to measure the real clipping)
+  setAccountIconOnly: (v) => { accountIconOnly = !!v; },
+  setCloudEnabled: (v) => { cloudEnabled = !!v; },
+  setAuthUser: (u) => { authUser = u; },
   checkForAppUpdate,
   getPath: () => path,
   setPath: (v) => { path = v; },
