@@ -1117,7 +1117,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.1.79';
+const APP_VERSION = '1.1.80';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -3301,7 +3301,6 @@ function printWishBoard(){
   const cardBg = cssVar('--card', '#ffffff');
   const borderC = cssVar('--border', '#c9c9c9');
   const mutedC = cssVar('--muted', '#6b6b6b');
-  const accentC = cssVar('--accent', '#5b8cff');
   // Интерфейсный шрифт — как на экране; заголовок — тот же серifный «выделенный» набор, который
   // есть в любой системе (офлайн-first: никаких загрузок шрифтов не добавляем).
   const fontUi = '-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif';
@@ -3313,10 +3312,9 @@ function printWishBoard(){
     'width:190mm; height:277mm; margin:0; padding:0;' +
     'background:' + bodyBg + '; color:' + textC + ';';
   const title = document.createElement('div');
-  // Заголовок страницы: серifный, крупный, с воздухом и тонкой акцентной линией под ним.
-  title.style.cssText = 'flex:none; text-align:center; margin:0 0 5mm; padding-bottom:3mm;' +
-    'border-bottom:0.4mm solid ' + accentC + ';';
-  title.innerHTML = '<div style="font:600 8mm/1.15 ' + fontTitle + '; letter-spacing:0.4mm; color:' + textC + ';">'
+  // Заголовок страницы: крупный серifный текст без декора — ни полосы, ни мёртвого места.
+  title.style.cssText = 'flex:none; text-align:center; margin:0 0 4mm;';
+  title.innerHTML = '<div style="font:600 10mm/1.15 ' + fontTitle + '; letter-spacing:0.4mm; color:' + textC + ';">'
     + esc(t('wishMapTitle')) + '</div>';
   root.appendChild(title);
   const grid = document.createElement('div');

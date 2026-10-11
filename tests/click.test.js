@@ -1019,13 +1019,15 @@ test('wish map: the print button builds one A4 page in the current matrix', asyn
   // Цвета темы: фон — градиент body, а не белый лист; текст — переменная темы.
   assert.match(root.style.background, /linear-gradient/, 'the page background is the theme gradient');
   assert.equal(root.style.color, 'rgb(238, 242, 248)', 'the text is the theme text colour (dark theme)');
-  // Заголовок — серифный, с акцентной линией; подзаголовка со счётчиком нет.
+  // Заголовок — крупный серифный, без декоративной полосы и мёртвого места.
   const head = root.firstChild;
   assert.match(head.innerHTML, /Georgia/, 'the title uses the serif display face');
-  assert.match(head.getAttribute('style'), /border-bottom/, 'and sits above an accent rule');
+  assert.match(head.innerHTML, /10mm/, 'and is 25% larger than before (8mm → 10mm)');
   assert.equal(head.children.length, 1, 'the print header is a bare title');
   assert.ok(!/·/.test(head.textContent) && !/Cards per row|Карточек в ряду/.test(head.textContent),
     'and carries no card-count subtitle');
+  assert.ok(!/border-bottom|padding-bottom/.test(head.getAttribute('style')),
+    'no accent bar and no dead space above the grid');
   assert.match(pageGrid.getAttribute('style'), /repeat\(4,1fr\)/,
     'the page uses the SAME matrix as the board (4 per row)');
   // Карточка без локальных пикселей не превращается в дыру: там честная пометка.
