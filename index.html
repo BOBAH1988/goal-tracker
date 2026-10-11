@@ -1171,7 +1171,7 @@
    .wheel-sector-hit{fill:transparent; cursor:pointer; transition:fill-opacity .15s ease, stroke .15s ease; stroke:transparent; pointer-events:all; outline:none;}
    .wheel-sector-hit:focus-visible{outline:2px solid var(--accent); outline-offset:1px;}
    .wheel-sector-hit.is-active{fill:var(--accent); fill-opacity:.14; stroke:var(--accent); stroke-width:2;}
-   .wheel-hint{font-size:12px; color:var(--muted); text-align:center; margin:-6px 0 0; padding:0 8px 2px;}
+    .wheel-hint{font-size:12px; color:var(--muted); text-align:center; margin:-16px 0 0; padding:0 8px 2px;}
    /* Карточка сферы с раскрытым деревом — акцентная рамка, связь «сектор ↔ карточка». */
    .grid-goals .card.is-open{border-color:var(--accent); box-shadow:0 0 0 1px var(--accent);}
    /* Дерево сферы: аккордеон между сеткой сфер и колесом. Цвета — только переменные тем. */
@@ -1212,7 +1212,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.1.97';
+const APP_VERSION = '1.1.98';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -4503,8 +4503,7 @@ function homeViewHTML(overallPct, hintHTML, mode, protectedCount){
       // (activeChildren выбрасывает архивные, индексы сдвигаются), activeIdx — раскрытая сфера.
       const targets = [];
       state.children.forEach((c, i) => { if(!c.archived) targets.push(i); });
-      html += `<div class="wheel-wrap" id="wheelWrap">${wheelHTML(activeChildren(state), { targets, activeIdx: expandedSphereIdx, interactive: !!targets.length })}</div>`;
-      html += `<div class="wheel-hint">${t('wheelSectorHint')}</div>`;
+      html += `<div class="wheel-wrap" id="wheelWrap">${wheelHTML(activeChildren(state), { targets, activeIdx: expandedSphereIdx, interactive: !!targets.length })}<div class="wheel-hint">${t('wheelSectorHint')}</div></div>`;
     }
     // «Карта желаний» — optional vision board directly under the wheel. Fully independent:
     // cards live in state.wishMap only and never feed the wheel, ratings or any totals.
