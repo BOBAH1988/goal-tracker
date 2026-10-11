@@ -118,6 +118,27 @@ test('CSS guard: a double-tap never zooms the PWA (touch-action:manipulation on 
     'do not disable zoom in the viewport meta — touch-action is the right lever');
 });
 
+/* A long press in the installed app opened the copy/paste selection menu — easy to fire by
+   accident while scrolling, and a native app never does that for chrome text. The fix lives in
+   the standalone block and exempts real fields, so your own goal text stays selectable. */
+test('CSS guard: the standalone PWA has no accidental text-copy callout', () => {
+  const rules = splitCss(HTML);
+  // The PLAIN standalone block — not the hover:none variant, and not the comma list that also
+  // carries max-width:480px. splitCss keeps the leading comment and splits media lists on the
+  // comma, so anchor on the query ENDING the selector string.
+  const standalone = rules.find(r => /@media \(display-mode: standalone\)\s*$/.test(r.selectors.join(' ').trim()));
+  assert.ok(standalone, 'the standalone block must exist');
+  const body = standalone.body.replace(/\s+/g, ' ');
+  assert.match(body, /body\{[^}]*user-select:none[^}]*\}/,
+    'the PWA shell must disable text selection (a long press then has nothing to select)');
+  assert.match(body, /-webkit-touch-callout:none/,
+    'iOS needs -webkit-touch-callout:none — it is the property that hides the native copy menu');
+  assert.match(body, /input, textarea\{[^}]*-webkit-user-select:text/,
+    'real fields must stay selectable — you copy your own goal text from them');
+  assert.match(body, /input, textarea\{[^}]*-webkit-touch-callout:default/,
+    'and the callout must come back for them, or pasting into a field is impossible');
+});
+
 test('CSS guard: the narrow/PWA topbar moves the whole title wrap and puts ☰ last on its row', () => {
   const rules = splitCss(HTML);
   const narrow = rules.find(r => /@media \(max-width:480px\)/.test(r.selectors.join(' ')));

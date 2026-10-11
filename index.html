@@ -128,6 +128,15 @@
          smaller font here, and the field itself is a <textarea>, so a long quote wraps to a
          second line instead of being cut off (see .quote-input). */
       .quote-input{font-size:14px;}
+      /* A long press in the installed app must NOT open the copy/paste menu: on a phone that
+         gesture is easy to fire by accident while scrolling, and a native app never offers it for
+         chrome text. `-webkit-touch-callout:none` is the iOS half (it kills the native callout);
+         `user-select:none` disables selection so there is nothing to copy in the first place.
+         Real fields exempt themselves below — selecting your own goal text there must stay
+         possible. Scoped to the standalone PWA on purpose: in a browser tab text selection is a
+         normal, useful browser feature. */
+      body{ user-select:none; -webkit-user-select:none; -webkit-touch-callout:none; }
+      input, textarea{ user-select:text; -webkit-user-select:text; -webkit-touch-callout:default; }
     }
   html[data-theme="light"] body{ background:linear-gradient(160deg,#f5f7fb,#eef1f7 60%,#f5f7fb); }
   html[data-theme="pink"] body{ background:linear-gradient(160deg,#fff0f5,#ffe4ef 60%,#fff5f9); }
@@ -1057,7 +1066,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.1.63';
+const APP_VERSION = '1.1.64';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
