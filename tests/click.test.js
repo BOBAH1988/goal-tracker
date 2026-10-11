@@ -747,9 +747,9 @@ test('wish map: header card manager replaces per-card edit/delete buttons', () =
   t.window.render();
   // Cards no longer carry their own action buttons.
   assert.ok(t.document.querySelectorAll('.wish-card').length === 2, 'both cards render');
-  // v1.1.79: заголовок секции считает карточки — «У меня 2 карточки».
-  assert.ok(/У меня 2 карточки/.test(t.document.getElementById('wishToggle').textContent),
-    'the header counts the cards with the few plural form');
+  // v1.1.79: заголовок секции несёт статическую надпись «- у меня...».
+  assert.ok(/- у меня\.\.\./.test(t.document.getElementById('wishToggle').textContent),
+    'the header carries the static label');
   assert.ok(!t.document.querySelector('[data-wish-edit]'), 'cards must not carry an edit button');
   assert.ok(!t.document.querySelector('[data-wish-del]'), 'cards must not carry a delete button');
   assert.ok(!t.document.querySelector('.wish-actions'), 'the corner action group is gone');
@@ -882,10 +882,11 @@ test('wish map: cards never touch the wheel math and ride along in the backup im
 test('wish map: section collapses like the wheel and the choice persists', () => {
   const t = bootDom();
   assert.ok(t.document.getElementById('btnWishAddEmpty'), 'open by default — empty state visible');
-  // v1.1.79: «У меня N карточек» живёт в заголовке только в развернутом состоянии.
+  // v1.1.79: статическая надпись «- у меня...» живёт в заголовке
+  // только в развернутом состоянии.
   const countLabel = t.document.querySelector('.wish-count');
   assert.ok(countLabel, 'the card-count label rides with the title when open');
-  assert.ok(/У меня 0 карточек/.test(countLabel.textContent), 'and counts the cards (none yet)');
+  assert.ok(/- у меня\.\.\./.test(countLabel.textContent), 'the label is the static text');
   // v1.1.81: надпись в стиле заголовка «Карта желаний» — тот же кегль и вес.
   const titleStyle = t.window.getComputedStyle(t.document.getElementById('wishToggle'));
   const countStyle = t.window.getComputedStyle(countLabel);
