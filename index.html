@@ -616,20 +616,22 @@
      drop to a single column per row instead, same as installed PWA / narrow phone screens. */
   @media (max-width:480px){
     .grid-goals, .grid-hero-first{grid-template-columns:1fr;}
-    /* Narrow/PWA screens (installed app on a phone): the title gets its OWN full-width row, and
-       the three controls (search, account, ☰) share ONE line at the TOP-RIGHT corner, in DOM
-       order — `margin-left:auto` on .actions pushes it AND the ☰ behind it to the right edge, so
-       ☰ keeps the edge its dropdown anchors to. The title row itself is LEFT-aligned on purpose —
-       the owner asked for the title to always sit in the top-left corner, not centred.
+    /* Narrow/PWA screens (installed app on a phone): the title and the three controls sit on ONE
+       line at the top — title on the left, [search][account][☰] on the right. `margin-left:auto`
+       on .actions pushes it AND the ☰ behind it to the right edge, so ☰ keeps the edge its
+       dropdown anchors to; the title gets the flexible slot in between (flex:1 1 auto + min-width:0
+       so a long title wraps instead of pushing the buttons off the row).
+       The title row itself is LEFT-aligned on purpose — the owner asked for the name to always sit
+       in the top-left corner, not centred.
        Two bugs fixed here at once:
         1. order/width used to target .topbar h1, but h1 is a child of .app-title-wrap — the actual
            flex item of .topbar. The wrap therefore kept order 0 and stayed FIRST, so ☰ landed in
            the middle of the row right after the title. The wrap is the element that must move.
         2. that same misplaced `h1{order:3}` reordered the wrap's OWN column: the subtitle (order 0)
            jumped ABOVE the title («описание над названием сайта»). */
-    .actions{order:1; margin-left:auto;}
-    .top-menu-dropdown{order:2; margin-left:0;}
-    .app-title-wrap{order:3; width:100%; align-items:flex-start;}
+    .app-title-wrap{order:1; flex:1 1 auto; min-width:0; align-items:flex-start;}
+    .actions{order:2; margin-left:auto;}
+    .top-menu-dropdown{order:3; margin-left:0;}
     .topbar h1{justify-content:flex-start; margin-top:2px; font-size:17px;}
     .app-subtitle{text-align:left;}
     /* ☰ now sits at the right edge, so its dropdown must anchor to that edge, not to its left. */
@@ -1066,7 +1068,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.1.64';
+const APP_VERSION = '1.1.65';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
