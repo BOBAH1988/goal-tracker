@@ -140,7 +140,15 @@
     background:var(--card2); color:var(--muted); border:1px solid var(--border); border-radius:8px;
     padding:6px 12px; font-size:12px; cursor:pointer;
   }
-  .topbar button:hover{color:var(--text); border-color:var(--accent);}
+  /* Hover feedback is for REAL pointers only. On touch, WebKit deliberately keeps :hover sticky
+     after a tap (the note at [data-tip] below explains why), so the last-tapped control keeps its
+     hover look forever — that is the «↕ в PWA голубая, в вебе нормально» report: an accent border
+     that never goes away. Gating on (hover: hover) AND (pointer: fine) means a phone or tablet
+     (coarse pointer — and iOS, where (hover: none) is not reliable) never paints these rules at
+     all, so there is nothing left to stick. A mouse-driven desktop keeps the feedback. */
+  @media (hover: hover) and (pointer: fine){
+    .topbar button:hover{color:var(--text); border-color:var(--accent);}
+  }
   #btnTopMenu{padding:1px 2px !important; font-size:24px !important; line-height:1; display:flex; align-items:center; justify-content:center; border-color:transparent;}
   /* z-index:11 keeps the button (and its open dropdown) above .menu-backdrop (z-index:9) once
      the menu is open — it now sits in the top-left corner instead of inside .actions. */
@@ -187,28 +195,44 @@
     background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:8px;
     padding:6px 12px; font-size:12px; cursor:pointer; white-space:nowrap;
   }
-   #btnFilter:hover,#btnGoodTodayHistory:hover,#btnGoodTodayWeekHistory:hover,#btnGoodTodayWeekEdit:hover,#btnGoodTodayHistoryPagePrev:hover,#btnGoodTodayHistoryPageNext:hover,#btnGoodTodayHistoryPagePrevBottom:hover,#btnGoodTodayHistoryPageNextBottom:hover{color:var(--text); border-color:var(--accent);}
-  #btnEdit:hover{color:var(--text); border-color:var(--accent);}
-  #btnEdit.active{background:var(--accent); color:#fff; border-color:var(--accent);}
-  #btnDelete:hover{border-color:var(--red); color:var(--red);}
-  #btnDelete.active{background:var(--red); color:#fff; border-color:var(--red);}
-  #btnDeleteChecklist:hover{border-color:var(--red); color:var(--red);}
-  #btnDelete.active:hover{color:#fff;}
-  #btnMove:hover, #btnMoveChecklist:hover{color:var(--text); border-color:var(--accent);}
-  #btnMove.active, #btnMoveChecklist.active{background:var(--accent); color:#fff; border-color:var(--accent);}
-  #btnAddSubgoal:hover{color:var(--text); border-color:var(--accent);}
-  #btnAddSubgoal.active{background:var(--accent); color:#fff; border-color:var(--accent);}
-  #btnRelocate:hover{color:var(--text); border-color:var(--accent);}
-  #btnRelocate.active{background:var(--accent); color:#fff; border-color:var(--accent);}
-  .add-child-row #btnArchive:hover, .add-goal-wrap #btnArchive:hover{color:var(--text); border-color:var(--accent);}
+   /* Hover feedback is for REAL pointers only — same rule and the same reason as the .topbar one
+      above: on touch the hover look sticks after a tap, which is what made «↕» (and every other
+      action button) look permanently blue in the installed PWA while the web version looked
+      normal. A coarse pointer (touch/pen — and iOS, where (hover: none) does not reliably match)
+      never paints these, so nothing can stick; a mouse keeps the feedback. The REAL mode colours
+      (.active rules) are deliberately OUTSIDE this gate: they signal a working mode. */
+   @media (hover: hover) and (pointer: fine){
+     #btnFilter:hover,#btnGoodTodayHistory:hover,#btnGoodTodayWeekHistory:hover,#btnGoodTodayWeekEdit:hover,#btnGoodTodayHistoryPagePrev:hover,#btnGoodTodayHistoryPageNext:hover,#btnGoodTodayHistoryPagePrevBottom:hover,#btnGoodTodayHistoryPageNextBottom:hover{color:var(--text); border-color:var(--accent);}
+     #btnEdit:hover{color:var(--text); border-color:var(--accent);}
+     #btnDelete:hover{border-color:var(--red); color:var(--red);}
+     #btnDeleteChecklist:hover{border-color:var(--red); color:var(--red);}
+     #btnMove:hover, #btnMoveChecklist:hover{color:var(--text); border-color:var(--accent);}
+     #btnAddSubgoal:hover{color:var(--text); border-color:var(--accent);}
+     #btnRelocate:hover{color:var(--text); border-color:var(--accent);}
+     .add-child-row #btnArchive:hover, .add-goal-wrap #btnArchive:hover{color:var(--text); border-color:var(--accent);}
+   }
+   /* The REAL mode colours: OUTSIDE the gate on purpose — they signal a working mode (move /
+      delete / rename), not a hover affordance, and a touch user must see them just like a mouse
+      user does. They use .active, never :hover, so the sticky-hover problem cannot touch them. */
+   #btnEdit.active{background:var(--accent); color:#fff; border-color:var(--accent);}
+   #btnDelete.active{background:var(--red); color:#fff; border-color:var(--red);}
+   #btnMove.active, #btnMoveChecklist.active{background:var(--accent); color:#fff; border-color:var(--accent);}
+   #btnAddSubgoal.active{background:var(--accent); color:#fff; border-color:var(--accent);}
+   #btnRelocate.active{background:var(--accent); color:#fff; border-color:var(--accent);}
    .add-child-row #btnArchive.active, .add-goal-wrap #btnArchive.active{background:var(--accent); color:#fff; border-color:var(--accent);}
    /* Touch has no hover to LEAVE: after a tap a button stays stuck in :hover, and the accent
       border + brighter glyph make the «↕» reorder button in «Важные сферы жизни» look blue —
       different from the web version, where hover ends when the mouse moves away. Neutralize the
-      stuck hover on a touch-only standalone PWA (hover:none); a desktop-installed PWA driven by
-      a mouse keeps normal hover feedback. `:not(.active)` keeps the REAL mode colours (move /
-      delete / rename) visible — they signal an active mode and must not be washed out. */
-   @media (display-mode: standalone) and (hover: none){
+      stuck hover on a touch-only standalone PWA; a desktop-installed PWA driven by a mouse keeps
+      normal hover feedback. `:not(.active)` keeps the REAL mode colours (move / delete / rename)
+      visible — they signal an active mode and must not be washed out.
+      The condition is a LIST on purpose: `hover: none` alone is not enough, because iOS reports
+      `hover: hover` (it emulates a mouse) while still making :hover sticky after a tap — which is
+      exactly why the earlier hover:none-only rule never fired on the owner's iPhone and «↕» stayed
+      blue. `pointer: coarse` is the part that actually matches every touch device. The action
+      buttons above are additionally gated behind (hover: hover) and (pointer: fine), so this is
+      the second line of defence rather than the only one. */
+   @media (display-mode: standalone) and (hover: none), (display-mode: standalone) and (pointer: coarse){
      .topbar button:hover{color:var(--muted); border-color:var(--border);}
      #btnEdit:hover:not(.active), #btnDelete:hover:not(.active), #btnMove:hover:not(.active),
      #btnMoveChecklist:hover:not(.active), #btnAddSubgoal:hover:not(.active),
@@ -1008,7 +1032,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.1.60';
+const APP_VERSION = '1.1.61';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the

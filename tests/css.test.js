@@ -115,6 +115,25 @@ test('CSS guard: the narrow/PWA topbar moves the whole title wrap and puts ☰ l
     'a right-edge ☰ needs its dropdown anchored right');
 });
 
+/* On touch, WebKit deliberately keeps :hover sticky after a tap (see the long note in index.html).
+   iOS reports `hover: hover` while still doing it, so a hover:none-only fix never fires there.
+   Two independent defences must therefore exist: the hover painting is gated to real pointers,
+   and the stuck-hover neutralisation also matches a coarse pointer. */
+test('CSS guard: hover feedback is gated to real pointers, so no touch button can stay blue', () => {
+  const rules = splitCss(HTML);
+  const gated = rules.filter(r => /@media \(hover: hover\) and \(pointer: fine\)/.test(r.selectors.join(' ')));
+  assert.ok(gated.length >= 1, 'the hover/pointer:fine gate must exist');
+  const gateBody = gated.map(r => r.body).join(' ');
+  assert.match(gateBody, /#btnMove:hover, #btnMoveChecklist:hover/,
+    'the ↕ hover accent must live INSIDE the gate — outside it, it sticks after a tap');
+  assert.doesNotMatch(gateBody, /#btnMove\.active/,
+    'the real move-mode colour must stay OUTSIDE the gate: a touch user must still see the mode');
+  const neutral = rules.filter(r => /pointer: coarse/.test(r.selectors.join(' '))
+    && /#btnMove:hover:not\(\.active\)/.test(r.body));
+  assert.ok(neutral.length >= 1,
+    'the stuck-hover neutralisation must also match a coarse pointer (iOS says hover: hover)');
+});
+
 test('CSS guard: touch standalone PWA neutralizes the stuck hover on the goal action buttons', () => {
   const rules = splitCss(HTML);
   const block = rules.find(r =>
