@@ -314,6 +314,29 @@ test('delete: drops the Firestore projection AND removes the Storage object', as
   assert.equal(proj.length, 0, 'a deleted card is not in the cloud doc');
 });
 
+test('manual move: the card takes the target slot, order is renumbered, the mark still leads', () => {
+  const t = boot();
+  t.app.setState(Object.assign(t.app.getState(), { wishMap: [
+    { id: 'me', title: 'Я', isUserPhoto: true, order: 0 },
+    { id: 'a', title: 'A', order: 1 },
+    { id: 'b', title: 'B', order: 2 },
+    { id: 'c', title: 'C', order: 3 },
+  ]}));
+  assert.equal(vm.runInContext('wishMoveCardTo(3, 1)', t.ctx), true, 'C takes A’s slot');
+  assert.deepEqual(Array.from(vm.runInContext('state.wishMap.map(c => c.title)', t.ctx)).map(String),
+    ['Я', 'C', 'A', 'B'], 'the card moved inside the array — the board renders array order');
+  assert.deepEqual(Array.from(vm.runInContext('state.wishMap.map(c => c.order)', t.ctx)).map(Number),
+    [0, 1, 2, 3], 'order renumbered to match the new sequence (it travels to the cloud/backup)');
+  const first = Array.from(t.app.wishMapDisplayOrder(t.app.getState().wishMap))[0];
+  assert.equal(vm.runInContext('state.wishMap[' + first + '].id', t.ctx), 'me',
+    'the personal photo still leads the board wherever the moved card lands');
+  // nothing silly on the way in: same slot, out of range, wrong type — all no-ops
+  assert.equal(vm.runInContext('wishMoveCardTo(0, 0)', t.ctx), false, 'same slot changes nothing');
+  assert.equal(vm.runInContext('wishMoveCardTo(-1, 2)', t.ctx), false, 'out of range is refused');
+  assert.equal(vm.runInContext('wishMoveCardTo(99, 0)', t.ctx), false, 'out of range is refused');
+  assert.equal(vm.runInContext('wishMoveCardTo(1.5, 0)', t.ctx), false, 'non-integer is refused');
+});
+
 test('one isUserPhoto: deleting the personal photo leaves no stale mark', () => {
   const t = boot();
   t.app.setState({

@@ -941,6 +941,38 @@ test('wish map: «Это моё фото» is locked while another card holds th
   assert.ok(!t.document.querySelector('.wish-preview'), 'no empty preview until an image is chosen');
 });
 
+test('wish map manager: «↕» picks a card up and «here» puts it in that slot', () => {
+  const t = bootDom();
+  t.app.setState(Object.assign(t.app.getState(), {
+    wishMap: [
+      { id: 'a', title: 'Первое', imagePath: 'wishImages/a', order: 0, uploadState: 'uploaded' },
+      { id: 'b', title: 'Второе', imagePath: 'wishImages/b', order: 1, uploadState: 'uploaded' },
+      { id: 'c', title: 'Третье', imagePath: 'wishImages/c', order: 2, uploadState: 'uploaded' },
+    ],
+  }));
+  t.window.render();
+  t.click('#btnWishManage');
+  const titles = () => Array.from(t.document.querySelectorAll('.wish-manage-row .wish-manage-caption'))
+    .map(el => el.textContent.trim());
+  assert.deepEqual(titles(), ['Первое', 'Второе', 'Третье'], 'the manager lists display order');
+  // поднимаем «Третье»
+  t.click('[data-wish-move="2"]');
+  assert.ok(t.document.querySelector('.wish-manage-row.is-moving'),
+    'the picked-up row is marked, and the other actions are hidden while it is');
+  assert.equal(t.document.querySelectorAll('[data-wish-manage-del]').length, 0,
+    'no delete/edit button while a move is in progress');
+  // ставим на место «Первое»
+  t.click('[data-wish-place="0"]');
+  assert.deepEqual(titles(), ['Третье', 'Первое', 'Второе'], 'the card took the target slot');
+  assert.deepEqual(Array.from(t.app.getState().wishMap.map(c => c.order)).map(Number), [0, 1, 2],
+    'the order field is renumbered with the move');
+  // отмена: подняли и передумали
+  t.click('[data-wish-move="0"]');
+  t.click('[data-wish-move-cancel]');
+  assert.deepEqual(titles(), ['Третье', 'Первое', 'Второе'], 'cancel changes nothing');
+  assert.equal(t.document.querySelector('.wish-manage-row.is-moving'), null, 'and no row stays marked');
+});
+
 test('wish map: the personal photo renders first in the grid order', () => {
   const t = bootDom();
   t.app.setState(Object.assign(t.app.getState(), {
