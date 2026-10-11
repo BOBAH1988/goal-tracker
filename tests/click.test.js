@@ -941,7 +941,7 @@ test('wish map: «Это моё фото» is locked while another card holds th
   assert.ok(!t.document.querySelector('.wish-preview'), 'no empty preview until an image is chosen');
 });
 
-test('wish map: the personal photo renders in the centre of the grid order', () => {
+test('wish map: the personal photo renders first in the grid order', () => {
   const t = bootDom();
   t.app.setState(Object.assign(t.app.getState(), {
     wishMap: [
@@ -953,7 +953,7 @@ test('wish map: the personal photo renders in the centre of the grid order', () 
   }));
   t.window.render();
   const order = Array.from(t.document.querySelectorAll('.wish-card')).map(el => el.dataset.wishOpen);
-  assert.deepEqual(order, ['1', '2', '0', '3'], 'the marked card sits in the centre slot');
+  assert.deepEqual(order, ['0', '1', '2', '3'], 'the marked card leads the board');
   const marked = t.document.querySelector('.wish-card-me');
   assert.ok(marked, 'the marked card must carry the accent frame class');
   assert.equal(marked.dataset.wishOpen, '0', 'the frame is on the isUserPhoto card');

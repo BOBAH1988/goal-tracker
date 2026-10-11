@@ -238,7 +238,7 @@ test('mergeWishMapCloud: local image cache wins for src, cloud wins for metadata
   assert.equal(merged[1].imagePath, 'wishImages/c2');
 });
 
-test('wishMapDisplayOrder: the personal photo sits in the centre slot', () => {
+test('wishMapDisplayOrder: the personal photo leads the board (first slot)', () => {
   const t = boot();
   const cards = [
     { id: 'a', isUserPhoto: true },
@@ -246,7 +246,15 @@ test('wishMapDisplayOrder: the personal photo sits in the centre slot', () => {
     { id: 'c', isUserPhoto: false },
     { id: 'd', isUserPhoto: false },
   ];
-  assert.deepEqual(Array.from(t.app.wishMapDisplayOrder(cards)), [1, 2, 0, 3], 'centre of 4 = slot 2');
+  assert.deepEqual(Array.from(t.app.wishMapDisplayOrder(cards)), [0, 1, 2, 3], 'the marked photo comes first');
+  // It is a display pin, not a position: move the marker to a middle card and it still leads.
+  const moved = [
+    { id: 'a', isUserPhoto: false },
+    { id: 'b', isUserPhoto: false },
+    { id: 'c', isUserPhoto: true },
+    { id: 'd', isUserPhoto: false },
+  ];
+  assert.deepEqual(Array.from(t.app.wishMapDisplayOrder(moved)), [2, 0, 1, 3], 'the marked photo leads from anywhere');
   const plain = [{ id: 'a' }, { id: 'b' }, { id: 'c' }];
   assert.deepEqual(Array.from(t.app.wishMapDisplayOrder(plain)), [0, 1, 2], 'no mark → stored order');
 });

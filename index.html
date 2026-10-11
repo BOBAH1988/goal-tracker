@@ -1068,7 +1068,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.1.65';
+const APP_VERSION = '1.1.66';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -1461,7 +1461,7 @@ const STRINGS = {
     wishDeleteTip: 'Удалить карточку',
     wishDeleteConfirm: 'Удалить эту карточку?',
     wishLimitMsg: 'На карте уже {max} изображений. Удалите или замените одно, если хотите добавить новое.',
-    wishMyPhoto: 'Это я. Фото будет центральным на карте.',
+    wishMyPhoto: 'Это я. Фото будет первым на карте.',
     wishMyPhotoTaken: 'Личное фото уже выбрано — сначала снимите метку со старого',
     wishReplaceUserPhoto: 'Отметить это фото личным? Текущее личное фото будет снято с отметки, но останется на карте.',
     wishCropTitle: 'Обрежьте изображение',
@@ -1705,7 +1705,7 @@ const STRINGS = {
     wishDeleteTip: 'Delete card',
     wishDeleteConfirm: 'Delete this card?',
     wishLimitMsg: 'The board already has {max} images. Delete or replace one if you want to add another.',
-    wishMyPhoto: 'It’s me. The photo will be central on the board.',
+    wishMyPhoto: 'It’s me. The photo will be first on the board.',
     wishMyPhotoTaken: 'A personal photo is already set — unmark the old one first',
     wishReplaceUserPhoto: 'Mark this as your photo? The current personal photo will be unmarked but stays on the board.',
     wishCropTitle: 'Crop the image',
@@ -2842,8 +2842,8 @@ function stateForCloud(s){
   ensureWishMap(holder);
   return holder.wishMap;
 }
-// Display order for the grid: the personal photo (isUserPhoto) always sits in the centre slot
-// of the matrix (floor(n/2)); everything else keeps its stored order. Returns state indices.
+// Display order for the grid: the personal photo (isUserPhoto) always comes FIRST on the board;
+// everything else keeps its stored order. Returns state indices.
 function wishMapDisplayOrder(cards){
   const n = Array.isArray(cards) ? cards.length : 0;
   const order = [];
@@ -2852,8 +2852,11 @@ function wishMapDisplayOrder(cards){
   let meIdx = -1;
   for(let i = 0; i < n; i++){ if(cards[i] && cards[i].isUserPhoto){ meIdx = i; break; } }
   if(meIdx < 0) return order;
+  // The personal photo LEADS the board. It used to sit in the middle slot ("the owner at the
+  // centre of the board"), but the owner asked for it first — «фото с меткой это я, пусть будет
+  // на первом месте» — so the mark is a display pin, not a position.
   order.splice(order.indexOf(meIdx), 1);
-  order.splice(Math.min(Math.floor(n / 2), order.length), 0, meIdx);
+  order.splice(0, 0, meIdx);
   return order;
 }
 // After the personal photo is deleted, make sure exactly zero cards carry the mark (never one).
@@ -3999,7 +4002,7 @@ function wishMapSectionHTML(){
       <button id="btnWishAddEmpty" type="button" class="wish-add-btn">${t('wishAdd')}</button>
     </div>`;
   }else{
-    // Render in display order: the personal photo sits in the centre slot of the matrix.
+    // Render in display order: the personal photo leads the board.
      const displayOrder = wishMapDisplayOrder(cards);
      html += `<div class="wish-grid">` + displayOrder.map(i => {
        const c = cards[i];
