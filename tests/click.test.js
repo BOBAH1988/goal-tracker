@@ -166,6 +166,23 @@ test('leaf page: priority star toggles and re-renders', () => {
   assert.ok(t.document.getElementById('btnTogglePriority').classList.contains('active'), 'star must become active');
 });
 
+test('priority block: carries the renamed title «Главные цели» on the home screen', () => {
+  const t = bootDom();
+  t.app.setState({
+    name: 'root',
+    children: [leaf(false, { name: 'Цель X', priority: true })],
+    priorityOpen: true,
+  });
+  t.window.render();
+  const header = t.document.querySelector('#priorityToggle');
+  assert.ok(header, 'the priority block header must render');
+  assert.ok(header.textContent.includes('Главные цели'),
+    'the ☆ block is «Главные цели» now (owner rename, was «Приоритетные цели»)');
+  // The starred goal itself shows up in the block.
+  assert.ok(t.document.querySelector('.priority-list .priority-name'),
+    'the starred goal must appear in the block');
+});
+
 // ===== Inline rename (edit mode turns every card into a text input) =====
 // There is no dedicated "renameInput" element: entering edit mode re-renders each card as an
 // inline <input class="goal-input" data-goal-idx>, whose blur/Enter handlers commit the new name
@@ -337,6 +354,8 @@ test('main goals list: open by default, click collapses and persists across relo
   // The section carries the renamed title (owner: «Главные цели» → «Важные сферы жизни»).
   assert.ok(t.document.querySelector('#mainGoalsToggle').textContent.includes('Важные сферы жизни'),
     'the section title must use the new name');
+  // The action group (+ − ↕ filter relocate edit) belongs to the open grid.
+  assert.ok(t.document.querySelector('.add-goal-wrap'), 'action group must show while open');
   // By default the grid is open: cards are visible.
   assert.ok(t.document.querySelector('.grid-goals'), 'main goals grid must be visible by default (open)');
   assert.ok(t.document.querySelector('.grid-goals').children.length > 0, 'cards must render when open');
@@ -347,6 +366,9 @@ test('main goals list: open by default, click collapses and persists across relo
   t.click('#mainGoalsToggle');
   assert.equal(t.app.getState().mainGoalsOpen, false, 'clicking must persist mainGoalsOpen=false in state');
   assert.ok(!t.document.querySelector('.grid-goals'), 'grid must disappear when collapsed');
+  assert.ok(!t.document.querySelector('.add-goal-wrap'),
+    'the whole action group must go with the grid — its buttons have no cards to act on');
+  assert.ok(t.document.querySelector('#mainGoalsToggle'), 'the section header stays clickable');
   assert.equal(t.document.querySelector('.main-goals-arrow').textContent, '▸', 'arrow must point right when collapsed');
 
   // Reload from saved storage → stays collapsed.
@@ -360,6 +382,7 @@ test('main goals list: open by default, click collapses and persists across relo
   t2.click('#mainGoalsToggle');
   assert.equal(t2.app.getState().mainGoalsOpen, true, 'clicking again must persist mainGoalsOpen=true');
   assert.ok(t2.document.querySelector('.grid-goals'), 'grid must reappear when expanded');
+  assert.ok(t2.document.querySelector('.add-goal-wrap'), 'action group must come back with the grid');
 });
 
 // ===== Balance wheel collapsible («Колесо баланса» — open by default, click collapses, state saved) =====
@@ -711,7 +734,7 @@ test('wish map: header card manager replaces per-card edit/delete buttons', () =
   // The header «+» and the manager button sit together.
   assert.ok(t.document.getElementById('btnWishAdd'), 'the add button stays in the header');
   assert.ok(t.document.getElementById('btnWishManage'), 'the manager button lives next to it');
-  // Both live in ONE right-aligned flex group (like .add-goal-wrap in «Главные цели»),
+  // Both live in ONE right-aligned flex group (like .add-goal-wrap in «Важные сферы жизни»),
   // so neither drifts to the centre between title and its sibling.
   const group = t.document.querySelector('.wish-header-actions');
   assert.ok(group, 'header buttons must share one group element');

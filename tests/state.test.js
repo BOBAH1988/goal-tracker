@@ -272,3 +272,11 @@ test('locales: the home section is the renamed «Важные сферы жиз�
   assert.ok(t.app.STRINGS.ru.instructionsText.includes('Важные сферы жизни'));
   assert.ok(t.app.STRINGS.en.instructionsText.includes('Important Life Areas'));
 });
+
+test('locales: the ☆ block is the renamed «Главные цели» in both languages', () => {
+  const t = boot();
+  assert.equal(t.app.STRINGS.ru.priorityTitle, 'Главные цели');
+  assert.equal(t.app.STRINGS.en.priorityTitle, 'Main Goals');
+  assert.ok(t.app.STRINGS.ru.instructionsText.includes('блок «Главные цели»'));
+  assert.ok(t.app.STRINGS.en.instructionsText.includes('"Main Goals" block'));
+});
