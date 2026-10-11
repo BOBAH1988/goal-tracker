@@ -1118,6 +1118,15 @@ test('account button: a name that does not fit becomes the user icon', () => {
     'the tip keeps the name (touch PWA rule)');
 });
 
+test('touch mode: the first touch marks the document so stuck :hover can be neutralised', () => {
+  const t = bootDom();
+  assert.ok(!t.document.documentElement.classList.contains('touch-mode'),
+    'hover feedback starts enabled (desktop with a mouse)');
+  t.window.dispatchEvent(new t.window.Event('touchstart'));
+  assert.ok(t.document.documentElement.classList.contains('touch-mode'),
+    'the first touch marks the document — CSS drops every :hover accent');
+});
+
 test('wish map: the grid-density default is 3 in an installed PWA', () => {
   const t = bootDom();
   // Установленное приложение: matchMedia отвечает «standalone» — ровно как на телефоне.

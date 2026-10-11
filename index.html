@@ -265,9 +265,33 @@
      #btnRelocate:hover:not(.active), #btnFilter:hover, #btnAddGoal:hover:not(.active),
      #btnAddChild:hover:not(.active), #btnChecklistAdd:hover, #btnWishAdd:hover, #btnWishManage:hover,
      #btnWishGrid:hover, #btnWishPrint:hover,
-     #btnGoodTodayAdd:hover, .add-child-row #btnArchive:hover:not(.active),
-     .add-goal-wrap #btnArchive:hover:not(.active){color:var(--muted); border-color:var(--border);}
-   }
+      #btnGoodTodayAdd:hover, .add-child-row #btnArchive:hover:not(.active),
+      .add-goal-wrap #btnArchive:hover:not(.active){color:var(--muted); border-color:var(--border);}
+    }
+
+    /* Третья линия обороны — тач вообще (репорт 11.10.2026: «↕ снова голубая в
+       PWA»). iOS рапортует hover:hover в паре с pointer:fine, поэтому гейт
+       hover-правил выше СРАБАТЫВАЕТ, а глушение по pointer:coarse — нет:
+       WebKit оставляет :hover после тапа, кнопка светится акцентом постоянно.
+       Документ помечается на первом touchstart (см. конец скрипта), и ховеры
+       глушатся классом независимо от того, что рапортует устройство. Цвета
+       режимов (.active) вне списка — тач-пользователь их по-прежнему видит. */
+    .touch-mode #btnEdit:hover:not(.active), .touch-mode #btnDelete:hover:not(.active),
+    .touch-mode #btnMove:hover:not(.active), .touch-mode #btnMoveChecklist:hover:not(.active),
+    .touch-mode #btnAddSubgoal:hover:not(.active), .touch-mode #btnRelocate:hover:not(.active),
+    .touch-mode #btnFilter:hover, .touch-mode #btnAddGoal:hover:not(.active),
+    .touch-mode #btnAddChild:hover:not(.active), .touch-mode #btnChecklistAdd:hover,
+    .touch-mode #btnWishAdd:hover, .touch-mode #btnWishManage:hover,
+    .touch-mode #btnWishGrid:hover, .touch-mode #btnWishPrint:hover,
+    .touch-mode #btnGoodTodayAdd:hover,
+    .touch-mode #btnGoodTodayHistory:hover, .touch-mode #btnGoodTodayWeekHistory:hover,
+    .touch-mode #btnGoodTodayWeekEdit:hover,
+    .touch-mode #btnGoodTodayHistoryPagePrev:hover, .touch-mode #btnGoodTodayHistoryPageNext:hover,
+    .touch-mode #btnGoodTodayHistoryPagePrevBottom:hover, .touch-mode #btnGoodTodayHistoryPageNextBottom:hover,
+    .touch-mode .add-child-row #btnArchive:hover:not(.active),
+    .touch-mode .add-goal-wrap #btnArchive:hover:not(.active),
+    .touch-mode .topbar button:hover,
+    .touch-mode .goal-row .actions button:hover{color:var(--muted); border-color:var(--border);}
   .edit-hint{color:var(--muted); font-weight:400; font-size:12px;}
   .edit-hint.delete-hint{color:var(--red);}
   /* ===== Modal overlays & panels (auth, install, about, confirm) ===== */
@@ -1118,7 +1142,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.1.86';
+const APP_VERSION = '1.1.87';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -7794,6 +7818,16 @@ window.addEventListener('beforeinstallprompt', (e)=>{
   deferredInstallPrompt = e;
   render();
 });
+// Третья линия обороны от залипшего :hover на тач-экранах. WebKit намеренно
+// оставляет :hover после тапа (баг 158517), а iOS (18+) рапортует hover:hover
+// ВМЕСТЕ с pointer:fine — тогда гейт hover-правил СРАБАТЫВАЕТ, а глушение по
+// pointer:coarse нет, и кнопка «↕» остаётся голубой (репорт 11.10.2026,
+// «опять стало голубой в пва»). Медиа-гейты такое не различают: помечаем
+// документ на первом прикосновении, а CSS глушит ховеры классом. Цвета
+// включённых режимов (.active) стоят вне :not() — тач-пользователь их видит.
+window.addEventListener('touchstart', ()=>{
+  document.documentElement.classList.add('touch-mode');
+}, { passive: true, once: true });
 </script>
 </body>
 </html>

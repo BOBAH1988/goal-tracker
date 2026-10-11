@@ -247,6 +247,23 @@ test('CSS guard: hover feedback is gated to real pointers, so no touch button ca
     'the stuck-hover neutralisation must also match a coarse pointer (iOS says hover: hover)');
 });
 
+/* Репорт владельца 11.10.2026: «↕ снова голубая в PWA». iOS рапортует
+   hover:hover ВМЕСТЕ с pointer:fine — гейт hover-правил срабатывает, а
+   глушение по pointer:coarse нет: WebKit оставляет :hover после тапа, кнопка
+   «Перемещение» светится акцентом. Третья линия обороны не зависит от
+   медиа-фич: документ помечается на первом touchstart, ховеры глушатся
+   классом; цвета режимов (.active) остаются — они вне :not(). */
+test('CSS guard: the touch-mode class neutralises every stuck hover', () => {
+  const rules = splitCss(HTML);
+  const move = rules.find(r => r.selectors.includes('.touch-mode #btnMove:hover:not(.active)'));
+  assert.ok(move, 'the .touch-mode guard rule must exist');
+  assert.match(move.body, /color:var\(--muted\)/, 'and drop the accent back to muted');
+  assert.ok(rules.some(r => r.selectors.includes('.touch-mode .topbar button:hover')),
+    'topbar buttons are covered too');
+  assert.ok(rules.some(r => r.selectors.includes('.touch-mode .goal-row .actions button:hover')),
+    'card action buttons are covered too');
+});
+
 test('CSS guard: touch standalone PWA neutralizes the stuck hover on the goal action buttons', () => {
   const rules = splitCss(HTML);
   const block = rules.find(r =>
