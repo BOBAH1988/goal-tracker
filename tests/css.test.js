@@ -105,10 +105,16 @@ test('CSS guard: the narrow/PWA topbar moves the whole title wrap and puts ☰ l
   // order/width must sit on .app-title-wrap — the actual flex item of .topbar. On .topbar h1 they
   // do nothing at topbar level AND reorder the wrap's own column, putting the subtitle ABOVE the
   // title (the reported bug). The ☰ then lands mid-row instead of at the right edge.
-  assert.match(body, /\.app-title-wrap\{[^}]*order:1[^}]*width:100%/,
+  // The wrap now carries order:3 (the three controls take the top row, the title moves below it)
+  // — the point of the assertion is order+width TOGETHER on the wrap, never on .topbar h1.
+  assert.match(body, /\.app-title-wrap\{[^}]*order:3[^}]*width:100%/,
     'the title wrap must get order+width, not .topbar h1');
-  assert.match(body, /\.top-menu-dropdown\{order:3;?\}/,
-    'the menu button must come last (right) in the narrow layout');
+  // Auto margin on .actions pushes the actions row AND the ☰ behind it to the right edge, so ☰
+  // still anchors its dropdown (right:0) where it always did.
+  assert.match(body, /\.actions\{[^}]*order:1[^}]*margin-left:auto/,
+    'the actions row must come first and push itself (and ☰) to the right edge');
+  assert.match(body, /\.top-menu-dropdown\{[^}]*order:2[^}]*\}/,
+    'the menu button must sit with the other two, last (right) in the top row');
   assert.doesNotMatch(body, /\.topbar h1\{[^}]*order:/,
     'an order on h1 re-orders the wrap column — subtitle above title');
   assert.match(body, /\.lang-menu\{left:auto; right:0;?\}/,

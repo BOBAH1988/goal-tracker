@@ -190,6 +190,20 @@
   }
   .topbar .theme-option:hover{background:var(--card); border-color:var(--border);}
   .topbar .theme-option.active{border-color:var(--accent); box-shadow:0 0 0 1px var(--accent);}
+   /* The top-right trio — ☰ menu, search, account — ONE box, ONE glyph size, ONE border.
+      Before this they were three different controls in the same corner: ☰ at 24px with a
+      transparent border, search 16px inside a 32px box, account 18px inside a 34px box, so the
+      installed PWA looked scruffy next to the rest of the site. Applies to the installed PWA and
+      to any narrow screen (a phone browser gets the same tidy corner). */
+   @media (display-mode: standalone), (max-width:480px){
+     #btnTopMenu, #btnSearch, .account-dropdown #btnAccount{
+       min-width:38px; height:38px; padding:0; font-size:20px; border-radius:8px;
+       display:inline-flex; align-items:center; justify-content:center; border-color:var(--border);
+     }
+     /* #btnTopMenu's base rule pins padding/font-size with !important — answer in kind, or the
+        trio would still sit in three different boxes. */
+     #btnTopMenu{ padding:0 !important; font-size:20px !important; }
+   }
   /* ===== Action buttons (edit/delete/move/relocate/archive) ===== */
    #btnEdit, #btnDelete, #btnAddSubgoal, #btnDeleteChecklist, #btnMove, #btnMoveChecklist, #btnRelocate, #btnChecklistAdd, #btnFilter, .add-child-row #btnArchive, .add-goal-wrap #btnArchive, #btnGoodTodayHistory, #btnGoodTodayWeekHistory, #btnGoodTodayWeekEdit, #btnWishManage, #btnGoodTodayHistoryPagePrev, #btnGoodTodayHistoryPageNext, #btnGoodTodayHistoryPagePrevBottom, #btnGoodTodayHistoryPageNextBottom{
     background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:8px;
@@ -584,18 +598,20 @@
      drop to a single column per row instead, same as installed PWA / narrow phone screens. */
   @media (max-width:480px){
     .grid-goals, .grid-hero-first{grid-template-columns:1fr;}
-    /* Narrow/PWA screens (installed app on a phone): the title gets its OWN full-width row and
-       the buttons sit on the row below, right-aligned with ☰ last. The row is LEFT-aligned on
-       purpose — the owner asked for the title to always sit in the top-left corner, not centred.
+    /* Narrow/PWA screens (installed app on a phone): the title gets its OWN full-width row, and
+       the three controls (search, account, ☰) share ONE line at the TOP-RIGHT corner, in DOM
+       order — `margin-left:auto` on .actions pushes it AND the ☰ behind it to the right edge, so
+       ☰ keeps the edge its dropdown anchors to. The title row itself is LEFT-aligned on purpose —
+       the owner asked for the title to always sit in the top-left corner, not centred.
        Two bugs fixed here at once:
         1. order/width used to target .topbar h1, but h1 is a child of .app-title-wrap — the actual
            flex item of .topbar. The wrap therefore kept order 0 and stayed FIRST, so ☰ landed in
            the middle of the row right after the title. The wrap is the element that must move.
         2. that same misplaced `h1{order:3}` reordered the wrap's OWN column: the subtitle (order 0)
            jumped ABOVE the title («описание над названием сайта»). */
-    .app-title-wrap{order:1; width:100%; align-items:flex-start;}
-    .actions{order:2; margin-left:auto;}
-    .top-menu-dropdown{order:3;}
+    .actions{order:1; margin-left:auto;}
+    .top-menu-dropdown{order:2; margin-left:0;}
+    .app-title-wrap{order:3; width:100%; align-items:flex-start;}
     .topbar h1{justify-content:flex-start; margin-top:2px; font-size:17px;}
     .app-subtitle{text-align:left;}
     /* ☰ now sits at the right edge, so its dropdown must anchor to that edge, not to its left. */
@@ -1032,7 +1048,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.1.61';
+const APP_VERSION = '1.1.62';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
