@@ -849,7 +849,7 @@
     background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:8px; padding:8px 14px; font-size:13px; cursor:pointer;
   }
   .add-sub button:hover{color:var(--text); border-color:var(--accent);}
-  footer{color:var(--muted); font-size:11px; text-align:center; margin-top:4px; opacity:.7;}
+  footer{color:var(--muted); font-size:11px; text-align:center; margin-top:24px; padding-top:4px; opacity:.7;}
   /* The feedback link is part of the footer text, not a button: it inherits the muted 11px look in
      both themes, adds only a thin underline as an affordance, and turns accent on tap — no padding,
      no border, no background, so it can never read as a separate control on a phone. */
@@ -1007,7 +1007,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.1.58';
+const APP_VERSION = '1.1.59';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
