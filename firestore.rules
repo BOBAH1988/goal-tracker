@@ -1,0 +1,23 @@
+// Firestore rules for «Только важное» (goal tracker).
+// Deploy with: firebase deploy --only firestore  (see firebase.json in this folder).
+//
+// Same content as the setup instructions inside index.html — kept here so the owner can deploy
+// every rule of the project with a single command instead of copy-pasting them in the console.
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    // Usernames must be unique across the whole app. Anyone can read the collection
+    // (needed to check availability before an account even exists). A name can only be
+    // created once (Firestore treats writing to an existing doc as an "update", which is
+    // blocked below), and only its own owner can delete their reservation when renaming.
+    match /usernames/{name} {
+      allow read: if true;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.uid;
+      allow delete: if request.auth != null && request.auth.uid == resource.data.uid;
+      allow update: if false;
+    }
+  }
+}

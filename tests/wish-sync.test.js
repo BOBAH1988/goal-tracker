@@ -7,6 +7,8 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const vm = require('vm');
+const fs = require('fs');
+const path = require('path');
 const { boot, EXPORT_SRC } = require('./helpers');
 
 // Minimal fake of the two SDK surfaces the board uses: storage() and the Firestore push
@@ -51,6 +53,62 @@ function fakeBlob(bytes, type) {
   const B = typeof Blob !== 'undefined' ? Blob : null;
   if (B) return new B([bytes], { type: type || 'image/webp' });
   return { size: bytes.length, type: type || 'image/webp' };
+}
+// One Firebase project shared by SEVERAL boots: the Storage bucket, the users/{uid} document and
+// the live snapshot listeners. This is what makes a real two-device test possible — device B
+// calls the app's own startCloudSync() and receives exactly what device A pushed.
+function makeSharedCloud() {
+  const bucket = new Map();
+  const docs = new Map();
+  const listeners = new Map();
+  const calls = { puts: [], deletes: [], downloads: [], sets: [] };
+  const emit = (key) => {
+    const data = docs.get(key);
+    (listeners.get(key) || []).forEach(cb => cb({ exists: !!data, data: () => data }, () => {}));
+  };
+  const firestoreFactory = () => ({
+    collection: (name) => ({
+      doc: (id) => {
+        const key = name + '/' + id;
+        return {
+          set: (payload) => { docs.set(key, payload); calls.sets.push(key); emit(key); return Promise.resolve(); },
+          onSnapshot: (cb) => {
+            if (!listeners.has(key)) listeners.set(key, []);
+            listeners.get(key).push(cb);
+            cb({ exists: docs.has(key), data: () => docs.get(key) }, () => {});
+            return () => {};
+          },
+        };
+      },
+    }),
+  });
+  firestoreFactory.FieldValue = { serverTimestamp: () => 'server-ts' };
+  return {
+    bucket, docs, calls,
+    firebase: {
+      firestore: firestoreFactory,
+      storage: () => ({
+        ref: (p) => ({
+          put: (blob, meta) => {
+            calls.puts.push({ path: p, size: blob ? blob.size : 0, type: meta && meta.contentType });
+            bucket.set(p, blob);
+            return Promise.resolve({});
+          },
+          getDownloadURL: () => { calls.downloads.push(p); return Promise.resolve('https://example.invalid/' + encodeURIComponent(p)); },
+          delete: () => { calls.deletes.push(p); bucket.delete(p); return Promise.resolve(); },
+        }),
+      }),
+    },
+    emit,
+  };
+}
+function wireDevice(t, cloud) {
+  t.ctx.firebase = cloud.firebase;
+  signedIn(t.ctx);
+  t.ctx.URL = { createObjectURL: () => "blob:fake-" + Math.random().toString(36).slice(2), revokeObjectURL: () => {} };
+  t.ctx.fetch = () => Promise.resolve({ ok: true, blob: () => Promise.resolve(t.ctx.__blob) });
+  t.ctx.__blob = fakeBlob("imagedata");
+  return t;
 }
 
 test('save order: the file is uploaded BEFORE the metadata reaches Firestore', async () => {
@@ -306,4 +364,141 @@ test('boot: a signed-out reload of a cloud card keeps showing its cached pixels'
   assert.ok(t.app.wishHasLocalBytes(t.app.getState().wishMap[0]),
     'a signed-out user keeps seeing the cached image instead of an empty card');
   assert.equal(t.app.getState().wishMap[0].uploadState, 'uploaded');
+});
+
+test('the object keeps the content type of the bytes it stores (jpeg fallback engines)', async () => {
+  const t = boot();
+  const calls = installFakeFirebase(t.ctx);
+  signedIn(t.ctx);
+  t.ctx.URL = { createObjectURL: () => "blob:fake", revokeObjectURL: () => {} };
+  // applyCrop() falls back to JPEG where the engine cannot encode WebP — those bytes must be
+  // uploaded as image/jpeg under a matching path, never as a jpeg pretending to be webp (the
+  // rules would reject it and the photo would stay on the device it was added on).
+  const jpeg = fakeBlob('jpegbytes', 'image/jpeg');
+  await t.app.wishCachePut('j1', jpeg);
+  t.app.wishRememberBlob('j1', jpeg);
+  t.app.setState({
+    name: 'root', children: [],
+    wishMap: [{ id: 'j1', title: 'Море', imagePath: null, order: 0, isUserPhoto: false,
+                createdAt: 1, updatedAt: 1, uploadState: 'pending' }],
+  });
+  await t.app.uploadWishCard(t.app.getState().wishMap[0]);
+  assert.equal(calls.puts.length, 1, 'one upload');
+  assert.equal(calls.puts[0].path, 'users/u1/vision-board/j1.jpg', 'jpeg bytes get a .jpg object');
+  assert.equal(calls.puts[0].type, 'image/jpeg', 'and are uploaded as image/jpeg');
+  assert.equal(t.app.getState().wishMap[0].uploadState, 'uploaded', 'the card still reaches the cloud');
+  // WebP stays WebP (the normal path).
+  const webp = fakeBlob('webpbytes', 'image/webp');
+  await t.app.wishCachePut('w9', webp);
+  t.app.wishRememberBlob('w9', webp);
+  t.app.setState(Object.assign(t.app.getState(), { wishMap: [
+    t.app.getState().wishMap[0],
+    { id: 'w9', title: 'Дом', imagePath: null, order: 1, isUserPhoto: false, createdAt: 1, updatedAt: 1, uploadState: 'pending' },
+  ] }));
+  await t.app.uploadWishCard(t.app.getState().wishMap[1]);
+  assert.equal(calls.puts[1].path, 'users/u1/vision-board/w9.webp', 'webp bytes stay .webp');
+  assert.equal(calls.puts[1].type, 'image/webp');
+});
+
+test('storage.rules accept exactly the objects the app uploads', () => {
+  const rules = fs.readFileSync(path.join(__dirname, '..', 'storage.rules'), 'utf8');
+  // The rules are the deploy-time half of the sync: if they are not deployed (or tightened back
+  // to webp-only) every upload fails with storage/unauthorized and the board breaks silently.
+  assert.match(rules, /contentType\.matches\('image\/\(webp\|jpeg\|png\)'\)/,
+    'the bucket must accept the webp/jpeg/png the crop dialog can produce');
+  assert.match(rules, /request\.resource\.size <= 3 \* 1024 \* 1024/, 'the 3 MB cap stays');
+  assert.match(rules, /request\.auth\.uid == uid/, 'owner-only access stays');
+  assert.doesNotMatch(rules, /allow read, write: if false;\s*$[\s\S]*$/,
+    'the catch-all deny rule must stay at the bottom');
+});
+
+test('two devices: a card uploaded on one device renders on the other', async () => {
+  // Device A: signed in, saves a card (cache → save → render → upload, exactly the handler order).
+  const cloud = makeSharedCloud();
+  const A = wireDevice(boot(), cloud);
+  const card = {
+    id: 'w1', title: 'Дом', imagePath: null, order: 0, isUserPhoto: false,
+    createdAt: 1, updatedAt: 1, uploadState: 'pending',
+  };
+  await A.app.wishCachePut('w1', A.ctx.__blob);
+  A.app.wishRememberBlob('w1', A.ctx.__blob);
+  A.app.setState(Object.assign(A.app.getState(), { wishMap: [card] }));
+  await A.app.uploadWishCard(card);
+  await new Promise(r => setTimeout(r, 60));   // the 800 ms debounce is flushed below, as on pagehide
+  A.app.flushCloudPush();
+  // The file is in the bucket AND the metadata in Firestore — the two halves other devices need.
+  assert.ok(cloud.bucket.has('users/u1/vision-board/w1.webp'), 'the bytes are in Storage');
+  const doc = cloud.docs.get('users/u1');
+  assert.equal(doc.state.wishMap.length, 1, 'the metadata is in Firestore');
+  assert.equal(doc.state.wishMap[0].imagePath, 'users/u1/vision-board/w1.webp');
+
+  // Device B: a fresh install that signs in and receives the snapshot.
+  const B = wireDevice(boot(), cloud);
+  vm.runInContext('startCloudSync("u1")', B.ctx);
+  await new Promise(r => setTimeout(r, 60));
+  const cards = B.app.getState().wishMap || [];
+  assert.equal(cards.length, 1, 'the card itself appears on the other device');
+  assert.equal(cards[0].imagePath, 'users/u1/vision-board/w1.webp');
+  assert.equal(cards[0].uploadState, 'uploaded');
+  assert.ok(B.app.wishHasLocalBytes(cards[0]), 'and its pixels were downloaded from Storage');
+  assert.ok(B.app.wishBlobUrlFor(cards[0]), 'so the card renders the image, not a placeholder');
+  assert.equal(cloud.calls.downloads.length, 1, 'one download for the cloud-only card');
+});
+
+test('flushCloudPush: a page closed inside the debounce does not lose the metadata', async () => {
+  const t = boot();
+  const calls = installFakeFirebase(t.ctx);
+  signedIn(t.ctx);
+  vm.runInContext('scheduleCloudPush()', t.ctx);
+  assert.equal(calls.firestoreSets.length, 0, 'the write is still debounced');
+  vm.runInContext('flushCloudPush()', t.ctx);
+  await new Promise(r => setTimeout(r, 10));
+  assert.equal(calls.firestoreSets.length, 1, 'pagehide flushes the pending write immediately');
+  // And flushing twice must not double-write.
+  vm.runInContext('flushCloudPush()', t.ctx);
+  await new Promise(r => setTimeout(r, 10));
+  assert.equal(calls.firestoreSets.length, 1, 'no timer left behind → no duplicate write');
+});
+
+test('the cloud document holds no uploadState — the board still becomes downloadable', async () => {
+  // Exactly what lives in Firestore today (wishMapForCloud): metadata without the local flags.
+  const t = boot();
+  installFakeFirebase(t.ctx);
+  signedIn(t.ctx);
+  t.ctx.URL = { createObjectURL: () => 'blob:from-cloud', revokeObjectURL: () => {} };
+  t.ctx.fetch = () => Promise.resolve({ ok: true, blob: () => Promise.resolve(t.ctx.__blob) });
+  t.ctx.__blob = fakeBlob('pixels');
+  const rawCloudDoc = [{ id: 'c1', title: 'С облака', imagePath: 'users/u1/vision-board/c1.webp', order: 0, isUserPhoto: false, createdAt: 1, updatedAt: 1 }];
+  const merged = Array.from(vm.runInContext(
+    'mergeWishMapCloud(' + JSON.stringify(rawCloudDoc) + ', [])', t.ctx));
+  assert.equal(merged.length, 1);
+  assert.equal(merged[0].uploadState, 'uploaded', 'the flag is restored from imagePath');
+  t.app.setState({ name: 'root', children: [], wishMap: merged });
+  t.app.wishBoardReady();
+  await new Promise(r => setTimeout(r, 30));
+  assert.ok(t.app.wishHasLocalBytes(t.app.getState().wishMap[0]),
+    'the pixels are pulled from Storage even though the doc had no flags');
+});
+
+test('wishSyncRetry: an outstanding card gets another attempt without a reload', async () => {
+  const t = boot();
+  const calls = installFakeFirebase(t.ctx);
+  signedIn(t.ctx);
+  t.ctx.URL = { createObjectURL: () => 'blob:retry', revokeObjectURL: () => {} };
+  t.ctx.fetch = () => Promise.resolve({ ok: true, blob: () => Promise.resolve(t.ctx.__blob) });
+  t.ctx.__blob = fakeBlob('pixels');
+  t.app.setState({
+    name: 'root', children: [],
+    wishMap: [{ id: 'r1', title: 'Повтор', imagePath: 'users/u1/vision-board/r1.webp',
+                order: 0, isUserPhoto: false, createdAt: 1, updatedAt: 1, uploadState: 'uploaded' }],
+  });
+  assert.equal(calls.downloads.length, 0, 'nothing has happened yet');
+  vm.runInContext('wishSyncRetry()', t.ctx);
+  await new Promise(r => setTimeout(r, 30));
+  assert.equal(calls.downloads.length, 1, 'coming back online retries the download on its own');
+  assert.ok(t.app.wishHasLocalBytes(t.app.getState().wishMap[0]), 'and the card shows its image');
+  // Second pass with nothing outstanding: no extra network calls.
+  vm.runInContext('wishSyncRetry()', t.ctx);
+  await new Promise(r => setTimeout(r, 30));
+  assert.equal(calls.downloads.length, 1, 'and it is a no-op once everything is in place');
 });

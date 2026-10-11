@@ -1003,7 +1003,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.1.55';
+const APP_VERSION = '1.1.56';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -1405,7 +1405,8 @@ const STRINGS = {
     wishUploadRetry: 'Повторить',
     wishUploadMissing: 'Изображение не сохранено',
     wishImageTooBigCloud: 'Слишком большой файл для облака — до 3 МБ.',
-    wishUploadErrorHint: 'Проверьте сеть и вход в аккаунт — изображение сохранено на устройстве.'
+    wishUploadErrorHint: 'Проверьте сеть и вход в аккаунт — изображение сохранено на устройстве.',
+    wishUploadFailHint: 'Фото не попало в облако ({code}). Обычно это нет сети или не развёрнутые правила Firebase Storage (команда firebase deploy --only storage). Файл сохранён на этом устройстве — нажмите «Повторить», когда интернет и правила будут в порядке.'
   },
   en: {
     appTitle: 'Only What Matters',
@@ -1648,7 +1649,8 @@ const STRINGS = {
     wishUploadRetry: 'Retry',
     wishUploadMissing: 'Image not saved',
     wishImageTooBigCloud: 'Too large for the cloud — up to 3 MB.',
-    wishUploadErrorHint: 'Check your connection and sign-in — the image is kept on this device.'
+    wishUploadErrorHint: 'Check your connection and sign-in — the image is kept on this device.',
+    wishUploadFailHint: 'The image did not reach the cloud ({code}). Usually the network is down or the Firebase Storage rules were never deployed (firebase deploy --only storage). The file is kept on this device — press "Retry" once both are fine.'
   }
 };
 function loadLang(){
@@ -1738,6 +1740,13 @@ let wishDraftSrc = null;      // dataURL of the picked image, pending Save
 let wishCaptionDraft = '';    // caption typed into the add form (survives re-renders)
 let wishFormError = '';       // add-form error (missing / unreadable image)
 let wishUploadNotice = '';    // transient board-level notice (retry impossible: not signed in)
+// Set when a card's cloud metadata changed since the last Firestore write. The debounced push
+// can be lost (tab closed / PWA killed inside the 800 ms), so the periodic retry re-schedules
+// it instead of leaving the card "uploaded here, unknown to every other device".
+let wishCloudPushPending = false;
+// Last Storage failure for a card: {id, code} or null. Kept out of state (it is a diagnostic,
+// not data) and rendered as an actionable note under the board.
+let wishLastUploadError = null;
 let wishIsUserPhotoDraft = false; // «Это моё фото» checkbox state in the add form
 // Crop dialog state: wishCropSrc is non-null only while the crop overlay is open (top-level so
 // render() can paint it and the render-guard tests can poke it like the other panel flags).
@@ -1890,9 +1899,18 @@ function structuredCloneFallback(obj){
             }
           }
         }
-   5) Project settings (gear icon) -> General -> "Your apps" -> add a Web app -> copy the
-      firebaseConfig object it gives you and paste its values below, replacing the placeholders.
-   Until you do this, cloudEnabled stays false and the app behaves exactly as before (local only). */
+    5) Project settings (gear icon) -> General -> "Your apps" -> add a Web app -> copy the
+       firebaseConfig object it gives you and paste its values below, replacing the placeholders.
+    6) Cloud Storage -> Rules: WITHOUT this step every vision-board upload fails with
+       storage/unauthorized and the photos stay on the device they were added on (that is what
+       the "images only on one device" bug was). The guarded rules live in storage.rules /
+       firestore.rules (same folder as this file) — deploy both with one command:
+           npm i -g firebase-tools
+           firebase login
+           firebase deploy --only storage,firestore
+       (firebase.json already points at those two files; deploying manually from the console
+       works too — just paste the rules and hit Publish.)
+    Until you do this, cloudEnabled stays false and the app behaves exactly as before (local only). */
 const firebaseConfig = {
   apiKey: "AIzaSyBKBHaR72J_d7tgKiWeWQ-Aco9Od193j3A",
   authDomain: "goal-tracker-496b8.firebaseapp.com",
@@ -1983,14 +2001,27 @@ function translateAuthError(err){
 function scheduleCloudPush(){
   if(!cloudEnabled || !authUser || applyingRemoteUpdate) return;
   clearTimeout(cloudSyncTimer);
-  cloudSyncTimer = setTimeout(()=>{
-    // merge:true so this doesn't wipe out the account's `name`/`consent` fields — this call
-    // only ever needs to touch `state`. The wish board is written as METADATA ONLY (no image
-    // data-URLs): the bytes live in Firebase Storage, see stateForCloud/wishMapForCloud.
-    firebase.firestore().collection('users').doc(authUser.uid)
-      .set({ state: stateForCloud(state), updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge:true })
-      .catch(()=>{});
-  }, 800);
+  cloudSyncTimer = setTimeout(pushCloudStateNow, 800);
+}
+// The 800 ms debounce must never be the reason a card that is ALREADY in Storage never reaches
+// the other devices: closing the tab / backgrounding the PWA inside those 800 ms used to lose
+// the Firestore write, and the board then waited for the next reload. Called on pagehide and
+// when the document becomes hidden.
+function flushCloudPush(){
+  if(!cloudSyncTimer) return;         // nothing debounced — nothing to flush
+  clearTimeout(cloudSyncTimer);
+  cloudSyncTimer = null;
+  pushCloudStateNow();
+}
+function pushCloudStateNow(){
+  if(!cloudEnabled || !authUser || applyingRemoteUpdate) return;
+  // merge:true so this doesn't wipe out the account's `name`/`consent` fields — this call
+  // only ever needs to touch `state`. The wish board is written as METADATA ONLY (no image
+  // data-URLs): the bytes live in Firebase Storage, see stateForCloud/wishMapForCloud.
+  firebase.firestore().collection('users').doc(authUser.uid)
+    .set({ state: stateForCloud(state), updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge:true })
+    .then(()=>{ wishCloudPushPending = false; })   // only a confirmed write retires the flag
+    .catch(()=>{});
 }
 // Normalizes a display name into a Firestore-doc-id-safe uniqueness key (trimmed, case-insensitive,
 // collapsed whitespace, no slashes).
@@ -2778,8 +2809,13 @@ function wishStorageReady(){
   return cloudEnabled && authUser && typeof firebase !== 'undefined'
     && typeof firebase.storage === 'function';
 }
-function wishStoragePath(card){
-  return 'users/' + authUser.uid + '/vision-board/' + card.id + '.webp';
+function wishStoragePath(card, ext){
+  // The extension follows the bytes we actually hold: the crop dialog encodes WebP when the
+  // engine can and falls back to JPEG where it cannot. Uploading jpeg bytes under a '.webp'
+  // name is not just cosmetic — the object must be stored with the contentType of its real
+  // payload, otherwise the Storage rules reject it and the card silently never leaves the
+  // device (that is exactly the "photos only on the device they were uploaded from" bug).
+  return 'users/' + authUser.uid + '/vision-board/' + card.id + '.' + (ext || 'webp');
 }
 // ===== Local image cache (IndexedDB) + cloud bytes (Firebase Storage) =====
 // Source of truth = Firebase Storage (bytes) + Firestore (metadata). Everything below is built
@@ -2926,6 +2962,15 @@ function dataUrlToBlob(dataUrl){
     }
   });
 }
+// The stored object's extension + contentType, derived from the real bytes. WebP is what the
+// crop dialog produces; on an engine without canvas WebP encoding the fallback is JPEG, and it
+// must be uploaded as JPEG (the Storage rules accept webp/jpeg/png, never a mismatched type).
+function wishStorageExt(blob){
+  const type = String(blob && blob.type || '').toLowerCase();
+  if(type === 'image/jpeg' || type === 'image/jpg') return 'jpg';
+  if(type === 'image/png') return 'png';
+  return 'webp';
+}
 // Uploads a card's cached bytes to Storage. ONLY after the put() resolves does the card become
 // an uploaded one (imagePath set, uploadState='uploaded', metadata pushed to Firestore) — a
 // failed put leaves uploadState='error' and the pixels stay cached for a retry.
@@ -2934,11 +2979,14 @@ async function uploadWishCard(card){
   const blob = await wishCacheGet(card.id);
   if(!blob) return;                       // nothing cached — keep pending, retry later
   if(blob.size > WISH_MAX_UPLOAD_BYTES){ markWishUploadError(card); return; }
-  const path = wishStoragePath(card);
+  const path = wishStoragePath(card, wishStorageExt(blob));
   try{
     await firebase.storage().ref(path).put(blob, { contentType: (blob && blob.type) || 'image/webp' });
   }catch(e){
-    markWishUploadError(card);            // offline / unauthorized / network — user sees a retry
+    // Offline / unauthorized (Storage rules not deployed!) / quota. The pixels survive in the
+    // local cache and the card keeps a «Повторить» button; the reason is shown on the board so
+    // it is diagnosable instead of a silent "photo only on this device".
+    markWishUploadError(card, e);
     return;
   }
   const live = (state.wishMap || []).find(c => c.id === card.id);
@@ -2946,13 +2994,21 @@ async function uploadWishCard(card){
   live.imagePath = path;
   live.uploadState = 'uploaded';
   live.updatedAt = Date.now();
+  wishLastUploadError = null;             // this card reached the cloud — clear its error note
+  wishCloudPushPending = true;            // metadata changed: Firestore must hear about it
   saveState();                            // metadata only, small
   scheduleCloudPush();                    // → Firestore, after the file is safely up
   render();
 }
-function markWishUploadError(card){
+function markWishUploadError(card, err){
   if(!card || !card.id) return;
   card.uploadState = 'error';
+  // Remember WHY, so the board can say something actionable instead of a bare «Повторить».
+  // The two realistic causes are no network and Storage rules that were never deployed.
+  wishLastUploadError = {
+    id: card.id,
+    code: String((err && (err.code || err.message)) || '')
+  };
   saveState();
   render();
 }
@@ -2970,6 +3026,7 @@ async function downloadWishImage(card){
     const live = (state.wishMap || []).find(c => c.id === card.id);
     if(live){
       live.uploadState = 'uploaded';
+      wishCloudPushPending = true;
       saveState();
       render();
     }
@@ -2997,6 +3054,23 @@ function syncWishBoard(){
 function wishBoardReady(){
   wishCacheWarm();
   syncWishBoard();
+}
+// Another pass over the board, but ONLY when there is something outstanding: a card whose
+// upload or download is still pending/errored, or whose bytes we do not have locally yet.
+// Runs when the app returns to the foreground or the network comes back, plus a light timer —
+// one failed attempt used to leave the board stuck until a full reload, which is what made
+// «картинки есть только на том устройстве» look permanent.
+function wishSyncRetry(){
+  if(!wishStorageReady()) return;
+  const cards = state.wishMap || [];
+  const outstanding = cards.some(c => !!c && !!c.id && (
+    c.uploadState === 'pending' || c.uploadState === 'error' || (c.imagePath && !wishHasLocalBytes(c))
+  ));
+  if(!outstanding && !wishCloudPushPending) return;
+  if(outstanding) syncWishBoard();
+  // The debounced Firestore write can be lost with a killed page — re-schedule it so the
+  // metadata of an already-uploaded card still reaches the other devices.
+  if(wishCloudPushPending) scheduleCloudPush();
 }
 // Removes the Storage object for a deleted card (never blocks the UI; the Firestore record goes
 // automatically because the card is gone from the pushed projection). Orphan-free by design:
@@ -3855,6 +3929,15 @@ function wishMapSectionHTML(){
     // Board-level upload notice (e.g. retry attempted while signed out).
     if(wishUploadNotice){
       html += `<div class="auth-error wish-upload-note">${esc(wishUploadNotice)}</div>`;
+    }
+    // A Storage failure is shown with its reason: an undeployed Firebase Storage ruleset
+    // (storage/unauthorized) and "no network" look identical to the user otherwise, and the
+    // photo then silently lives on this device only.
+    if(wishLastUploadError){
+      // The code comes from a Firebase error object ('storage/unauthorized', 'storage/unknown'),
+      // so keep it to a safe charset before it goes anywhere near the DOM.
+      const code = String(wishLastUploadError.code || '').replace(/[^a-zA-Z0-9_\-/]/g, '').slice(0, 60) || '—';
+      html += `<div class="auth-error wish-upload-note">${esc(t('wishUploadFailHint').replace('{code}', code))}</div>`;
     }
   }
   // Lightbox: the picked card enlarged. ✕ or a backdrop click closes it.
@@ -4943,6 +5026,7 @@ function attachWishMapHandlers(){
       const card = wishCardAt(idx);
       if(!card) return;
       card.uploadState = 'pending';
+      wishLastUploadError = null;      // a fresh attempt replaces the old failure note
       saveState();
       render();
       if(!wishStorageReady()){
@@ -6209,12 +6293,20 @@ function attachSyncConflictHandlers(){
     if(!syncConflict) return;
     applyingRemoteUpdate = true;
     state = syncConflict.cloud;
-    if(isValidGoalTree(state)){ sanitizeGoalTree(state); sanitizeEmptyChecklists(state); ensureWheelTotals(state); ensureToday(state); }
+    if(isValidGoalTree(state)){
+      sanitizeGoalTree(state); sanitizeEmptyChecklists(state); ensureWheelTotals(state); ensureToday(state); ensureGoodToday(state);
+      // The account document holds the wish board as METADATA ONLY: no uploadState flags and no
+      // bytes. Without this merge the cards keep no state at all and nothing ever downloads
+      // them — the board stays blank on this device until a reload. mergeWishMapCloud() restores
+      // the flags, and wishBoardReady() below pulls the pixels from Storage.
+      if(Array.isArray(state.wishMap)) state.wishMap = mergeWishMapCloud(state.wishMap, []);
+    }
     path = [];
     saveState();
     applyingRemoteUpdate = false;
     syncConflict = null;
     render();
+    wishBoardReady();
   });
   on('btnSyncConflictUseLocal', 'click', ()=>{
     if(!syncConflict) return;
@@ -6224,6 +6316,7 @@ function attachSyncConflictHandlers(){
     syncConflict = null;
     saveState();
     render();
+    wishBoardReady();   // local-only cards still need their upload; cloud cards their download
   });
   on('btnSyncConflictExport', 'click', ()=>{
     if(!syncConflict) return;
@@ -7003,11 +7096,21 @@ if('serviceWorker' in navigator){
     window.location.replace(url.toString());
   });
   // Return to the foreground after the app sat in the background (minimised PWA, switched tab): a
-  // release published meanwhile is picked up here instead of waiting for the next cold start.
+  // release published meanwhile is picked up here instead of waiting for the next cold start,
+  // and any wish card still waiting for its bytes gets another attempt.
   document.addEventListener('visibilitychange', ()=>{
-    if(document.visibilityState === 'visible') checkForAppUpdate(true);
+    if(document.visibilityState === 'visible'){ checkForAppUpdate(true); wishSyncRetry(); }
+    else flushCloudPush();   // backgrounded: the debounce below must not swallow the last change
   });
-  window.addEventListener('online', ()=>checkForAppUpdate(true));
+  // Closing the tab / leaving the installed PWA: flush the pending Firestore write right now,
+  // otherwise a card uploaded in the last 800 ms never reaches the other devices.
+  window.addEventListener('pagehide', ()=>flushCloudPush());
+  window.addEventListener('online', ()=>{ checkForAppUpdate(true); wishSyncRetry(); });
+  // Light safety net for the wish board: a card whose Storage upload failed once (offline,
+  // undeployed rules, flaky network) keeps retrying on its own instead of waiting for a reload.
+  // unref() in Node keeps the test process from being held open by this timer.
+  const wishRetryTimer = setInterval(wishSyncRetry, 45000);
+  if(wishRetryTimer && typeof wishRetryTimer.unref === 'function') wishRetryTimer.unref();
   navigator.serviceWorker.getRegistration && navigator.serviceWorker.getRegistration()
     .then(reg => { if(reg) swRegistration = reg; })
     .catch(()=>{});
