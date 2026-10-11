@@ -236,6 +236,7 @@
      #btnAddSubgoal:hover{color:var(--text); border-color:var(--accent);}
      #btnRelocate:hover{color:var(--text); border-color:var(--accent);}
      .add-child-row #btnArchive:hover, .add-goal-wrap #btnArchive:hover{color:var(--text); border-color:var(--accent);}
+     .sphere-reminder-actions button:not(.sphere-reminder-open):hover{border-color:var(--accent);}
    }
    /* The REAL mode colours: OUTSIDE the gate on purpose — they signal a working mode (move /
       delete / rename), not a hover affordance, and a touch user must see them just like a mouse
@@ -292,6 +293,9 @@
     .touch-mode .add-goal-wrap #btnArchive:hover:not(.active),
     .touch-mode .topbar button:hover,
     .touch-mode .goal-row .actions button:hover{color:var(--muted); border-color:var(--border);}
+    // Мягкое напоминание: у его второй кнопки hover меняет только рамку, поэтому в тач-режиме
+    // гасим именно её (акцентная кнопка «Открыть сферу» вне списка — её цвет не ховерный).
+    .touch-mode .sphere-reminder-actions button:not(.sphere-reminder-open):hover{border-color:var(--border);}
   .edit-hint{color:var(--muted); font-weight:400; font-size:12px;}
   .edit-hint.delete-hint{color:var(--red);}
   /* ===== Modal overlays & panels (auth, install, about, confirm) ===== */
@@ -546,6 +550,22 @@
        cursor:pointer; font-size:13px; display:inline-flex; align-items:center; justify-content:center;
      }
      .good-today-history-nav .icon-btn:hover{color:var(--text); border-color:var(--accent);}
+     /* Мягкое напоминание о сфере («К сфере … давно не возвращались»). Ненавязчивая карточка
+        над «Важными сферами жизни»: тёмная тема, светлая и розовая — всё на переменных, без
+        предупреждающих красных и оценок. Кнопки — как у «Хорошего сегодня»: тач-цели 44px. */
+     .sphere-reminder{
+       display:flex; flex-direction:column; gap:12px;
+       background:var(--card); border:1px solid var(--border); border-radius:14px;
+       padding:14px 16px; margin:0 0 16px;
+     }
+     .sphere-reminder-text{font-size:14px; line-height:1.45; color:var(--text);}
+     .sphere-reminder-actions{display:flex; gap:10px;}
+     .sphere-reminder-actions button{
+       flex:1; min-height:44px; padding:10px 12px; border-radius:10px; cursor:pointer;
+       font-size:14px; font-weight:600; border:1px solid var(--border);
+       background:var(--card2); color:var(--text);
+     }
+     .sphere-reminder-actions button.sphere-reminder-open{background:var(--accent); border-color:var(--accent); color:#fff;}
    .good-today-today-entries{
      margin-top:12px; border-top:1px solid var(--border); padding-top:12px;
    }
@@ -1142,7 +1162,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.1.87';
+const APP_VERSION = '1.1.88';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -1557,7 +1577,10 @@ const STRINGS = {
     wishUploadMissing: 'Изображение не сохранено',
     wishImageTooBigCloud: 'Слишком большой файл для облака — до 800 КБ.',
     wishUploadErrorHint: 'Проверьте сеть и вход в аккаунт — изображение сохранено на устройстве.',
-    wishUploadFailHint: 'Фото не попало в облако ({code}). Обычно это нет сети или не развёрнутые правила Firestore (команда firebase deploy --only firestore). Файл сохранён на этом устройстве — нажмите «Повторить», когда интернет и правила будут в порядке.'
+    wishUploadFailHint: 'Фото не попало в облако ({code}). Обычно это нет сети или не развёрнутые правила Firestore (команда firebase deploy --only firestore). Файл сохранён на этом устройстве — нажмите «Повторить», когда интернет и правила будут в порядке.',
+    sphereReminderText: name => `К сфере «${name}» давно не возвращались`,
+    sphereReminderOpen: 'Открыть сферу',
+    sphereReminderHide: 'Скрыть',
   },
   en: {
     appTitle: 'Only What Matters',
@@ -1808,7 +1831,10 @@ const STRINGS = {
     wishUploadMissing: 'Image not saved',
     wishImageTooBigCloud: 'Too large for the cloud — up to 800 KB.',
     wishUploadErrorHint: 'Check your connection and sign-in — the image is kept on this device.',
-    wishUploadFailHint: 'The image did not reach the cloud ({code}). Usually the network is down or the Firestore rules were never deployed (firebase deploy --only firestore). The file is kept on this device — press "Retry" once both are fine.'
+    wishUploadFailHint: 'The image did not reach the cloud ({code}). Usually the network is down or the Firestore rules were never deployed (firebase deploy --only firestore). The file is kept on this device — press "Retry" once both are fine.',
+    sphereReminderText: name => `You haven’t returned to “${name}” in a while`,
+    sphereReminderOpen: 'Open the sphere',
+    sphereReminderHide: 'Hide',
   }
 };
 function loadLang(){
@@ -1912,6 +1938,12 @@ let wishCloudPushPending = false;
 // not data) and rendered as an actionable note under the board.
 let wishLastUploadError = null;
 let wishIsUserPhotoDraft = false; // «Это моё фото» checkbox state in the add form
+// Мягкое напоминание о сферах ждёт, пока данные пользователя догрузятся: со входом в аккаунт
+// первый облачный снапшот решает, какое состояние настоящее, а напоминание, посчитанное по
+// местному дереву, могло бы назвать сферу, которую пользователь уже открыл на другом устройстве.
+// Локальный пользователь (cloudEnabled = false) открывает гейт до первой отрисовки — все его
+// данные приходят из синхронного loadState(). Ставится в startCloudSync / onAuthStateChanged.
+let sphereDataReady = false;
 // Crop dialog state: wishCropSrc is non-null only while the crop overlay is open (top-level so
 // render() can paint it and the render-guard tests can poke it like the other panel flags).
 // wishCropImg keeps the decoded source bitmap; zoom/offset are in 720-unit card coordinates.
@@ -2007,6 +2039,7 @@ function loadState(){
           ensureGoodToday(parsed);
           if (parsed.goodToday === undefined) parsed.goodToday = parsed.today.some(item => item.done);
          ensureWishMap(parsed);
+         ensureSphereActivity(parsed);
          return parsed;
        }
     }
@@ -2017,6 +2050,7 @@ function loadState(){
    ensureWheelTotals(fresh);
    ensureToday(fresh);
    ensureGoodToday(fresh);
+   ensureSphereActivity(fresh);
    return fresh;
 }
 function structuredCloneFallback(obj){
@@ -2139,10 +2173,13 @@ function isProtectableState(s){
   if(!s) return false;
   try{
     // totalGoalsAdded is wheel bookkeeping that changes on every add, so it must not make two
-    // otherwise-identical goal trees look different here — strip it before comparing.
-    const json = JSON.stringify(s, (k, v) => k === 'totalGoalsAdded' ? undefined : v);
-    if(json === JSON.stringify(SEED, (k, v) => k === 'totalGoalsAdded' ? undefined : v)) return false;
-    if(json === JSON.stringify(emptyTemplate(), (k, v) => k === 'totalGoalsAdded' ? undefined : v)) return false;
+    // otherwise-identical goal trees look different here — strip it before comparing (same for
+    // the sphere-reminder dates, which the app stamps by itself on every load).
+    const stripBookkeeping = (k, v) => (k === 'totalGoalsAdded'
+      || k === 'sphereActivityAt' || k === 'sphereMutedUntil') ? undefined : v;
+    const json = JSON.stringify(s, stripBookkeeping);
+    if(json === JSON.stringify(SEED, stripBookkeeping)) return false;
+    if(json === JSON.stringify(emptyTemplate(), stripBookkeeping)) return false;
   }catch(e){ return true; }
   return true;
 }
@@ -2209,8 +2246,10 @@ function startCloudSync(uid){
       if(data && data.state){
         // Image data-URLs never reach the cloud doc (metadata only), so a local board always
         // "differs" from the cloud one by src — strip it from the conflict comparison along
-        // with the wheel's totalGoalsAdded bookkeeping churn.
-        const strip = (k, v) => (k === 'totalGoalsAdded' || k === 'src') ? undefined : v;
+        // with the wheel's totalGoalsAdded bookkeeping churn and the sphere-reminder dates
+        // (an auto-stamped sphereActivityAt must never look like an unsynced local edit).
+        const strip = (k, v) => (k === 'totalGoalsAdded' || k === 'src'
+          || k === 'sphereActivityAt' || k === 'sphereMutedUntil') ? undefined : v;
         // Guard against silently overwriting real local edits made while logged out: only runs
         // once, right after sign-in (preSyncLocalState is cleared as soon as it's been checked
         // once, so it never blocks a later legitimate real-time update from another device).
@@ -2234,6 +2273,7 @@ function startCloudSync(uid){
         // the same way as loadState()/import so the wheel never divides by a missing zero.
         if(isValidGoalTree(state)){
           sanitizeGoalTree(state); sanitizeEmptyChecklists(state); ensureWheelTotals(state); ensureToday(state); ensureGoodToday(state);
+          ensureSphereActivity(state);
           // The cloud board carries metadata only; keep local cached images for cards we
           // already have and queue downloads for the rest (syncWishBoard below).
           // The third argument is the document's own updatedAt: a local card whose file is
@@ -2245,6 +2285,8 @@ function startCloudSync(uid){
         saveState();
         applyingRemoteUpdate = false;
         wishBoardReady();
+        // Облачные данные приехали и применены — напоминания можно считать по ним.
+        sphereDataReady = true;
       }
       if(data && authUser){
         if(data.name) authUser.name = data.name;
@@ -2261,11 +2303,13 @@ function startCloudSync(uid){
       const initial = emptyTemplate();
       applyingRemoteUpdate = true;
       state = initial;
+      ensureSphereActivity(state);
       path = [];
       saveState();
       applyingRemoteUpdate = false;
       if(authUser && pendingSignupName) authUser.name = pendingSignupName;
       isFreshSignup = false;
+      sphereDataReady = true;
       render();
       // Record proof of the personal-data-processing consent given on the sign-up form
       // (152-ФЗ), plus the reserved username, alongside the new account's initial data.
@@ -2605,6 +2649,11 @@ function weekShiftISO(weekStartStr, weeks){
   return `${y}-${m}-${day}`;
 }
 const PRIORITY_MAX = 5;
+// «Только важное»: через сколько дней без осознанного взаимодействия сфера получает мягкое
+// напоминание на главной. Одно имя на весь проект — порог, отсчёт от последнего взаимодействия
+// и «не напоминать 14 дней после Скрыть» используют одну и ту же величину.
+const SPHERE_REMINDER_DAYS = 14;
+const DAY_MS = 24 * 60 * 60 * 1000;
 // Walks the whole goal tree looking for anything marked with a `priority:true` flag — either a
 // leaf/checkbox goal itself, or an individual line inside a leaf's checklist. The flag lives
 // directly on the node/item object (so it survives save/load for free, same as `done`), which
@@ -2839,8 +2888,88 @@ function ensureGoodToday(node){
       updatedAt: Number.isFinite(r.updatedAt) ? r.updatedAt : null
     }));
   }
-}
- // The wish map («Карта желаний») is an array of cards. A card is METADATA ONLY:
+ }
+ /* ===== Мягкое напоминание о сферах =====
+    Сфера = прямой ребёнок состояния (карточка из «Важных сфер жизни»). Напоминание живёт прямо
+    на узле сферы — как totalGoalsAdded, priority и done: тогда оно сохраняется, переживает
+    перезагрузку и синхронизируется между устройствами автоматически, без отдельного механизма.
+      sphereActivityAt — время последнего ОСОЗНАННОГО взаимодействия: открытие дерева сферы или
+        создание/редактирование/выполнение/удаление/архивирование целей внутри неё. Загрузка
+        данных, синхронизация и перерисовка интерфейса взаимодействием не считаются — отметку
+        ставят только обработчики действий пользователя (touchSphereAtPath).
+      sphereMutedUntil — до какого момента не напоминать об этой сфере (после «Скрыть»).
+    ensureSphereActivity выполняется на каждом входе в состояние (loadState, облачный снапшот,
+    импорт). Сферам, созданным до этой функции, дата НЕ придумывается задним числом — отсчёт
+    начинается с первого запуска после обновления (Date.now()), поэтому напоминание не появляется
+    сразу. Новая сфера, созданная уже после обновления, помечается при создании (btnAddGoal). */
+ function ensureSphereActivity(node){
+  if(!node || !Array.isArray(node.children)) return;
+  node.children.forEach(sphere => {
+    if(!sphere || typeof sphere !== 'object') return;
+    if(!Number.isFinite(sphere.sphereActivityAt)) sphere.sphereActivityAt = Date.now();
+    if(sphere.sphereMutedUntil !== undefined && !Number.isFinite(sphere.sphereMutedUntil)){
+      delete sphere.sphereMutedUntil;
+    }
+  });
+ }
+ function touchSphere(sphere, when){
+  if(!sphere || typeof sphere !== 'object') return;
+  sphere.sphereActivityAt = Number.isFinite(when) ? when : Date.now();
+ }
+ /* Отмечает взаимодействие со сферой, внутри которой лежит узел по пути `p` (путь страницы/цели).
+    Пустой путь = домашний уровень: там никакая цель не правилась, поэтому ничего не отмечаем. */
+ function touchSphereAtPath(p){
+  if(!p || !p.length) return;
+  touchSphere(state.children[p[0]]);
+ }
+ /* Сфера подходит под напоминание, только если внутри неё есть активная незавершённая цель.
+    Контейнеры сами по себе не считаются, архивные поддеревья пропускаются целиком (архивный
+    контейнер скрывает всё внутри — то же правило, что у countWheelLeaves). */
+ function sphereHasOpenGoals(node){
+  if(!node || node.archived) return false;
+  if(isLeaf(node)) return !isWheelLeafDone(node);
+  return (node.children || []).some(sphereHasOpenGoals);
+ }
+ /* Единственное напоминание: сфера с самым давним взаимодействием из всех, кто прошёл порог
+    SPHERE_REMINDER_DAYS, не в архиве, имеет открытые цели и не скрыта кнопкой «Скрыть».
+    Сферы без даты (созданные после этой функции, но ещё не помеченные) не подходят — прошлые
+    даты не придумываются. null = напоминать не о чем. */
+ function pickSphereReminder(now){
+  now = Number.isFinite(now) ? now : Date.now();
+  let best = null;
+  state.children.forEach((sphere, idx) => {
+    if(!sphere || typeof sphere !== 'object' || sphere.archived) return;
+    if(!sphereHasOpenGoals(sphere)) return;
+    const at = sphere.sphereActivityAt;
+    if(!Number.isFinite(at)) return;
+    if(now - at < SPHERE_REMINDER_DAYS * DAY_MS) return;
+    const mutedUntil = sphere.sphereMutedUntil;
+    if(Number.isFinite(mutedUntil) && now < mutedUntil) return;
+    if(!best || at < best.at) best = { node: sphere, idx, at };
+  });
+  return best;
+ }
+ /* «Скрыть»: не напоминать об этой сфере ближайшие SPHERE_REMINDER_DAYS дней. */
+ function hideSphereReminder(sphere){
+  if(!sphere || typeof sphere !== 'object') return;
+  sphere.sphereMutedUntil = Date.now() + SPHERE_REMINDER_DAYS * DAY_MS;
+ }
+ /* «Открыть сферу»: открывает дерево целей сферы (то же действие, что тап по карточке на главной,
+    поэтому взаимодействие отмечается там же) и прокручивает страницу к её дереву. */
+ function openSphereTree(idx){
+  const sphere = state.children[idx];
+  if(!sphere) return;
+  touchSphere(sphere);
+  path = [idx];
+  render();
+  try{
+    const header = document.querySelector('.node-header');
+    if(header && typeof header.scrollIntoView === 'function'){
+      header.scrollIntoView({ behavior:'smooth', block:'start' });
+    }
+  }catch(e){}
+ }
+  // The wish map («Карта желаний») is an array of cards. A card is METADATA ONLY:
  //   {id, title, imagePath, order, isUserPhoto, createdAt, updatedAt, uploadState}
  // `imagePath` is the join key of the card's cloud image document (wishImages/{cardId}) and the
  // `uploadState` says where the bytes are ('pending' → only on this device, 'uploaded' →
@@ -3691,6 +3820,7 @@ function doImportData(file){
      ensureToday(state);
      ensureGoodToday(state);
      ensureWishMap(state);
+     ensureSphereActivity(state);
     path = [];
     saveState();
     if(cloudEnabled && authUser) scheduleCloudPush();
@@ -4019,11 +4149,25 @@ function homeViewHTML(overallPct, hintHTML, mode, protectedCount){
              </div>`;
            }).join('')
          : `<div class="empty-state">${t('priorityEmpty')}</div>`}
-     </div>` : ''}
-   </div>`;
-   html += `<div class="section-title-row">
-     <div class="section-title" id="mainGoalsToggle">
-       <span class="main-goals-arrow">${mainGoalsOpen ? '▾' : '▸'}</span>
+      </div>` : ''}
+    </div>`;
+    // Мягкое напоминание о сфере, к которой давно не возвращались. Ненавязчивый блок над
+    // списком сфер: без сроков, красных цветов и оценок — только предложение заглянуть.
+    // Считается по-настоящему загруженным данным (sphereDataReady) и только для ОДНОЙ сферы —
+    // той, куда не возвращались дольше всех.
+    const sphereReminder = sphereDataReady ? pickSphereReminder() : null;
+    if(sphereReminder){
+      html += `<div class="sphere-reminder" id="sphereReminder">
+        <div class="sphere-reminder-text">${t('sphereReminderText')(esc(sphereReminder.node.name))}</div>
+        <div class="sphere-reminder-actions">
+          <button type="button" id="btnSphereReminderOpen" class="sphere-reminder-open">${t('sphereReminderOpen')}</button>
+          <button type="button" id="btnSphereReminderHide">${t('sphereReminderHide')}</button>
+        </div>
+      </div>`;
+    }
+    html += `<div class="section-title-row">
+      <div class="section-title" id="mainGoalsToggle">
+        <span class="main-goals-arrow">${mainGoalsOpen ? '▾' : '▸'}</span>
        ${t('mainGoals')}${hintHTML}
      </div>
      ${/* The whole action group (+ − ↕ filter relocate edit) belongs to the OPEN grid — when the
@@ -5363,6 +5507,8 @@ function showUndoToast(){
     if(undoSnapshot){
       state = undoSnapshot.state;
       path = undoSnapshot.path;
+      // Отмена удаления возвращает цель в её сферу — это тоже взаимодействие с ней.
+      touchSphereAtPath(path);
       undoSnapshot = null;
       saveState();
     }
@@ -6254,6 +6400,10 @@ function attachMainViewHandlers(){
       // Every card — leaf or container — opens its own page on click. For leaves this is what
       // exposes the done-toggle, due-date input and "add checklist" button (leafDetailHTML);
       // toggling done no longer happens inline on the card itself.
+      // Открытие карточки — осознанное взаимодействие со сферой: на главной это открытие самой
+      // сферы, глубже — переход внутрь её дерева целей.
+      touchSphereAtPath(path);
+      if(!path.length) touchSphereAtPath([idx]);
       path = [...path, idx];
       render();
     });
@@ -6263,6 +6413,27 @@ function attachMainViewHandlers(){
     mainGoalsToggle.addEventListener('click', ()=>{
       mainGoalsOpen = !mainGoalsOpen;
       state.mainGoalsOpen = mainGoalsOpen;
+      saveState();
+      render();
+    });
+  }
+  // Мягкое напоминание о сфере: «Открыть сферу» ведёт в её дерево целей (и отмечает взаимодействие,
+  // как тап по карточке), «Скрыть» убирает блок на SPHERE_REMINDER_DAYS дней. Кандидат каждый раз
+  // пересчитывается на момент клика — индексы в state.children могли сдвинуться после отрисовки.
+  const btnSphereReminderOpen = document.getElementById('btnSphereReminderOpen');
+  if(btnSphereReminderOpen){
+    btnSphereReminderOpen.addEventListener('click', ()=>{
+      const reminder = pickSphereReminder();
+      if(!reminder) return;
+      openSphereTree(reminder.idx);
+    });
+  }
+  const btnSphereReminderHide = document.getElementById('btnSphereReminderHide');
+  if(btnSphereReminderHide){
+    btnSphereReminderHide.addEventListener('click', ()=>{
+      const reminder = pickSphereReminder();
+      if(!reminder) return;
+      hideSphereReminder(reminder.node);
       saveState();
       render();
     });
@@ -6358,6 +6529,8 @@ function attachMainViewHandlers(){
       lastPriorityToggleTime = now;
       if(entry.kind === 'leaf'){ entry.node.done = !entry.node.done; }
       else { entry.item.done = !entry.item.done; }
+      // Отметка «готово» прямо с главной — выполнение цели внутри её сферы.
+      touchSphereAtPath(entry.path);
       saveState();
       render();
     });
@@ -6368,6 +6541,7 @@ function attachMainViewHandlers(){
       const entry = lastPriorityItems[idx];
       if(!entry) return;
       // Both kinds navigate to the leaf's own page — that's where its checklist (if any) lives.
+      touchSphereAtPath(entry.path);
       path = entry.path;
       render();
     });
@@ -6382,6 +6556,7 @@ function attachMainViewHandlers(){
       // it doesn't touch or delete the goal itself.
       if(entry.kind === 'leaf'){ entry.node.priority = false; }
       else { entry.item.priority = false; }
+      touchSphereAtPath(entry.path);
       saveState();
       render();
     });
@@ -6401,6 +6576,9 @@ function attachMainViewHandlers(){
       const finalName = v !== '' ? v : el.dataset.original;
       resolve(path).children[idx].name = finalName;
       el.value = finalName;
+      // Переименование — осознанное редактирование: внутри сферы отмечаем её, на главной
+      // правится сама сфера (path пустой).
+      touchSphereAtPath(path.length ? path : [idx]);
       saveState();
       refreshWheel();
     });
@@ -6432,6 +6610,9 @@ function attachTreeHandlers(){
       // (e.g. custom-named categories like "Энергия" still count toward the total).
       const nextN = state.children.length + 1;
       const newSphere = { name:`${goalWord} ${nextN}`, children: emptySteps(capWord('subgoal'), goalWord) };
+      // Новая сфера начинает отсчёт напоминания с момента создания — как существующие сферы
+      // получают его с первого запуска после обновления (ensureSphereActivity).
+      touchSphere(newSphere);
       // Totals BEFORE pushing: bumpWheelTotals([]) touches the root, which is unaffected by the
       // push itself, so order is safe here either way — but compute the leaf count from the
       // detached subtree first so a half-inserted tree is never measured.
@@ -6485,6 +6666,8 @@ function attachTreeHandlers(){
         if(!isLeaf(newNode)) setWheelTotal(newNode, addedLeaves);
         bumpWheelTotals(path, addedLeaves);
       }
+      // Новая цель растёт внутри сферы, страница которой открыта — это взаимодействие с ней.
+      touchSphereAtPath(path);
       saveState();
       render();
     });
@@ -6503,6 +6686,9 @@ function attachTreeHandlers(){
       // emptied container into a leaf and step `path` up, so a single deep copy rolls all of it
       // back at once via the Undo toast.
       undoSnapshot = { state: structuredCloneFallback(state), path: path.slice() };
+      // Удаление цели внутри сферы — взаимодействие с ней (на главном уровне удаляется сама
+      // сфера, отмечать нечего).
+      touchSphereAtPath(path);
       parent.children.splice(idx,1);
       // Any container (main goal, subgoal, goal, or deeper) that loses its last remaining child
       // shouldn't sit there as an empty "0/0" container — turn it back into a plain checkbox item
@@ -6683,6 +6869,9 @@ function attachTreeHandlers(){
       // another — source ancestors shrink by that count (floor 0), destination ancestors grow.
       // Archived leaves carry no load and move no total with them.
       const movedLeaves = countWheelLeaves(sourceNode, false);
+      // Перенос цели — взаимодействие с ОБЕИМИ сферами: из которой забрали и в которую положили.
+      touchSphereAtPath(sourceParentPath);
+      if(destPath) touchSphereAtPath(destPath);
       sourceParent.children.splice(sourceIdx, 1);
       destNode.children.push(sourceNode);
       if(movedLeaves > 0){
@@ -6717,6 +6906,7 @@ function attachLeafHandlers(){
     leafToggle.addEventListener('click', ()=>{
       const node = resolve(path);
       node.done = !node.done;
+      touchSphereAtPath(path);
       saveState();
       render();
     });
@@ -6756,7 +6946,7 @@ function attachLeafHandlers(){
       const yRaw = leafYear.value.trim();
       if(!dRaw && !mRaw && !yRaw){
         const node = resolve(path);
-        if(node.date){ node.date = ''; saveState(); render(); }
+        if(node.date){ node.date = ''; touchSphereAtPath(path); saveState(); render(); }
         return;
       }
       const day = parseInt(dRaw,10);
@@ -6779,6 +6969,7 @@ function attachLeafHandlers(){
       const node = resolve(path);
       if(node.date !== iso){
         node.date = iso;
+        touchSphereAtPath(path);
         saveState();
         render();
       }
@@ -6790,6 +6981,7 @@ function attachLeafHandlers(){
     btnClearDate.addEventListener('click', ()=>{
       const node = resolve(path);
       node.date = '';
+      touchSphereAtPath(path);
       saveState();
       render();
     });
@@ -6799,6 +6991,7 @@ function attachLeafHandlers(){
     btnAddChecklist.addEventListener('click', ()=>{
       const node = resolve(path);
       node.checklist = [];
+      touchSphereAtPath(path);
       saveState();
       render();
     });
@@ -6818,6 +7011,9 @@ function attachLeafHandlers(){
           path = path.slice(0, -1).concat(parent.children.length - 1);
         }
       }
+      // Архивирование (и возврат из архива) — взаимодействие со сферой, внутри которой лежит
+      // цель; архивация самой сферы (path.length === 1) отмечает её тоже.
+      touchSphereAtPath(path);
       saveState();
       render();
     });
@@ -6836,6 +7032,7 @@ function attachLeafHandlers(){
         return;
       }
       node.priority = !node.priority;
+      touchSphereAtPath(path);
       saveState();
       render();
     });
@@ -6845,6 +7042,7 @@ function attachLeafHandlers(){
       const idx = parseInt(el.dataset.checklistToggle,10);
       const node = resolve(path);
       node.checklist[idx].done = !node.checklist[idx].done;
+      touchSphereAtPath(path);
       saveState();
       render();
     });
@@ -6865,6 +7063,7 @@ function attachLeafHandlers(){
         return;
       }
       item.priority = !item.priority;
+      touchSphereAtPath(path);
       saveState();
       render();
     });
@@ -6873,6 +7072,8 @@ function attachLeafHandlers(){
     el.addEventListener('click', ()=>{
       const idx = parseInt(el.dataset.checklistRemove,10);
       const node = resolve(path);
+      // Удаление пункта чек-листа — правка цели внутри сферы.
+      touchSphereAtPath(path);
       // Last item removed → collapses back to a plain checkbox leaf inside the helper (no
       // phantom `checklist: []`); we only fix up page state when that happens.
       if(removeChecklistItem(node, idx)){
@@ -6909,6 +7110,7 @@ function attachChecklistDeleteHandlers(){
     checklistDeletePanelOpen = false;
     // Leave this goal's own page and go back to the list it was created from — a plain
     // checkbox goal (no checklist) isn't meant to have its own page, it's toggled from the card.
+    touchSphereAtPath(path);
     path = path.slice(0, -1);
     saveState();
     render();
@@ -6926,6 +7128,7 @@ function attachSyncConflictHandlers(){
     state = syncConflict.cloud;
     if(isValidGoalTree(state)){
       sanitizeGoalTree(state); sanitizeEmptyChecklists(state); ensureWheelTotals(state); ensureToday(state); ensureGoodToday(state);
+      ensureSphereActivity(state);
       // The account document holds the wish board as METADATA ONLY: no uploadState flags and no
       // bytes. Without this merge the cards keep no state at all and nothing ever downloads
       // them — the board stays blank on this device until a reload. mergeWishMapCloud() restores
@@ -6936,6 +7139,8 @@ function attachSyncConflictHandlers(){
     saveState();
     applyingRemoteUpdate = false;
     syncConflict = null;
+    // Выбор сделан — данные определены, напоминания снова считаются.
+    sphereDataReady = true;
     render();
     wishBoardReady();
   });
@@ -6944,7 +7149,9 @@ function attachSyncConflictHandlers(){
     // `state` is still the local version (never touched by the conflict) — just push it up,
     // overwriting the stale account document.
     state = syncConflict.local;
+    if(isValidGoalTree(state)) ensureSphereActivity(state);
     syncConflict = null;
+    sphereDataReady = true;
     saveState();
     render();
     wishBoardReady();   // local-only cards still need their upload; cloud cards their download
@@ -6976,6 +7183,7 @@ function attachChecklistHandlers(){
       const v = checklistEditInput.value.trim();
       node.checklist[idx].text = v !== '' ? v : checklistEditInput.dataset.original;
       checklistEditIdx = null;
+      touchSphereAtPath(path);
       saveState();
       render();
     });
@@ -7001,6 +7209,7 @@ function attachChecklistHandlers(){
     if(!v) return;
     const node = resolve(path);
     node.checklist.push({ text:v, done:false });
+    touchSphereAtPath(path);
     saveState();
     render();
   }
@@ -7579,12 +7788,19 @@ function attachModalHandlers(){
       const results = runSearch(searchInput ? searchInput.value : '');
       const hit = results[Number(row.dataset.resultIdx)];
       if(!hit) return;
+      // Переход к найденной цели открывает дерево той сферы, внутри которой цель лежит.
+      touchSphereAtPath(hit.path);
       path = hit.path;
       searchPanelOpen = false;
       render();
     });
   }
 }
+
+// Мягкое напоминание о сферах: у локального пользователя (cloudEnabled = false) все данные уже
+// пришли синхронным loadState(), поэтому гейт открывается до первой отрисовки. Со входом в
+// аккаунт гейт откроет первый облачный снапшот (startCloudSync) — и перерисует главную.
+if(!cloudEnabled) sphereDataReady = true;
 
 render();
 
@@ -7672,6 +7888,8 @@ if(cloudEnabled){
       // Signed out (or a fresh anonymous load): the cloud bytes are unreachable, so fall back to
       // the local cache — otherwise a sign-out would blank every card to its pending state.
       wishCacheWarm();
+      // Никакого облака не будет: местные данные — это и есть окончательные.
+      sphereDataReady = true;
     }
     render();
   });

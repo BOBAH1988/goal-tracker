@@ -1474,3 +1474,93 @@ test('top menu: an online reinstall validates the shell before wiping caches', a
   await new Promise((r) => setTimeout(r, 40));
   assert.deepEqual(deleted, ['goal-tracker-v1.1.50'], 'a validated fresh shell lets the wipes run');
 });
+
+// ===== Мягкое напоминание о сферах («К сфере … давно не возвращались») =====
+// Клики по НАСТОЯЩИМ обработчикам: блок рисуется на главной, «Скрыть» глушит сферу на 14 дней,
+// «Открыть сферу» ведёт в дерево, а открытие/выполнение целей сбрасывают отсчёт.
+const DAY = 24 * 60 * 60 * 1000;
+function staleSphereState(name, daysAgo) {
+  return {
+    name: 'root',
+    children: [{
+      name,
+      sphereActivityAt: Date.now() - daysAgo * DAY,
+      children: [{ name: 'Цель', done: false, children: [] }],
+    }],
+  };
+}
+
+test('sphere reminder: the home screen shows the gentle nudge with the sphere name', () => {
+  const t = bootDom();
+  t.app.setState(staleSphereState('Здоровье', 20));
+  t.window.render();
+  const block = t.document.getElementById('sphereReminder');
+  assert.ok(block, 'a stale sphere must surface its reminder');
+  assert.match(block.textContent, /давно не возвращались/, 'the soft wording is used');
+  assert.match(block.textContent, /Здоровье/, 'the sphere name is substituted');
+  assert.ok(t.document.getElementById('btnSphereReminderOpen'), '«Открыть сферу» action');
+  assert.ok(t.document.getElementById('btnSphereReminderHide'), '«Скрыть» action');
+});
+
+test('sphere reminder: no date on the sphere — no reminder, no invented past', () => {
+  const t = bootDom();
+  t.app.setState({ name: 'root', children: [{ name: 'Здоровье', children: [{ name: 'Цель', done: false, children: [] }] }] });
+  t.window.render();
+  assert.ok(!t.document.getElementById('sphereReminder'), 'a sphere without a date never reminds');
+});
+
+test('sphere reminder: «Скрыть» removes the block and mutes the sphere for 14 days', () => {
+  const t = bootDom();
+  t.app.setState(staleSphereState('Здоровье', 20));
+  t.window.render();
+  t.click('#btnSphereReminderHide');
+  assert.ok(!t.document.getElementById('sphereReminder'), 'the block must disappear');
+  const mutedUntil = t.app.getState().children[0].sphereMutedUntil;
+  assert.ok(mutedUntil > Date.now() + 13 * DAY, 'the mute covers the full 14 days');
+  // Re-render (e.g. after a sync echo) must not resurrect it.
+  t.window.render();
+  assert.ok(!t.document.getElementById('sphereReminder'), 'the hidden sphere stays quiet');
+});
+
+test('sphere reminder: «Открыть сферу» opens the tree and restarts the countdown', () => {
+  const t = bootDom();
+  const old = Date.now() - 20 * DAY;
+  t.app.setState(staleSphereState('Здоровье', 20));
+  t.window.render();
+  t.click('#btnSphereReminderOpen');
+  assert.deepEqual(Array.from(t.app.getPath()), [0], 'the sphere tree must open');
+  assert.ok(t.app.getState().children[0].sphereActivityAt > old, 'the countdown restarts');
+  t.app.setPath([]);
+  t.window.render();
+  assert.ok(!t.document.getElementById('sphereReminder'), 'the just-opened sphere stops reminding');
+});
+
+test('sphere reminder: opening a sphere card or completing its goal counts as interaction', () => {
+  const t = bootDom();
+  const old = Date.now() - 20 * DAY;
+  t.app.setState(staleSphereState('Здоровье', 20));
+  t.window.render();
+  // Card tap on the home screen opens the sphere's tree — a deliberate interaction.
+  t.click('[data-nav]');
+  assert.ok(t.app.getState().children[0].sphereActivityAt > old, 'card tap refreshes the sphere');
+  // Completing a goal one level deeper refreshes it too.
+  t.app.setPath([0, 0]);
+  t.window.render();
+  t.click('#leafToggle');
+  assert.ok(t.app.getState().children[0].sphereActivityAt > old, 'completing a goal refreshes the sphere');
+});
+
+test('sphere reminder: interaction dates persist to localStorage and ride the cloud doc', () => {
+  const t = bootDom();
+  const old = Date.now() - 20 * DAY;
+  t.app.setState(staleSphereState('Здоровье', 20));
+  t.app.saveState();
+  const raw = t.window.localStorage.getItem(t.app.STORAGE_KEY);
+  assert.ok(raw.includes('sphereActivityAt'), 'the date must persist');
+  // "Reload": the countdown continues from the saved date, not from zero.
+  const t2 = bootDom({ [t.app.STORAGE_KEY]: raw });
+  assert.equal(t2.app.getState().children[0].sphereActivityAt, old, 'reload keeps the date');
+  // The cloud projection carries the same fields (stateForCloud only replaces wishMap).
+  const cloud = t2.app.stateForCloud(t2.app.getState());
+  assert.equal(cloud.children[0].sphereActivityAt, old, 'other devices learn the date');
+});
