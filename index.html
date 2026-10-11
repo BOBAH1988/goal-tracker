@@ -1072,7 +1072,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.1.68';
+const APP_VERSION = '1.1.69';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -2149,7 +2149,10 @@ function startCloudSync(uid){
           sanitizeGoalTree(state); sanitizeEmptyChecklists(state); ensureWheelTotals(state); ensureToday(state); ensureGoodToday(state);
           // The cloud board carries metadata only; keep local cached images for cards we
           // already have and queue downloads for the rest (syncWishBoard below).
-          if(Array.isArray(data.state.wishMap)) state.wishMap = mergeWishMapCloud(data.state.wishMap, localWishCards);
+          // The third argument is the document's own updatedAt: a local card whose file is
+          // already uploaded but which this older write does not contain yet is kept instead of
+          // dropped (that is the "card appears, then vanishes a second later" race).
+          if(Array.isArray(data.state.wishMap)) state.wishMap = mergeWishMapCloud(data.state.wishMap, localWishCards, data.updatedAt);
           else state.wishMap = localWishCards;
         }
         saveState();
@@ -2832,7 +2835,17 @@ function stateForCloud(s){
 // Merges the cloud board (metadata) with the local one (image cache): cloud wins for metadata
 // (title/order/isUserPhoto/dates), local src is kept for cards we already have, cards known
 // only by imagePath wait for downloadWishImage. Result is fully sanitized (ids, cap, one mark).
- function mergeWishMapCloud(cloudCards, localCards){
+// Firestore hands a timestamp back as its own object (toMillis), the REST/admin shape
+// {seconds, nanoseconds}, or a plain number in tests — normalise all three to epoch ms,
+// 0 when there is nothing to compare with.
+function wishTsMs(v){
+  if(!v) return 0;
+  if(typeof v === 'number') return v;
+  if(typeof v.toMillis === 'function'){ const m = v.toMillis(); return typeof m === 'number' ? m : 0; }
+  if(typeof v.seconds === 'number') return v.seconds * 1000 + Math.floor((v.nanoseconds || 0) / 1e6);
+  return 0;
+}
+function mergeWishMapCloud(cloudCards, localCards, cloudUpdatedAt){
   const local = new Map((Array.isArray(localCards) ? localCards : []).filter(c => c && c.id).map(c => [c.id, c]));
   const merged = (Array.isArray(cloudCards) ? cloudCards : []).map(cc => {
     const card = Object.assign({}, cc || {});
@@ -2848,8 +2861,19 @@ function stateForCloud(s){
   // Cards that exist ONLY on this device (never uploaded — offline add, failed upload) must
   // survive a cloud snapshot, otherwise the next merge would silently drop them.
   const cloudIds = new Set(merged.filter(c => c && c.id).map(c => c.id));
+  const docTs = wishTsMs(cloudUpdatedAt);
   (Array.isArray(localCards) ? localCards : []).forEach(lc => {
-    if(lc && lc.id && !cloudIds.has(lc.id) && !lc.imagePath) merged.push(Object.assign({}, lc));
+    if(!lc || !lc.id || cloudIds.has(lc.id)) return;
+    if(typeof lc.imagePath !== 'string'){ merged.push(Object.assign({}, lc)); return; }
+    // The tricky case: the file IS uploaded (imagePath set) but the account document does not
+    // have it yet — the window between a finished upload and the next push, whose "echo" of an
+    // OLDER write lands here. Dropping it made a just-added card vanish a second after it
+    // appeared (reported). Keep it when the card was touched AFTER that document was written,
+    // or when there is no timestamp to compare with (never silently lose a photograph); a card
+    // deleted on another device WAS touched before that write, so it still disappears — no
+    // zombies.
+    const cardTs = wishTsMs(lc.updatedAt);
+    if(!cardTs || cardTs > docTs) merged.push(Object.assign({}, lc));
   });
   const holder = { wishMap: merged };
   ensureWishMap(holder);

@@ -314,6 +314,47 @@ test('delete: drops the Firestore projection AND removes the Storage object', as
   assert.equal(proj.length, 0, 'a deleted card is not in the cloud doc');
 });
 
+/* The reported bug: "added a picture with a caption, it appeared and vanished a second later,
+   adding it again worked". The card's upload finishes between the debounced push (which cannot
+   include a card without a file yet) and the snapshot echo of that OLDER write — the merge dropped
+   any local card that had imagePath but was missing from the cloud. It must be kept when it is
+   NEWER than the document, while a card deleted on another device still disappears. */
+test('merge: a card uploaded after the account document keeps its place (the vanishing card bug)', () => {
+  const t = boot();
+  const cloud = [{ id: 'old', title: 'Старая', imagePath: 'wishImages/old', order: 0, updatedAt: 900 }];
+  const local = [
+    { id: 'old', title: 'Старая', imagePath: 'wishImages/old', order: 0, updatedAt: 900, uploadState: 'uploaded' },
+    { id: 'new', title: 'Новая', imagePath: 'wishImages/new', order: 1, updatedAt: 1500, uploadState: 'uploaded' },
+    { id: 'off', title: 'Без сети', imagePath: null, order: 2, updatedAt: 1600, uploadState: 'pending' },
+  ];
+  const run = (docTs) => Array.from(vm.runInContext(
+    'mergeWishMapCloud(' + JSON.stringify(cloud) + ',' + JSON.stringify(local) + ',' + JSON.stringify(docTs) + ')', t.ctx));
+
+  // Документ записан в 1000 ms: новая карточка (1500) моложе — её нельзя терять.
+  let merged = run({ seconds: 1, nanoseconds: 0 });
+  assert.equal(merged.filter(c => c.id === 'new').length, 1,
+    'the card uploaded AFTER the document must survive the merge — that was the vanishing card');
+  assert.equal(merged.find(c => c.id === 'new').uploadState, 'uploaded');
+  assert.deepEqual(Array.from(merged.map(c => c.id)), ['old', 'new', 'off'], 'the offline card is kept too');
+
+  // Документ новее (2000): карточку удалили на другом устройстве — она должна уйти.
+  merged = run({ seconds: 2, nanoseconds: 0 });
+  assert.equal(merged.filter(c => c.id === 'new').length, 0, 'a card deleted remotely still disappears');
+  assert.equal(merged.filter(c => c.id === 'off').length, 1, 'the offline card survives either way');
+
+  // Форма отметки времени из настоящего SDK (Timestamp с toMillis) и число.
+  const withRealTs = Array.from(vm.runInContext(
+    'mergeWishMapCloud(' + JSON.stringify(cloud) + ',' + JSON.stringify(local) + ',' +
+    JSON.stringify({ seconds: 1, nanoseconds: 0 }) + ')', t.ctx));
+  assert.equal(withRealTs.filter(c => c.id === 'new').length, 1, 'the {seconds,nanoseconds} shape works');
+
+  // Никакого updatedAt нет как у документа, так и у карточки — карточка остаётся (полетит в следующий push).
+  const noTs = Array.from(vm.runInContext(
+    'mergeWishMapCloud(' + JSON.stringify([{ id: 'old', title: 'x', imagePath: 'p', order: 0 }]) + ',' +
+    JSON.stringify([{ id: 'new2', title: 'y', imagePath: 'p2', order: 1 }]) + ', undefined)', t.ctx));
+  assert.deepEqual(Array.from(noTs.map(c => c.id)), ['old', 'new2'], 'no timestamps → keep, safer than losing');
+});
+
 test('manual move: the card takes the target slot, order is renumbered, the mark still leads', () => {
   const t = boot();
   t.app.setState(Object.assign(t.app.getState(), { wishMap: [
