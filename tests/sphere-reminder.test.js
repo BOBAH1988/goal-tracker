@@ -241,3 +241,47 @@ test('круг локулей ru/en: ключи напоминания есть 
     assert.ok(s.sphereReminderOpen.length > 0 && s.sphereReminderHide.length > 0, `${lang}: кнопки непустые`);
   }
 });
+
+/* ===== п.4: что НЕ считается посещением сферы =====
+   Дата взаимодействия обновляется только при ОСОЗНАННОМ открытии (клик по сектору/карточке,
+   переход по дереву). Закрытие, автоматическая перерисовка и получение облачных данных — нет. */
+test('п.4: получение облачных данных НЕ считается посещением (ensureSphereActivity не трогает дату)', () => {
+  const t = boot();
+  const old = Date.now() - 20 * 24 * 60 * 60 * 1000;
+  // Снимок из облака: у сферы уже есть своя дата взаимодействия (с другого устройства).
+  const cloudTree = { name: 'root', children: [
+    { name: 'Здоровье', sphereActivityAt: old, children: [{ name: 'Цель', done: false, children: [] }] },
+  ] };
+  t.app.setState({ name: 'root', children: [] });
+  // ensureSphereActivity — то, что применяется к облачному снимку при sync. Она только добивает
+  // отсутствующие даты, но НЕ перезаписывает существующую (иначе облачная загрузка «посетила» бы все сферы).
+  t.app.ensureSphereActivity(cloudTree);
+  assert.equal(cloudTree.children[0].sphereActivityAt, old,
+    'дата из облака сохранена — загрузка данных не помечается как посещение');
+});
+
+test('п.4: ensureSphereActivity только добивает отсутствующую дату, не понижая существующую', () => {
+  const t = boot();
+  const old = Date.now() - 5 * 24 * 60 * 60 * 1000;
+  const tree = { name: 'root', children: [
+    { name: 'С датой', sphereActivityAt: old, children: [] },
+    { name: 'Без даты', children: [] },   // старая запись без отметки
+  ] };
+  t.app.ensureSphereActivity(tree);
+  assert.equal(tree.children[0].sphereActivityAt, old, 'существующая дата не тронута');
+  assert.ok(Number.isFinite(tree.children[1].sphereActivityAt) && tree.children[1].sphereActivityAt > 0,
+    'отсутствующей дате присвоено текущее время (но это бэкофилл, не посещение)');
+});
+
+test('п.4: touchSphereAtPath с путём штампует, с пустым путём — нет (домашний уровень не считается)', () => {
+  const t = boot();
+  const old = Date.now() - 20 * 24 * 60 * 60 * 1000;
+  t.app.setState({ name: 'root', children: [sphere('Здоровье', 20)] });
+  t.app.touchSphere(t.app.getState().children[0], old);
+  // Пустой путь = домашний уровень: цели не правились, отметка не трогается.
+  t.app.touchSphereAtPath([]);
+  assert.equal(t.app.getState().children[0].sphereActivityAt, old, 'домашний уровень не помечается как посещение');
+  // Реальный путь внутрь сферы — отмечает (осознанный переход).
+  t.app.touchSphereAtPath([0]);
+  assert.ok(t.app.getState().children[0].sphereActivityAt > old, 'переход внутрь сферы отмечает взаимодействие');
+});
