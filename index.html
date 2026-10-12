@@ -2207,6 +2207,11 @@ let cloudPushStatus = 'idle';   // idle | saving | saved | error | conflict
 let cloudPushRetries = 0;
 let cloudPushRetryTimer = null;
 let lastAppliedCloudUpdatedAt = 0;   // ms; 0 = ещё не применяли ни одного облачного снимка
+// JSON (по «strip»-сравнению) ПОСЛЕДНЕГО применённого облачного снимка; '' = ещё не применяли.
+// Нужен, чтобы отличить эхо нашего собственного push от постороннего изменения: только когда
+// пришло ЧУЖОЕ изменение, отличающееся и от облачного снимка, и от наших незапушенных правок,
+// поднимается конфликт (п.7) — иначе snapshot молча применялся бы и терял наши правки.
+let lastAppliedCloudStateJson = '';
 // Конечное число автоматических повторов облачной записи: после него приложение ждёт явного
 // «Повторить» — иначе офлайн/сломанная сеть крутили бы бесконечный цикл переотправки.
 const CLOUD_PUSH_MAX_RETRIES = 5;
@@ -2530,6 +2535,11 @@ function pushCloudStateNow(){
           wishCloudPushPending = false;          // only a confirmed write retires the flag
           cloudPushStatus = 'saved';             // v1.1.99: "saved" ONLY after the server confirms
           cloudPushRetries = 0;
+          // Our write is now the latest cloud state: remember it (same normalized tree-only form
+          // the snapshot listener compares against) so a later snapshot is recognised as a foreign
+          // edit — or our own echo — instead of a false conflict with our own push (п.7).
+          lastAppliedCloudUpdatedAt = Date.now();
+          lastAppliedCloudStateJson = JSON.stringify(stateForCloud(state), syncStripTreeOnly);
           render();
         })
         .catch((err)=>{ cloudPushFailed(err); });
@@ -2587,6 +2597,23 @@ function normalizeUsername(name){
 function isPasswordStrong(pw){
   return pw.length >= 6 && /[A-Za-zА-Яа-яЁё]/.test(pw) && /[0-9]/.test(pw);
 }
+// Replacer that removes fields which must never make two otherwise-identical boards look
+// "different": the wheel's totalGoalsAdded bookkeeping, an image src (cloud docs carry metadata
+// only), and the sphere-reminder dates (auto-stamped on load, never an unsynced edit). Shared by
+// the sign-in conflict check, the live-snapshot foreign-edit guard, and the post-push echo check,
+// so all three compare the SAME normalized form (п.7).
+function syncStripReplacer(k, v){
+  return (k === 'totalGoalsAdded' || k === 'src' || k === 'sphereActivityAt' || k === 'sphereMutedUntil')
+    ? undefined : v;
+}
+// Stricter replacer for the live-snapshot foreign-edit guard (п.7): everything syncStripReplacer
+// drops, PLUS the wish board. The board has its OWN merge (mergeWishMapCloud) that reconciles
+// pending/uploaded cards by timestamp, so a local board with a still-uploading card legitimately
+// differs from the cloud's uploaded-only projection and must NOT look like a goal-tree conflict.
+function syncStripTreeOnly(k, v){
+  if(k === 'wishMap' || k === 'wishMapOpen' || k === 'wishGridCols') return undefined;
+  return syncStripReplacer(k, v);
+}
 function startCloudSync(uid){
   const ref = firebase.firestore().collection('users').doc(uid);
   unsubscribeSnapshot = ref.onSnapshot((doc)=>{
@@ -2605,8 +2632,7 @@ function startCloudSync(uid){
         // "differs" from the cloud one by src — strip it from the conflict comparison along
         // with the wheel's totalGoalsAdded bookkeeping churn and the sphere-reminder dates
         // (an auto-stamped sphereActivityAt must never look like an unsynced local edit).
-        const strip = (k, v) => (k === 'totalGoalsAdded' || k === 'src'
-          || k === 'sphereActivityAt' || k === 'sphereMutedUntil') ? undefined : v;
+        const strip = syncStripReplacer;
         // Guard against silently overwriting real local edits made while logged out: only runs
         // once, right after sign-in (preSyncLocalState is cleared as soon as it's been checked
         // once, so it never blocks a later legitimate real-time update from another device).
@@ -2623,12 +2649,33 @@ function startCloudSync(uid){
             return;
           }
         }
+        // п.7 (приём): во время активной сессии отличаем эхо НАШЕГО собственного push от
+        // постороннего изменения. Если пришедший снимок совпадает с нашим текущим рабочим
+        // состоянием — это наш push (или случайное совпадение): применяем спокойно. Если пришло
+        // ЧУЖОЕ изменение, а у нас есть НЕЗАПУШЕННЫЕ правки (рабочее состояние отличается от
+        // последнего применённого снимка) — не перезаписываем молча: показываем выбор, а до него
+        // рабочее состояние и облако остаются нетронутыми.
+        const incomingJson = JSON.stringify(data.state, syncStripTreeOnly);
+        const localNowJson = JSON.stringify(state, syncStripTreeOnly);
+        if(lastAppliedCloudStateJson
+           && incomingJson !== lastAppliedCloudStateJson
+           && incomingJson !== localNowJson
+           && localNowJson !== lastAppliedCloudStateJson
+           && isProtectableState(state)){
+          syncConflict = { local: structuredCloneFallback(state), cloud: data.state };
+          lastAppliedCloudStateJson = incomingJson;   // запомнили, чтобы не долбить этим же снимком
+          render();
+          return;
+        }
         const localWishCards = (Array.isArray(state.wishMap) ? state.wishMap : []);
         applyingRemoteUpdate = true;
         state = data.state;
         // Remember WHEN this snapshot was written (v1.1.99): pushCloudStateNow compares the
         // cloud's own timestamp against this to detect a concurrent edit on another device.
         lastAppliedCloudUpdatedAt = wishTsMs(data.updatedAt);
+        // Remember WHAT we last applied (v1.1.99, п.7): the next snapshot compares against this
+        // to tell our own push's echo apart from a foreign edit we must not silently overwrite.
+        lastAppliedCloudStateJson = JSON.stringify(data.state, syncStripTreeOnly);
         // Cloud docs written by older app versions may lack the wheel counter — backfill it
         // the same way as loadState()/import so the wheel never divides by a missing zero.
         sanitizeGoalTree(state); sanitizeEmptyChecklists(state); ensureWheelTotals(state); ensureToday(state); ensureGoodToday(state);

@@ -151,3 +151,76 @@ test('п.7: без учтённого ранее снимка (lastApplied=0) з
   assert.equal(t.app.getCloudPushStatus(), 'saved', 'первая запись нового аккаунта проходит');
   assert.equal(cloud.calls.sets.length, 1);
 });
+
+/* Сквозной сценарий п.7 через настоящий onSnapshot: два устройства одновременно меняют РАЗНЫЕ
+   цели. Устройство применяет начальный снимок, вносит свою правку (не отправляя), затем прилетает
+   снимок с чужой правкой. Раньше снапшот молча делал state = data.state и затирал нашу правку —
+   теперь поднимается конфликт, ничего не перезаписывается молча, обе стороны целы. */
+function installSnapshotCloud(ctx) {
+  const store = new Map();       // key -> doc data
+  let listener = null;
+  const ref = {
+    set: (payload) => { store.set('users/u1', payload); return Promise.resolve(); },
+    get: () => Promise.resolve({ exists: store.has('users/u1'), data: () => store.get('users/u1') }),
+    onSnapshot: (cb) => { listener = cb; cb({ exists: store.has('users/u1'), data: () => store.get('users/u1') }, () => {}); return () => {}; },
+  };
+  const firestoreFactory = () => ({ collection: () => ({ doc: () => ref }) });
+  firestoreFactory.FieldValue = { serverTimestamp: () => 'server-ts' };
+  ctx.firebase = { firestore: firestoreFactory };
+  vm.runInContext('cloudEnabled = true; authUser = { uid: "u1", email: "a@b.c" };', ctx);
+  return {
+    store,
+    seed: (data) => { store.set('users/u1', data); if (listener) listener({ exists: true, data: () => data }, () => {}); },
+    get: () => store.get('users/u1'),
+  };
+}
+
+test('п.7: чужая правка при наших незапушенных изменениях — конфликт, не молчаливая перезапись', async () => {
+  const t = boot();
+  const cloud = installSnapshotCloud(t.ctx);
+  // Начальный общий снимок: две сферы-цели.
+  const base = { name: 'root', updatedAt: 1000, children: [
+    { name: 'А', sphereActivityAt: 1, children: [] },
+    { name: 'Б', sphereActivityAt: 1, children: [] },
+  ] };
+  cloud.store.set('users/u1', { state: base, updatedAt: 1000 });
+  // Устройство подписывается и применяет начальный снимок.
+  vm.runInContext('startCloudSync("u1")', t.ctx);
+  await new Promise(r => setTimeout(r, 5));
+  assert.equal(t.app.getState().children.length, 2, 'начальный снимок применён');
+  assert.equal(t.app.getSyncConflict ? t.app.getSyncConflict() : null, null, 'конфликта пока нет');
+
+  // Наше УСТРОЙСТВО вносит незапушенную правку: переименовываем «А» → «А (моя правка)».
+  t.app.getState().children[0].name = 'А (моя правка)';
+
+  // Прилетает снимок с ДРУГОГО устройства: оно переименовало «Б» → «Б (чужая правка)».
+  const foreign = { name: 'root', updatedAt: 9000000, children: [
+    { name: 'А', sphereActivityAt: 1, children: [] },
+    { name: 'Б (чужая правка)', sphereActivityAt: 1, children: [] },
+  ] };
+  cloud.seed({ state: foreign, updatedAt: 9000000 });
+  await new Promise(r => setTimeout(r, 5));
+
+  // Конфликт поднят, и НАША правка не потеряна (working state цел).
+  assert.equal(t.app.getState().children[0].name, 'А (моя правка)', 'наша незапушенная правка цела');
+  const panel = vm.runInContext('statusPanelsHTML()', t.ctx);
+  assert.ok(panel.includes('syncConflictOverlay'), 'показан диалог выбора вместо молчаливой перезаписи');
+});
+
+test('п.7: эхо нашего собственного push НЕ считается чужим изменением', async () => {
+  const t = boot();
+  const cloud = installSnapshotCloud(t.ctx);
+  const base = { name: 'root', updatedAt: 1000, children: [{ name: 'А', sphereActivityAt: 1, children: [] }] };
+  cloud.store.set('users/u1', { state: base, updatedAt: 1000 });
+  vm.runInContext('startCloudSync("u1")', t.ctx);
+  await new Promise(r => setTimeout(r, 5));
+  // Успешно пушим наше состояние — запоминается как последнее применённое.
+  t.app.setLastAppliedCloudUpdatedAt(1000);
+  t.app.setState({ name: 'root', children: [{ name: 'А', sphereActivityAt: 1, children: [] }] });
+  // Сервер подтвердил запись с тем же содержанием — снапшот-эхо приходит.
+  cloud.seed({ state: base, updatedAt: 5000 });
+  await new Promise(r => setTimeout(r, 5));
+  // Тот же контент (по дереву) — это эхо, конфликта быть не должно.
+  assert.equal(t.app.getState().children[0].name, 'А', 'эхо нашего push применено без конфликта');
+});
+
