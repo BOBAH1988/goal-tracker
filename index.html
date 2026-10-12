@@ -8325,7 +8325,9 @@ function attachAccountHandlers(){
     btnExportData.addEventListener('click', (e)=>{
       e.stopPropagation();
       topMenuOpen = false;
-      doExportData();
+      // doExportData is async (it collects «Карта желаний» photos before writing the file) and may
+      // show a confirm() if some photos are missing — fire-and-forget, the download lands when done.
+      Promise.resolve(doExportData()).catch(()=>{});
       render();
     });
   }
