@@ -1660,8 +1660,8 @@ test('share: the menu item sits with the other items and reuses .menu-item', () 
   const t = bootDom();
   t.click('#btnTopMenu');
   const item = t.document.getElementById('btnShareMenuItem');
-  assert.ok(item, '«Поделиться» must be in the menu');
-  assert.match(item.textContent, /Поделиться/, 'the Russian label');
+  assert.ok(item, '«Поделиться приложением» must be in the menu');
+  assert.equal(item.textContent.trim(), 'Поделиться приложением', 'the Russian label');
   assert.ok(item.classList.contains('menu-item'), 'reuses the existing .menu-item styles — no new look');
   assert.ok(t.document.getElementById('btnInstructionsMenuItem'), 'neighbour «Инструкция» stays');
   assert.ok(t.document.getElementById('btnAboutMenuItem'), 'neighbour «О проекте» stays');
@@ -1744,10 +1744,10 @@ test('share: the Clipboard-API-less browser falls back to execCommand', async ()
   assert.equal(helper, undefined, 'no textarea left holding the link');
 });
 
-test('share: English locale says Share and translates the fallback note', async () => {
+test('share: English locale says Share the app and translates the fallback note', async () => {
   const t = bootDom({ goal_tracker_lang: 'en' });
   t.click('#btnTopMenu');
-  assert.match(t.document.getElementById('btnShareMenuItem').textContent, /Share/, 'the English label');
+  assert.equal(t.document.getElementById('btnShareMenuItem').textContent.trim(), 'Share the app', 'the English label');
   const copied = [];
   Object.defineProperty(t.window.navigator, 'clipboard', {
     value: { writeText: async (s) => { copied.push(s); } }, configurable: true,
