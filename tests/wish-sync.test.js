@@ -675,3 +675,45 @@ test('cloud snapshot: an invalid state never replaces the working state', () => 
   assert.equal(t.app.getCloudStateError(), false, 'flag cleared on valid data');
   assert.equal(t.app.getState().children[0].name, 'Облачная сфера', 'valid cloud data applied');
 });
+
+test('п.3: повреждённый облачный ответ НЕ уходит обратно в облако (нет молчаливой перезаписи)', () => {
+  const t = boot();
+  const calls = installFakeFirebase(t.ctx);
+  signedIn(t.ctx);
+  t.app.setState({ name: 'root', children: [
+    { name: 'Моя сфера', sphereActivityAt: Date.now(), children: [{ name: 'Моя цель', done: false, children: [] }] },
+  ] });
+  vm.runInContext('startCloudSync("u1")', t.ctx);
+  // Приходит мусор вместо дерева целей.
+  t.ctx.seedCloudDoc('users/u1', { state: { garbage: true }, updatedAt: 'server-ts' });
+  t.ctx.firebaseFirestore.emit('users/u1');
+  assert.equal(t.app.getCloudStateError(), true, 'повреждение распознано');
+  // Ни одной записи в облако не произошло — мусор не подтверждён и не отправлен обратно.
+  assert.equal(calls.firestoreSets.length, 0, 'рабочее состояние не отправлено в облако при повреждённом ответе');
+  // Рабочее состояние локально цело.
+  assert.equal(t.app.getState().children[0].name, 'Моя сфера');
+});
+
+test('п.1: фото с немедленным уходом в фон — байты в кэше, метаданные не теряются', async () => {
+  const t = boot();
+  const calls = installFakeFirebase(t.ctx);
+  signedIn(t.ctx);
+  t.ctx.URL = { createObjectURL: () => 'blob:bg', revokeObjectURL: () => {} };
+  t.ctx.__blob = fakeBlob('pixels');
+  // Пользователь добавил фото и сразу свернул приложение: байты СНАЧАЛА уходят в локальный кэш.
+  await t.app.wishCachePut('bg1', t.ctx.__blob);
+  const card = { id: 'bg1', title: 'Фото', imagePath: null, order: 0, isUserPhoto: false,
+                 createdAt: 1, updatedAt: 1, uploadState: 'pending' };
+  t.app.setState(Object.assign(t.app.getState(), { wishMap: [card] }));
+  t.app.saveState();   // saveState → scheduleCloudPush (debounce 800 мс) — приложение уходит в фон
+  // Уход в фон (visibilitychange → hidden) вызывает flushCloudPush: отложенная запись уходит сразу.
+  vm.runInContext('flushCloudPush()', t.ctx);
+  await new Promise(r => setTimeout(r, 10));
+  // Байты целы в кэше — карточка переживёт уход в фон и перезагрузку.
+  const cached = await t.app.wishCacheGet('bg1');
+  assert.ok(cached, 'байты фото сохранены в кэше несмотря на уход в фон');
+  // Мету карточки видно в localStorage — она не потерялась.
+  const ls = t.localStorage.getItem(t.app.STORAGE_KEY);
+  assert.ok(ls && ls.includes('bg1'), 'метаданные карточки в localStorage (переживут уход в фон)');
+});
+
