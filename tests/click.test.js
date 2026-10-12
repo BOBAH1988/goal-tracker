@@ -512,6 +512,59 @@ test('today block: collapses and remembers state across reload', () => {
   assert.ok(t2.document.querySelector('[data-today-toggle="0"]'), 'items must reappear when expanded');
 });
 
+// ===== v1.2.7: капсула даты правки записей рядом с капсулой настроения =====
+test('today block: date capsule sits next to the mood badge — green today, red when stale', () => {
+  const t = bootDom();
+  const todayIso = t.app.isoToday();
+  t.app.setState({
+    name: 'root', children: [leaf(false, { name: 'Цель' })],
+    today: [{ text: 'Раз', done: false }, { text: 'Два', done: false }, { text: 'Три', done: true }],
+    todayDate: todayIso,
+  });
+  t.window.render();
+
+  const badge = t.document.querySelector('.today-date');
+  assert.ok(badge, 'the date capsule must render next to the mood badge');
+  const mood = t.document.querySelector('.today-badges .good-today:not(.today-date)');
+  assert.ok(mood, 'the mood badge must live in the same row');
+  assert.match(badge.textContent.trim(), /^\d{2}\.\d{2}\.\d{2}$/, 'format is 12.10.26');
+  assert.equal(badge.textContent.trim(), t.app.shortDateDMY(todayIso), 'label comes from todayDate');
+  assert.ok(badge.classList.contains('today-date-same'), 'date = today → green capsule');
+  assert.ok(!badge.classList.contains('today-date-diff'), 'and not the red one');
+  assert.ok(badge.getAttribute('data-tip'), 'the capsule carries the custom tooltip');
+
+  // Даты различаются → красная капсула; сама дата при рендере не перетирается.
+  t.app.setState(Object.assign(t.app.getState(), { todayDate: '2020-01-01' }));
+  t.window.render();
+  const stale = t.document.querySelector('.today-date');
+  assert.ok(stale.classList.contains('today-date-diff'), 'stale date → red capsule');
+  assert.equal(stale.textContent.trim(), '01.01.20', 'compact format keeps the leading zeroes');
+  assert.equal(t.app.getState().todayDate, '2020-01-01', 'render must not overwrite the stored date');
+});
+
+// ===== v1.2.7: дата последней правки обновляется при корректировке записей =====
+test('today block: text edit and checkbox toggle stamp todayDate', () => {
+  const t = bootDom();
+  const todayIso = t.app.isoToday();
+  t.app.setState({
+    name: 'root', children: [leaf(false, { name: 'Цель' })],
+    today: [{ text: 'а', done: false }, { text: 'б', done: false }, { text: 'в', done: false }],
+    todayDate: '2020-01-01',
+  });
+  t.window.render();
+
+  const input = t.document.querySelector('[data-today-edit="1"]');
+  input.value = 'Новый текст';
+  input.dispatchEvent(new t.window.Event('input', { bubbles: true }));
+  assert.equal(t.app.getState().todayDate, todayIso, 'typing counts as an entry edit');
+
+  t.app.setState(Object.assign(t.app.getState(), { todayDate: '2020-01-01' }));
+  t.window.render();
+  t.document.querySelector('[data-today-toggle="0"]').click();
+  assert.equal(t.app.getState().todayDate, todayIso, 'checking a box counts as an entry edit');
+  assert.equal(t.app.getState().today[0].done, true, 'and the checkbox itself still works');
+});
+
 // ===== Today block: action button (trash ↔ green check), checkbox strike-through =====
 test('today block: action button is trash by default, checkmark only during active input', () => {
   const t = bootDom();

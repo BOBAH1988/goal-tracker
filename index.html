@@ -665,6 +665,13 @@
     .good-today-begin{background:rgba(217,186,31,.15); color:#b8860b;}
     .good-today-almost{background:rgba(217,186,31,.10); color:#d4b04a;}
     .good-today-perfect{background:rgba(46,160,67,.12); color:var(--green);}
+    /* v1.2.7: капсула даты правки записей блока — рядом с капсулой настроения в одной строке.
+       Зелёная, когда дата = сегодня (записи правились сегодня), красная — когда даты различаются
+       (в стиле капсулы «Начнём?»). Формат даты 12.10.26. */
+    .today-badges{display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-top:8px;}
+    .today-badges .good-today{margin-top:0;}
+    .today-date-same{background:rgba(46,160,67,.12); color:var(--green);}
+    .today-date-diff{background:rgba(255,86,92,.12); color:var(--red);}
     .bar{height:10px; border-radius:6px; background:var(--track); overflow:hidden; border:1px solid var(--border);}
   .bar > div{height:100%; border-radius:6px; transition:width .3s ease;}
   .node-header{margin-bottom:18px;}
@@ -1210,7 +1217,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.2.6';
+const APP_VERSION = '1.2.7';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -1224,6 +1231,15 @@ const WISH_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
    line tall, so an essay in it breaks the block's rhythm — 80 is the same cap the wish caption
    already uses. Enforced in the markup (maxlength), on every save, and on load/import/cloud. */
 const TODAY_TEXT_MAX = 80;
+/* Стартовый шаблон блока «Три важных дела на сегодня»: закладывается ОДИН раз — при самом
+   первом открытии приложения (см. ensureToday: только пока у блока нет todayDate и все три
+   строки ещё нетронуты). Первая задача сразу выполнена — новому пользователю показываем, что
+   «Установить приложение» уже сделано. Тексты — данные, живут в state и не переводятся. */
+const TODAY_DEFAULT_ITEMS = [
+  { text: "Установить приложение - Только важное.", done: true },
+  { text: "Прочитать инструкцию, разобраться в функциях.", done: false },
+  { text: "Запланировать сферы жизни и цели.", done: false }
+];
 /* ===== Seed data (transcribed from the Excel table) =====
    emptyGoals/emptySteps take the noun to use for auto-generated names, so items added later via
    the UI can be named in whichever language is active at the time (default: Russian for the
@@ -1415,6 +1431,7 @@ const STRINGS = {
     todayPlaceholder: 'Важное дело',
     todayClear: 'Очистить',
     todayDone: 'Готово',
+    todayDateTip: 'Дата последней правки записей',
     goodTodayGood: "Сегодня хорошее",
     goodTodayBad: "День хороший",
     goodTodayMoodStart: 'Начнём?',
@@ -1716,6 +1733,7 @@ const STRINGS = {
     todayPlaceholder: 'Important task',
     todayClear: 'Clear',
     todayDone: 'Done',
+    todayDateTip: 'Last entry update date',
     goodTodayGood: "Today is good",
     goodTodayBad: "Make today good",
     goodTodayMoodStart: 'Let\'s start?',
@@ -2959,6 +2977,14 @@ function isoToday(){
   const d = String(now.getDate()).padStart(2,'0');
   return `${y}-${m}-${d}`;
 }
+// «12.10.26» — компактный формат даты для капсулы в блоке «Три важных дела на сегодня».
+// На вход — ISO "YYYY-MM-DD"; пустая/не-дата даёт пустую строку (капсула просто не рисуется).
+function shortDateDMY(isoStr){
+  if(typeof isoStr !== 'string') return '';
+  const p = isoStr.split('-');
+  if(p.length !== 3 || !p.every(part => /^\d{2,4}$/.test(part))) return '';
+  return `${p[2]}.${p[1]}.${p[0].slice(-2)}`;
+}
 // «Хорошее сегодня» journal helpers. Entries are {id, date(YYYY-MM-DD), text}.
 // weekStartISO: the Monday (00:00 ISO) that begins the week containing the given ISO date string.
 function weekStartISO(dateStr){
@@ -3256,6 +3282,20 @@ function ensureToday(node){
     else if(item.text.length > TODAY_TEXT_MAX){ item.text = item.text.slice(0, TODAY_TEXT_MAX); }
     return item;
   });
+  // v1.2.7: капсула даты рядом с настроением блока. Пустая/битая дата = блок ещё ни разу не
+  // правился под этой механикой (первое открытие приложения или апгрейд со старой версии):
+  // ставим сегодняшнюю дату, а если список ещё СОВСЕМ нетронут (все три строки пустые и без
+  // галочек) — один раз закладываем стартовый шаблон задач (TODAY_DEFAULT_ITEMS).
+  // Шаблон срабатывает только пока даты нет: как только сегодняшняя дата попала в state, её
+  // сохраняет ближайший же saveState — поэтому пользователь, который потом всё стёр, при
+  // следующем открытии увидит пустой блок, а не шаблон заново.
+  if(typeof node.todayDate !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(node.todayDate)){
+    if(node.today.every(it => !it.text.trim() && !it.done)){
+      node.today = TODAY_DEFAULT_ITEMS.map(it => ({ text: it.text, done: it.done }));
+      node.goodToday = node.today.some(it => it.done);
+    }
+    node.todayDate = isoToday();
+  }
   if(node.goodToday === undefined) node.goodToday = node.today.some(item => item.done);
 }
 // Backfill for the «Хорошее сегодня» journal entries array — guarantees a well-formed array of
@@ -4678,13 +4718,23 @@ function homeViewHTML(overallPct, hintHTML, mode, protectedCount){
      : todayDoneCount === 1 ? t('goodTodayMoodBegin')
      : todayDoneCount === 2 ? t('goodTodayMoodAlmost')
      : t('goodTodayMoodPerfect');
+   // v1.2.7: капсула с датой последней правки записей блока — рядом с капсулой настроения.
+   // Зелёная, когда дата совпадает с сегодняшней, красная — когда записи не менялись в этот день.
+   const todayDateIso = (typeof state.todayDate === 'string') ? state.todayDate : '';
+   const todayDateLabel = shortDateDMY(todayDateIso);
+   const todayDateSame = todayDateIso === isoToday();
    html += `<div class="priority-block">
       <div class="priority-header" id="todayToggle">
         <span class="priority-arrow">${todayOpen ? '▾' : '▸'}</span>
         <span class="section-title">${t('todayTitle')}</span>
        </div>
-       ${todayOpen ? `<div class="good-today ${moodClass}">
-         <span class="good-today-text">${moodText}</span>
+       ${todayOpen ? `<div class="today-badges">
+         <div class="good-today ${moodClass}">
+           <span class="good-today-text">${moodText}</span>
+         </div>
+         ${todayDateLabel ? `<div class="good-today today-date ${todayDateSame ? 'today-date-same' : 'today-date-diff'}" data-tip="${t('todayDateTip')}">
+           <span class="good-today-text">${todayDateLabel}</span>
+         </div>` : ''}
        </div>
        <div class="priority-list">
           ${todayItems.map((item, i) => {
@@ -7388,6 +7438,7 @@ function attachMainViewHandlers(){
       const idx = parseInt(el.dataset.todayEdit,10);
       if(!Array.isArray(state.today) || idx >= state.today.length) return;
       state.today[idx].text = el.value.slice(0, TODAY_TEXT_MAX);
+      state.todayDate = isoToday();  // правка текста = корректировка записи (капсула даты)
       syncTodayAction(el);
     });
      el.addEventListener('focus', ()=>{ el.classList.add('editing'); syncTodayAction(el); });
@@ -7425,7 +7476,7 @@ function attachMainViewHandlers(){
         render();
       }else{
         // Trash → clear text and focus for re-entry.
-        if(Array.isArray(state.today) && idx < state.today.length){ state.today[idx].text = ''; }
+        if(Array.isArray(state.today) && idx < state.today.length){ state.today[idx].text = ''; state.todayDate = isoToday(); }
         input.value = '';
         input.focus();
         syncTodayAction(input);
@@ -7542,6 +7593,7 @@ function attachMainViewHandlers(){
       const idx = parseInt(el.dataset.todayToggle,10);
       if(!Array.isArray(state.today) || idx >= state.today.length) return;
       state.today[idx].done = !state.today[idx].done;
+      state.todayDate = isoToday();  // отметка галочкой = корректировка записи (капсула даты)
       state.goodToday = state.today.some(item => item.done);
       saveState();
       render();

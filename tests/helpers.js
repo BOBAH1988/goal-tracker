@@ -36,7 +36,7 @@ const EXPORT_SRC = `
   wheelPercent, wheelFilledSteps, countWheelLeaves, countWheelDone, wheelLeafFraction, isWheelLeafDone,
   ensureWheelTotals, bumpWheelTotals, wheelTotal, setWheelTotal, sanitizeEmptyChecklists,
   sanitizeGoalTree, removeChecklistItem, relocateDestPath,
-  isValidGoalTree, barColor, esc, isoToday,
+  isValidGoalTree, barColor, esc, isoToday, shortDateDMY, ensureToday, TODAY_DEFAULT_ITEMS,
   normalizeUsername, isPasswordStrong,
   polarToCartesian, wedgePath, arcPath, wheelHTML,
   emptyTemplate, emptyGoals, emptySteps, leafGoals, checklistLeaf,

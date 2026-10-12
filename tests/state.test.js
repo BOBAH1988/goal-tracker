@@ -48,6 +48,45 @@ test('emptyTemplate/seed carry a valid 3-item today checklist', () => {
   }
 });
 
+// v1.2.7: капсула даты в блоке «Три важных дела на сегодня» + стартовый шаблон задач,
+// который закладывается ровно один раз — при самом первом открытии приложения.
+test('ensureToday: stamps todayDate and seeds the default template exactly once', () => {
+  const t = boot();
+  const todayIso = t.app.isoToday();
+
+  // Первое открытие (о блоке данных нет вовсе): стартовый шаблон, первая задача уже
+  // выполнена, дата = сегодняшний день первого открытия.
+  const fresh = { name: 'root', children: [] };
+  t.app.ensureToday(fresh);
+  assert.equal(fresh.todayDate, todayIso, 'first open stamps todayDate with today');
+  assert.equal(fresh.today.length, 3, 'exactly three rows');
+  assert.equal(fresh.today[0].done, true, '«Установить приложение» comes pre-checked');
+  assert.match(fresh.today[0].text, /Установить приложение/);
+  assert.equal(fresh.today[1].done, false, 'the instruction task starts unchecked');
+  assert.equal(fresh.today[2].done, false, 'the planning task starts unchecked');
+  assert.equal(fresh.goodToday, true, 'the legacy flag follows the pre-checked row');
+
+  // Блок уже был в пользовании (дата стоит), пользователь всё стёр: шаблон НЕ возвращается.
+  const cleared = {
+    name: 'root', children: [], todayDate: todayIso,
+    today: [{ text: '', done: false }, { text: '', done: false }, { text: '', done: false }],
+  };
+  t.app.ensureToday(cleared);
+  assert.equal(cleared.today[0].text, '', 'an emptied block must stay empty');
+
+  // Старое сохранение со своими записями (даты ещё нет): текст не трогаем, дата проставляется.
+  const legacy = {
+    name: 'root', children: [],
+    today: [{ text: 'Моя задача', done: false }, { text: '', done: false }, { text: '', done: false }],
+  };
+  t.app.ensureToday(legacy);
+  assert.equal(legacy.today[0].text, 'Моя задача', 'existing entries survive the upgrade');
+  assert.equal(legacy.todayDate, todayIso, 'upgrade stamps the missing date');
+  t.app.ensureToday(legacy);
+  assert.equal(legacy.todayDate, todayIso, 'a second run is stable');
+  assert.equal(legacy.today.length, 3, 'still exactly three rows');
+});
+
 test('saveState/loadState round-trip preserves the sticky wheel totals', () => {
   const t = boot();
   t.app.setState({

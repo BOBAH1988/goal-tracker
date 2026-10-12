@@ -30,6 +30,16 @@ test('isoToday: local YYYY-MM-DD, zero-padded', () => {
   assert.match(isoToday(), /^\d{4}-\d{2}-\d{2}$/);
 });
 
+// v1.2.7: формат капсулы даты в блоке «Три важных дела на сегодня» — 12.10.26.
+test('shortDateDMY: ISO date → compact 12.10.26, junk → no capsule', () => {
+  const shortDateDMY = t.app.shortDateDMY;
+  assert.equal(shortDateDMY('2026-10-12'), '12.10.26');
+  assert.equal(shortDateDMY('2026-01-05'), '05.01.26');
+  assert.equal(shortDateDMY(''), '', 'empty date renders no capsule');
+  assert.equal(shortDateDMY('junk'), '', 'malformed input is ignored');
+  assert.equal(shortDateDMY(undefined), '', 'non-strings are ignored');
+});
+
 test('normalizeUsername: trims, lowercases, collapses spaces, strips slashes', () => {
   assert.equal(normalizeUsername('  John   DOE  '), 'john doe');
   assert.equal(normalizeUsername('a/b/c'), 'a-b-c');
