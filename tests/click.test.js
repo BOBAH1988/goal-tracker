@@ -8,7 +8,7 @@ const assert = require('node:assert/strict');
 const { JSDOM, VirtualConsole } = require('jsdom');
 const { readProjectFile, leaf, container, EXPORT_SRC } = require('./helpers');
 
-function bootDom(seedStorage) {
+function bootDom(seedStorage, opts) {
   let html = readProjectFile('index.html');
   // External Firebase SDKs are never fetched in tests → cloudEnabled stays false (same
   // prod guard: typeof firebase !== 'undefined').
@@ -26,6 +26,17 @@ function bootDom(seedStorage) {
   // Publish internals: a second classic script shares the global lexical scope with the app
   // script (same mechanics as EXPORT_SRC in the vm harness).
   html = html.replace('</body>', `<script>${EXPORT_SRC}</script></body>`);
+  // v1.2.0: the three sections are COLLAPSED by default. render() reads the global `let`
+  // flags (mainGoalsOpen / wishMapOpen / goodTodayEntriesOpen) — NOT state.* — so scenario
+  // tests get a working screen by flipping those globals right after boot (this script shares
+  // the app's global scope, exactly like EXPORT_SRC above). Default-state tests opt out with
+  // opts.closedSections to assert the fresh behaviour itself.
+  if (!opts || !opts.closedSections) {
+    const openSections = `<script>mainGoalsOpen = true; wishMapOpen = true; goodTodayEntriesOpen = true;
+      state.mainGoalsOpen = true; state.wishMapOpen = true; state.goodTodayEntriesOpen = true;
+      render();</script>`;
+    html = html.replace('</body>', `${openSections}</body>`);
+  }
 
   const errors = [];
   const vc = new VirtualConsole();
@@ -351,43 +362,38 @@ test('global search: matches checklist item text and reports empty for no match'
   assert.match(box.textContent, /Ничего не найдено/, 'empty state must be rendered');
 });
 
-// ===== Main goals collapsible («Важные сферы жизни» — open by default, click collapses, state saved) =====
-test('main goals list: open by default, click collapses and persists across reload', () => {
-  const t = bootDom();
+// ===== Main goals collapsible («Важные сферы жизни» — CLOSED by default since v1.2.0) =====
+test('main goals list: closed by default, click expands and persists across reload', () => {
+  const t = bootDom(null, { closedSections: true });
   t.app.setState({ name: 'root', children: [leaf(false, { name: 'Цель 1' }), leaf(false, { name: 'Цель 2' })] });
   t.window.render();
   // The section carries the renamed title (owner: «Главные цели» → «Важные сферы жизни»).
   assert.ok(t.document.querySelector('#mainGoalsToggle').textContent.includes('Важные сферы жизни'),
     'the section title must use the new name');
-  // The action group (+ − ↕ filter relocate edit) belongs to the open grid.
-  assert.ok(t.document.querySelector('.add-goal-wrap'), 'action group must show while open');
-  // By default the grid is open: cards are visible.
-  assert.ok(t.document.querySelector('.grid-goals'), 'main goals grid must be visible by default (open)');
+  // v1.2.0: fresh install → the grid is hidden, the header stays clickable.
+  assert.ok(!t.document.querySelector('.grid-goals'), 'grid must be hidden by default (closed)');
+  assert.ok(!t.document.querySelector('.add-goal-wrap'),
+    'the action group hides with the grid — nothing to act on');
+  assert.equal(t.document.querySelector('.main-goals-arrow').textContent, '▸',
+    'arrow must point right while collapsed');
+
+  // Click the toggle → expands.
+  t.click('#mainGoalsToggle');
+  assert.equal(t.app.getState().mainGoalsOpen, true, 'clicking must persist mainGoalsOpen=true in state');
+  assert.ok(t.document.querySelector('.grid-goals'), 'grid must appear when expanded');
   assert.ok(t.document.querySelector('.grid-goals').children.length > 0, 'cards must render when open');
-  // Arrow points down when expanded.
+  assert.ok(t.document.querySelector('.add-goal-wrap'), 'action group comes back with the grid');
   assert.equal(t.document.querySelector('.main-goals-arrow').textContent, '▾', 'arrow must point down when open');
 
-  // Click the toggle → collapses.
+  // Click again → collapses and is serialized.
   t.click('#mainGoalsToggle');
   assert.equal(t.app.getState().mainGoalsOpen, false, 'clicking must persist mainGoalsOpen=false in state');
   assert.ok(!t.document.querySelector('.grid-goals'), 'grid must disappear when collapsed');
-  assert.ok(!t.document.querySelector('.add-goal-wrap'),
-    'the whole action group must go with the grid — its buttons have no cards to act on');
-  assert.ok(t.document.querySelector('#mainGoalsToggle'), 'the section header stays clickable');
-  assert.equal(t.document.querySelector('.main-goals-arrow').textContent, '▸', 'arrow must point right when collapsed');
-
-  // Reload from saved storage → stays collapsed.
   const raw = t.window.localStorage.getItem(t.app.STORAGE_KEY);
   assert.ok(raw && raw.includes('"mainGoalsOpen":false'), 'collapsed state must be serialized to localStorage');
-  const t2 = bootDom({ [t.app.STORAGE_KEY]: raw });
+  const t2 = bootDom({ [t.app.STORAGE_KEY]: raw }, { closedSections: true });
   assert.equal(t2.app.getState().mainGoalsOpen, false, 'persisted state must read back as collapsed');
   assert.ok(!t2.document.querySelector('.grid-goals'), 'after reload, main goals must stay collapsed');
-
-  // Click again → expands.
-  t2.click('#mainGoalsToggle');
-  assert.equal(t2.app.getState().mainGoalsOpen, true, 'clicking again must persist mainGoalsOpen=true');
-  assert.ok(t2.document.querySelector('.grid-goals'), 'grid must reappear when expanded');
-  assert.ok(t2.document.querySelector('.add-goal-wrap'), 'action group must come back with the grid');
 });
 
 // ===== Balance wheel collapsible («Колесо баланса» — open by default, click collapses, state saved) =====
@@ -752,9 +758,6 @@ test('wish map: header card manager replaces per-card edit/delete buttons', () =
   t.window.render();
   // Cards no longer carry their own action buttons.
   assert.ok(t.document.querySelectorAll('.wish-card').length === 2, 'both cards render');
-  // v1.1.79: заголовок секции несёт статическую надпись «- у меня...».
-  assert.ok(/- у меня\.\.\./.test(t.document.getElementById('wishToggle').textContent),
-    'the header carries the static label');
   assert.ok(!t.document.querySelector('[data-wish-edit]'), 'cards must not carry an edit button');
   assert.ok(!t.document.querySelector('[data-wish-del]'), 'cards must not carry a delete button');
   assert.ok(!t.document.querySelector('.wish-actions'), 'the corner action group is gone');
@@ -805,7 +808,7 @@ test('wish map: header card manager replaces per-card edit/delete buttons', () =
 
 test('wish map: empty state offers the add button; Save without an image is refused', () => {
   const t = bootDom();
-  assert.match(t.document.getElementById('app').innerHTML, /Карта желаний/, 'the board title must be on the home screen');
+  assert.match(t.document.getElementById('app').innerHTML, /У меня будет/, 'the board title must be on the home screen');
   assert.ok(t.document.getElementById('btnWishAddEmpty'), 'empty board must show «+ Добавить желание»');
   assert.ok(!t.document.querySelector('.wish-card'), 'a fresh board has no cards');
   t.click('#btnWishAddEmpty');
@@ -884,32 +887,36 @@ test('wish map: cards never touch the wheel math and ride along in the backup im
   assert.ok(t.document.querySelector('.wish-card'), 'restored card must render on the board');
 });
 
-test('wish map: section collapses like the wheel and the choice persists', () => {
-  const t = bootDom();
-  assert.ok(t.document.getElementById('btnWishAddEmpty'), 'open by default — empty state visible');
-  // v1.1.79: статическая надпись «- у меня...» живёт в заголовке
-  // только в развернутом состоянии.
-  const countLabel = t.document.querySelector('.wish-count');
-  assert.ok(countLabel, 'the card-count label rides with the title when open');
-  assert.ok(/- у меня\.\.\./.test(countLabel.textContent), 'the label is the static text');
-  // v1.1.81: надпись в стиле заголовка «Карта желаний» — тот же кегль и вес.
-  const titleStyle = t.window.getComputedStyle(t.document.getElementById('wishToggle'));
-  const countStyle = t.window.getComputedStyle(countLabel);
-  assert.equal(countStyle.fontSize, titleStyle.fontSize, 'the label shares the title font size');
-  assert.equal(countStyle.fontWeight, titleStyle.fontWeight, 'and its font weight');
+test('wish map: closed by default, the title expands it and the choice persists', () => {
+  const t = bootDom(null, { closedSections: true });
+  // v1.2.0: fresh install → the board is collapsed; only the header shows (with the new title).
+  assert.ok(t.document.getElementById('wishToggle'), 'the section header is on the home screen');
+  assert.match(t.document.getElementById('wishToggle').textContent, /У меня будет/,
+    'the header carries the renamed title');
+  assert.ok(!t.document.getElementById('btnWishAddEmpty'), 'collapsed by default — no add button');
+  assert.ok(!t.document.querySelector('.wish-grid'), 'no card grid while collapsed');
+  assert.equal(t.document.querySelector('#wishToggle .wheel-arrow').textContent, '▸',
+    'arrow must point right while collapsed');
+
+  // Click the title → expands.
   t.click('#wishToggle');
-  assert.equal(t.app.getState().wishMapOpen, false, 'clicking the title must persist wishMapOpen=false');
+  assert.equal(t.app.getState().wishMapOpen, true, 'clicking the title must persist wishMapOpen=true');
+  assert.ok(t.document.getElementById('btnWishAddEmpty'), 'the empty state comes back when expanded');
+  assert.ok(t.document.getElementById('btnWishAdd'), 'the «+» returns on expand');
+
+  // Click again → collapses; header buttons go with it (v1.1.55 rule).
+  t.click('#wishToggle');
+  assert.equal(t.app.getState().wishMapOpen, false, 'clicking again must persist wishMapOpen=false');
   assert.ok(!t.document.querySelector('.wish-grid'), 'the card grid must disappear when collapsed');
   assert.ok(!t.document.querySelector('.wish-form'), 'the add form must not survive a collapse');
-  // v1.1.55: header buttons hide with the collapsed board, same rule as «Важные сферы жизни».
   assert.ok(!t.document.getElementById('btnWishAdd'), 'the «+» button must go with the collapsed board');
   assert.ok(!t.document.querySelector('.wish-header-actions'), 'the whole header button group disappears');
-  assert.ok(!t.document.querySelector('.wish-count'), 'the card-count label hides with the collapsed board');
-  t.click('#wishToggle');
-  assert.equal(t.app.getState().wishMapOpen, true, 'clicking again must persist wishMapOpen=true');
-  assert.ok(t.document.getElementById('btnWishAddEmpty'), 'empty state must come back when expanded');
-  assert.ok(t.document.getElementById('btnWishAdd'), 'the «+» returns on expand');
-  assert.ok(t.document.querySelector('.wish-count'), 'and the card-count label returns too');
+
+  // Reload from saved storage → stays collapsed.
+  const raw = t.window.localStorage.getItem(t.app.STORAGE_KEY);
+  assert.ok(raw && raw.includes('"wishMapOpen":false'), 'collapsed state must be serialized');
+  const t2 = bootDom({ [t.app.STORAGE_KEY]: raw }, { closedSections: true });
+  assert.ok(!t2.document.querySelector('.wish-grid'), 'after reload, the board must stay collapsed');
 });
 
 test('wish map: at 15 cards «+» disappears and a calm note explains the limit', () => {

@@ -13,7 +13,7 @@ test('ensureGoodToday: backfills missing entries array + open flag', () => {
   t.app.ensureGoodToday(node);
   assert.ok(Array.isArray(node.goodTodayEntries), 'entries must be an array');
   assert.equal(node.goodTodayEntries.length, 0, 'empty on fresh backfill');
-  assert.equal(node.goodTodayEntriesOpen, true, 'default-open');
+  assert.equal(node.goodTodayEntriesOpen, false, 'default-closed (v1.2.0)');
 });
 
 test('ensureGoodToday: backfills week reflections array', () => {
@@ -264,7 +264,7 @@ test('loadState: fresh seed has empty goodTodayEntries + open flag', () => {
   const loaded = t.app.getState();
   assert.ok(Array.isArray(loaded.goodTodayEntries), 'fresh load must have entries array');
   assert.equal(loaded.goodTodayEntries.length, 0, 'fresh load starts with no entries');
-  assert.equal(loaded.goodTodayEntriesOpen, true, 'fresh load must be open by default');
+  assert.equal(loaded.goodTodayEntriesOpen, false, 'fresh load must be closed by default (v1.2.0)');
   assert.ok(Array.isArray(loaded.goodTodayWeekReflections), 'fresh load must have week reflections array');
 });
 
@@ -503,7 +503,8 @@ test('goodTodaySectionHTML: entry form collapsed by default (+ button shown)', (
     ],
   });
   // Collapsed: no textarea, no save button, but subtitle + '+' button present
-  vm.runInContext('goodTodayFormOpen = false; goodTodayEditId = null;', t.ctx);
+  // The section itself is closed by default (v1.2.0) — open it to inspect the form inside.
+  vm.runInContext('goodTodayEntriesOpen = true; goodTodayFormOpen = false; goodTodayEditId = null;', t.ctx);
   const html = vm.runInContext('goodTodaySectionHTML()', t.ctx);
   assert.ok(html.includes('id="btnGoodTodayAdd"'), "'+' button must be present");
   assert.ok(html.includes('Что было хорошего сегодня?'), 'subtitle must be present');
@@ -520,7 +521,7 @@ test('goodTodaySectionHTML: entry form expands when goodTodayFormOpen is true', 
       { id: 'e1', date: '2026-10-05', text: 'A' },
     ],
   });
-  vm.runInContext('goodTodayFormOpen = true; goodTodayEditId = null;', t.ctx);
+  vm.runInContext('goodTodayEntriesOpen = true; goodTodayFormOpen = true; goodTodayEditId = null;', t.ctx);
   const html = vm.runInContext('goodTodaySectionHTML()', t.ctx);
   assert.ok(html.includes('id="goodTodayTextarea"'), 'textarea must appear when form open');
   assert.ok(html.includes('id="btnGoodTodaySave"'), 'save button must appear when form open');
@@ -537,7 +538,7 @@ test('goodTodaySectionHTML: entry form auto-opens while editing an entry', () =>
     ],
   });
   // Editing without goodTodayFormOpen — form still shows (edit needs the field)
-  vm.runInContext('goodTodayFormOpen = false; goodTodayEditId = "e1"; goodTodayDraftText = "A";', t.ctx);
+  vm.runInContext('goodTodayEntriesOpen = true; goodTodayFormOpen = false; goodTodayEditId = "e1"; goodTodayDraftText = "A";', t.ctx);
   const html = vm.runInContext('goodTodaySectionHTML()', t.ctx);
   assert.ok(html.includes('id="goodTodayTextarea"'), 'textarea must appear while editing');
   assert.ok(html.includes('id="btnGoodTodayCancel"'), 'cancel button must appear while editing');
@@ -690,8 +691,8 @@ test('goodTodaySectionHTML: weekly history paints the block title exactly once',
 test('goodTodaySectionHTML: «+» becomes «−» while the entry form is open', () => {
   const t = boot();
   t.app.setState({ name: 'root', children: [], goodTodayEntries: [] });
-  // Collapsed: «+», no textarea.
-  vm.runInContext('goodTodayFormOpen = false; goodTodayEditId = null;', t.ctx);
+  // Collapsed: «+», no textarea. (The section is closed by default — open it first.)
+  vm.runInContext('goodTodayEntriesOpen = true; goodTodayFormOpen = false; goodTodayEditId = null;', t.ctx);
   const closed = vm.runInContext('goodTodaySectionHTML()', t.ctx);
   assert.ok(closed.includes('>+</button>'), 'the collapsed form shows a «+»');
   assert.ok(!closed.includes('id="goodTodayTextarea"'), 'no textarea while collapsed');
@@ -710,7 +711,7 @@ test('goodTodaySectionHTML: «−» also replaces «+» while editing an entry',
     goodTodayEntries: [{ id: 'e1', date: '2026-10-05', text: 'A' }],
   });
   // Editing keeps the form visible, so the toggle must stay a «−» (no dead «+»).
-  vm.runInContext('goodTodayFormOpen = false; goodTodayEditId = "e1"; goodTodayDraftText = "A";', t.ctx);
+  vm.runInContext('goodTodayEntriesOpen = true; goodTodayFormOpen = false; goodTodayEditId = "e1"; goodTodayDraftText = "A";', t.ctx);
   const html = vm.runInContext('goodTodaySectionHTML()', t.ctx);
   assert.ok(html.includes('>−</button>'), 'edit mode shows a «−», not a «+»');
   assert.ok(html.includes('id="goodTodayTextarea"'), 'edit mode keeps the textarea');
