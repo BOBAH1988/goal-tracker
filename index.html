@@ -1170,8 +1170,10 @@
     .wheel-hint{font-size:12px; color:var(--muted); text-align:center; margin:-16px 0 0; padding:0 8px 2px;}
    /* Карточка сферы с раскрытым деревом — акцентная рамка, связь «сектор ↔ карточка». */
    .grid-goals .card.is-open{border-color:var(--accent); box-shadow:0 0 0 1px var(--accent);}
-   /* Дерево сферы: аккордеон между сеткой сфер и колесом. Цвета — только переменные тем. */
-   .sphere-tree{background:var(--card); border:1px solid var(--border); border-radius:14px; padding:14px 16px; margin:0 0 16px; animation:sphere-tree-in .18s ease;}
+   /* Дерево сферы: аккордеон между сеткой сфер и колесом. Цвета — только переменные тем.
+       margin-top 14px — воздух между сеткой и раскрывающейся панелью; на прокрутку не
+       влияет: она цепляется за rect.top панели, отступ остаётся выше верха экрана. */
+   .sphere-tree{background:var(--card); border:1px solid var(--border); border-radius:14px; padding:14px 16px; margin:14px 0 16px; animation:sphere-tree-in .18s ease;}
    @keyframes sphere-tree-in{from{opacity:0; transform:translateY(-6px);} to{opacity:1; transform:none;}}
    .sphere-tree-head{display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:10px;}
    .sphere-tree-arrow{color:var(--muted); font-size:13px;}
@@ -1208,7 +1210,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.2.2';
+const APP_VERSION = '1.2.3';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
