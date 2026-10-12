@@ -1861,6 +1861,30 @@ test('wheel: sector click expands the COLLAPSED spheres section so the tree is v
   assert.ok(!t.document.getElementById('sphereTreePanel'), 'manual collapse closes the tree');
 });
 
+// v1.2.1 (жалоба владельца): при раскрытии свёрнутой секции прокрутка вела прямо к панели
+// дерева и сверху оставался обрезанный хвост сетки карточек — «небольшая часть модуля выше».
+// Теперь вверху экрана — заголовок раскрывающейся секции (сетка и дерево ниже него).
+test('wheel: sector click scrolls to the section header row, not into the middle of the grid', () => {
+  const t = bootDom();
+  // jsdom has no layout (every rect is zero) — give the two candidate targets distinct
+  // fake tops so we can see WHICH element the scroll actually aimed at.
+  t.window.Element.prototype.getBoundingClientRect = function () {
+    if (this.id === 'sphereTreePanel') return { top: 900, bottom: 1200, height: 300 };
+    if (this.classList && this.classList.contains('section-title-row')
+        && this.querySelector('#mainGoalsToggle')) return { top: 300, bottom: 340, height: 40 };
+    return { top: 0, bottom: 0, height: 0 };
+  };
+  let arg = null;
+  t.window.scrollTo = (a) => { arg = a; };
+  t.click('[data-wheel-sector]');
+  assert.ok(t.document.getElementById('sphereTreePanel'), 'the tree panel is on the page');
+  assert.ok(arg, 'the app asked the window to scroll');
+  // 300 (section header row) - 0 (no sticky header in jsdom) - 16 (breathing margin) = 284.
+  // The old panel targeting would have produced 884 — the grid tail visible above.
+  assert.equal(arg.top, 284, 'scrolls to the top of the expanding section');
+  assert.equal(arg.behavior, 'smooth', 'keeps the smooth scroll');
+});
+
 test('wheel: opening a sector stamps and saves the visit; closing does not', () => {
   const t = bootDom();
   const sphere = t.app.getState().children[0];
