@@ -1671,6 +1671,14 @@ const STRINGS = {
     templateLeisure: 'Отдых',
     templateLeisureDesc: 'Хобби, путешествия, отдых и вдохновение',
     sphereExistsMerge: 'сфера есть — цели добавятся к ней',
+    templateWillCreate: 'новая сфера',
+    templateSkippedCap: 'не добавлено — достигнут лимит 10 сфер',
+    templateGoalAdded: 'будет добавлена',
+    templateGoalExists: 'уже есть — пропущена',
+    templatesResultTitle: 'Шаблоны добавлены',
+    templatesResultAdded: 'Сфер добавлено: {spheres}. Целей добавлено: {goals}.',
+    templatesResultSkipped: 'Пропущено: {skipped}.',
+    templatesResultNone: 'Новый ничего не добавлено — всё уже есть.',
   },
   en: {
     appTitle: 'Only What Matters',
@@ -1965,6 +1973,14 @@ const STRINGS = {
     templateLeisure: 'Leisure',
     templateLeisureDesc: 'Hobbies, travel, rest and inspiration',
     sphereExistsMerge: 'sphere exists — goals will be merged',
+    templateWillCreate: 'new sphere',
+    templateSkippedCap: 'not added — the 10-sphere limit is reached',
+    templateGoalAdded: 'will be added',
+    templateGoalExists: 'already exists — skipped',
+    templatesResultTitle: 'Templates added',
+    templatesResultAdded: 'Spheres added: {spheres}. Goals added: {goals}.',
+    templatesResultSkipped: 'Skipped: {skipped}.',
+    templatesResultNone: 'Nothing new was added — it all already exists.',
   }
 };
 function loadLang(){
@@ -5376,22 +5392,88 @@ function templateNode(def){
   }
   return { name: def.name, children: def.children.map(templateNode) };
 }
-/* Builds the preview list HTML for the selected templates: every sphere with
-   its goals, with a note when a sphere of that name already exists (its
-   goals get merged into it instead of creating a duplicate). */
-function templatesPreviewHTML(){
-  let html = '';
-  for(const id of selectedTemplates){
+/* Имя для сравнения шаблонов: обрезаем края и игнорируем регистр (ТЗ п.6). Существующие
+   записи НЕ переименовываются — сравнение идёт по этой нормализованной форме, но в state
+   уходит имя ровно как в шаблоне/как уже есть у пользователя. */
+function templateNameKey(name){
+  return String(name == null ? '' : name).trim().toLowerCase();
+}
+/* Единый план применения выбранных шаблонов (п.6): то, что РЕАЛЬНО произойдёт, с учётом
+   лимита 10 сфер и уже существующих данных. Preview и подтверждение используют ОДИН и тот
+   же план, поэтому в списке никогда не показывается больше, чем добавится на самом деле,
+   и нет молчаливого частичного добавления. Для каждой сферы шаблона:
+     merge  — сфера с таким именем уже есть (края/регистр игнорируются): неповторяющиеся
+              цели добавятся к ней, повторы помечаются added:false (пропущены, не дубль).
+     create — такой сферы ещё нет и лимит 10 не достигнут: сфера создаётся целиком.
+     skip   — лимит 10 сфер достигнут и сферы с таким именем нет: она НЕ добавится (видно
+              в preview и в результате, а не теряется молча). */
+function planTemplates(){
+  const spheres = [];
+  const counts = { created: 0, merged: 0, goalsAdded: 0, skippedSpheres: 0 };
+  const sphereByName = new Map();
+  const goalsBySphere = new Map();
+  state.children.forEach(s => {
+    if(s && !s.archived){
+      sphereByName.set(templateNameKey(s.name), s);
+      goalsBySphere.set(templateNameKey(s.name), new Set((s.children||[]).map(g => templateNameKey(g && g.name))));
+    }
+  });
+  let activeCount = state.children.filter(s => s && !s.archived).length;
+  for(const id of Array.from(selectedTemplates)){
     const tmpl = TEMPLATES[id];
     if(!tmpl) continue;
     for(const sphereDef of tmpl.spheres){
-      const exists = state.children.some(s => s && !s.archived && s.name === sphereDef.name);
-      html += `<li>${esc(sphereDef.name)}${exists ? ` <span class="template-merge-note">${esc(t('sphereExistsMerge'))}</span>` : ''}<ul>`;
-      for(const goalDef of sphereDef.goals){
-        html += `<li>${esc(goalDef.name)}</li>`;
+      const key = templateNameKey(sphereDef.name);
+      const existing = sphereByName.get(key);
+      if(existing){
+        const have = goalsBySphere.get(key);
+        const goals = sphereDef.goals.map(g => {
+          const gk = templateNameKey(g.name);
+          const added = !have.has(gk);
+          if(added){ have.add(gk); counts.goalsAdded++; }
+          return { def: g, name: g.name, added };
+        });
+        counts.merged++;
+        spheres.push({ name: sphereDef.name, status: 'merge', goals });
+      }else if(activeCount < 10){
+        activeCount++;
+        const have = new Set();
+        const goals = sphereDef.goals.map(g => {
+          have.add(templateNameKey(g.name));
+          counts.goalsAdded++;
+          return { def: g, name: g.name, added: true };
+        });
+        counts.created++;
+        sphereByName.set(key, { name: sphereDef.name });
+        goalsBySphere.set(key, have);
+        spheres.push({ name: sphereDef.name, status: 'create', goals });
+      }else{
+        counts.skippedSpheres++;
+        spheres.push({ name: sphereDef.name, status: 'skip',
+          goals: sphereDef.goals.map(g => ({ def: g, name: g.name, added: false })) });
       }
-      html += `</ul></li>`;
     }
+  }
+  return { spheres, counts };
+}
+/* Builds the preview list HTML for the selected templates from the SAME plan the confirm
+   button runs (planTemplates), so what the user sees is exactly what will happen: new sphere,
+   merge into an existing one, or «skipped — 10-sphere limit». Goals that already exist are
+   marked as skipped, not silently counted as additions. */
+function templatesPreviewHTML(){
+  const plan = planTemplates();
+  let html = '';
+  for(const s of plan.spheres){
+    let note = '';
+    if(s.status === 'merge') note = ` <span class="template-merge-note">${esc(t('sphereExistsMerge'))}</span>`;
+    else if(s.status === 'create') note = ` <span class="template-merge-note">${esc(t('templateWillCreate'))}</span>`;
+    else if(s.status === 'skip') note = ` <span class="template-merge-note">${esc(t('templateSkippedCap'))}</span>`;
+    html += `<li>${esc(s.name)}${note}<ul>`;
+    for(const g of s.goals){
+      const gnote = g.added ? '' : ` <span class="template-merge-note">${esc(t('templateGoalExists'))}</span>`;
+      html += `<li>${esc(g.name)}${gnote}</li>`;
+    }
+    html += `</ul></li>`;
   }
   return html;
 }
@@ -5401,42 +5483,65 @@ function updateTemplatesPreview(){
   const list = document.getElementById('templatesPreviewList');
   if(list) list.innerHTML = templatesPreviewHTML();
 }
-/* Applies every selected template: goals of an existing same-name sphere are
-   merged in (same-name goals skipped), a missing sphere is created whole.
-   Wheel totals grow exactly like manual creation, so the balance stays honest. */
+/* Applies every selected template using the single shared plan, so preview and reality can
+   never diverge. Goals of an existing same-name sphere are merged in (same-name goals skipped
+   by the normalized name — no renames, no duplicates), a missing sphere is created whole, a
+   sphere over the 10-cap is skipped. Wheel totals grow exactly like manual creation. Returns
+   the counts so the caller can report exactly what happened (added / skipped / why). */
 function applyTemplates(){
-  if(selectedTemplates.size === 0) return;
-  for(const id of Array.from(selectedTemplates)){
-    const tmpl = TEMPLATES[id];
-    if(!tmpl) continue;
-    for(const sphereDef of tmpl.spheres){
-      let sphere = null, sphereIdx = -1;
-      state.children.forEach((s, i)=>{
-        if(!sphere && s && !s.archived && s.name === sphereDef.name){ sphere = s; sphereIdx = i; }
-      });
-      if(sphere){
-        let addedLeaves = 0;
-        for(const goalDef of sphereDef.goals){
-          if(sphere.children.some(g => g && g.name === goalDef.name)) continue;
-          const goal = templateNode(goalDef);
-          addedLeaves += countWheelLeaves(goal, false);
-          sphere.children.push(goal);
-        }
-        if(addedLeaves > 0){
-          bumpWheelTotals([sphereIdx], addedLeaves);
-          touchSphere(sphere);
-        }
-      }else if(state.children.length < 10){
-        const newSphere = { name: sphereDef.name, children: sphereDef.goals.map(templateNode) };
-        touchSphere(newSphere);
-        const leaves = countWheelLeaves(newSphere, false);
-        setWheelTotal(newSphere, leaves);
-        bumpWheelTotals([], leaves);
-        state.children.push(newSphere);
+  if(selectedTemplates.size === 0) return null;
+  const plan = planTemplates();
+  for(const s of plan.spheres){
+    if(s.status === 'skip') continue;              // over the cap — never silently added
+    let sphere = null, sphereIdx = -1;
+    state.children.forEach((node, i)=>{
+      if(!sphere && node && !node.archived && templateNameKey(node.name) === templateNameKey(s.name)){ sphere = node; sphereIdx = i; }
+    });
+    if(sphere){
+      let addedLeaves = 0;
+      for(const g of s.goals){
+        if(!g.added) continue;                     // already present — keep it, skip the duplicate
+        const goal = templateNode(g.def);
+        addedLeaves += countWheelLeaves(goal, false);
+        sphere.children.push(goal);
       }
+      if(addedLeaves > 0){
+        bumpWheelTotals([sphereIdx], addedLeaves);
+        touchSphere(sphere);
+      }
+    }else{
+      const newSphere = { name: s.name, children: s.goals.map(g => templateNode(g.def)) };
+      touchSphere(newSphere);
+      const leaves = countWheelLeaves(newSphere, false);
+      setWheelTotal(newSphere, leaves);
+      bumpWheelTotals([], leaves);
+      state.children.push(newSphere);
     }
   }
   saveState();
+  return plan.counts;
+}
+// Honest result toast (п.6): exactly what was added and what was skipped, and why. No vague
+// «готово», no silent partial add. Lives in document.body like the other soft notices.
+function showTemplatesResult(counts){
+  if(!counts) return;
+  let text;
+  const added = counts.created + counts.goalsAdded;
+  if(added === 0 && counts.skippedSpheres === 0){
+    text = t('templatesResultNone');
+  }else{
+    text = t('templatesResultAdded').replace('{spheres}', String(counts.created)).replace('{goals}', String(counts.goalsAdded));
+    if(counts.skippedSpheres > 0){
+      text += ' ' + t('templatesResultSkipped').replace('{skipped}', String(counts.skippedSpheres) + ' ' + t('templateSkippedCap'));
+    }
+  }
+  const toast = document.createElement('div');
+  toast.className = 'undo-toast';
+  const label = document.createElement('span');
+  label.textContent = text;
+  toast.appendChild(label);
+  document.body.appendChild(toast);
+  setTimeout(()=>{ if(toast.parentNode) toast.parentNode.removeChild(toast); }, 6000);
 }
 function closeTemplatesModal(){
   templatesModalOpen = false;
@@ -5478,8 +5583,9 @@ function attachTemplatesModalHandlers(){
   const btnTemplatesConfirm = document.getElementById('btnTemplatesConfirm');
   if(btnTemplatesConfirm){
     btnTemplatesConfirm.addEventListener('click', ()=>{
-      applyTemplates();
+      const counts = applyTemplates();
       closeTemplatesModal();
+      showTemplatesResult(counts);   // п.6: честный результат — добавлено/пропущено и почему
     });
   }
 }
