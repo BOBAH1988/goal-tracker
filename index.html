@@ -1585,6 +1585,8 @@ const STRINGS = {
     importErrorParse: 'Не удалось прочитать файл. Убедитесь, что это файл резервной копии, скачанный через «Скачать данные».',
     importErrorInvalid: 'Файл не похож на резервную копию «Только важное».',
     importSuccessMsg: 'Данные успешно восстановлены из резервной копии.',
+    importImagesRestored: 'Фотографии «Карты желаний»: восстановлено {ok}, не найдено {missing}.',
+    exportMissingImages: 'Не удалось собрать {n} фото «Карты желаний» (они ещё загружаются или недоступны). Цели в копию попадут полностью. Скачать копию без этих фото или нажать «Отмена» и повторить позже?',
     aboutTitle: 'О проекте',
     aboutText: 'Только важное помогает двигаться к важному без дедлайнов, давления и лишней сложности.\n\nВыберите цель, разделите её на подцели и маленькие шаги. Делайте главное в своём темпе — каждый завершённый шаг приближает к результату.\n\nЕсли сил или ресурсов стало меньше, цель можно архивировать: она не будет давить и влиять на прогресс. Вернитесь к ней позже, измените или отпустите.\n\nНе нужно успевать всё. Главное — бережно двигаться вперёд.\n\n— Владимир Соколов',
     instructionsTitle: 'Инструкция',
@@ -1877,6 +1879,8 @@ const STRINGS = {
     importErrorParse: "Couldn't read the file. Make sure it's a backup file downloaded via \"Download data\".",
     importErrorInvalid: "This file doesn't look like an Only What Matters backup.",
     importSuccessMsg: 'Data restored from backup successfully.',
+    importImagesRestored: '“Wish board” photos: {ok} restored, {missing} not found.',
+    exportMissingImages: 'Could not collect {n} “Wish board” photo(s) (still uploading or unavailable). All goals will be in the copy. Download without these photos, or press “Cancel” and try again later?',
     aboutTitle: 'About',
     aboutText: 'Only What Matters helps you move toward what matters — without deadlines, pressure, or needless complexity.\n\nPick a goal, break it into subgoals and small steps. Do the important things at your own pace — every completed step brings you closer to the result.\n\nIf your energy or resources run low, archive the goal: it will not weigh on you or affect your progress. Come back to it later — change it or let it go.\n\nYou don\'t have to do everything. The point is to move forward, gently.\n\n— Vladimir Sokolov',
     instructionsTitle: 'Instructions',
@@ -3637,6 +3641,44 @@ function dataUrlToBlob(dataUrl){
     }
   });
 }
+// Blob → data: URL (base64). The inverse of dataUrlToBlob, used ONLY when writing a backup file:
+// the «Карта желаний» bytes live in IndexedDB (never in state), but a JSON backup has nowhere else
+// to keep them, so they are embedded as base64 for the restore — this is a snapshot on disk, never
+// the live working state, so the "no base64 in state" rule stays intact. Encodes via arrayBuffer +
+// a manual base64 step (no FileReader) so it works in every engine and in the test sandbox.
+function bytesToBase64(bytes){
+  const table = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+  let out = '';
+  const len = bytes.length;
+  for(let i = 0; i < len; i += 3){
+    const b0 = bytes[i] & 0xff;
+    const b1 = (i + 1 < len) ? (bytes[i + 1] & 0xff) : NaN;
+    const b2 = (i + 2 < len) ? (bytes[i + 2] & 0xff) : NaN;
+    out += table[b0 >> 2];
+    out += table[((b0 & 3) << 4) | (isNaN(b1) ? 0 : (b1 >> 4))];
+    out += (isNaN(b1) ? '=' : table[((b1 & 15) << 2) | (isNaN(b2) ? 0 : (b2 >> 6))]);
+    out += (isNaN(b2) ? '=' : table[b2 & 63]);
+  }
+  return out;
+}
+function blobToDataUrl(blob){
+  if(!blob) return Promise.resolve(null);
+  const type = blob.type || 'application/octet-stream';
+  const finish = (bytes)=> 'data:' + type + ';base64,' + bytesToBase64(bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes));
+  if(typeof blob.arrayBuffer === 'function'){
+    return blob.arrayBuffer().then(buf => finish(new Uint8Array(buf)), ()=> null);
+  }
+  // Very old engines without arrayBuffer(): FileReader, if present.
+  return new Promise((resolve)=>{
+    if(typeof FileReader === 'undefined' || !FileReader){ resolve(null); return; }
+    try{
+      const fr = new FileReader();
+      fr.onload = ()=> resolve(typeof fr.result === 'string' ? fr.result : null);
+      fr.onerror = ()=> resolve(null);
+      fr.readAsDataURL(blob);
+    }catch(e){ resolve(null); }
+  });
+}
 // The stored object's extension + contentType, derived from the real bytes. WebP is what the
 // crop dialog produces; on an engine without canvas WebP encoding the fallback is JPEG, and the
 // image document records the real type so the other device rebuilds the same Blob.
@@ -4184,16 +4226,44 @@ function doneCount(node){
   if(!node.children) return 0;
   return activeChildren(node).filter(c => computePercent(c) === 100).length;
 }
-// A real, lossless backup of the whole goal tree, meant to be restored later via "Импорт данных" —
-// as opposed to the 📤 share-progress image, which is a lossy visual summary for showing someone
-// else your progress, not something meant to be read back in.
-function doExportData(){
+// A real, lossless backup of the whole goal tree + the «Карта желаний» photos, meant to be
+// restored later via "Импорт данных" — as opposed to the 📤 share-progress image, which is a lossy
+// visual summary for showing someone else your progress, not something meant to be read back in.
+// The photos are collected SEPARATELY from state: their bytes never enter the live working state or
+// localStorage (they live in the IndexedDB cache), but a backup has to carry them or a restore on a
+// fresh browser would bring back metadata-only cards with no pictures. So we read each cached blob,
+// embed it as base64 in the JSON, and list any card whose bytes we could NOT find (still uploading,
+// or lost) so the user can be told instead of silently shipping an incomplete board.
+async function doExportData(){
   const payload = {
     app: 'goal-tracker-backup',
-    version: 1,
+    version: 2,                       // v2 carries wishMap photos (v1 = metadata only)
     exportedAt: new Date().toISOString(),
     state
   };
+  const cards = (state && Array.isArray(state.wishMap)) ? state.wishMap : [];
+  const images = {};
+  const missingImages = [];
+  for(const card of cards){
+    if(!card || !card.id) continue;
+    try{
+      const blob = await wishCacheGet(card.id);
+      const dataUrl = blob ? await blobToDataUrl(blob) : null;
+      if(dataUrl) images[card.id] = dataUrl;
+      else missingImages.push(card.id);
+    }catch(e){
+      missingImages.push(card.id);
+    }
+  }
+  // Only attach the images block when there are photos to carry (keeps old-style boards tiny).
+  if(Object.keys(images).length) payload.wishImages = images;
+  if(missingImages.length) payload.missingImages = missingImages;
+  // If some photos could not be collected, tell the user and let them choose: re-download first, or
+  // ship the copy as-is (goals are always complete — only those photos are absent). Never silently.
+  if(missingImages.length && typeof confirm === 'function'){
+    const msg = t('exportMissingImages').replace('{n}', String(missingImages.length));
+    if(!confirm(msg)) return;   // user chose to go download the missing photos first
+  }
   const text = JSON.stringify(payload, null, 2);
   const blob = new Blob([text], { type: 'application/json;charset=utf-8' });
   const url = URL.createObjectURL(blob);
@@ -4213,7 +4283,7 @@ function isValidGoalTree(obj){
 function doImportData(file){
   if(!file) return;
   const reader = new FileReader();
-  reader.onload = ()=>{
+  reader.onload = async ()=>{
     let parsed;
     try{
       parsed = JSON.parse(reader.result);
@@ -4240,10 +4310,31 @@ function doImportData(file){
      ensureWishMap(state);
      ensureSphereActivity(state);
     path = [];
+    // Restore «Карта желаний» photos (v2 backups carry them as base64). They go straight into the
+    // IndexedDB cache — never into state — so the board renders them from blob URLs like any local
+    // card. Old v1 backups (no wishImages) simply keep metadata-only cards, exactly as before.
+    let restored = 0, missing = 0;
+    const imgs = (parsed && parsed.wishImages && typeof parsed.wishImages === 'object') ? parsed.wishImages : null;
+    if(imgs){
+      for(const card of (Array.isArray(state.wishMap) ? state.wishMap : [])){
+        if(!card || !card.id || !imgs[card.id]) continue;
+        try{
+          const blob = await dataUrlToBlob(imgs[card.id]);
+          if(blob){ await wishCachePut(card.id, blob); wishRememberBlob(card.id, blob); restored++; }
+          else missing++;
+        }catch(e){ missing++; }
+      }
+    }
     saveState();
     if(cloudEnabled && authUser) scheduleCloudPush();
-    alert(t('importSuccessMsg'));
+    // Honest result: goals are always complete; say exactly which photos came back and which didn't.
+    let msg = t('importSuccessMsg');
+    if(restored || missing){
+      msg += ' ' + t('importImagesRestored').replace('{ok}', String(restored)).replace('{missing}', String(missing));
+    }
+    alert(msg);
     render();
+    if(typeof wishCacheWarm === 'function') wishCacheWarm();
   };
   reader.readAsText(file);
 }
@@ -7952,11 +8043,13 @@ function attachSyncConflictHandlers(){
     render();
     wishBoardReady();   // local-only cards still need their upload; cloud cards their download
   });
-  on('btnSyncConflictExport', 'click', ()=>{
+  on('btnSyncConflictExport', 'click', async ()=>{
     if(!syncConflict) return;
     const before = state;
     state = syncConflict.local;
-    doExportData();
+    try{
+      await doExportData();   // async now (collects «Карта желаний» photos before writing)
+    }catch(e){}
     state = before;
   });
   on('btnCloudStateErrorDismiss', 'click', ()=>{
