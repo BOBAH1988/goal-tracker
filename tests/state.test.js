@@ -25,9 +25,40 @@ test('emptyTemplate/seed: valid trees with expected shape', () => {
   const t = boot();
   const tpl = t.app.emptyTemplate();
   assert.ok(t.app.isValidGoalTree(tpl));
-  assert.equal(tpl.children.length, 1);
+  // v1.2.8: the blank template carries «Цель 1» plus the two default «Главные цели» examples.
+  assert.equal(tpl.children.length, 3);
   assert.ok(t.app.isValidGoalTree(t.app.SEED));
   assert.ok(t.app.SEED.children.length >= 4, 'demo spheres must survive');
+});
+
+// v1.2.8: два стартовых примера в «Главных целях» — SEED/emptyTemplate несут их сами
+// (новый пользователь видит их сразу), а ensurePriorityDefaults один раз добавляет их
+// старым сохранениям/облачным документам/импортам, у которых ещё нет флага.
+test('ensurePriorityDefaults: seeds the two example goals exactly once', () => {
+  const t = boot();
+  for (const [label, st] of [['emptyTemplate', t.app.emptyTemplate()], ['SEED', t.app.SEED]]) {
+    assert.equal(st.priorityDefaultsSeeded, true, `${label} carries the seeding flag`);
+    const examples = st.children.filter(c => c && c.priority);
+    assert.equal(examples.length, 2, `${label} ships exactly two starred examples`);
+    assert.deepEqual(Array.from(examples.map(c => c.name)), ['Учет всех трат', 'Готовка дома вместо доставки']);
+    assert.ok(examples.every(c => c.done === false && Array.isArray(c.children) && c.children.length === 0),
+      `${label} examples are plain unticked leaves`);
+  }
+
+  // Legacy save (no flag): both goals land at the root, the flag goes up, nothing else moves.
+  const legacy = { name: 'root', children: [{ name: 'Своя сфера', children: [] }] };
+  t.app.ensurePriorityDefaults(legacy);
+  assert.equal(legacy.priorityDefaultsSeeded, true, 'flag is stamped');
+  assert.equal(legacy.children.length, 3, 'two examples appended after the existing child');
+  assert.equal(legacy.children[0].name, 'Своя сфера', 'existing children stay first');
+  assert.ok(legacy.children.slice(1).every(c => c.priority === true), 'the appended pair is starred');
+
+  // Second run (and a save that deleted the examples) must not seed again.
+  t.app.ensurePriorityDefaults(legacy);
+  assert.equal(legacy.children.length, 3, 'no duplicate goals on re-run');
+  legacy.children = legacy.children.filter(c => c.priority !== true);
+  t.app.ensurePriorityDefaults(legacy);
+  assert.equal(legacy.children.length, 1, 'deleted examples stay deleted — the flag gates seeding');
 });
 
 // Regression (found 10.10.2026): the "today" checklist broke on the deployed site because
@@ -138,7 +169,7 @@ test('sanitizeGoalTree: deep corruption is pruned, not fatal', () => {
 
 test('loadState: corrupt deep node heals instead of breaking render', () => {
   const t = boot();
-  const bad = { name: 'root', children: [{ name: 'x', children: {} }, 'junk'] };
+  const bad = { name: 'root', priorityDefaultsSeeded: true, children: [{ name: 'x', children: {} }, 'junk'] };
   t.localStorage.setItem(t.app.STORAGE_KEY, JSON.stringify(bad));
   const loaded = t.app.loadState();
   assert.ok(t.app.isValidGoalTree(loaded), 'loaded tree passes the gate');

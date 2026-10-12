@@ -142,6 +142,7 @@ test('persistence: a saved tree survives a page reload', () => {
   t1.app.setState({
     name: 'root',
     children: [leaf(true, { name: 'Готово' }), container([leaf(false)], { total: 3 })],
+    priorityDefaultsSeeded: true, // this snapshot is already initialised — no default-goal seeding
   });
   t1.app.saveState();
   const raw = t1.window.localStorage.getItem(t1.app.STORAGE_KEY);
@@ -197,6 +198,29 @@ test('priority block: carries the renamed title «Главные цели» on t
   // The starred goal itself shows up in the block.
   assert.ok(t.document.querySelector('.priority-list .priority-name'),
     'the starred goal must appear in the block');
+});
+
+// ===== v1.2.8: стартовые примеры «Главных целей» на первом открытии =====
+test('priority block: the two default example goals show up on first open and toggle', () => {
+  // Fresh boot with no storage — exactly the state a first-time user lands on.
+  const t = bootDom();
+  assert.equal(t.app.collectPriorityItems().length, 2, 'SEED ships exactly two starred goals');
+  t.app.setState(Object.assign(t.app.getState(), { priorityOpen: true }));
+  t.window.render();
+
+  const names = Array.from(t.document.querySelectorAll('.priority-list .priority-name'))
+    .map(el => el.textContent.trim());
+  assert.ok(names.includes('Учет всех трат'), '«Учет всех трат» must be listed');
+  assert.ok(names.includes('Готовка дома вместо доставки'), '«Готовка дома вместо доставки» must be listed');
+
+  // The demo works: ticking the box flips done on the real tree node and persists.
+  const firstToggle = t.document.querySelector('[data-priority-toggle="0"]');
+  assert.ok(firstToggle, 'each row keeps its checkbox');
+  firstToggle.click();
+  const seeded = t.app.getState().children.find(c => c.name === 'Учет всех трат');
+  assert.ok(seeded && seeded.done === true, 'ticking must mark the goal done in the tree');
+  const raw = t.window.localStorage.getItem(t.app.STORAGE_KEY);
+  assert.ok(raw && raw.includes('"priorityDefaultsSeeded":true'), 'the seeding flag persists');
 });
 
 // ===== Inline rename (edit mode turns every card into a text input) =====
@@ -736,6 +760,7 @@ test('goals sort: filter button opens a menu; picking an order re-ranks the card
       container([leaf(true), leaf(false)], { name: 'Половина', total: 2 }),
       container([leaf(true), leaf(true)], { name: 'В архиве', total: 2, archived: true }),
     ],
+    priorityDefaultsSeeded: true, // already initialised — the reload below must not seed extra goals
   });
   t.window.render();
 

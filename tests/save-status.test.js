@@ -179,7 +179,7 @@ test('п.7: чужая правка при наших незапушенных �
   const t = boot();
   const cloud = installSnapshotCloud(t.ctx);
   // Начальный общий снимок: две сферы-цели.
-  const base = { name: 'root', updatedAt: 1000, children: [
+  const base = { name: 'root', updatedAt: 1000, priorityDefaultsSeeded: true, children: [
     { name: 'А', sphereActivityAt: 1, children: [] },
     { name: 'Б', sphereActivityAt: 1, children: [] },
   ] };

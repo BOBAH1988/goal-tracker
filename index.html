@@ -1217,7 +1217,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.2.7';
+const APP_VERSION = '1.2.8';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -1239,6 +1239,14 @@ const TODAY_DEFAULT_ITEMS = [
   { text: "Установить приложение - Только важное.", done: true },
   { text: "Прочитать инструкцию, разобраться в функциях.", done: false },
   { text: "Запланировать сферы жизни и цели.", done: false }
+];
+/* v1.2.8: два стартовых примера для блока «Главные цели» — обычные листья со звёздочкой ☆,
+   чтобы при самом первом открытии приложения было видно, как работают приоритеты и
+   чекбоксы. Лежат прямо в SEED/emptyTemplate (новый пользователь) и добавляются один раз
+   в старые сохранения через ensurePriorityDefaults (флаг priorityDefaultsSeeded). */
+const PRIORITY_DEFAULT_GOALS = [
+  { name: "Учет всех трат", date: "", done: false, children: [], priority: true },
+  { name: "Готовка дома вместо доставки", date: "", done: false, children: [], priority: true }
 ];
 /* ===== Seed data (transcribed from the Excel table) =====
    emptyGoals/emptySteps take the noun to use for auto-generated names, so items added later via
@@ -1347,10 +1355,14 @@ const SEED = { name:"Главная", children: [
       ["Регулярная практика хобби", "Участие в мероприятиях по теме", "Делиться результатом с другими"],
       [true, false, false]
     ) }
-  ]}
+  ]},
+  // v1.2.8: стартовые примеры «Главных целей» + флаг, чтобы ensurePriorityDefaults
+  // не добавляла их повторно в это же дерево.
+  ...PRIORITY_DEFAULT_GOALS.map(g => ({ ...g, children: [] })),
   ],
   today: [{text:"",done:false},{text:"",done:false},{text:"",done:false}],
-  todayOpen: true
+  todayOpen: true,
+  priorityDefaultsSeeded: true
 };
 
 /* Мотивирующие цитаты (500 штук). В продакшене подгружаются из quotes.js;
@@ -1383,10 +1395,13 @@ const QUOTES = (typeof MOTIV_QUOTES !== 'undefined' && MOTIV_QUOTES.length) ? MO
 function emptyTemplate(){
   const goalWord = capWord('goal');
   return { name:"Главная", children: [
-    { name:`${goalWord} 1`, children: emptySteps(capWord('subgoal'), goalWord) }
+    { name:`${goalWord} 1`, children: emptySteps(capWord('subgoal'), goalWord) },
+    // v1.2.8: два примера «Главных целей» — сразу видно, как работают ☆ и чекбоксы.
+    ...PRIORITY_DEFAULT_GOALS.map(g => ({ ...g, children: [] }))
   ],
   today: [{text:"",done:false},{text:"",done:false},{text:"",done:false}],
-  todayOpen: true };
+  todayOpen: true,
+  priorityDefaultsSeeded: true };
 }
 
 /* ===== Language ===== */
@@ -2330,6 +2345,7 @@ function loadState(){
          sanitizeEmptyChecklists(parsed);
           ensureWheelTotals(parsed);
           ensureToday(parsed);
+          ensurePriorityDefaults(parsed);
           ensureGoodToday(parsed);
           if (parsed.goodToday === undefined) parsed.goodToday = parsed.today.some(item => item.done);
          ensureWishMap(parsed);
@@ -2343,6 +2359,7 @@ function loadState(){
   sanitizeEmptyChecklists(fresh);
    ensureWheelTotals(fresh);
    ensureToday(fresh);
+   ensurePriorityDefaults(fresh);
    ensureGoodToday(fresh);
    ensureSphereActivity(fresh);
    return fresh;
@@ -2693,6 +2710,7 @@ function startCloudSync(uid){
         // Cloud docs written by older app versions may lack the wheel counter — backfill it
         // the same way as loadState()/import so the wheel never divides by a missing zero.
         sanitizeGoalTree(state); sanitizeEmptyChecklists(state); ensureWheelTotals(state); ensureToday(state); ensureGoodToday(state);
+        ensurePriorityDefaults(state);
         ensureSphereActivity(state);
         // The cloud board carries metadata only; keep local cached images for cards we
         // already have and queue downloads for the rest (syncWishBoard below).
@@ -3297,6 +3315,16 @@ function ensureToday(node){
     node.todayDate = isoToday();
   }
   if(node.goodToday === undefined) node.goodToday = node.today.some(item => item.done);
+}
+// v1.2.8: два стартовых примера для блока «Главные цели» (☆-приоритеты) — закладываются
+// ОДИН раз: SEED/emptyTemplate несут их и флаг priorityDefaultsSeeded прямо в константах,
+// а сюда попадают старые сохранения, облачные документы и импорты без флага. Удаление целей
+// после разметки повторно их не вернёт — флаг уже стоит и переживает save/load.
+function ensurePriorityDefaults(node){
+  if(!node || node.priorityDefaultsSeeded) return;
+  node.priorityDefaultsSeeded = true;
+  if(!Array.isArray(node.children)) return;
+  PRIORITY_DEFAULT_GOALS.forEach(goal => { node.children.push({ ...goal, children: [] }); });
 }
 // Backfill for the «Хорошее сегодня» journal entries array — guarantees a well-formed array of
 // entry objects ({id, date, text}) for older saves, imports and cloud docs. Corrupted entries are
@@ -4405,6 +4433,7 @@ function doImportData(file){
      sanitizeEmptyChecklists(state);
      ensureWheelTotals(state);
      ensureToday(state);
+     ensurePriorityDefaults(state);
      ensureGoodToday(state);
      ensureWishMap(state);
      ensureSphereActivity(state);
@@ -8231,6 +8260,7 @@ function attachSyncConflictHandlers(){
     state = syncConflict.cloud;
     if(isValidGoalTree(state)){
       sanitizeGoalTree(state); sanitizeEmptyChecklists(state); ensureWheelTotals(state); ensureToday(state); ensureGoodToday(state);
+      ensurePriorityDefaults(state);
       ensureSphereActivity(state);
       // The account document holds the wish board as METADATA ONLY: no uploadState flags and no
       // bytes. Without this merge the cards keep no state at all and nothing ever downloads
