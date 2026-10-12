@@ -1210,7 +1210,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.2.5';
+const APP_VERSION = '1.2.6';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -5800,10 +5800,10 @@ function topbarHTML(){
         <button id="btnExportData" class="menu-item">${t('exportData')}</button>
         <button id="btnImportData" class="menu-item">${t('importData')}</button>
         <input type="file" id="importFileInput" accept="application/json,.json" style="display:none">` : ''}
-        <button id="btnResetPwaCacheMenuItem" class="menu-item">${t('resetPwaCache')}</button>
         <button id="btnAboutMenuItem" class="menu-item">${t('aboutTitle')}</button>
         <button id="btnInstructionsMenuItem" class="menu-item">${t('instructionsTitle')}</button>
         <button id="btnShareMenuItem" class="menu-item">${t('share')}</button>
+        <button id="btnResetPwaCacheMenuItem" class="menu-item">${t('resetPwaCache')}</button>
         ${!isStandalonePwa() ? `<button id="btnInstallAppMenuItem" class="menu-item">${t('installAppTitle')}</button>` : ''}
         ${!authUser ? `<button id="btnResetData" class="menu-item">${t('tipReset')}</button>` : ''}
         <div class="menu-lang-row">

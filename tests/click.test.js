@@ -1591,6 +1591,9 @@ test('share: the menu item sits with the other items and reuses .menu-item', () 
   const order = Array.from(t.document.querySelectorAll('.lang-menu .menu-item')).map((b) => b.id);
   assert.ok(order.indexOf('btnShareMenuItem') === order.indexOf('btnInstructionsMenuItem') + 1,
     'share sits right after Instructions');
+  // «Сбросить кэш» — сразу под «Поделиться» (просьба владельца 12.10.2026).
+  assert.ok(order.indexOf('btnResetPwaCacheMenuItem') === order.indexOf('btnShareMenuItem') + 1,
+    'clear cache sits right under share');
   const installAt = order.indexOf('btnInstallAppMenuItem');
   assert.ok(installAt === -1 || installAt > order.indexOf('btnShareMenuItem'),
     'share comes before the install item');
