@@ -1839,6 +1839,28 @@ test('wheel: collapsing the spheres section closes the tree and removes highligh
   assert.equal(t.document.querySelectorAll('.wheel-sector-hit.is-active').length, 0, 'highlight removed');
 });
 
+// v1.2.0 regression (жалоба владельца): «Важные сферы жизни» свёрнуты по умолчанию, а дерево
+// сферы рендерится ВНУТРИ секции — клик по сектору обязан раскрыть и её, иначе нажатие
+// выглядит как «ничего не происходит» (дерево разворачивалось в закрытом модуле).
+test('wheel: sector click expands the COLLAPSED spheres section so the tree is visible', () => {
+  const t = bootDom(null, { closedSections: true });
+  assert.ok(!t.document.querySelector('.grid-goals'), 'section starts collapsed');
+  assert.ok(!t.document.getElementById('sphereTreePanel'), 'no tree panel while collapsed');
+  t.click('[data-wheel-sector]');
+  assert.ok(t.document.querySelector('.grid-goals'), 'section expands on sector click');
+  const panel = t.document.getElementById('sphereTreePanel');
+  assert.ok(panel, 'tree panel is rendered right after the grid (same section block)');
+  const grid = t.document.querySelector('.grid-goals');
+  assert.equal(panel.parentElement, grid.parentElement,
+    'panel and grid share the parent block — both are inside the same OPEN section');
+  assert.equal(t.app.getState().mainGoalsOpen, true, 'expansion is persisted in state');
+  // The section header arrow flips to ▾ (open).
+  assert.match(t.document.getElementById('mainGoalsToggle').textContent, /▾/, 'arrow shows open');
+  // Collapsing by the header still works and hides the tree (existing behaviour).
+  t.click('#mainGoalsToggle');
+  assert.ok(!t.document.getElementById('sphereTreePanel'), 'manual collapse closes the tree');
+});
+
 test('wheel: opening a sector stamps and saves the visit; closing does not', () => {
   const t = bootDom();
   const sphere = t.app.getState().children[0];
