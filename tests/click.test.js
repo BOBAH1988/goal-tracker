@@ -1863,8 +1863,9 @@ test('wheel: sector click expands the COLLAPSED spheres section so the tree is v
 
 // v1.2.1 (жалоба владельца): при раскрытии свёрнутой секции прокрутка вела прямо к панели
 // дерева и сверху оставался обрезанный хвост сетки карточек — «небольшая часть модуля выше».
-// Теперь вверху экрана — заголовок раскрывающейся секции (сетка и дерево ниже него).
-test('wheel: sector click scrolls to the section header row, not into the middle of the grid', () => {
+// v1.2.2 (уточнение): вверху экрана должен быть сам раскрывшийся модуль (панель дерева),
+// а не заголовок «Важные сферы жизни» — иначе колесо уезжает за экран.
+test('wheel: sector click pins the EXPANDED tree panel flush to the top of the screen', () => {
   const t = bootDom();
   // jsdom has no layout (every rect is zero) — give the two candidate targets distinct
   // fake tops so we can see WHICH element the scroll actually aimed at.
@@ -1879,9 +1880,10 @@ test('wheel: sector click scrolls to the section header row, not into the middle
   t.click('[data-wheel-sector]');
   assert.ok(t.document.getElementById('sphereTreePanel'), 'the tree panel is on the page');
   assert.ok(arg, 'the app asked the window to scroll');
-  // 300 (section header row) - 0 (no sticky header in jsdom) - 16 (breathing margin) = 284.
-  // The old panel targeting would have produced 884 — the grid tail visible above.
-  assert.equal(arg.top, 284, 'scrolls to the top of the expanding section');
+  // 900 — the panel itself, flush at the top (no -16px gap that left a grid tail above).
+  // The v1.2.1 section-header targeting would have produced 284.
+  assert.equal(arg.top, 900, 'the expanded module sits at the very top of the screen');
+  assert.notEqual(arg.top, 284, 'it does NOT scroll to the section header');
   assert.equal(arg.behavior, 'smooth', 'keeps the smooth scroll');
 });
 

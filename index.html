@@ -1208,7 +1208,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.2.1';
+const APP_VERSION = '1.2.2';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -6172,26 +6172,25 @@ function toggleSphereTree(idx){
   // Прокрутка — только при РАСКРЫТИИ: сворачивание не должно дёргать страницу.
   if(expandedSphereIdx !== null) scrollSphereTreeIntoView();
 }
-/* Плавная прокрутка к РАСКРЫВАЕМОЙ секции так, чтобы вверху экрана был её заголовок.
-   Дерево сферы рендерится внутри секции «Важные сферы жизни» (сетка карточек, панель
-   дерева — сразу за ней), поэтому прокрутка прямо к панели оставляла бы сверху
-   обрезанный хвост сетки — некрасиво (жалоба владельца). Теперь вверху — заголовок
-   секции, ниже сетка, ниже дерево. Запасная цель — сама панель, если заголовок вдруг
-   не найден. Высота «прилипшей» шапки вычитается, если такая есть (сейчас .topbar
-   статичен, но правило будущее — и на случай тем, где шапка фиксирована). */
+/* Плавная прокрутка к РАСКРЫВАЕМОМУ модулю — панели дерева сферы — так, чтобы она
+   прижалась к верху экрана (жалоба владельца: «вверху экрана — раскрываемый при
+   нажатии модуль, а не Важные сферы жизни»; прокрутка к заголовку секции уводила
+   колесо за экран). Нулевой зазор: раньше отступ -16px оставлял сверху «небольшую
+   часть модуля выше» (хвост сетки карточек) — некрасиво. Панель выше верха не
+   поднимается (Math.max с нулём), если дерево уже видно — ничего не прыгает.
+   Высота «прилипшей» шапки вычитается, если такая есть (сейчас .topbar статичен,
+   но правило будущее — и на случай тем, где шапка фиксирована). */
 function scrollSphereTreeIntoView(){
   try{
-    const toggle = document.getElementById('mainGoalsToggle');
-    const target = (toggle && toggle.closest('.section-title-row'))
-      || document.getElementById('sphereTreePanel');
-    if(!target) return;
+    const panel = document.getElementById('sphereTreePanel');
+    if(!panel) return;
     let headerH = 0;
     const topbar = document.querySelector('.topbar');
     if(topbar){
       const pos = window.getComputedStyle(topbar).position;
       if(pos === 'fixed' || pos === 'sticky') headerH = topbar.offsetHeight || 0;
     }
-    const y = target.getBoundingClientRect().top + (window.pageYOffset || document.documentElement.scrollTop || 0) - headerH - 16;
+    const y = panel.getBoundingClientRect().top + (window.pageYOffset || document.documentElement.scrollTop || 0) - headerH;
     window.scrollTo({ top: Math.max(y, 0), behavior: 'smooth' });
   }catch(e){}
 }
