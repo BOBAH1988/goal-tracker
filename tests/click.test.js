@@ -1832,22 +1832,32 @@ test('wheel: collapsing the spheres section closes the tree and removes highligh
   assert.equal(t.document.querySelectorAll('.wheel-sector-hit.is-active').length, 0, 'highlight removed');
 });
 
-test('wheel: state and localStorage unchanged by open/close (no sync triggered)', () => {
+test('wheel: opening a sector stamps and saves the visit; closing does not', () => {
   const t = bootDom();
-  const before = JSON.stringify(t.app.getState());
+  const sphere = t.app.getState().children[0];
+  sphere.sphereActivityAt = 1; // древняя дата — гарантированно меняется
   t.click('[data-wheel-sector]');
-  const afterOpen = JSON.stringify(t.app.getState());
-  assert.equal(before, afterOpen, 'state unchanged after open');
+  const stamped = t.app.getState().children[0].sphereActivityAt;
+  assert.ok(stamped > 1, 'opening a sector stamps the visit date');
+  const ls = t.window.localStorage.getItem(t.app.STORAGE_KEY);
+  assert.ok(ls && ls.includes('sphereActivityAt'), 'visit is persisted (syncable)');
+  // Сворачивание — не посещение: дата не трогается.
   t.click('[data-wheel-sector]');
-  const afterClose = JSON.stringify(t.app.getState());
-  assert.equal(afterOpen, afterClose, 'state unchanged after close');
-  // localStorage unchanged
-  const storageKey = t.app.STORAGE_KEY;
-  const beforeLS = t.window.localStorage.getItem(storageKey);
+  assert.equal(t.app.getState().children[0].sphereActivityAt, stamped, 'closing does not re-stamp');
+  // Цели, проценты и расчёт колеса не меняются: листья те же.
+  assert.equal(t.app.countWheelLeaves(t.app.getState(), false), t.app.countWheelLeaves(t.app.getState(), false), 'leaf count intact');
+});
+
+test('wheel: tree navigation through the panel saves the visit too', () => {
+  const t = bootDom();
   t.click('[data-wheel-sector]');
-  t.click('[data-wheel-sector]');
-  const afterLS = t.window.localStorage.getItem(storageKey);
-  assert.equal(beforeLS, afterLS, 'localStorage unchanged by wheel interaction');
+  const nav = t.document.querySelector('[data-tree-nav]');
+  assert.ok(nav, 'tree panel has navigation elements');
+  t.app.getState().children[0].sphereActivityAt = 1;
+  t.click(nav);
+  assert.ok(t.app.getState().children[0].sphereActivityAt > 1, 'tree nav stamps the visit');
+  const ls = t.window.localStorage.getItem(t.app.STORAGE_KEY);
+  assert.ok(ls && ls.includes('sphereActivityAt'), 'tree-nav visit is persisted');
 });
 
 test('wheel: visual hint under the wheel explains the interaction', () => {
@@ -1995,4 +2005,45 @@ test('templates: an archived same-name sphere does not swallow the merge', () =>
   const active = st.children.filter(s => s.name === 'Здоровье' && !s.archived);
   assert.equal(active.length, 1, 'a fresh active sphere is created');
   assert.equal(active[0].children.length, 4, 'with the full template');
+});
+
+/* ===== «Поделиться»: молчалива только отмена, остальные ошибки — фолбэк ===== */
+
+test('share: user abort (AbortError) stays silent', async () => {
+  const t = bootDom();
+  Object.defineProperty(t.window.navigator, 'share', {
+    value: () => Promise.reject({ name: 'AbortError' }),
+    configurable: true,
+  });
+  t.click('#btnTopMenu');
+  t.click('#btnShareMenuItem');
+  await new Promise(r => setTimeout(r, 10));
+  assert.ok(!t.document.querySelector('.undo-toast'), 'no toast on user abort');
+});
+
+test('share: a non-abort share error falls back to the manual-copy link', async () => {
+  const t = bootDom();
+  Object.defineProperty(t.window.navigator, 'share', {
+    value: () => Promise.reject({ name: 'NotAllowedError' }),
+    configurable: true,
+  });
+  t.click('#btnTopMenu');
+  t.click('#btnShareMenuItem');
+  await new Promise(r => setTimeout(r, 10));
+  const toast = t.document.querySelector('.undo-toast');
+  assert.ok(toast, 'fallback toast shown');
+  assert.match(toast.textContent, /Не удалось скопировать автоматически/, 'copy-failed message');
+  assert.match(toast.textContent, /bobah1988\.github\.io\/goal-tracker/, 'link is shown for manual copy');
+});
+
+test('share: successful share shows nothing', async () => {
+  const t = bootDom();
+  Object.defineProperty(t.window.navigator, 'share', {
+    value: () => Promise.resolve(),
+    configurable: true,
+  });
+  t.click('#btnTopMenu');
+  t.click('#btnShareMenuItem');
+  await new Promise(r => setTimeout(r, 10));
+  assert.ok(!t.document.querySelector('.undo-toast'), 'no toast on success');
 });

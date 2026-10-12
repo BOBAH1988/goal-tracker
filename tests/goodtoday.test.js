@@ -554,12 +554,16 @@ test('weekShiftISO: moves Monday-start ISO by whole weeks', () => {
 
 test('goodTodayWeekHistoryHTML: shows one report with prev/next week navigation', () => {
   const t = boot();
+  // Date-independent: the newest report must be THIS week for the
+  // "no next week up to today" assertion to hold on any run date.
+  const thisWeek = vm.runInContext('weekStartISO(isoToday())', t.ctx);
+  const prevWeek = vm.runInContext('weekShiftISO(weekStartISO(isoToday()), -1)', t.ctx);
   t.app.setState({
     name: 'root',
     children: [],
     goodTodayWeekReflections: [
-      { week: '2026-09-28', q1: 'A1', q2: 'A2', q3: 'A3', createdAt: 1, updatedAt: 1 },
-      { week: '2026-10-05', q1: 'B1', q2: 'B2', q3: 'B3', createdAt: 2, updatedAt: 2 },
+      { week: prevWeek, q1: 'A1', q2: 'A2', q3: 'A3', createdAt: 1, updatedAt: 1 },
+      { week: thisWeek, q1: 'B1', q2: 'B2', q3: 'B3', createdAt: 2, updatedAt: 2 },
     ],
   });
   // Defaults to the newest saved report.

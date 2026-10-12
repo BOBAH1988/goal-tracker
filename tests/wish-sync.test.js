@@ -562,6 +562,7 @@ test('two devices: a card uploaded on one device renders on the other', async ()
   await A.app.uploadWishCard(card);
   await new Promise(r => setTimeout(r, 60));   // the 800 ms debounce is flushed below, as on pagehide
   A.app.flushCloudPush();
+  await new Promise(r => setTimeout(r, 10));   // push re-reads the doc (optimistic lock) before writing
   // The image document AND the metadata — the two halves other devices need.
   const img = cloud.db.store.get('users/u1/wishImages/w1');
   assert.ok(img, 'the bytes live in their own document');
@@ -644,4 +645,33 @@ test('wishSyncRetry: an outstanding card gets another attempt without a reload',
   vm.runInContext('wishSyncRetry()', t.ctx);
   await new Promise(r => setTimeout(r, 30));
   assert.equal(calls.imageReads.length, 1, 'and it is a no-op once everything is in place');
+});
+
+test('cloud snapshot: an invalid state never replaces the working state', () => {
+  const t = boot();
+  installFakeFirebase(t.ctx);
+  signedIn(t.ctx);
+  t.app.setState({ name: 'root', children: [
+    { name: 'Моя сфера', sphereActivityAt: Date.now(), children: [
+      { name: 'Моя цель', done: false, children: [] }
+    ]}
+  ]});
+  vm.runInContext('startCloudSync("u1")', t.ctx);
+  // Повреждённый облачный ответ: state — не дерево целей.
+  t.ctx.seedCloudDoc('users/u1', { state: { not: 'a goal tree' }, updatedAt: 'server-ts' });
+  t.ctx.firebaseFirestore.emit('users/u1');
+  assert.equal(t.app.getCloudStateError(), true, 'corruption flag raised');
+  const st = t.app.getState();
+  assert.equal(st.children.length, 1, 'working state untouched');
+  assert.equal(st.children[0].name, 'Моя сфера', 'local sphere intact');
+  const panel = vm.runInContext('statusPanelsHTML()', t.ctx);
+  assert.ok(panel.includes('cloudStateErrorOverlay'), 'error panel rendered');
+  assert.ok(panel.includes('btnCloudStateErrorDismiss'), 'dismiss button present');
+  // Корректный снимок применяется, флаг снимается.
+  t.ctx.seedCloudDoc('users/u1', { state: { name: 'root', children: [
+    { name: 'Облачная сфера', children: [{ name: 'Облачная цель', done: false, children: [] }] }
+  ]}, updatedAt: 'server-ts' });
+  t.ctx.firebaseFirestore.emit('users/u1');
+  assert.equal(t.app.getCloudStateError(), false, 'flag cleared on valid data');
+  assert.equal(t.app.getState().children[0].name, 'Облачная сфера', 'valid cloud data applied');
 });

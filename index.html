@@ -1640,6 +1640,16 @@ const STRINGS = {
     sphereReminderText: name => `К сфере «${name}» давно не возвращались`,
     sphereReminderOpen: 'Открыть сферу',
     sphereReminderHide: 'Скрыть',
+    cloudStateErrorTitle: 'Облачные данные повреждены',
+    cloudStateErrorText: 'Данные из аккаунта пришли в неправильном формате и не были применены — ваши локальные данные в безопасности. При следующем корректном ответе синхронизация возобновится автоматически.',
+    cloudStateErrorDismiss: 'Понятно',
+    cloudPushConflictTitle: 'Данные в аккаунте изменились',
+    cloudPushConflictText: 'Пока вы вносили правки, данные в вашем аккаунте успели измениться на другом устройстве. Сохранить ваши текущие правки (перезаписав аккаунт) или оставить облачные?',
+    cloudPushKeepCloud: 'Оставить облачные данные',
+    cloudPushKeepLocal: 'Сохранить мои правки',
+    saveErrorLocal: 'Не удалось сохранить на этом устройстве (переполнено хранилище?).',
+    saveErrorCloud: 'Изменения не уехали в аккаунт — проверьте соединение.',
+    saveRetry: 'Повторить',
     tipTemplates: 'Шаблоны',
     templatesTitle: 'Шаблоны',
     templatesDesc: 'Выберите шаблоны, чтобы быстро начать — каждый добавляет сферу с целями.',
@@ -1922,6 +1932,16 @@ const STRINGS = {
     sphereReminderText: name => `You haven’t returned to “${name}” in a while`,
     sphereReminderOpen: 'Open the sphere',
     sphereReminderHide: 'Hide',
+    cloudStateErrorTitle: 'Cloud data is corrupted',
+    cloudStateErrorText: 'The data from your account came in an invalid format and was not applied — your local data is safe. Sync will resume automatically the next time a valid response arrives.',
+    cloudStateErrorDismiss: 'OK',
+    cloudPushConflictTitle: 'Your account data changed',
+    cloudPushConflictText: 'While you were editing, your account data changed on another device. Save your current edits (overwriting the account) or keep the cloud version?',
+    cloudPushKeepCloud: 'Keep cloud data',
+    cloudPushKeepLocal: 'Save my edits',
+    saveErrorLocal: 'Could not save on this device (storage full?).',
+    saveErrorCloud: 'Your changes did not reach the account — check your connection.',
+    saveRetry: 'Retry',
     tipTemplates: 'Templates',
     templatesTitle: 'Templates',
     templatesDesc: 'Pick templates to quick-start — each one adds a sphere with goals.',
@@ -2152,6 +2172,27 @@ let wishCloudPushPending = false;
 // not data) and rendered as an actionable note under the board.
 let wishLastUploadError = null;
 let wishIsUserPhotoDraft = false; // «Это моё фото» checkbox state in the add form
+/* ===== Статусы сохранения (v1.1.99) =====
+   Данные важны, поэтому приложение честно говорит, что с ними происходит, и НИКОГДА не
+   называет их «сохранёнными в аккаунт» до подтверждённой записи. Раньше ошибка облачной
+   записи молча проглатывалась (.catch(()=>{})) — пользователь думал, что всё сохранено,
+   а на другом устройстве данных не было. Теперь:
+     localSaveError   — последняя запись в localStorage не удалась (квота/приватный режим).
+     cloudPushStatus  — idle | saving | saved | error | conflict (чем закончился push).
+     cloudPushRetries / cloudPushRetryTimer — конечное число повторов (без бесконечных циклов).
+     lastAppliedCloudUpdatedAt — метка ПОСЛЕДНЕГО применённого из облака снимка; push, который
+       видит, что облако ушло вперёд, НЕ перезаписывает его молча (оптимистичная блокировка). */
+let localSaveError = false;
+let cloudPushStatus = 'idle';   // idle | saving | saved | error | conflict
+let cloudPushRetries = 0;
+let cloudPushRetryTimer = null;
+let lastAppliedCloudUpdatedAt = 0;   // ms; 0 = ещё не применяли ни одного облачного снимка
+// Конечное число автоматических повторов облачной записи: после него приложение ждёт явного
+// «Повторить» — иначе офлайн/сломанная сеть крутили бы бесконечный цикл переотправки.
+const CLOUD_PUSH_MAX_RETRIES = 5;
+// Допуск на расхождение серверного и локального времени (мс). Пока облачный updatedAt не
+// «опередил» наш последний применённый снимок больше чем на эту величину, запись безопасна.
+const CLOUD_TS_TOLERANCE = 2000;
 // Мягкое напоминание о сферах ждёт, пока данные пользователя догрузятся: со входом в аккаунт
 // первый облачный снапшот решает, какое состояние настоящее, а напоминание, посчитанное по
 // местному дереву, могло бы назвать сферу, которую пользователь уже открыл на другом устройстве.
@@ -2273,12 +2314,14 @@ function structuredCloneFallback(obj){
  function saveState(){
    try{
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    localSaveError = false;
    }catch(e){
      // Quota or private-mode write failure: state stays correct in memory, the cloud push
      // below still runs (it is metadata only), and the image bytes live in IndexedDB — so a
      // quota blow-up can never silently swallow a card the way it did when base64 images were
      // stored here. Log it so the failure is visible instead of silent.
     console.warn('saveState: localStorage write failed', e && e.name ? e.name : e);
+    localSaveError = true;   // v1.1.99: the user is told the LOCAL copy did NOT persist
    }
   scheduleCloudPush();
  }
@@ -2380,6 +2423,10 @@ let preSyncLocalState = null;
 // Non-null while the "local data differs from account data" modal is on screen: {local, cloud}.
 // Set by startCloudSync() when it detects a real conflict instead of auto-applying either side.
 let syncConflict = null;
+// Повреждённый облачный ответ (state — не дерево целей): рабочее
+// состояние нетронуто, в облако ничего не отправлено, пользователь
+// видит понятное сообщение до тех пор, пока не придёт корректный снимок.
+let cloudStateError = false;
 // A state is worth protecting (i.e. worth interrupting sign-in for) only if it's neither the
 // untouched demo tree nor the blank per-account starting template — those have nothing a user
 // would miss. Comparing against the CURRENT language's emptyTemplate() is a best-effort match
@@ -2436,13 +2483,79 @@ function flushCloudPush(){
 }
 function pushCloudStateNow(){
   if(!cloudEnabled || !authUser || applyingRemoteUpdate) return;
-  // merge:true so this doesn't wipe out the account's `name`/`consent` fields — this call
-  // only ever needs to touch `state`. The wish board is written as METADATA ONLY (no image
-  // data-URLs): the image bytes live in their own documents, see stateForCloud/wishMapForCloud.
-  firebase.firestore().collection('users').doc(authUser.uid)
-    .set({ state: stateForCloud(state), updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge:true })
-    .then(()=>{ wishCloudPushPending = false; })   // only a confirmed write retires the flag
-    .catch(()=>{});
+  // The wish board is written as METADATA ONLY (no image data-URLs): the image bytes live in
+  // their own documents, see stateForCloud/wishMapForCloud.
+  const ref = firebase.firestore().collection('users').doc(authUser.uid);
+  const payload = { state: stateForCloud(state), updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
+  cloudPushStatus = 'saving';                    // v1.1.99: honest — a push is in flight, NOT "saved"
+  // Optimistic concurrency (v1.1.99, п.7): `{merge:true}` only proves the TOP-level field `state`
+  // was replaced, never that two devices' nested edits were BOTH kept — the last writer wins and
+  // silently erases the other. So before writing we re-read the document's own timestamp: if the
+  // cloud moved AHEAD of the snapshot we last applied (another device wrote after our read), we do
+  // NOT overwrite — we raise a conflict the user resolves, instead of destroying their data.
+  const attempt = () => {
+    ref.get().then((snap)=>{
+      const cloudTs = wishTsMs(snap && snap.exists && snap.data ? snap.data().updatedAt : 0);
+      if(lastAppliedCloudUpdatedAt && cloudTs > lastAppliedCloudUpdatedAt + CLOUD_TS_TOLERANCE){
+        // Someone else advanced the document since we last saw it: a blind set() would drop
+        // their change. Keep our working data safe and let the user decide (see resolvePushConflict).
+        cloudPushStatus = 'conflict';
+        cloudPushRetries = 0;
+        render();
+        return;
+      }
+      // merge:true keeps the account's `name`/`consent` fields — this call only touches `state`.
+      return ref.set(payload, { merge:true })
+        .then(()=>{
+          wishCloudPushPending = false;          // only a confirmed write retires the flag
+          cloudPushStatus = 'saved';             // v1.1.99: "saved" ONLY after the server confirms
+          cloudPushRetries = 0;
+          render();
+        })
+        .catch((err)=>{ cloudPushFailed(err); });
+    }).catch((err)=>{ cloudPushFailed(err); });
+  };
+  attempt();
+}
+// A push failed (offline, permission-denied, network). Data stays safe locally; we tell the user
+// and retry a BOUNDED number of times (never an infinite resend loop). After the cap the user must
+// press «Повторить» explicitly — surfacing the failure instead of pretending everything saved.
+function cloudPushFailed(err){
+  wishCloudPushPending = true;                   // still needs to reach the cloud — retry re-sends
+  if(cloudPushRetries < CLOUD_PUSH_MAX_RETRIES){
+    cloudPushStatus = 'error';
+    cloudPushRetries++;
+    clearTimeout(cloudPushRetryTimer);
+    // Backoff grows with each failed attempt (2s, 4s, 8s… capped) so a dead network isn't hammered.
+    const backoff = Math.min(8000, 2000 * Math.pow(2, cloudPushRetries - 1));
+    cloudPushRetryTimer = setTimeout(()=>{ if(authUser && wishCloudPushPending) pushCloudStateNow(); }, backoff);
+  }else{
+    cloudPushStatus = 'error';                    // give the user an explicit «Повторить»
+  }
+  render();
+}
+// Explicit user-triggered retry (the «Повторить» button): resets the bounded counter and re-sends.
+function retryCloudPushNow(){
+  cloudPushRetries = 0;
+  wishCloudPushPending = true;
+  clearTimeout(cloudPushRetryTimer);
+  pushCloudStateNow();
+}
+// When a push detects the cloud moved ahead, the user picks: keep pushing LOCAL (overwrite the
+// account) or take the CLOUD data (our snapshot listener already keeps `state` = cloud). Both
+// paths are explicit — neither silently discards the other side.
+function resolvePushConflict(useLocal){
+  if(useLocal){
+    // User insists their local data wins: bump our view past the cloud timestamp and re-send,
+    // overwriting the account document on purpose.
+    lastAppliedCloudUpdatedAt = 0;
+    pushCloudStateNow();
+  }else{
+    cloudPushStatus = 'idle';
+    cloudPushRetries = 0;
+    wishCloudPushPending = false;
+    render();
+  }
 }
 // Normalizes a display name into a Firestore-doc-id-safe uniqueness key (trimmed, case-insensitive,
 // collapsed whitespace, no slashes).
@@ -2460,6 +2573,14 @@ function startCloudSync(uid){
     if(doc.exists){
       const data = doc.data();
       if(data && data.state){
+        // Проверка ДО замены: некорректный облачный ответ (не дерево
+        // целей) ни при каких условиях не трогает рабочее состояние,
+        // не сохраняется локально и не уходит обратно в облако —
+        // только понятное сообщение (панель cloudStateError).
+        if(!isValidGoalTree(data.state)){
+          cloudStateError = true;
+        }else{
+        cloudStateError = false;
         // Image data-URLs never reach the cloud doc (metadata only), so a local board always
         // "differs" from the cloud one by src — strip it from the conflict comparison along
         // with the wheel's totalGoalsAdded bookkeeping churn and the sphere-reminder dates
@@ -2485,24 +2606,26 @@ function startCloudSync(uid){
         const localWishCards = (Array.isArray(state.wishMap) ? state.wishMap : []);
         applyingRemoteUpdate = true;
         state = data.state;
+        // Remember WHEN this snapshot was written (v1.1.99): pushCloudStateNow compares the
+        // cloud's own timestamp against this to detect a concurrent edit on another device.
+        lastAppliedCloudUpdatedAt = wishTsMs(data.updatedAt);
         // Cloud docs written by older app versions may lack the wheel counter — backfill it
         // the same way as loadState()/import so the wheel never divides by a missing zero.
-        if(isValidGoalTree(state)){
-          sanitizeGoalTree(state); sanitizeEmptyChecklists(state); ensureWheelTotals(state); ensureToday(state); ensureGoodToday(state);
-          ensureSphereActivity(state);
-          // The cloud board carries metadata only; keep local cached images for cards we
-          // already have and queue downloads for the rest (syncWishBoard below).
-          // The third argument is the document's own updatedAt: a local card whose file is
-          // already uploaded but which this older write does not contain yet is kept instead of
-          // dropped (that is the "card appears, then vanishes a second later" race).
-          if(Array.isArray(data.state.wishMap)) state.wishMap = mergeWishMapCloud(data.state.wishMap, localWishCards, data.updatedAt);
-          else state.wishMap = localWishCards;
-        }
+        sanitizeGoalTree(state); sanitizeEmptyChecklists(state); ensureWheelTotals(state); ensureToday(state); ensureGoodToday(state);
+        ensureSphereActivity(state);
+        // The cloud board carries metadata only; keep local cached images for cards we
+        // already have and queue downloads for the rest (syncWishBoard below).
+        // The third argument is the document's own updatedAt: a local card whose file is
+        // already uploaded but which this older write does not contain yet is kept instead of
+        // dropped (that is the "card appears, then vanishes a second later" race).
+        if(Array.isArray(data.state.wishMap)) state.wishMap = mergeWishMapCloud(data.state.wishMap, localWishCards, data.updatedAt);
+        else state.wishMap = localWishCards;
         saveState();
         applyingRemoteUpdate = false;
         wishBoardReady();
         // Облачные данные приехали и применены — напоминания можно считать по ним.
         sphereDataReady = true;
+        }
       }
       if(data && authUser){
         if(data.name) authUser.name = data.name;
@@ -3172,12 +3295,15 @@ function ensureGoodToday(node){
  }
  /* «Открыть сферу»: открывает дерево целей сферы (то же действие, что тап по карточке на главной,
     поэтому взаимодействие отмечается там же) и прокручивает страницу к её дереву. */
- function openSphereTree(idx){
-  const sphere = state.children[idx];
-  if(!sphere) return;
-  touchSphere(sphere);
-  path = [idx];
-  render();
+  function openSphereTree(idx){
+   const sphere = state.children[idx];
+   if(!sphere) return;
+   touchSphere(sphere);
+   // Осознанное открытие сферы — взаимодействие: дата сохраняется и
+   // уезжает в облако обычным механизмом (saveState → scheduleCloudPush).
+   saveState();
+   path = [idx];
+   render();
   try{
     const header = document.querySelector('.node-header');
     if(header && typeof header.scrollIntoView === 'function'){
@@ -3967,7 +4093,17 @@ async function shareApp(){
       // Вызывается синхронно в жесте клика — iOS требует transient activation для share().
       await navigator.share({ title: SHARE_TITLE, text: SHARE_TEXT, url: SHARE_URL });
     }catch(err){
-      // AbortError = пользователь закрыл системное окно. Это его выбор, а не сбой.
+      // Только отмена пользователем (AbortError) — его выбор, тишина.
+      // Любая другая ошибка Web Share API — тот же путь, что и при отсутствии
+      // navigator.share: ссылка в буфер, а если буфер недоступен — ссылка
+      // текстом для ручного копирования.
+      if(err && err.name === 'AbortError') return;
+      try{
+        await copyShareLink();
+        showShareHint(t('shareCopied'));
+      }catch(e2){
+        showShareHint(`${t('shareCopyFailed')} ${SHARE_URL}`);
+      }
     }
     return;
   }
@@ -5290,6 +5426,42 @@ function statusPanelsHTML(){
   if(relocateSourcePath){
     html += relocatePickerHTML();
   }
+  if(cloudStateError){
+    html += `<div class="auth-modal-overlay" id="cloudStateErrorOverlay">
+      <div class="auth-panel">
+        <h2 style="margin:0 0 4px; font-size:16px;">${t('cloudStateErrorTitle')}</h2>
+        <p style="margin:0; font-size:14px;">${esc(t('cloudStateErrorText'))}</p>
+        <div class="auth-btn-col">
+          <button id="btnCloudStateErrorDismiss">${t('cloudStateErrorDismiss')}</button>
+        </div>
+      </div>
+    </div>`;
+  }
+  // v1.1.99: конфликт параллельной записи — облако ушло вперёд. Ничего не перезаписываем
+  // молча: пользователь сам выбирает, чьи данные оставить (обе стороны сохранены в его власти).
+  if(cloudPushStatus === 'conflict'){
+    html += `<div class="auth-modal-overlay" id="cloudPushConflictOverlay">
+      <div class="auth-panel">
+        <h2 style="margin:0 0 4px; font-size:16px;">${t('cloudPushConflictTitle')}</h2>
+        <p style="margin:0 0 12px; font-size:14px;">${esc(t('cloudPushConflictText'))}</p>
+        <div class="auth-btn-col">
+          <button id="btnCloudPushKeepCloud">${t('cloudPushKeepCloud')}</button>
+          <button id="btnCloudPushKeepLocal" class="btn-danger">${t('cloudPushKeepLocal')}</button>
+        </div>
+      </div>
+    </div>`;
+  }
+  // v1.1.99: честный статус сохранения. Ненавязчиво, без давления. Ошибка облачной записи
+  // больше не молчит — данные в безопасности локально, но предложен явный «Повторить».
+  if(localSaveError || (authUser && cloudEnabled && cloudPushStatus === 'error')){
+    const parts = [];
+    if(localSaveError) parts.push(t('saveErrorLocal'));
+    if(authUser && cloudEnabled && cloudPushStatus === 'error') parts.push(t('saveErrorCloud'));
+    html += `<div class="verify-banner" id="saveErrorBanner">
+      <span>${esc(parts.join(' '))}</span>
+      ${authUser && cloudEnabled && cloudPushStatus === 'error' ? `<button id="btnRetryCloudPush">${t('saveRetry')}</button>` : ''}
+    </div>`;
+  }
   if(cloudEnabled && authUser && !authUser.emailVerified){
     html += `<div class="verify-banner">
       <span>${t('verifyBannerText')}</span>
@@ -5739,8 +5911,15 @@ function sphereTreeHTML(sphere, sphereIdx){
 function toggleSphereTree(idx){
   const sphere = state.children[idx];
   if(!sphere) return;
-  // Только вид: expandedSphereIdx живёт вне state, saveState и синхронизация не вызываются.
-  expandedSphereIdx = (expandedSphereIdx === idx) ? null : idx;
+  const opening = expandedSphereIdx !== idx;
+  // Только вид: expandedSphereIdx живёт вне state. Но РАСКРЫТИЕ сектора —
+  // осознанное открытие сферы: дата взаимодействия обновляется и сохраняется
+  // (синхронизируется). Сворачивание — не посещение, ничего не трогаем.
+  expandedSphereIdx = opening ? idx : null;
+  if(opening){
+    touchSphere(sphere);
+    saveState();
+  }
   render();
   // Прокрутка — только при РАСКРЫТИИ: сворачивание не должно дёргать страницу.
   if(expandedSphereIdx !== null) scrollSphereTreeIntoView();
@@ -5805,9 +5984,11 @@ function attachWheelSectorHandlers(){
       const s = parseInt(parts[0], 10), c = parseInt(parts[1], 10);
       const sphere = state.children[s];
       if(!sphere || !Array.isArray(sphere.children) || !sphere.children[c]) return;
-      // Переход внутрь сферы — как тап по карточке внутри неё ( data-nav ): отмечаем
-      // взаимодействие для напоминаний, но без saveState — синхронизацию не трогаем.
+      // Переход внутрь сферы — как тап по карточке внутри неё (data-nav):
+      // осознанное открытие, отмечаем взаимодействие и сохраняем дату,
+      // чтобы она уехала в облако через обычный механизм синхронизации.
       touchSphereAtPath([s]);
+      saveState();
       path = [s, c];
       expandedSphereIdx = null;
       render();
@@ -7777,6 +7958,22 @@ function attachSyncConflictHandlers(){
     state = syncConflict.local;
     doExportData();
     state = before;
+  });
+  on('btnCloudStateErrorDismiss', 'click', ()=>{
+    cloudStateError = false;
+    render();
+  });
+  // v1.1.99: явный повтор облачной записи после сбоя (данные никуда не делись — они локально).
+  on('btnRetryCloudPush', 'click', ()=>{
+    retryCloudPushNow();
+  });
+  // v1.1.99: конфликт параллельной записи — оставить облачные данные (снапшот уже применён),
+  // либо настоять на локальных и перезаписать аккаунт осознанно.
+  on('btnCloudPushKeepCloud', 'click', ()=>{
+    resolvePushConflict(false);
+  });
+  on('btnCloudPushKeepLocal', 'click', ()=>{
+    resolvePushConflict(true);
   });
 }
 
