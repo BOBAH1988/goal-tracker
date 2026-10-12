@@ -210,15 +210,23 @@ test('priority block: the two default example goals show up on first open and to
 
   const names = Array.from(t.document.querySelectorAll('.priority-list .priority-name'))
     .map(el => el.textContent.trim());
-  assert.ok(names.includes('Учет всех трат'), '«Учет всех трат» must be listed');
+  // SEED stores names with 'ё' — match the actual strings.
+  assert.ok(names.includes('Учёт всех трат'), '«Учёт всех трат» must be listed');
   assert.ok(names.includes('Готовка дома вместо доставки'), '«Готовка дома вместо доставки» must be listed');
 
-  // The demo works: ticking the box flips done on the real tree node and persists.
-  const firstToggle = t.document.querySelector('[data-priority-toggle="0"]');
-  assert.ok(firstToggle, 'each row keeps its checkbox');
-  firstToggle.click();
-  const seeded = t.app.getState().children.find(c => c.name === 'Учет всех трат');
-  assert.ok(seeded && seeded.done === true, 'ticking must mark the goal done in the tree');
+  // The demo works: ticking a box flips done on the exact goal that row represents.
+  // SEED keeps the two priorities inside their spheres (Energy and Finance), so we locate
+  // the target row by the shared object reference, not by a fixed index.
+  const items = t.app.collectPriorityItems();
+  const target = items.find(i => i.node.name === 'Учёт всех трат');
+  const toggle = t.document.querySelector(`[data-priority-toggle="${items.indexOf(target)}"]`);
+  assert.ok(toggle, 'the target row keeps its checkbox');
+  toggle.click();
+
+  // re-render happens inside the click handler, so re-read from the tree.
+  const re = t.app.collectPriorityItems();
+  const seeded = re.find(i => i.node.name === 'Учёт всех трат');
+  assert.ok(seeded && seeded.node.done === true, 'ticking must mark the goal done in the tree');
   const raw = t.window.localStorage.getItem(t.app.STORAGE_KEY);
   assert.ok(raw && raw.includes('"priorityDefaultsSeeded":true'), 'the seeding flag persists');
 });
@@ -1190,6 +1198,23 @@ test('wish map: on iPhone, Print renders a PNG for the share sheet, not silence'
     'and the hint explains the Safari path instead of doing nothing');
 });
 
+/* Пустая доска: «Печать» не молчит, а честно говорит «Сначала добавьте карточки»
+   (баг с локальной проверки: без картинок по клику ничего не происходило). */
+test('wish map: Print on an empty board says «add cards first», not silence', () => {
+  const t = bootDom();
+  t.app.setState(Object.assign(t.app.getState(), { wishMap: [] }));
+  t.window.render();
+  let printed = 0;
+  t.window.print = () => { printed++; };
+  t.click('#btnWishPrint');
+  assert.equal(printed, 0, 'nothing goes to the printer');
+  assert.ok(!t.document.querySelector('#wishPrintRoot'),
+    'no print node is built for an empty board');
+  assert.ok([...t.document.querySelectorAll('.undo-toast')]
+    .some(el => /Сначала добавьте карточки|Add some cards first/.test(el.textContent)),
+    'the toast asks to add cards first');
+});
+
 test('account button: a name that does not fit becomes the user icon', () => {
   const t = bootDom();
   // Войденный аккаунт: Firebase в тестах вырезан — флаги ставим напрямую.
@@ -1665,14 +1690,19 @@ test('share: the menu item sits with the other items and reuses .menu-item', () 
   assert.ok(item.classList.contains('menu-item'), 'reuses the existing .menu-item styles — no new look');
   assert.ok(t.document.getElementById('btnInstructionsMenuItem'), 'neighbour «Инструкция» stays');
   assert.ok(t.document.getElementById('btnAboutMenuItem'), 'neighbour «О проекте» stays');
-  // Порядок в меню: сразу после «Инструкция» и до «Установить приложение».
+  // Порядок в меню: «Поделиться приложением» без «Сбросить кэш», далее «Инструкция» и далее «Установить приложение».
   const order = Array.from(t.document.querySelectorAll('.lang-menu .menu-item')).map((b) => b.id);
-  assert.ok(order.indexOf('btnShareMenuItem') === order.indexOf('btnInstructionsMenuItem') + 1,
-    'share sits right after Instructions');
-  // «Сбросить кэш» — сразу под «Поделиться» (просьба владельца 12.10.2026).
-  assert.ok(order.indexOf('btnResetPwaCacheMenuItem') === order.indexOf('btnShareMenuItem') + 1,
-    'clear cache sits right under share');
+  const shareAt = order.indexOf('btnShareMenuItem');
+  const instructionsAt = order.indexOf('btnInstructionsMenuItem');
+  const resetAt = order.indexOf('btnResetPwaCacheMenuItem');
   const installAt = order.indexOf('btnInstallAppMenuItem');
+  assert.ok(shareAt !== -1, 'share item present');
+  assert.ok(resetAt !== -1, 'reset cache item present');
+  assert.ok(installAt !== -1, 'install item present');
+  // Под «Инструкцией» идёт «Поделиться приложением». Должно быть ровно два между инструкцией и установкой.
+  assert.ok(installAt === -1 || instructionsAt + 1 === shareAt, 'share sits right after Instructions');
+  assert.ok(installAt === -1 || shareAt + 1 === resetAt, 'clear cache sits right under share');
+  assert.ok(installAt === -1 || resetAt + 1 === installAt, 'install sits right after clear cache');
   assert.ok(installAt === -1 || installAt > order.indexOf('btnShareMenuItem'),
     'share comes before the install item');
 });

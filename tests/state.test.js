@@ -25,10 +25,12 @@ test('emptyTemplate/seed: valid trees with expected shape', () => {
   const t = boot();
   const tpl = t.app.emptyTemplate();
   assert.ok(t.app.isValidGoalTree(tpl));
-  // v1.2.8: the blank template carries «Цель 1» plus the two default «Главные цели» examples.
-  assert.equal(tpl.children.length, 3);
+  // v1.2.11: blank template is clean — only «Цель 1» container, no priority examples at root.
+  assert.equal(tpl.children.length, 1);
   assert.ok(t.app.isValidGoalTree(t.app.SEED));
-  assert.ok(t.app.SEED.children.length >= 4, 'demo spheres must survive');
+  // v1.2.11: SEED has 4 spheres (Энергия, Достаток, Взаимоотношения, Навыки),
+  // priority examples are on leaf nodes inside spheres (Питание, Расходы).
+  assert.equal(t.app.SEED.children.length, 4, 'demo spheres count');
 });
 
 // v1.2.8: два стартовых примера в «Главных целях» — SEED/emptyTemplate несут их сами
@@ -36,29 +38,54 @@ test('emptyTemplate/seed: valid trees with expected shape', () => {
 // старым сохранениям/облачным документам/импортам, у которых ещё нет флага.
 test('ensurePriorityDefaults: seeds the two example goals exactly once', () => {
   const t = boot();
-  for (const [label, st] of [['emptyTemplate', t.app.emptyTemplate()], ['SEED', t.app.SEED]]) {
-    assert.equal(st.priorityDefaultsSeeded, true, `${label} carries the seeding flag`);
-    const examples = st.children.filter(c => c && c.priority);
-    assert.equal(examples.length, 2, `${label} ships exactly two starred examples`);
-    assert.deepEqual(Array.from(examples.map(c => c.name)), ['Учет всех трат', 'Готовка дома вместо доставки']);
-    assert.ok(examples.every(c => c.done === false && Array.isArray(c.children) && c.children.length === 0),
-      `${label} examples are plain unticked leaves`);
+  // v1.2.11: SEED already carries the two priority examples on leaves inside spheres
+  // (Energy → «Готовка дома вместо доставки», Finance → «Учёт всех трат»); emptyTemplate is a
+  // clean slate with no priority goals — it is not a place where defaults are seeded.
+  assert.equal(t.app.SEED.priorityDefaultsSeeded, true, 'SEED carries the seeding flag');
+  const seedNames = [];
+  function collectPriorityNames(node) {
+    if(!node || typeof node !== 'object') return;
+    if(Array.isArray(node.children)) node.children.forEach(collectPriorityNames);
+    if(node.priority && node.name) seedNames.push(node.name);
   }
+  collectPriorityNames(t.app.SEED);
+  // Names in SEED use 'ё' — match the actual stored strings.
+  assert.ok(seedNames.includes('Учёт всех трат'), 'SEED has «Учёт всех трат» as a priority leaf');
+  assert.ok(seedNames.includes('Готовка дома вместо доставки'), 'SEED has «Готовка дома вместо доставки» as a priority leaf');
+  assert.equal(t.app.emptyTemplate().children.length, 1, 'emptyTemplate is clean: no priority goals');
+  assert.equal(t.app.collectPriorityItems().length, 2, 'SEED exposes exactly two priority goals via collectPriorityItems');
 
-  // Legacy save (no flag): both goals land at the root, the flag goes up, nothing else moves.
-  const legacy = { name: 'root', children: [{ name: 'Своя сфера', children: [] }] };
+  // Legacy save (no flag): examples are marked on existing matching leaves, stray roots removed.
+  const legacy = { name: 'root', children: [
+    { name: 'Своя сфера', children: [
+      { name: 'Учёт всех трат', children: [], done: false },
+      { name: 'Другое', children: [], done: false }
+    ] }
+  ] };
   t.app.ensurePriorityDefaults(legacy);
   assert.equal(legacy.priorityDefaultsSeeded, true, 'flag is stamped');
-  assert.equal(legacy.children.length, 3, 'two examples appended after the existing child');
-  assert.equal(legacy.children[0].name, 'Своя сфера', 'existing children stay first');
-  assert.ok(legacy.children.slice(1).every(c => c.priority === true), 'the appended pair is starred');
+  // Root level: only the original sphere remains (stray example roots removed)
+  assert.equal(legacy.children.length, 1, 'only original sphere remains at root');
+  assert.equal(legacy.children[0].name, 'Своя сфера');
+  // Inside the sphere: one leaf gets priority
+  const legacyStars = legacy.children[0].children.filter(c => c.priority);
+  assert.equal(legacyStars.length, 1, 'existing leaf «Учёт всех трат» gets priority');
+  assert.equal(legacyStars[0].name, 'Учёт всех трат');
 
-  // Second run (and a save that deleted the examples) must not seed again.
+  // Second run (flag is set) must not change anything.
   t.app.ensurePriorityDefaults(legacy);
-  assert.equal(legacy.children.length, 3, 'no duplicate goals on re-run');
-  legacy.children = legacy.children.filter(c => c.priority !== true);
+  assert.equal(legacy.children.length, 1, 'no change on re-run');
+  assert.equal(legacy.children[0].name, 'Своя сфера');
+  const legacyStars2 = legacy.children[0].children.filter(c => c.priority);
+  assert.equal(legacyStars2.length, 1, 'still exactly one priority leaf');
+  assert.equal(legacyStars2[0].name, 'Учёт всех трат');
+
+  // If we manually clear the priority from the leaf and run again,
+  // it should not re-seed because the flag is set.
+  legacy.children[0].children[0].priority = false;
   t.app.ensurePriorityDefaults(legacy);
-  assert.equal(legacy.children.length, 1, 'deleted examples stay deleted — the flag gates seeding');
+  assert.equal(legacy.children[0].children.filter(c => c.priority).length, 0,
+    'cleared priority stays cleared — flag gates seeding');
 });
 
 // Regression (found 10.10.2026): the "today" checklist broke on the deployed site because

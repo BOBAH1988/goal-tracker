@@ -827,6 +827,9 @@
     padding:12px 20px; font-size:14px; font-weight:600; cursor:pointer; min-height:44px;
   }
   .wish-add-btn:hover{opacity:.9;}
+  .wish-print-btn{background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:8px; padding:5px 9px; font-size:12px; cursor:pointer; display:inline-flex; align-items:center; gap:5px; margin-top:8px; white-space:nowrap;}
+  .wish-print-btn:hover{color:var(--text); border-color:var(--accent);}
+  .wish-print-btn:active{background:var(--accent); color:#fff;}
   /* Columns: 1 on very narrow screens, 2 on phones (default), 3 on tablets, 4 on desktop. */
   .wish-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:10px;}
   @media (max-width:360px){ .wish-grid{grid-template-columns:1fr;} }
@@ -1217,7 +1220,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.2.9';
+const APP_VERSION = '1.2.10';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -1240,14 +1243,36 @@ const TODAY_DEFAULT_ITEMS = [
   { text: "Прочитать инструкцию, разобраться в функциях.", done: false },
   { text: "Запланировать сферы жизни и цели.", done: false }
 ];
-/* v1.2.8: два стартовых примера для блока «Главные цели» — обычные листья со звёздочкой ☆,
-   чтобы при самом первом открытии приложения было видно, как работают приоритеты и
-   чекбоксы. Лежат прямо в SEED/emptyTemplate (новый пользователь) и добавляются один раз
-   в старые сохранения через ensurePriorityDefaults (флаг priorityDefaultsSeeded). */
+/* v1.2.11: стандартные звёздочки ☆ ставятся на СУЩЕСТВУЮЩИЕ листья дерева, а не
+   отдельными целями в корне: «Учёт всех трат» живёт в Достаток → Расходы,
+   «Готовка дома вместо доставки» — в Энергия → Питание. SEED несёт звёздочки
+   прямо в себе; старые сохранения размечаются один раз через
+   ensurePriorityDefaults (флаг priorityDefaultsSeeded), а хвосты v1.2.8
+   (отдельные корни-примеры) вычищаются миграцией (флаг priorityStraysCleaned). */
 const PRIORITY_DEFAULT_GOALS = [
   { name: "Учет всех трат", date: "", done: false, children: [], priority: true },
   { name: "Готовка дома вместо доставки", date: "", done: false, children: [], priority: true }
 ];
+const PRIORITY_DEFAULT_NAMES = ["Учет всех трат", "Готовка дома вместо доставки"];
+function normPriorityName(s){ return String(s || "").trim().toLowerCase().replace(/ё/g, "е"); }
+function isStrayDefaultRoot(c){
+  if(!c || typeof c !== "object" || c.archived) return false;
+  if(!isLeaf(c) || c.priority !== true || c.checklist) return false;
+  const n = normPriorityName(c.name);
+  return n === normPriorityName(PRIORITY_DEFAULT_NAMES[0]) || n === normPriorityName(PRIORITY_DEFAULT_NAMES[1]);
+}
+function starPriorityDefaults(node){
+  if(!node || typeof node !== "object") return;
+  if(node.archived) return;
+  if(isLeaf(node)){
+    const n = normPriorityName(node.name);
+    if(n === normPriorityName(PRIORITY_DEFAULT_NAMES[0]) || n === normPriorityName(PRIORITY_DEFAULT_NAMES[1])){
+      node.priority = true;
+    }
+    return;
+  }
+  if(Array.isArray(node.children)) node.children.forEach(starPriorityDefaults);
+}
 /* ===== Seed data (transcribed from the Excel table) =====
    emptyGoals/emptySteps take the noun to use for auto-generated names, so items added later via
    the UI can be named in whichever language is active at the time (default: Russian for the
@@ -1291,10 +1316,11 @@ const SEED = { name:"Главная", children: [
       ["Тренировки 3 раза в неделю", "10 000 шагов в день", "Растяжка и осанка"],
       [true, true, false]
     ) },
-    { name:"Питание", children: leafGoals(
-      ["Больше воды и овощей", "Меньше сахара и фастфуда", "Готовка дома вместо доставки"],
-      [true, true, false]
-    ) },
+    { name:"Питание", children: [
+      ...leafGoals(["Больше воды и овощей", "Меньше сахара и фастфуда"], [true, true]),
+      // v1.2.11: стандартная ☆ — на существующем листе, а не отдельной целью.
+      { name:"Готовка дома вместо доставки", date:"", done:false, children:[], priority:true },
+    ] },
     { name:"Восстановление и отдых", children: leafGoals(
       ["Время без гаджетов вечером", "Хобби для удовольствия", "Полноценные выходные без дел"],
       [true, true, false]
@@ -1314,10 +1340,11 @@ const SEED = { name:"Главная", children: [
       ["Учёт доходов и расходов", "Курс по инвестициям", "Книги про финансы"],
       [true, true, false]
     ) },
-    { name:"Расходы", children: leafGoals(
-      ["Бюджет на месяц", "Отказ от импульсивных покупок", "Учёт всех трат"],
-      [true, true, false]
-    ) }
+    { name:"Расходы", children: [
+      ...leafGoals(["Бюджет на месяц", "Отказ от импульсивных покупок"], [true, true]),
+      // v1.2.11: стандартная ☆ — на существующем листе, а не отдельной целью.
+      { name:"Учёт всех трат", date:"", done:false, children:[], priority:true },
+    ] }
   ]},
   { name:"Взаимоотношения", children: [
     { name:"Семья", children: leafGoals(
@@ -1356,9 +1383,8 @@ const SEED = { name:"Главная", children: [
       [true, false, false]
     ) }
   ]},
-  // v1.2.8: стартовые примеры «Главных целей» + флаг, чтобы ensurePriorityDefaults
-  // не добавляла их повторно в это же дерево.
-  ...PRIORITY_DEFAULT_GOALS.map(g => ({ ...g, children: [] })),
+  // v1.2.11: отдельных корней-примеров больше нет — стандартные ☆ стоят на листьях
+  // выше (Питание, Расходы). Флаг priorityDefaultsSeeded гасит повторную разметку.
   ],
   today: [{text:"",done:false},{text:"",done:false},{text:"",done:false}],
   todayOpen: true,
@@ -1396,8 +1422,7 @@ function emptyTemplate(){
   const goalWord = capWord('goal');
   return { name:"Главная", children: [
     { name:`${goalWord} 1`, children: emptySteps(capWord('subgoal'), goalWord) },
-    // v1.2.8: два примера «Главных целей» — сразу видно, как работают ☆ и чекбоксы.
-    ...PRIORITY_DEFAULT_GOALS.map(g => ({ ...g, children: [] }))
+    // v1.2.11: без отдельных корней-примеров — чистый шаблон, ☆ только на реальных целях.
   ],
   today: [{text:"",done:false},{text:"",done:false},{text:"",done:false}],
   todayOpen: true,
@@ -1643,6 +1668,7 @@ const STRINGS = {
     wishGridTip: 'Карточек в ряду',
     wishPrint: 'Печать',
     wishPrintHint: 'Печать недоступна в этом приложении — откройте сайт в Safari и выберите «Поделиться» → «Печать».',
+    wishPrintEmpty: 'Сначала добавьте карточки — печатать пока нечего.',
     wishManageTitle: 'Картинки',
     wishEditTip: 'Редактировать подпись',
     wishDeleteTip: 'Удалить карточку',
@@ -1945,6 +1971,7 @@ const STRINGS = {
     wishGridTip: 'Cards per row',
     wishPrint: 'Print',
     wishPrintHint: 'Printing is not available in this app — open the site in Safari and choose Share → Print.',
+    wishPrintEmpty: 'Add some cards first — there is nothing to print yet.',
     wishManageTitle: 'Pictures',
     wishEditTip: 'Edit caption',
     wishDeleteTip: 'Delete card',
@@ -3320,11 +3347,18 @@ function ensureToday(node){
 // ОДИН раз: SEED/emptyTemplate несут их и флаг priorityDefaultsSeeded прямо в константах,
 // а сюда попадают старые сохранения, облачные документы и импорты без флага. Удаление целей
 // после разметки повторно их не вернёт — флаг уже стоит и переживает save/load.
+// v1.2.11: для старых сохранений разметка теперь означает (1) проставить ☆ на тех же двух
+// существующих по именам листьях по всему дереву и (2) убрать хвосты v1.2.8 — отдельные
+// корни-примеры с priority=true, которые остались от переноса.
 function ensurePriorityDefaults(node){
   if(!node || node.priorityDefaultsSeeded) return;
   node.priorityDefaultsSeeded = true;
   if(!Array.isArray(node.children)) return;
+  // v1.2.8: старые сохранения — примера нет ни где, добавляем их на корень (на потом).
   PRIORITY_DEFAULT_GOALS.forEach(goal => { node.children.push({ ...goal, children: [] }); });
+  // v1.2.11: размечаем существующие листья ★, вычищаем корни-примеры.
+  starPriorityDefaults(node);
+  node.children = node.children.filter(c => !isStrayDefaultRoot(c));
 }
 // Backfill for the «Хорошее сегодня» journal entries array — guarantees a well-formed array of
 // entry objects ({id, date, text}) for older saves, imports and cloud docs. Corrupted entries are
@@ -3947,7 +3981,7 @@ function deleteWishImageFile(card){
 // остаётся подпись с честной пометкой.
 function printWishBoard(){
   const cards = Array.isArray(state.wishMap) ? state.wishMap : [];
-  if(!cards.length) return;
+  if(!cards.length){ showPrintHint('wishPrintEmpty'); return; }
   const cols = wishGridCols === null ? (isStandalonePwa() ? 3 : 4) : wishGridCols;
   const order = Array.from(wishMapDisplayOrder(cards));
   // iOS PWA: window.print в Safari (и в standalone-приложении тем более)
@@ -4198,11 +4232,11 @@ function loadWishImage(url){
 // Тот же приём, что у undo-toast: элемент в document.body (render() его
 // не пересоздаёт), управляется императивно, автоскрытие через 5 c.
 let printHintTimer = null;
-function showPrintHint(){
+function showPrintHint(key){
   const toast = document.createElement('div');
   toast.className = 'undo-toast';
   const label = document.createElement('span');
-  label.textContent = t('wishPrintHint');
+  label.textContent = t(key || 'wishPrintHint');
   toast.appendChild(label);
   document.body.appendChild(toast);
   clearTimeout(printHintTimer);
@@ -6815,6 +6849,10 @@ function attachWishMapHandlers(){
   // Печать доски: одна страница A4 с текущей матрицей карточек.
   on('btnWishPrint', 'click', (e)=>{
     e.stopPropagation();
+    if(!Array.isArray(state.wishMap) || !state.wishMap.length){
+      showPrintHint('wishPrintEmpty');
+      return;
+    }
     printWishBoard();
   });
   // Плотность доски: кнопка-сетка открывает выбор 2/3/4, выбранное значение сохраняется (state →
