@@ -1225,7 +1225,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.2.26';
+const APP_VERSION = '1.2.27';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -1678,10 +1678,12 @@ const STRINGS = {
     wheelPrintTitle: 'Только важное - колесо баланса жизни',
     wheelPrintEmpty: 'Сначала добавьте сферы — печатать пока нечего.',
     wheelPrintHint: 'Печать недоступна в этом приложении — откройте сайт в Safari и выберите «Поделиться» → «Печать».',
+    wheelPrintSaved: 'Лист A4 сохранён в PNG — откройте файл, чтобы распечатать.',
     wheelShare: 'Поделиться колесом',
     wheelShareTitle: 'Мое колесо баланса',
     wheelShareEmpty: 'Сначала добавьте сферы — делить пока нечего.',
     wheelShareHint: 'Поделиться недоступно в этом браузере — откройте сайт в Safari или Chrome.',
+    wheelShareSaved: 'PNG сохранён — откройте файл и поделитесь им вручную.',
     wishManageTitle: 'Картинки',
     wishEditTip: 'Редактировать подпись',
     wishDeleteTip: 'Удалить карточку',
@@ -1989,10 +1991,12 @@ const STRINGS = {
     wheelPrintTitle: 'Only What Matters - balance wheel of life',
     wheelPrintEmpty: 'Add some spheres first — there is nothing to print yet.',
     wheelPrintHint: 'Printing is not available in this app — open the site in Safari and choose Share → Print.',
+    wheelPrintSaved: 'The A4 sheet was saved as PNG — open the file to print it.',
     wheelShare: 'Share the wheel',
     wheelShareTitle: 'My balance wheel',
     wheelShareEmpty: 'Add some spheres first — there is nothing to share yet.',
     wheelShareHint: 'Sharing is not available in this browser — open the site in Safari or Chrome.',
+    wheelShareSaved: 'PNG saved — open the file and share it manually.',
     wishManageTitle: 'Pictures',
     wishEditTip: 'Edit caption',
     wishDeleteTip: 'Delete card',
@@ -4121,8 +4125,14 @@ function printWheel(){
   // Без share/при ошибке — честная подсказка, а не молчание.
   if(typeof window.print !== 'function' || isIOSDevice()){
     shareWheelPng()
-      .then(shared => { if(!shared) showPrintHint('wheelPrintHint'); })
-      .catch(()=>showPrintHint('wheelPrintHint'));
+      .then(res => {
+        if(res === 'downloaded') showPrintHint('wheelPrintSaved');   // лист ушёл файлом
+        else if(!res) showPrintHint('wheelPrintHint');
+      })
+      .catch(e => {
+        if(e && e.name === 'AbortError') return;   // закрыл лист шеринга — его выбор, тишина
+        showPrintHint('wheelPrintHint');
+      });
     return;
   }
   // Узел вне #app — ищем запросом, а не getElementById (id-сторож тестов видит только разметку,
@@ -4425,19 +4435,51 @@ async function drawWheelPng(){
   const blob = await new Promise(res => canvas.toBlob(res, 'image/png'));
   return shareCanvasPng(blob, 'balance-wheel.png', t('balanceWheel'));
 }
+// PNG без Web Share (десктопный Chrome/Firefox, file://, старый браузер): отдаём файлом —
+// пользователь прикрепит его к сообщению в любом мессенджере сам. false — нечем скачивать
+// (нет object-URL) → вызывающая сторона показывает подсказку, а не молчит.
+function downloadPngBlob(blob, fileName){
+  if(!blob || typeof URL === 'undefined' || !URL.createObjectURL) return false;
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  return true;
+}
 // Общий хвост для PNG-шеринга (печать колеса на iOS и кнопка «Поделиться»): blob → File →
-// navigator.share. false — рисовать/делить нечем (без 2d-canvas, File или share) → вызывающая
-// сторона показывает подсказку, а не молчит. Отмена пользователем (AbortError) — НЕ ошибка:
-// она вылетает как исключение, а её отфильтровывает обёртка (shareWheelPng / shareWheelToSocial).
+// navigator.share. Возвращает 'shared' (системный лист открылся), 'downloaded' (Web Share нет
+// или он не принимает файлы — десктопный Chrome/Firefox, file:// → PNG уходит файлом) либо false
+// (рисовать/делить нечем: нет 2d-canvas, File или object-URL → вызывающая сторона показывает
+// подсказку, а не молчит). Отмена пользователем (AbortError) — НЕ ошибка: она вылетает как
+// исключение, а её отфильтровывает обёртка (shareWheelPng / shareWheelToSocial).
 async function shareCanvasPng(blob, fileName, shareTitle){
   if(!blob || typeof File !== 'function') return false;
   const file = new File([blob], fileName, {type: 'image/png'});
-  if(typeof navigator.share !== 'function') return false;
-  await navigator.share({files: [file], title: shareTitle});
-  return true;
+  if(typeof navigator.share === 'function'){
+    try{
+      await navigator.share({files: [file], title: shareTitle});
+      return 'shared';
+    }catch(err){
+      // «Отмена» в системном листе — выбор пользователя: ни подсказки, ни скачивания.
+      if(err && err.name === 'AbortError') throw err;
+      // Остальное (на десктопе share({files}) отклоняется — файлы там не поддерживаются)
+      // не считаем сбоем: идём вниз и отдаём PNG файлом.
+    }
+  }
+  return downloadPngBlob(blob, fileName) ? 'downloaded' : false;
 }
 async function shareWheelPng(){
-  try{ return await drawWheelPng(); }catch(e){ return false; }
+  try{ return await drawWheelPng(); }
+  catch(e){
+    // Отмена пользователем (закрытый системный лист) — не сбой: пробрасываем наверх,
+    // там её отфильтруют. Всё остальное (битый SVG, нет шрифта) — честный false.
+    if(e && e.name === 'AbortError') throw e;
+    return false;
+  }
 }
 // Кнопка «Поделиться» (соцсети/месенджеры): квадратный PNG-пост 1080×1080 с заголовком
 // «Мое колесо баланса» и самим колесом. Колесо — SVG, поэтому сериализуем его (добавляем
@@ -4501,8 +4543,9 @@ async function shareWheelToSocial(){
   const items = activeChildren(state);
   if(!items.length){ showPrintHint('wheelShareEmpty'); return; }
   try{
-    const shared = await drawWheelSharePng();
-    if(!shared) showPrintHint('wheelShareHint');
+    const res = await drawWheelSharePng();
+    if(res === 'downloaded'){ showPrintHint('wheelShareSaved'); return; }
+    if(!res) showPrintHint('wheelShareHint');
   }catch(e){
     if(e && e.name === 'AbortError') return;   // закрыл лист шеринга — его выбор, тишина
     showPrintHint('wheelShareHint');

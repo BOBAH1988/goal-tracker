@@ -1412,6 +1412,111 @@ test('wheel: Share without canvas shows an honest hint and never touches window.
     'the hint honestly says sharing is unavailable instead of staying silent');
 });
 
+/* ===== v1.2.27: фолбэк «Поделиться» на десктопе / file:// =====
+   navigator.share там либо отсутствует (Firefox, локальный файл), либо отклоняет share({files})
+   (десктопный Chrome). Раньше это давало тупую подсказку «недоступно». Теперь PNG уходит файлом:
+   пользователь прикрепит его к сообщению в мессенджере сам. */
+
+// Драйвер скачивания: URL.createObjectURL ловит Blob, клик по <a download> запоминает имя файла.
+function stubDownloads(t) {
+  const out = { blob: null, files: [] };
+  t.window.URL = {
+    createObjectURL: (b) => { out.blob = b; return 'blob:wheel'; },
+    revokeObjectURL: () => {},
+  };
+  const origCreate = t.document.createElement.bind(t.document);
+  t.document.createElement = (tag) => {
+    const el = origCreate(tag);
+    if (String(tag).toLowerCase() === 'a') el.click = () => { out.files.push(el.download); };
+    return el;
+  };
+  return out;
+}
+
+test('wheel: shareCanvasPng opens the system sheet when navigator.share works', async () => {
+  const t = bootDom();
+  const seen = [];
+  Object.defineProperty(t.window.navigator, 'share', {
+    value: async (payload) => { seen.push(payload); }, configurable: true,
+  });
+  const res = await t.app.shareCanvasPng(new t.window.Blob(['x']), 'my-balance-wheel.png', 'Мое колесо баланса');
+  assert.equal(res, 'shared', 'a working navigator.share means the sheet was opened');
+  assert.equal(seen.length, 1, 'share is called exactly once');
+  assert.equal(seen[0].title, 'Мое колесо баланса', 'and carries the post title');
+  assert.equal(seen[0].files[0].name, 'my-balance-wheel.png', 'with the PNG file attached');
+});
+
+/* Абсолютная тишина при отмене: AbortError пробрасывается наверх (его отфильтрует обёртка),
+   НИКАКОГО скачивания на отмену не происходит. */
+test('wheel: an AbortError from the share sheet is rethrown, never turned into a download', async () => {
+  const t = bootDom();
+  const dl = stubDownloads(t);
+  Object.defineProperty(t.window.navigator, 'share', {
+    value: async () => { const e = new Error('user cancelled'); e.name = 'AbortError'; throw e; },
+    configurable: true,
+  });
+  await assert.rejects(
+    () => t.app.shareCanvasPng(new t.window.Blob(['x']), 'my-balance-wheel.png', 'Мое колесо баланса'),
+    { name: 'AbortError' },
+  );
+  assert.deepEqual(dl.files, [], 'closing the sheet must NOT fall back to a file download');
+});
+
+/* Главный кейс репорта: navigator.share есть, но share({files}) отклоняется (десктопный Chrome).
+   Это не «недоступно», а повод отдать PNG файлом. */
+test('wheel: shareCanvasPng falls back to a file download when the sheet rejects files', async () => {
+  const t = bootDom();
+  const dl = stubDownloads(t);
+  Object.defineProperty(t.window.navigator, 'share', {
+    value: async () => { throw new TypeError('share({files}) is not supported on desktop'); },
+    configurable: true,
+  });
+  const res = await t.app.shareCanvasPng(new t.window.Blob(['x'], { type: 'image/png' }), 'my-balance-wheel.png', 'Мое колесо баланса');
+  assert.equal(res, 'downloaded', 'a non-Abort rejection falls back to saving the PNG');
+  assert.deepEqual(dl.files, ['my-balance-wheel.png'], 'and the file keeps the shareable name');
+  assert.ok(dl.blob && dl.blob.type === 'image/png', 'the downloaded bytes are the PNG blob');
+});
+
+/* jsdom без navigator.share (Firefox/локальный file://): клик по кнопке → PNG файлом + тост
+   «PNG сохранён», а не старое «Поделиться недоступно». Требует фейкового 2d-canvas. */
+test('wheel: Share without navigator.share saves the PNG and says «saved», not «unavailable»', async () => {
+  const t = bootDom();
+  t.app.setState(Object.assign(t.app.getState(), {
+    children: [{ name: 'Здоровье', children: [{ name: 'Бег', done: true, children: [] }] }],
+  }));
+  t.window.render();
+  assert.equal(t.window.navigator.share, undefined, 'jsdom really has no Web Share API');
+  const dl = stubDownloads(t);
+  // Фейковый canvas: jsdom не рисует, но рисование здесь не проверяем — лишь бы дойти до PNG.
+  const origCreate = t.document.createElement.bind(t.document);
+  t.document.createElement = (tag) => {
+    const el = origCreate(tag);
+    const name = String(tag).toLowerCase();
+    if (name === 'canvas') {
+      el.getContext = () => ({
+        fillStyle: '', font: '', textAlign: '', textBaseline: '',
+        fillRect() {}, fillText() {}, drawImage() {},
+      });
+      el.toBlob = (cb) => cb(new t.window.Blob(['png'], { type: 'image/png' }));
+    }
+    if (name === 'a') el.click = () => { dl.files.push(el.download); };
+    return el;
+  };
+  t.window.Image = class { set src(v) { setTimeout(() => this.onload && this.onload(), 0); } };
+  let printed = 0;
+  t.window.print = () => { printed++; };
+  t.click('#btnWheelShare');
+  await new Promise(r => setTimeout(r, 30));   // drawWheelSharePng → Image.onload + share
+  assert.deepEqual(dl.files, ['my-balance-wheel.png'], 'the PNG is handed over as a file');
+  assert.equal(printed, 0, 'Share never prints');
+  assert.ok([...t.document.querySelectorAll('.undo-toast')]
+    .some(el => /PNG сохранён|PNG saved/.test(el.textContent)),
+    'the toast says the PNG was saved — not «sharing is unavailable»');
+  assert.ok(![...t.document.querySelectorAll('.undo-toast')]
+    .some(el => /Поделиться недоступно|Sharing is not available/.test(el.textContent)),
+    'and the old dead-end hint is gone');
+});
+
 test('account button: a name that does not fit becomes the user icon', () => {
   const t = bootDom();
   // Войденный аккаунт: Firebase в тестах вырезан — флаги ставим напрямую.
