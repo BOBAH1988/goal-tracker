@@ -679,7 +679,7 @@
   .node-header .meta{color:var(--muted); font-size:13px; margin-bottom:10px;}
   /* ===== Cards grid & drag states ===== */
   .grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:14px;}
-  .grid-goals{grid-template-columns:repeat(2,1fr);}
+  .grid-goals{grid-template-columns:repeat(2,1fr); grid-auto-rows:140px; align-items:start;}
   .grid-hero-first{grid-template-columns:repeat(2,1fr);}
   .grid-hero-first > *:first-child{grid-column:1 / -1;}
   /* Below this width two fixed columns get too narrow (long goal names force overflow) —
@@ -1073,6 +1073,9 @@
    }
   .section-title-row{display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:8px;}
   .section-title-row .section-title{margin:0;}
+  /* Compact: the wheel block header is closer to the "Важные сферы жизни" section
+     (24px → 10px) without changing card heights. */
+  #mainGoalsToggle + .section-title-row{margin-top:10px;}
   /* Collapsing "Важные сферы жизни" / "Important Life Areas" — the arrow toggles the grid below. */
   #mainGoalsToggle{cursor:pointer; user-select:none;}
   #mainGoalsToggle .main-goals-arrow{color:var(--muted); font-size:13px; margin-right:6px;}
@@ -1225,7 +1228,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.2.29';
+const APP_VERSION = '1.2.30';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -5316,7 +5319,7 @@ function homeViewHTML(overallPct, hintHTML, mode, protectedCount){
     }
   }
    html += `<div class="section-title-row" style="margin-top:24px;">
-      <div class="section-title" id="wheelToggle">
+      <div class="section-title" id="wheelToggle" style="margin-top:10px;">
         <span class="wheel-arrow">${wheelOpen ? '▾' : '▸'}</span>
         ${t('balanceWheel')}
       </div>
