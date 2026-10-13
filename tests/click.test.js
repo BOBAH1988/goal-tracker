@@ -436,12 +436,16 @@ test('balance wheel: open by default, click collapses and persists across reload
   // By default the wheel is visible.
   assert.ok(t.document.getElementById('wheelWrap'), 'balance wheel must be visible by default (open)');
   assert.equal(t.document.querySelector('.wheel-arrow').textContent, '▾', 'arrow must point down when open');
+  assert.ok(t.document.getElementById('btnWheelPrint'),
+    'the print button shows with the OPEN wheel (nothing to print when collapsed)');
 
   // Click the toggle → collapses.
   t.click('#wheelToggle');
   assert.equal(t.app.getState().wheelOpen, false, 'clicking must persist wheelOpen=false in state');
   assert.ok(!t.document.getElementById('wheelWrap'), 'wheel must disappear when collapsed');
   assert.equal(t.document.querySelector('.wheel-arrow').textContent, '▸', 'arrow must point right when collapsed');
+  assert.ok(!t.document.getElementById('btnWheelPrint'),
+    'the print button hides with the collapsed wheel (v1.2.16)');
 
   // Reload from saved storage → stays collapsed.
   const raw = t.window.localStorage.getItem(t.app.STORAGE_KEY);
@@ -454,6 +458,7 @@ test('balance wheel: open by default, click collapses and persists across reload
   t2.click('#wheelToggle');
   assert.equal(t2.app.getState().wheelOpen, true, 'clicking again must persist wheelOpen=true');
   assert.ok(t2.document.getElementById('wheelWrap'), 'wheel must reappear when expanded');
+  assert.ok(t2.document.getElementById('btnWheelPrint'), 'the print button returns with the open wheel');
 });
 
 // ===== Search topbar button (quick-launch shortcut added alongside the menu item) =====

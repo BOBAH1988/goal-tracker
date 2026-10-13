@@ -1225,7 +1225,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.2.15';
+const APP_VERSION = '1.2.16';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -4997,9 +4997,11 @@ function homeViewHTML(overallPct, hintHTML, mode, protectedCount){
         <span class="wheel-arrow">${wheelOpen ? '▾' : '▸'}</span>
         ${t('balanceWheel')}
       </div>
-      <div class="wheel-header-actions">
+      ${/* Кнопка печати живёт у РАСКРЫТОГО колеса — то же правило, что у «У меня будет» (v1.1.53):
+           свёрнутому блоку печатать нечего, кнопка только загромождала бы заголовок. */ ''}
+      ${wheelOpen ? `<div class="wheel-header-actions">
         <button id="btnWheelPrint" class="icon-btn" data-tip="${t('wheelPrint')}" aria-label="${t('wheelPrint')}"><i class="ti ti-printer" aria-hidden="true"></i></button>
-      </div>
+      </div>` : ''}
     </div>`;
     if(wheelOpen){
       // Сектора на главной — кнопки: targets[i] номер сферы в state.children для сектора i
