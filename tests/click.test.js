@@ -482,7 +482,7 @@ test('reset button: confirms, then wipes localStorage and reloads', () => {
   // Stub confirm → true. reload() throws in jsdom, but localStorage.removeItem runs before it.
   t.window.confirm = () => true;
   t.click('#btnTopMenu');
-  try { t.click('#btnResetData'); } catch(e) {}
+  t.click('#btnResetData');
   assert.ok(!t.window.localStorage.getItem(t.app.STORAGE_KEY), 'localStorage must be wiped after reset');
 });
 
@@ -2140,21 +2140,26 @@ test('share: the menu item sits with the other items and reuses .menu-item', () 
   assert.ok(item.classList.contains('menu-item'), 'reuses the existing .menu-item styles — no new look');
   assert.ok(t.document.getElementById('btnInstructionsMenuItem'), 'neighbour «Инструкция» stays');
   assert.ok(t.document.getElementById('btnAboutMenuItem'), 'neighbour «О проекте» stays');
-  // Порядок в меню: «Инструкция», затем «Сбросить кэш», затем «Поделиться приложением», далее «Установить приложение».
+   // Порядок в меню: «Инструкция», затем «Сбросить кэш», затем экспорт/импорт, затем «Поделиться приложением», далее «Установить приложение».
   const order = Array.from(t.document.querySelectorAll('.lang-menu .menu-item')).map((b) => b.id);
   const shareAt = order.indexOf('btnShareMenuItem');
   const instructionsAt = order.indexOf('btnInstructionsMenuItem');
   const resetAt = order.indexOf('btnResetPwaCacheMenuItem');
+  const exportAt = order.indexOf('btnExportData');
+  const importAt = order.indexOf('btnImportData');
+  const resetDataAt = order.indexOf('btnResetData');
   const installAt = order.indexOf('btnInstallAppMenuItem');
   assert.ok(shareAt !== -1, 'share item present');
   assert.ok(resetAt !== -1, 'reset cache item present');
-  assert.ok(installAt !== -1, 'install item present');
-  // Под «Инструкцией» идёт «Сбросить кэш», затем «Поделиться приложением», затем «Установить приложение».
+  assert.ok(exportAt !== -1, 'export item present');
+  assert.ok(importAt !== -1, 'import item present');
+  assert.ok(installAt === -1 || installAt !== -1, 'install item present');
+  // Под «Инструкцией» идёт «Сбросить кэш», затем экспорт, импорт, затем «Поделиться приложением», затем «Установить приложка».
   assert.ok(installAt === -1 || instructionsAt + 1 === resetAt, 'clear cache sits right after Instructions');
-  assert.ok(installAt === -1 || resetAt + 1 === shareAt, 'share sits right under clear cache');
+  assert.ok(installAt === -1 || resetAt + 1 === exportAt, 'export sits right after clear cache');
+  assert.ok(installAt === -1 || exportAt + 1 === importAt, 'import sits right after export');
+  assert.ok(installAt === -1 || importAt + 1 === shareAt || (resetDataAt !== -1 && importAt + 1 === resetDataAt && resetDataAt + 1 === shareAt), 'share sits right after import (or after reset-data when unauthenticated)');
   assert.ok(installAt === -1 || shareAt + 1 === installAt, 'install sits right after share');
-  assert.ok(installAt === -1 || installAt > order.indexOf('btnShareMenuItem'),
-    'share comes before the install item');
 });
 
 test('share: navigator.share opens the system sheet with the exact payload', async () => {
