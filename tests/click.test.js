@@ -863,11 +863,12 @@ test('wish map: header card manager replaces per-card edit/delete buttons', () =
   assert.ok(group.contains(t.document.getElementById('btnWishManage')), 'the manager belongs to the same group');
   // Кнопка плотности (сетка 2/3/4) лежит в той же группе — между «+» и управлением.
   assert.ok(group.contains(t.document.getElementById('btnWishGrid')), 'the grid-density button belongs to the group');
-  assert.equal(group.children.length, 4, 'the group holds «+», the grid button, print and the manager');
+  assert.equal(group.children.length, 5, 'the group holds «+», the grid button, print, share and the manager');
   assert.ok(group.children[1].querySelector('#btnWishGrid'),
     'the grid button sits between «+» and the rest (inside its dropdown wrapper)');
   assert.equal(group.children[2].id, 'btnWishPrint', 'the print button follows the grid button');
-  assert.ok(group.children[3].id === 'btnWishManage', 'the manager stays last');
+  assert.equal(group.children[3].id, 'btnWishShare', 'the share button comes right after print');
+  assert.ok(group.children[4].id === 'btnWishManage', 'the manager stays last');
   // The group is the LAST child of the header row → pushed to the right by space-between.
   const headerRow = t.document.querySelector('.section-title-row:has(#wishToggle)');
   assert.ok(headerRow && headerRow.lastElementChild === group, 'the group must sit on the right edge');
@@ -1218,6 +1219,85 @@ test('wish map: Print on an empty board says «add cards first», not silence', 
   assert.ok([...t.document.querySelectorAll('.undo-toast')]
     .some(el => /Сначала добавьте карточки|Add some cards first/.test(el.textContent)),
     'the toast asks to add cards first');
+});
+
+/* ===== v1.2.29: «Поделиться» у доски «У меня будет» (дубль кнопки колеса, просьба владельца) ===== */
+
+/* Кнопка лежит в той же группе, что «+», сетка, печать и управление — сразу после «Печать»,
+   как у колеса. data-tip вместо нативного title (AGENTS §10). */
+test('wish map: the Share button sits right after Print in the header group', () => {
+  const t = bootDom();
+  const cards = ['a', 'b'].map((id, i) =>
+    ({ id, title: 'Карточка ' + (i + 1), imagePath: 'wishImages/' + id, order: i, uploadState: 'uploaded' }));
+  t.app.setState(Object.assign(t.app.getState(), { wishMap: cards }));
+  t.window.render();
+  const btn = t.document.getElementById('btnWishShare');
+  assert.ok(btn, 'the share button shows with the open board');
+  const print = t.document.getElementById('btnWishPrint');
+  assert.ok(print.compareDocumentPosition(btn) & t.window.Node.DOCUMENT_POSITION_FOLLOWING,
+    'the share button comes AFTER print in the DOM (same order as the wheel)');
+  assert.ok(btn.getAttribute('data-tip'), 'the share button carries a data-tip bubble');
+  assert.ok(!btn.getAttribute('title'), 'and no native title that would never show on touch');
+  // Свёрнутая доска прячет всю группу — кнопка уходит вместе с «Печать».
+  t.click('#wishToggle');
+  assert.ok(!t.document.getElementById('btnWishShare'),
+    'the share button hides with the collapsed board, like print');
+});
+
+/* Пустая доска: «Поделиться» не молчит и не зовёт navigator.share — просит сначала добавить
+   карточки (как просил владелец: «если нет карточек — сообщение "сначала добавьте карточки"»). */
+test('wish map: Share with no cards says «add cards first», not silence', () => {
+  const t = bootDom();
+  t.app.setState(Object.assign(t.app.getState(), { wishMap: [] }));
+  t.window.render();
+  let shared = 0;
+  Object.defineProperty(t.window.navigator, 'share', { value: () => { shared++; }, configurable: true });
+  t.click('#btnWishShare');
+  assert.equal(shared, 0, 'navigator.share is not called with an empty board');
+  assert.ok([...t.document.querySelectorAll('.undo-toast')]
+    .some(el => /Сначала добавьте карточки — делить|Add some cards first — there is nothing to share/.test(el.textContent)),
+    'the toast asks to add cards first (share wording, not print)');
+});
+
+/* jsdom без navigator.share (Firefox/локальный file://): клик по кнопке → PNG доски файлом
+   wish-board.png + тост «PNG сохранён», а не старое «Поделиться недоступно». Требует фейкового
+   2d-canvas — рисование здесь не проверяем, лишь бы дойти до blob. */
+test('wish map: Share without navigator.share saves the PNG and says «saved»', async () => {
+  const t = bootDom();
+  const cards = ['a', 'b'].map((id, i) =>
+    ({ id, title: 'Карточка ' + (i + 1), imagePath: 'wishImages/' + id, order: i, uploadState: 'uploaded' }));
+  t.app.setState(Object.assign(t.app.getState(), { wishMap: cards }));
+  t.window.render();
+  assert.equal(t.window.navigator.share, undefined, 'jsdom really has no Web Share API');
+  const dl = stubDownloads(t);
+  const origCreate = t.document.createElement.bind(t.document);
+  t.document.createElement = (tag) => {
+    const el = origCreate(tag);
+    const name = String(tag).toLowerCase();
+    if (name === 'canvas') {
+      el.getContext = () => ({
+        fillStyle: '', font: '', textAlign: '', textBaseline: '', lineWidth: 0, strokeStyle: '',
+        fillRect() {}, fillText() {}, drawImage() {}, save() {}, restore() {}, clip() {},
+        beginPath() {}, moveTo() {}, arc() {}, arcTo() {}, closePath() {}, fill() {}, stroke() {},
+        measureText: (s) => ({ width: String(s).length * 10 }),
+        createLinearGradient: () => ({ addColorStop() {} }),
+      });
+      el.toBlob = (cb) => cb(new t.window.Blob(['png'], { type: 'image/png' }));
+    }
+    if (name === 'a') el.click = () => { dl.files.push(el.download); };
+    return el;
+  };
+  t.window.Image = class { set src(v) { setTimeout(() => this.onload && this.onload(), 0); } };
+  let printed = 0;
+  t.window.print = () => { printed++; };
+  t.click('#btnWishShare');
+  await new Promise(r => setTimeout(r, 30));   // shareWishToSocial — async
+  assert.deepEqual(dl.files, ['wish-board.png'], 'the board PNG is handed over as a file');
+  assert.equal(printed, 0, 'Share never prints');
+  assert.ok(!t.document.querySelector('#wishPrintRoot'), 'no DOM print node is built by Share');
+  assert.ok([...t.document.querySelectorAll('.undo-toast')]
+    .some(el => /PNG сохранён|PNG saved/.test(el.textContent)),
+    'the toast says the PNG was saved — not «sharing is unavailable»');
 });
 
 /* Печать «Важные сферы жизни» + колесо баланса: та же механика, что у доски «У меня будет», но

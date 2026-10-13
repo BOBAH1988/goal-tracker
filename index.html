@@ -217,7 +217,7 @@
      #btnTopMenu{ padding:0 !important; font-size:20px !important; }
    }
   /* ===== Action buttons (edit/delete/move/relocate/archive) ===== */
-   #btnEdit, #btnDelete, #btnAddSubgoal, #btnDeleteChecklist, #btnMove, #btnMoveChecklist, #btnRelocate, #btnChecklistAdd, #btnFilter, .add-child-row #btnArchive, .add-goal-wrap #btnArchive, #btnGoodTodayHistory, #btnGoodTodayWeekHistory, #btnGoodTodayWeekEdit, #btnWishManage, #btnWishGrid, #btnWishPrint, #btnWheelPrint, #btnWheelShare, #btnGoodTodayHistoryPagePrev, #btnGoodTodayHistoryPageNext, #btnGoodTodayHistoryPagePrevBottom, #btnGoodTodayHistoryPageNextBottom{
+   #btnEdit, #btnDelete, #btnAddSubgoal, #btnDeleteChecklist, #btnMove, #btnMoveChecklist, #btnRelocate, #btnChecklistAdd, #btnFilter, .add-child-row #btnArchive, .add-goal-wrap #btnArchive, #btnGoodTodayHistory, #btnGoodTodayWeekHistory, #btnGoodTodayWeekEdit, #btnWishManage, #btnWishGrid, #btnWishPrint, #btnWishShare, #btnWheelPrint, #btnWheelShare, #btnGoodTodayHistoryPagePrev, #btnGoodTodayHistoryPageNext, #btnGoodTodayHistoryPagePrevBottom, #btnGoodTodayHistoryPageNextBottom{
     background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:8px;
     padding:6px 12px; font-size:12px; cursor:pointer; white-space:nowrap;
   }
@@ -268,7 +268,7 @@
      #btnMoveChecklist:hover:not(.active), #btnAddSubgoal:hover:not(.active),
       #btnRelocate:hover:not(.active), #btnFilter:hover, #btnAddGoal:hover:not(.active),
       #btnTemplates:hover:not(.active), #btnAddChild:hover:not(.active), #btnChecklistAdd:hover, #btnWishAdd:hover, #btnWishManage:hover,
-     #btnWishGrid:hover, #btnWishPrint:hover, #btnWheelPrint:hover, #btnWheelShare:hover,
+     #btnWishGrid:hover, #btnWishPrint:hover, #btnWishShare:hover, #btnWheelPrint:hover, #btnWheelShare:hover,
       #btnGoodTodayAdd:hover, .add-child-row #btnArchive:hover:not(.active),
       .add-goal-wrap #btnArchive:hover:not(.active){color:var(--muted); border-color:var(--border);}
     }
@@ -287,7 +287,7 @@
      .touch-mode #btnTemplates:hover:not(.active),
      .touch-mode #btnAddChild:hover:not(.active), .touch-mode #btnChecklistAdd:hover,
     .touch-mode #btnWishAdd:hover, .touch-mode #btnWishManage:hover,
-    .touch-mode #btnWishGrid:hover, .touch-mode #btnWishPrint:hover, .touch-mode #btnWheelPrint:hover, .touch-mode #btnWheelShare:hover,
+    .touch-mode #btnWishGrid:hover, .touch-mode #btnWishPrint:hover, .touch-mode #btnWishShare:hover, .touch-mode #btnWheelPrint:hover, .touch-mode #btnWheelShare:hover,
     .touch-mode #btnGoodTodayAdd:hover,
     .touch-mode #btnGoodTodayHistory:hover, .touch-mode #btnGoodTodayWeekHistory:hover,
     .touch-mode #btnGoodTodayWeekEdit:hover,
@@ -1087,7 +1087,7 @@
     background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:8px;
     padding:6px 12px; font-size:12px; cursor:pointer; white-space:nowrap;
   }
-  #btnAddGoal:hover, #btnTemplates:hover, #btnWishAdd:hover, #btnWishManage:hover, #btnWishGrid:hover, #btnWishPrint:hover, #btnWheelPrint:hover, #btnWheelShare:hover, #btnGoodTodayAdd:hover{color:var(--text); border-color:var(--accent);}
+  #btnAddGoal:hover, #btnTemplates:hover, #btnWishAdd:hover, #btnWishManage:hover, #btnWishGrid:hover, #btnWishPrint:hover, #btnWishShare:hover, #btnWheelPrint:hover, #btnWheelShare:hover, #btnGoodTodayAdd:hover{color:var(--text); border-color:var(--accent);}
   #btnAddGoal:disabled{opacity:.5; cursor:not-allowed;}
   #btnAddGoal:disabled:hover{color:var(--muted); border-color:var(--border);}
   .add-goal-msg{color:var(--red); font-size:12px; white-space:nowrap;}
@@ -1112,7 +1112,7 @@
   #btnAddChild:disabled:hover{color:var(--muted); border-color:var(--border);}
   /* Compact "+"/"−" icon style for Add/Delete, used instead of full text labels to save room on
      narrow (phone) screens. */
-    #btnAddGoal.icon-btn, #btnTemplates.icon-btn, #btnWishAdd.icon-btn, #btnWishManage.icon-btn, #btnWishGrid.icon-btn, #btnWishPrint.icon-btn, #btnWheelPrint.icon-btn, #btnWheelShare.icon-btn, #btnAddChild.icon-btn, #btnDelete.icon-btn, #btnEdit.icon-btn, #btnAddSubgoal.icon-btn, #btnDeleteChecklist.icon-btn, #btnMove.icon-btn, #btnMoveChecklist.icon-btn, #btnRelocate.icon-btn, #btnChecklistAdd.icon-btn, #btnFilter.icon-btn, .add-child-row #btnArchive.icon-btn, .add-goal-wrap #btnArchive.icon-btn, #btnSearch.icon-btn, #btnGoodTodayHistory.icon-btn, #btnGoodTodayWeekHistory.icon-btn, #btnGoodTodayWeekEdit.icon-btn, #btnGoodTodayAdd.icon-btn, #btnGoodTodayHistoryPagePrevBottom.icon-btn, #btnGoodTodayHistoryPageNextBottom.icon-btn{
+    #btnAddGoal.icon-btn, #btnTemplates.icon-btn, #btnWishAdd.icon-btn, #btnWishManage.icon-btn, #btnWishGrid.icon-btn, #btnWishPrint.icon-btn, #btnWishShare.icon-btn, #btnWheelPrint.icon-btn, #btnWheelShare.icon-btn, #btnAddChild.icon-btn, #btnDelete.icon-btn, #btnEdit.icon-btn, #btnAddSubgoal.icon-btn, #btnDeleteChecklist.icon-btn, #btnMove.icon-btn, #btnMoveChecklist.icon-btn, #btnRelocate.icon-btn, #btnChecklistAdd.icon-btn, #btnFilter.icon-btn, .add-child-row #btnArchive.icon-btn, .add-goal-wrap #btnArchive.icon-btn, #btnSearch.icon-btn, #btnGoodTodayHistory.icon-btn, #btnGoodTodayWeekHistory.icon-btn, #btnGoodTodayWeekEdit.icon-btn, #btnGoodTodayAdd.icon-btn, #btnGoodTodayHistoryPagePrevBottom.icon-btn, #btnGoodTodayHistoryPageNextBottom.icon-btn{
     font-size:16px; font-weight:700; line-height:1; padding:5px 13px;
     min-width:32px; display:inline-flex; align-items:center; justify-content:center;
   }
@@ -1121,7 +1121,7 @@
      glyph and the same 24px/2px box, so the two sections read alike. No colour override here:
      the base action-button rule's --muted is what #btnEdit uses, and overriding it to --text made
      the glyph near-white (#eef2f8) on the dark button — a white icon with nothing to read it. */
-   #btnEdit.icon-btn, #btnWishManage.icon-btn, #btnWishGrid.icon-btn, #btnWishPrint.icon-btn, #btnWheelPrint.icon-btn, #btnWheelShare.icon-btn{ font-size:24px; padding:2px; }
+   #btnEdit.icon-btn, #btnWishManage.icon-btn, #btnWishGrid.icon-btn, #btnWishPrint.icon-btn, #btnWishShare.icon-btn, #btnWheelPrint.icon-btn, #btnWheelShare.icon-btn{ font-size:24px; padding:2px; }
   /* The wish header pair («+» and the pencil): one shared 42px box so the text glyph and
      the icon font line up exactly, like the «Хорошее сегодня» header pair. */
    #btnWishAdd.icon-btn{ min-width:42px; padding:5px 0; justify-content:center; }
@@ -1225,7 +1225,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.2.28';
+const APP_VERSION = '1.2.29';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -1674,6 +1674,10 @@ const STRINGS = {
     wishPrint: 'Печать',
     wishPrintHint: 'Печать недоступна в этом приложении — откройте сайт в Safari и выберите «Поделиться» → «Печать».',
     wishPrintEmpty: 'Сначала добавьте карточки — печатать пока нечего.',
+    wishShare: 'Поделиться доской',
+    wishShareEmpty: 'Сначала добавьте карточки — делить пока нечего.',
+    wishShareHint: 'Поделиться недоступно в этом браузере — откройте сайт в Safari или Chrome.',
+    wishShareSaved: 'PNG сохранён — откройте файл и поделитесь им вручную.',
     wheelPrint: 'Печать',
     wheelPrintTitle: 'Только важное - колесо баланса жизни',
     wheelPrintEmpty: 'Сначала добавьте сферы — печатать пока нечего.',
@@ -1987,6 +1991,10 @@ const STRINGS = {
     wishPrint: 'Print',
     wishPrintHint: 'Printing is not available in this app — open the site in Safari and choose Share → Print.',
     wishPrintEmpty: 'Add some cards first — there is nothing to print yet.',
+    wishShare: 'Share the board',
+    wishShareEmpty: 'Add some cards first — there is nothing to share yet.',
+    wishShareHint: 'Sharing is not available in this browser — open the site in Safari or Chrome.',
+    wishShareSaved: 'PNG saved — open the file and share it manually.',
     wheelPrint: 'Print',
     wheelPrintTitle: 'Only What Matters - balance wheel of life',
     wheelPrintEmpty: 'Add some spheres first — there is nothing to print yet.',
@@ -4240,10 +4248,6 @@ function printWheel(){
   try{ window.print(); }catch(e){ cleanup(); }
 }
 
-// Возвращает true, когда картинка ушла в navigator.share. False — если
-// движок не умеет 2d-canvas / share (или пользователь отменил): вызывающая
-// сторона тогда показывает подсказку. Любая ошибка рисования ловится —
-// молчание недопустимо, владелец уже видел «ничего не происходит».
 async function shareWishBoardPng(cards, cols){
   try{
     return await drawWishBoardPng(cards, cols);
@@ -4251,7 +4255,12 @@ async function shareWishBoardPng(cards, cols){
     return false;
   }
 }
-async function drawWishBoardPng(cards, cols){
+// Рисует доску «У меня будет» в PNG-blob — общая часть двух путей: печати на iOS
+// (drawWishBoardPng → напрямую в navigator.share, где есть AirPrint) и кнопки
+// «Поделиться» (shareWishToSocial → shareCanvasPng с фолбэком в файл). false —
+// движок без 2d-canvas / toBlob не вернул байты: вызывающая сторона показывает
+// подсказку, а не молчит — владелец уже видел «ничего не происходит».
+async function renderWishBoardBlob(cards, cols){
   const canvas = document.createElement('canvas');
   if(!canvas || !canvas.getContext) return false;
   const g = canvas.getContext('2d');
@@ -4333,6 +4342,13 @@ async function drawWishBoardPng(cards, cols){
     }
   }
   const blob = await new Promise(res => canvas.toBlob(res, 'image/png'));
+  return blob || false;
+}
+// Старый путь печати на iOS: blob → File → напрямую в navigator.share (в листе
+// есть AirPrint). False — нечем делить; отмена пользователя летит исключением
+// наверх, её отфильтрует обёртка shareWishBoardPng.
+async function drawWishBoardPng(cards, cols){
+  const blob = await renderWishBoardBlob(cards, cols);
   if(!blob || typeof File !== 'function') return false;
   const file = new File([blob], 'wish-board.png', {type: 'image/png'});
   // canShare на части iOS отсутствует, хотя share({files}) работает —
@@ -4340,6 +4356,27 @@ async function drawWishBoardPng(cards, cols){
   if(typeof navigator.share !== 'function') return false;
   await navigator.share({files: [file], title: t('wishMapTitle')});
   return true;
+}
+// Кнопка «Поделиться» у доски «У меня будет» (дубль кнопки колеса, просьба владельца):
+// PNG доски в той же матрице, что на экране, уходит в общий хвост shareCanvasPng —
+// системный лист Web Share, а где его нет (десктопный Chrome/Firefox, file://) — файлом
+// с таймаутом зависшего листа (v1.2.27/28). Пустая доска — просьба сначала добавить
+// карточки; отмена пользователя (закрытый лист, AbortError) — тишина, не сбой.
+async function shareWishToSocial(){
+  const cards = Array.isArray(state.wishMap) ? state.wishMap : [];
+  if(!cards.length){ showPrintHint('wishShareEmpty'); return; }
+  const cols = wishGridCols === null ? (isStandalonePwa() ? 3 : 4) : wishGridCols;
+  const order = Array.from(wishMapDisplayOrder(cards)).map(i => cards[i]).filter(c => c && c.id);
+  try{
+    const blob = await renderWishBoardBlob(order, cols);
+    if(!blob){ showPrintHint('wishShareHint'); return; }
+    const res = await shareCanvasPng(blob, 'wish-board.png', t('wishMapTitle'));
+    if(res === 'downloaded'){ showPrintHint('wishShareSaved'); return; }
+    if(!res) showPrintHint('wishShareHint');
+  }catch(e){
+    if(e && e.name === 'AbortError') return;
+    showPrintHint('wishShareHint');
+  }
 }
 // Печать «Важные сферы жизни + колесо» для iOS PWA: window.print на iPhone диалог не открывает,
 // поэтому, как у доски, рисуем страницу в PNG и предлагаем через navigator.share (AirPrint).
@@ -5315,6 +5352,7 @@ function homeViewHTML(overallPct, hintHTML, mode, protectedCount){
             </div>` : ''}
           </div>
           <button id="btnWishPrint" class="icon-btn" data-tip="${t('wishPrint')}" aria-label="${t('wishPrint')}"><i class="ti ti-printer" aria-hidden="true"></i></button>
+          <button id="btnWishShare" class="icon-btn" data-tip="${t('wishShare')}" aria-label="${t('wishShare')}"><i class="ti ti-share-2" aria-hidden="true"></i></button>
           ${(wishAddOpen || !(Array.isArray(state.wishMap) && state.wishMap.length)) ? '' : `<button id="btnWishManage" class="icon-btn" data-tip="${t('wishManage')}" aria-label="${t('wishManage')}"><i class="ti ti-edit" aria-hidden="true"></i></button>`}
         </div>` : ''}
       </div>`;
@@ -7255,6 +7293,12 @@ function attachWishMapHandlers(){
       return;
     }
     printWishBoard();
+  });
+  // «Поделиться» у доски (дубль кнопки колеса): PNG доски в системный лист Web Share.
+  // Пустая доска — «сначала добавьте карточки»; отмена (закрытый лист) — тишина, не сбой.
+  on('btnWishShare', 'click', (e)=>{
+    e.stopPropagation();
+    shareWishToSocial();
   });
   // Печать «Важные сферы жизни» + колесо баланса одной страницей A4.
   on('btnWheelPrint', 'click', (e)=>{
