@@ -1477,6 +1477,74 @@ test('wheel: shareCanvasPng falls back to a file download when the sheet rejects
   assert.ok(dl.blob && dl.blob.type === 'image/png', 'the downloaded bytes are the PNG blob');
 });
 
+/* ===== v1.2.28: macOS PWA — зависший share-sheet (выбор Telegram) =====
+   Репорт: «в PWA на мак выбираю Telegram — ничего не происходит, повторное нажатие — ошибка».
+   Причина: промис navigator.share после выбора цели на macOS WebKit может НИКОГДА не
+   завершиться (баг share-sheet), а повторный вызов, пока он висит, браузер отвергает
+   InvalidStateError («a previous share had not yet completed»). Лечим двумя слоями:
+   таймаут гонки (shareTimeoutMs) + флаг shareInFlight, который направляет повторное
+   нажатие сразу в файл-фолбэк, не дёргая navigator.share. */
+
+// Таймаут зависшего шеринга: share() висит вечно → после shareTimeoutMs — PNG файлом.
+test('wheel: a share() that hangs forever falls back to a file after the timeout', async () => {
+  const t = bootDom();
+  const dl = stubDownloads(t);
+  let calls = 0;
+  Object.defineProperty(t.window.navigator, 'share', {
+    value: () => { calls++; return new Promise(() => {}); },   // промис не завершается никогда
+    configurable: true,
+  });
+  t.app.setShareTimeoutMs(25);
+  const res = await t.app.shareCanvasPng(new t.window.Blob(['x'], { type: 'image/png' }), 'my-balance-wheel.png', 'Мое колесо баланса');
+  assert.equal(res, 'downloaded', 'a hung share sheet must not hang the app — the PNG is saved');
+  assert.deepEqual(dl.files, ['my-balance-wheel.png'], 'with the shareable name');
+  assert.equal(calls, 1, 'navigator.share was attempted exactly once');
+  t.app.setShareTimeoutMs(15000);   // не тащим короткий таймаут в другие тесты
+});
+
+// Второе нажатие, пока первый share висит: не зовём navigator.share (InvalidStateError),
+// а сразу отдаём файл — и флаг снимается, когда исходный промис всё-таки завершится.
+test('wheel: a retry while a share hangs downloads the file without calling share() again', async () => {
+  const t = bootDom();
+  const dl = stubDownloads(t);
+  let calls = 0;
+  let finishFirst;
+  Object.defineProperty(t.window.navigator, 'share', {
+    value: () => { calls++; return calls === 1 ? new Promise(res => { finishFirst = res; }) : Promise.resolve('ok'); },
+    configurable: true,
+  });
+  t.app.setShareTimeoutMs(5000);   // первый шеринг «висит» тест всё это время
+  const blob = () => new t.window.Blob(['x'], { type: 'image/png' });
+  const first = t.app.shareCanvasPng(blob(), 'my-balance-wheel.png', 'Мое колесо баланса');
+  await new Promise(r => setTimeout(r, 0));
+  assert.equal(calls, 1, 'the first attempt called navigator.share');
+  assert.equal(t.app.getShareInFlight(), true, 'the hung share is marked as in-flight');
+  const second = await t.app.shareCanvasPng(blob(), 'my-balance-wheel.png', 'Мое колесо баланса');
+  assert.equal(calls, 1, 'the retry must NOT touch navigator.share — that is the InvalidStateError');
+  assert.equal(second, 'downloaded', 'the retry hands the PNG over as a file right away');
+  assert.deepEqual(dl.files, ['my-balance-wheel.png'], 'one file, with the shareable name');
+  finishFirst('ok');   // «пробуждение» промиса снимает флаг
+  assert.equal(await first, 'shared', 'the original attempt still reports its own outcome');
+  assert.equal(t.app.getShareInFlight(), false, 'and the in-flight flag is released');
+  const third = await t.app.shareCanvasPng(blob(), 'my-balance-wheel.png', 'Мое колесо баланса');
+  assert.equal(calls, 2, 'a later attempt may call navigator.share again');
+  assert.equal(third, 'shared', 'and the normal path is restored');
+  t.app.setShareTimeoutMs(15000);
+});
+
+// Явный InvalidStateError («a previous share had not yet completed») → файл, а не «недоступно».
+test('wheel: InvalidStateError from a still-running share falls back to the file', async () => {
+  const t = bootDom();
+  const dl = stubDownloads(t);
+  Object.defineProperty(t.window.navigator, 'share', {
+    value: async () => { const e = new Error('A previous share had not yet completed'); e.name = 'InvalidStateError'; throw e; },
+    configurable: true,
+  });
+  const res = await t.app.shareCanvasPng(new t.window.Blob(['x'], { type: 'image/png' }), 'my-balance-wheel.png', 'Мое колесо баланса');
+  assert.equal(res, 'downloaded', 'InvalidStateError is a fallback, not a dead end');
+  assert.deepEqual(dl.files, ['my-balance-wheel.png'], 'the file keeps the shareable name');
+});
+
 /* jsdom без navigator.share (Firefox/локальный file://): клик по кнопке → PNG файлом + тост
    «PNG сохранён», а не старое «Поделиться недоступно». Требует фейкового 2d-canvas. */
 test('wheel: Share without navigator.share saves the PNG and says «saved», not «unavailable»', async () => {

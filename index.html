@@ -1225,7 +1225,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.2.27';
+const APP_VERSION = '1.2.28';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -4456,18 +4456,39 @@ function downloadPngBlob(blob, fileName){
 // (рисовать/делить нечем: нет 2d-canvas, File или object-URL → вызывающая сторона показывает
 // подсказку, а не молчит). Отмена пользователем (AbortError) — НЕ ошибка: она вылетает как
 // исключение, а её отфильтровывает обёртка (shareWheelPng / shareWheelToSocial).
+// Сколько ждать системный лист, прежде чем счесть его «зависшим». На macOS PWA выбор Telegram
+// может НИКОГДА не завершить промис navigator.share (баг share-sheet WebKit): без таймаута
+// первый клик молчит вечно, а повторный вылетает с InvalidStateError («a previous share had
+// not yet completed»). Таймаут не отменяет лист (отменить его из JS нельзя) — мы просто
+// перестаём ждать и отдаём PNG файлом; поздний исход гонки глотается подпиской race.
+let shareTimeoutMs = 15000;
+// Флаг «шеринг висит»: пока не снят, повторное нажатие не дёргает navigator.share
+// (браузер отверг бы InvalidStateError), а сразу идёт в файл-фолбэк.
+let shareInFlight = false;
 async function shareCanvasPng(blob, fileName, shareTitle){
   if(!blob || typeof File !== 'function') return false;
   const file = new File([blob], fileName, {type: 'image/png'});
-  if(typeof navigator.share === 'function'){
+  if(typeof navigator.share === 'function' && !shareInFlight){
+    shareInFlight = true;
+    let timer = 0;
     try{
-      await navigator.share({files: [file], title: shareTitle});
+      const pending = navigator.share({files: [file], title: shareTitle});
+      await Promise.race([
+        pending,
+        new Promise((_, reject) => {
+          timer = setTimeout(() => reject({name: 'ShareTimeoutError'}), shareTimeoutMs);
+        }),
+      ]);
       return 'shared';
     }catch(err){
       // «Отмена» в системном листе — выбор пользователя: ни подсказки, ни скачивания.
       if(err && err.name === 'AbortError') throw err;
-      // Остальное (на десктопе share({files}) отклоняется — файлы там не поддерживаются)
+      // Остальное (таймаут зависшего листа; InvalidStateError «a previous share had not
+      // yet completed» — предыдущий share не завершился; отказ share({files}) на десктопе)
       // не считаем сбоем: идём вниз и отдаём PNG файлом.
+    }finally{
+      clearTimeout(timer);
+      shareInFlight = false;
     }
   }
   return downloadPngBlob(blob, fileName) ? 'downloaded' : false;

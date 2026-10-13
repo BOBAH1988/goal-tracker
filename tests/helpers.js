@@ -56,6 +56,8 @@ const EXPORT_SRC = `
     wishCloudReady, wishImagePath, wishImageType, wishBoardReady, wishSyncRetry, startCloudSync,
     positionTip, printWishBoard, printWheel,
     shareCanvasPng, downloadPngBlob, drawWheelSharePng, shareWheelToSocial, shareWheelPng,
+    setShareTimeoutMs: (v) => { shareTimeoutMs = v; },
+    getShareInFlight: () => shareInFlight,
     flushCloudPush, pushCloudStateNow, stateForCloud, scheduleCloudPush,
     retryCloudPushNow, resolvePushConflict, cloudPushFailed,
     stopCloudPushRetry: () => { clearTimeout(cloudPushRetryTimer); cloudPushRetryTimer = null; },
