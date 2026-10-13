@@ -1285,11 +1285,16 @@ test('wheel: Print builds one A4 page with the spheres list + the wheel', () => 
     'the app stays on screen — hiding lives only in @media print');
   assert.notEqual(t.window.getComputedStyle(t.document.getElementById('app')).display, 'none',
     'the hiding rule is not active outside print');
+  // Имя файла при печати в PDF берётся из document.title — на время печати оно подменено.
+  assert.equal(t.document.title, 'Только важное - колесо баланса жизни',
+    'document.title carries the print filename so «Save as PDF» names the file that way');
 
   // После печати узел и метка убраны.
   t.window.dispatchEvent(new t.window.Event('afterprint'));
   assert.equal(t.document.querySelector('#wheelPrintRoot'), null, 'the print node is removed afterwards');
   assert.equal(t.document.body.classList.contains('wheel-printing'), false, 'and the marker class is gone');
+  assert.notEqual(t.document.title, 'Только важное - колесо баланса жизни',
+    'the original document.title is restored after printing');
 });
 
 /* Пустой список сфер: «Печать» не молчит, а просит сначала добавить сферы. */

@@ -1225,7 +1225,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.2.18';
+const APP_VERSION = '1.2.19';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -1675,6 +1675,7 @@ const STRINGS = {
     wishPrintHint: 'Печать недоступна в этом приложении — откройте сайт в Safari и выберите «Поделиться» → «Печать».',
     wishPrintEmpty: 'Сначала добавьте карточки — печатать пока нечего.',
     wheelPrint: 'Печать',
+    wheelPrintTitle: 'Только важное - колесо баланса жизни',
     wheelPrintEmpty: 'Сначала добавьте сферы — печатать пока нечего.',
     wheelPrintHint: 'Печать недоступна в этом приложении — откройте сайт в Safari и выберите «Поделиться» → «Печать».',
     wishManageTitle: 'Картинки',
@@ -1981,6 +1982,7 @@ const STRINGS = {
     wishPrintHint: 'Printing is not available in this app — open the site in Safari and choose Share → Print.',
     wishPrintEmpty: 'Add some cards first — there is nothing to print yet.',
     wheelPrint: 'Print',
+    wheelPrintTitle: 'Only What Matters - balance wheel of life',
     wheelPrintEmpty: 'Add some spheres first — there is nothing to print yet.',
     wheelPrintHint: 'Printing is not available in this app — open the site in Safari and choose Share → Print.',
     wishManageTitle: 'Pictures',
@@ -4174,6 +4176,10 @@ function printWheel(){
   root.appendChild(wheelBox);
   document.body.appendChild(root);
   document.body.classList.add('wheel-printing');
+  // Имя файла при печати в PDF берётся из document.title. Временно подменяем его на название
+  // печати и возвращаем исходный в cleanup (после печати / по таймауту).
+  const savedTitle = document.title;
+  document.title = t('wheelPrintTitle');
   let done = false;
   const cleanup = () => {
     if(done) return;
@@ -4181,6 +4187,7 @@ function printWheel(){
     clearTimeout(fallback);
     document.body.classList.remove('wheel-printing');
     if(root && root.parentNode) root.parentNode.removeChild(root);
+    if(document.title === t('wheelPrintTitle')) document.title = savedTitle;
     window.removeEventListener('afterprint', cleanup);
     window.removeEventListener('focus', cleanup);
   };
