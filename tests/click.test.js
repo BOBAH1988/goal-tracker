@@ -1355,6 +1355,63 @@ test('wheel: on iPhone, Print takes the PNG/share path, not the DOM print', asyn
     'and the hint explains the Safari path instead of doing nothing');
 });
 
+/* Кнопка «Поделиться» у колеса: иконка-стрелочка справа от «Печать». Делится PNG-постом
+   1080×1080 с заголовком «Мое колесо баланса» через navigator.share (соцсети/месенджеры). */
+test('wheel: the Share button sits right after Print and hides when collapsed', () => {
+  const t = bootDom();
+  t.app.setState(Object.assign(t.app.getState(), {
+    children: [{ name: 'Здоровье', children: [{ name: 'Бег', done: true, children: [] }] }],
+  }));
+  t.window.render();
+  const btn = t.document.getElementById('btnWheelShare');
+  assert.ok(btn, 'the share button shows with the OPEN wheel');
+  // Порядок в DOM: печать → поделиться (просьба владельца: «после кнопки Печать»).
+  const print = t.document.getElementById('btnWheelPrint');
+  assert.ok(print, 'print button is still there');
+  assert.ok(print.compareDocumentPosition(btn) & t.window.Node.DOCUMENT_POSITION_FOLLOWING,
+    'the share button comes AFTER print in the DOM');
+  // data-tip, а не нативный title (на тач/PWA title не показывается) — требование AGENTS §10.
+  assert.ok(btn.getAttribute('data-tip'), 'the share button carries a data-tip bubble');
+  assert.ok(!btn.getAttribute('title'), 'and no native title that would never show on touch');
+  // Свёрнутое колесо нечего делить — кнопка уходит вместе с «Печать».
+  t.click('#wheelToggle');
+  assert.ok(!t.document.getElementById('btnWheelShare'),
+    'the share button hides with the collapsed wheel, like print');
+});
+
+/* Пустой список сфер: «Поделиться» не молчит, а просит сначала добавить сферы. */
+test('wheel: Share with no spheres says «add spheres first», not silence', () => {
+  const t = bootDom();
+  t.app.setState(Object.assign(t.app.getState(), { children: [] }));
+  t.window.render();
+  let shared = 0;
+  Object.defineProperty(t.window.navigator, 'share', { value: () => { shared++; }, configurable: true });
+  t.click('#btnWheelShare');
+  assert.equal(shared, 0, 'navigator.share is not called with no spheres');
+  assert.ok([...t.document.querySelectorAll('.undo-toast')]
+    .some(el => /Сначала добавьте сферы — делить|Add some spheres first — there is nothing to share/.test(el.textContent)),
+    'the toast asks to add spheres first (share wording, not print)');
+});
+
+/* jsdom без 2d-canvas: drawWheelSharePng() → false → честная подсказка, DOM-печать не строится,
+   window.print не зовётся (кнопка делится, а не печатает). */
+test('wheel: Share without canvas shows an honest hint and never touches window.print', async () => {
+  const t = bootDom();
+  t.app.setState(Object.assign(t.app.getState(), {
+    children: [{ name: 'Здоровье', children: [{ name: 'Бег', done: true, children: [] }] }],
+  }));
+  t.window.render();
+  let printed = 0;
+  t.window.print = () => { printed++; };
+  t.click('#btnWheelShare');
+  await new Promise(r => setTimeout(r, 0));   // shareWheelToSocial — async
+  assert.equal(printed, 0, 'Share must not print — it only offers the PNG');
+  assert.ok(!t.document.querySelector('#wheelPrintRoot'), 'no DOM print node is built by Share');
+  assert.ok([...t.document.querySelectorAll('.undo-toast')]
+    .some(el => /Поделиться недоступно|Sharing is not available/.test(el.textContent)),
+    'the hint honestly says sharing is unavailable instead of staying silent');
+});
+
 test('account button: a name that does not fit becomes the user icon', () => {
   const t = bootDom();
   // Войденный аккаунт: Firebase в тестах вырезан — флаги ставим напрямую.

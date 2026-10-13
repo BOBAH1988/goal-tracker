@@ -217,7 +217,7 @@
      #btnTopMenu{ padding:0 !important; font-size:20px !important; }
    }
   /* ===== Action buttons (edit/delete/move/relocate/archive) ===== */
-   #btnEdit, #btnDelete, #btnAddSubgoal, #btnDeleteChecklist, #btnMove, #btnMoveChecklist, #btnRelocate, #btnChecklistAdd, #btnFilter, .add-child-row #btnArchive, .add-goal-wrap #btnArchive, #btnGoodTodayHistory, #btnGoodTodayWeekHistory, #btnGoodTodayWeekEdit, #btnWishManage, #btnWishGrid, #btnWishPrint, #btnWheelPrint, #btnGoodTodayHistoryPagePrev, #btnGoodTodayHistoryPageNext, #btnGoodTodayHistoryPagePrevBottom, #btnGoodTodayHistoryPageNextBottom{
+   #btnEdit, #btnDelete, #btnAddSubgoal, #btnDeleteChecklist, #btnMove, #btnMoveChecklist, #btnRelocate, #btnChecklistAdd, #btnFilter, .add-child-row #btnArchive, .add-goal-wrap #btnArchive, #btnGoodTodayHistory, #btnGoodTodayWeekHistory, #btnGoodTodayWeekEdit, #btnWishManage, #btnWishGrid, #btnWishPrint, #btnWheelPrint, #btnWheelShare, #btnGoodTodayHistoryPagePrev, #btnGoodTodayHistoryPageNext, #btnGoodTodayHistoryPagePrevBottom, #btnGoodTodayHistoryPageNextBottom{
     background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:8px;
     padding:6px 12px; font-size:12px; cursor:pointer; white-space:nowrap;
   }
@@ -268,7 +268,7 @@
      #btnMoveChecklist:hover:not(.active), #btnAddSubgoal:hover:not(.active),
       #btnRelocate:hover:not(.active), #btnFilter:hover, #btnAddGoal:hover:not(.active),
       #btnTemplates:hover:not(.active), #btnAddChild:hover:not(.active), #btnChecklistAdd:hover, #btnWishAdd:hover, #btnWishManage:hover,
-     #btnWishGrid:hover, #btnWishPrint:hover, #btnWheelPrint:hover,
+     #btnWishGrid:hover, #btnWishPrint:hover, #btnWheelPrint:hover, #btnWheelShare:hover,
       #btnGoodTodayAdd:hover, .add-child-row #btnArchive:hover:not(.active),
       .add-goal-wrap #btnArchive:hover:not(.active){color:var(--muted); border-color:var(--border);}
     }
@@ -287,7 +287,7 @@
      .touch-mode #btnTemplates:hover:not(.active),
      .touch-mode #btnAddChild:hover:not(.active), .touch-mode #btnChecklistAdd:hover,
     .touch-mode #btnWishAdd:hover, .touch-mode #btnWishManage:hover,
-    .touch-mode #btnWishGrid:hover, .touch-mode #btnWishPrint:hover, .touch-mode #btnWheelPrint:hover,
+    .touch-mode #btnWishGrid:hover, .touch-mode #btnWishPrint:hover, .touch-mode #btnWheelPrint:hover, .touch-mode #btnWheelShare:hover,
     .touch-mode #btnGoodTodayAdd:hover,
     .touch-mode #btnGoodTodayHistory:hover, .touch-mode #btnGoodTodayWeekHistory:hover,
     .touch-mode #btnGoodTodayWeekEdit:hover,
@@ -1087,7 +1087,7 @@
     background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:8px;
     padding:6px 12px; font-size:12px; cursor:pointer; white-space:nowrap;
   }
-  #btnAddGoal:hover, #btnTemplates:hover, #btnWishAdd:hover, #btnWishManage:hover, #btnWishGrid:hover, #btnWishPrint:hover, #btnWheelPrint:hover, #btnGoodTodayAdd:hover{color:var(--text); border-color:var(--accent);}
+  #btnAddGoal:hover, #btnTemplates:hover, #btnWishAdd:hover, #btnWishManage:hover, #btnWishGrid:hover, #btnWishPrint:hover, #btnWheelPrint:hover, #btnWheelShare:hover, #btnGoodTodayAdd:hover{color:var(--text); border-color:var(--accent);}
   #btnAddGoal:disabled{opacity:.5; cursor:not-allowed;}
   #btnAddGoal:disabled:hover{color:var(--muted); border-color:var(--border);}
   .add-goal-msg{color:var(--red); font-size:12px; white-space:nowrap;}
@@ -1112,7 +1112,7 @@
   #btnAddChild:disabled:hover{color:var(--muted); border-color:var(--border);}
   /* Compact "+"/"−" icon style for Add/Delete, used instead of full text labels to save room on
      narrow (phone) screens. */
-    #btnAddGoal.icon-btn, #btnTemplates.icon-btn, #btnWishAdd.icon-btn, #btnWishManage.icon-btn, #btnWishGrid.icon-btn, #btnWishPrint.icon-btn, #btnWheelPrint.icon-btn, #btnAddChild.icon-btn, #btnDelete.icon-btn, #btnEdit.icon-btn, #btnAddSubgoal.icon-btn, #btnDeleteChecklist.icon-btn, #btnMove.icon-btn, #btnMoveChecklist.icon-btn, #btnRelocate.icon-btn, #btnChecklistAdd.icon-btn, #btnFilter.icon-btn, .add-child-row #btnArchive.icon-btn, .add-goal-wrap #btnArchive.icon-btn, #btnSearch.icon-btn, #btnGoodTodayHistory.icon-btn, #btnGoodTodayWeekHistory.icon-btn, #btnGoodTodayWeekEdit.icon-btn, #btnGoodTodayAdd.icon-btn, #btnGoodTodayHistoryPagePrevBottom.icon-btn, #btnGoodTodayHistoryPageNextBottom.icon-btn{
+    #btnAddGoal.icon-btn, #btnTemplates.icon-btn, #btnWishAdd.icon-btn, #btnWishManage.icon-btn, #btnWishGrid.icon-btn, #btnWishPrint.icon-btn, #btnWheelPrint.icon-btn, #btnWheelShare.icon-btn, #btnAddChild.icon-btn, #btnDelete.icon-btn, #btnEdit.icon-btn, #btnAddSubgoal.icon-btn, #btnDeleteChecklist.icon-btn, #btnMove.icon-btn, #btnMoveChecklist.icon-btn, #btnRelocate.icon-btn, #btnChecklistAdd.icon-btn, #btnFilter.icon-btn, .add-child-row #btnArchive.icon-btn, .add-goal-wrap #btnArchive.icon-btn, #btnSearch.icon-btn, #btnGoodTodayHistory.icon-btn, #btnGoodTodayWeekHistory.icon-btn, #btnGoodTodayWeekEdit.icon-btn, #btnGoodTodayAdd.icon-btn, #btnGoodTodayHistoryPagePrevBottom.icon-btn, #btnGoodTodayHistoryPageNextBottom.icon-btn{
     font-size:16px; font-weight:700; line-height:1; padding:5px 13px;
     min-width:32px; display:inline-flex; align-items:center; justify-content:center;
   }
@@ -1121,7 +1121,7 @@
      glyph and the same 24px/2px box, so the two sections read alike. No colour override here:
      the base action-button rule's --muted is what #btnEdit uses, and overriding it to --text made
      the glyph near-white (#eef2f8) on the dark button — a white icon with nothing to read it. */
-   #btnEdit.icon-btn, #btnWishManage.icon-btn, #btnWishGrid.icon-btn, #btnWishPrint.icon-btn, #btnWheelPrint.icon-btn{ font-size:24px; padding:2px; }
+   #btnEdit.icon-btn, #btnWishManage.icon-btn, #btnWishGrid.icon-btn, #btnWishPrint.icon-btn, #btnWheelPrint.icon-btn, #btnWheelShare.icon-btn{ font-size:24px; padding:2px; }
   /* The wish header pair («+» and the pencil): one shared 42px box so the text glyph and
      the icon font line up exactly, like the «Хорошее сегодня» header pair. */
    #btnWishAdd.icon-btn{ min-width:42px; padding:5px 0; justify-content:center; }
@@ -1225,7 +1225,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.2.25';
+const APP_VERSION = '1.2.26';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -1678,6 +1678,10 @@ const STRINGS = {
     wheelPrintTitle: 'Только важное - колесо баланса жизни',
     wheelPrintEmpty: 'Сначала добавьте сферы — печатать пока нечего.',
     wheelPrintHint: 'Печать недоступна в этом приложении — откройте сайт в Safari и выберите «Поделиться» → «Печать».',
+    wheelShare: 'Поделиться колесом',
+    wheelShareTitle: 'Мое колесо баланса',
+    wheelShareEmpty: 'Сначала добавьте сферы — делить пока нечего.',
+    wheelShareHint: 'Поделиться недоступно в этом браузере — откройте сайт в Safari или Chrome.',
     wishManageTitle: 'Картинки',
     wishEditTip: 'Редактировать подпись',
     wishDeleteTip: 'Удалить карточку',
@@ -1985,6 +1989,10 @@ const STRINGS = {
     wheelPrintTitle: 'Only What Matters - balance wheel of life',
     wheelPrintEmpty: 'Add some spheres first — there is nothing to print yet.',
     wheelPrintHint: 'Printing is not available in this app — open the site in Safari and choose Share → Print.',
+    wheelShare: 'Share the wheel',
+    wheelShareTitle: 'My balance wheel',
+    wheelShareEmpty: 'Add some spheres first — there is nothing to share yet.',
+    wheelShareHint: 'Sharing is not available in this browser — open the site in Safari or Chrome.',
     wishManageTitle: 'Pictures',
     wishEditTip: 'Edit caption',
     wishDeleteTip: 'Delete card',
@@ -4415,14 +4423,90 @@ async function drawWheelPng(){
   const wheelX = (W - wheelW) / 2;
   g.drawImage(img, wheelX, wheelTop, wheelW, wheelH);
   const blob = await new Promise(res => canvas.toBlob(res, 'image/png'));
+  return shareCanvasPng(blob, 'balance-wheel.png', t('balanceWheel'));
+}
+// Общий хвост для PNG-шеринга (печать колеса на iOS и кнопка «Поделиться»): blob → File →
+// navigator.share. false — рисовать/делить нечем (без 2d-canvas, File или share) → вызывающая
+// сторона показывает подсказку, а не молчит. Отмена пользователем (AbortError) — НЕ ошибка:
+// она вылетает как исключение, а её отфильтровывает обёртка (shareWheelPng / shareWheelToSocial).
+async function shareCanvasPng(blob, fileName, shareTitle){
   if(!blob || typeof File !== 'function') return false;
-  const file = new File([blob], 'balance-wheel.png', {type: 'image/png'});
+  const file = new File([blob], fileName, {type: 'image/png'});
   if(typeof navigator.share !== 'function') return false;
-  await navigator.share({files: [file], title: t('balanceWheel')});
+  await navigator.share({files: [file], title: shareTitle});
   return true;
 }
 async function shareWheelPng(){
   try{ return await drawWheelPng(); }catch(e){ return false; }
+}
+// Кнопка «Поделиться» (соцсети/месенджеры): квадратный PNG-пост 1080×1080 с заголовком
+// «Мое колесо баланса» и самим колесом. Колесо — SVG, поэтому сериализуем его (добавляем
+// xmlns + абсолютные размеры для <img>) и рисуем на canvas через <img>, как в drawWheelPng
+// (сектора используют хардкод-цвета, поэтому корректно отрисовываются и вне DOM).
+// Любая ошибка → false → вызывающая сторона показывает подсказку, а не молчит.
+async function drawWheelSharePng(){
+  const items = activeChildren(state);
+  if(!items.length) return false;
+  const canvas = document.createElement('canvas');
+  if(!canvas || !canvas.getContext) return false;
+  const g = canvas.getContext('2d');
+  if(!g) return false;   // без 2d-canvas (jsdom, старые движки) рисовать нечем
+  const W = 1080, H = 1080;   // квадрат под соцсети/мессенджеры
+  canvas.width = W; canvas.height = H;
+  const textC = '#111111';
+  const fontTitle = 'Georgia,"Iowan Old Style","Palatino Linotype","Book Antiqua",serif';
+  g.fillStyle = '#ffffff';   // белый лист — как на печати, читается в любой теме
+  g.fillRect(0, 0, W, H);
+  // Заголовок поста.
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  g.fillStyle = textC;
+  g.font = '700 76px ' + fontTitle;
+  g.fillText(t('wheelShareTitle'), W / 2, 110);
+  // Колесо — сериализуем SVG и рисуем в нижней части листа.
+  let svgStr = wheelHTML(items, {
+    labelColor: textC, ringColor: '#9aa0a6', centerLabels: true,
+    viewBox: '60 0 452 320'
+  });
+  if(svgStr.indexOf('xmlns=') === -1){
+    svgStr = svgStr.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"');
+  }
+  // Абсолютные размеры для <img> (иначе Image(SVG) не знает размеров) + убираем экранный style.
+  svgStr = svgStr.replace('width="100%"', 'width="960"');
+  svgStr = svgStr.replace(/style="[^"]*"/, 'style="display:block"');
+  svgStr = svgStr.replace('<svg ', '<svg height="680" ');
+  const svgUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgStr);
+  const img = await new Promise((res, rej) => {
+    const im = new Image();
+    im.onload = () => res(im);
+    im.onerror = () => rej(new Error('wheel svg failed to load'));
+    im.src = svgUrl;
+  });
+  const margin = 60;
+  const areaTop = 220, areaBottom = H - margin;
+  const areaH = areaBottom - areaTop;
+  const ratio = 452 / 320;
+  const wheelW = Math.min(W - margin * 2, areaH * ratio);
+  const wheelH = wheelW / ratio;
+  const wheelX = (W - wheelW) / 2;
+  const wheelY = areaTop + (areaH - wheelH) / 2;
+  g.drawImage(img, wheelX, wheelY, wheelW, wheelH);
+  const blob = await new Promise(res => canvas.toBlob(res, 'image/png'));
+  return shareCanvasPng(blob, 'my-balance-wheel.png', t('wheelShareTitle'));
+}
+// Обработчик кнопки «Поделиться»: строит PNG и отдаёт в системный лист Web Share. Отмена
+// пользователем (закрытый лист, AbortError) — тишина, это не сбой; отсутствие share / ошибка
+// рендера — честная подсказка, а не молчание.
+async function shareWheelToSocial(){
+  const items = activeChildren(state);
+  if(!items.length){ showPrintHint('wheelShareEmpty'); return; }
+  try{
+    const shared = await drawWheelSharePng();
+    if(!shared) showPrintHint('wheelShareHint');
+  }catch(e){
+    if(e && e.name === 'AbortError') return;   // закрыл лист шеринга — его выбор, тишина
+    showPrintHint('wheelShareHint');
+  }
 }
 // Скруглённый прямоугольный путь (ctx.roundRect есть не везде — рисуем руками).
 function roundRectPath(g, x, y, w, h, r){
@@ -5139,6 +5223,7 @@ function homeViewHTML(overallPct, hintHTML, mode, protectedCount){
            свёрнутому блоку печатать нечего, кнопка только загромождала бы заголовок. */ ''}
       ${wheelOpen ? `<div class="wheel-header-actions">
         <button id="btnWheelPrint" class="icon-btn" data-tip="${t('wheelPrint')}" aria-label="${t('wheelPrint')}"><i class="ti ti-printer" aria-hidden="true"></i></button>
+        <button id="btnWheelShare" class="icon-btn" data-tip="${t('wheelShare')}" aria-label="${t('wheelShare')}"><i class="ti ti-share-2" aria-hidden="true"></i></button>
       </div>` : ''}
     </div>`;
     if(wheelOpen){
@@ -7111,6 +7196,12 @@ function attachWishMapHandlers(){
   on('btnWheelPrint', 'click', (e)=>{
     e.stopPropagation();
     printWheel();
+  });
+  // «Поделиться» у колеса: PNG колеса с заголовком «Мое колесо баланса» — в системный лист
+  // Web Share (соцсети/месенджеры). Отмена пользователем (закрытый лист) — тишина, не сбой.
+  on('btnWheelShare', 'click', (e)=>{
+    e.stopPropagation();
+    shareWheelToSocial();
   });
   // Плотность доски: кнопка-сетка открывает выбор 2/3/4, выбранное значение сохраняется (state →
   // saveState → облако), как и свёрнутость доски. Закрытие по тапу вне — тот же приём, что у
