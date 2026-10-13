@@ -1215,6 +1215,85 @@ test('wish map: Print on an empty board says «add cards first», not silence', 
     'the toast asks to add cards first');
 });
 
+/* Печать «Важные сферы жизни» + колесо баланса: та же механика, что у доски «У меня будет», но
+   на страницу уходят два блока главной — список сфер и колесо. */
+test('wheel: Print builds one A4 page with the spheres list + the wheel', () => {
+  const t = bootDom();
+  t.app.setState(Object.assign(t.app.getState(), {
+    children: [
+      { name: 'Здоровье', children: [{ name: 'Бег', done: true, children: [] }] },
+      { name: 'Достаток', children: [{ name: 'Траты', done: false, children: [] }] },
+      { name: 'Отдых', children: [] },
+    ],
+  }));
+  t.window.render();
+  let printed = 0;
+  t.window.print = () => { printed++; };
+  t.click('#btnWheelPrint');
+  assert.equal(printed, 1, 'the button calls the browser print dialog');
+
+  const root = t.document.querySelector('#wheelPrintRoot');
+  assert.ok(root, 'a dedicated print node is built');
+  assert.equal(root.parentNode, t.document.body, 'and it lives outside #app so a re-render cannot drop it');
+  // Заголовок страницы — «Важные сферы жизни», тем же серифным набором.
+  assert.match(root.firstChild.innerHTML, /Georgia/, 'the title uses the serif display face');
+  assert.match(root.firstChild.textContent, /Важные сферы жизни/, 'the page title is the spheres section');
+  // Список сфер: строка на каждую активную сферу с процентом.
+  const list = root.querySelector('[style*="grid-template-columns"]');
+  assert.ok(list, 'the spheres list is a two-column grid');
+  assert.equal(list.children.length, 3, 'every active sphere is listed');
+  assert.ok([...list.children].some(el => /100%/.test(el.textContent)), 'the done sphere reads 100%');
+  // Колесо — тот же SVG, что на экране.
+  assert.ok(root.querySelector('svg'), 'the wheel svg is on the page');
+  // Цвета темы, а не белый лист.
+  assert.match(root.style.background, /linear-gradient/, 'the page background is the theme gradient');
+  assert.equal(root.style.color, 'rgb(238, 242, 248)', 'the text is the theme text colour (dark theme)');
+  // Метка на теле, чтобы print-CSS скрыл всё остальное, а приложение осталось на экране.
+  assert.equal(t.document.body.classList.contains('wheel-printing'), true, 'the body is marked for print');
+  assert.ok(t.document.getElementById('app').children.length > 0,
+    'the app stays on screen — hiding lives only in @media print');
+  assert.notEqual(t.window.getComputedStyle(t.document.getElementById('app')).display, 'none',
+    'the hiding rule is not active outside print');
+
+  // После печати узел и метка убраны.
+  t.window.dispatchEvent(new t.window.Event('afterprint'));
+  assert.equal(t.document.querySelector('#wheelPrintRoot'), null, 'the print node is removed afterwards');
+  assert.equal(t.document.body.classList.contains('wheel-printing'), false, 'and the marker class is gone');
+});
+
+/* Пустой список сфер: «Печать» не молчит, а просит сначала добавить сферы. */
+test('wheel: Print with no spheres says «add spheres first», not silence', () => {
+  const t = bootDom();
+  t.app.setState(Object.assign(t.app.getState(), { children: [] }));
+  t.window.render();
+  let printed = 0;
+  t.window.print = () => { printed++; };
+  t.click('#btnWheelPrint');
+  assert.equal(printed, 0, 'nothing goes to the printer');
+  assert.ok(!t.document.querySelector('#wheelPrintRoot'), 'no print node is built with no spheres');
+  assert.ok([...t.document.querySelectorAll('.undo-toast')]
+    .some(el => /Сначала добавьте сферы|Add some spheres first/.test(el.textContent)),
+    'the toast asks to add spheres first');
+});
+
+/* iOS PWA: window.print не открывает диалог — честная подсказка, а не молчание. */
+test('wheel: on iPhone, Print shows the Safari hint, not silence', () => {
+  const t = bootDom(null, { userAgent: 'iPhone' });
+  t.app.setState(Object.assign(t.app.getState(), {
+    children: [{ name: 'Здоровье', children: [{ name: 'Бег', done: true, children: [] }] }],
+  }));
+  t.window.render();
+  t.window.isIOSDevice = () => true;
+  let printed = 0;
+  t.window.print = () => { printed++; };
+  t.click('#btnWheelPrint');
+  assert.equal(printed, 0, 'window.print is not called on iOS');
+  assert.ok(!t.document.querySelector('#wheelPrintRoot'), 'no DOM print node on the iOS path');
+  assert.ok([...t.document.querySelectorAll('.undo-toast')]
+    .some(el => /Печать недоступна|Printing is not available/.test(el.textContent)),
+    'and the hint explains the Safari path instead of doing nothing');
+});
+
 test('account button: a name that does not fit becomes the user icon', () => {
   const t = bootDom();
   // Войденный аккаунт: Firebase в тестах вырезан — флаги ставим напрямую.

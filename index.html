@@ -217,7 +217,7 @@
      #btnTopMenu{ padding:0 !important; font-size:20px !important; }
    }
   /* ===== Action buttons (edit/delete/move/relocate/archive) ===== */
-   #btnEdit, #btnDelete, #btnAddSubgoal, #btnDeleteChecklist, #btnMove, #btnMoveChecklist, #btnRelocate, #btnChecklistAdd, #btnFilter, .add-child-row #btnArchive, .add-goal-wrap #btnArchive, #btnGoodTodayHistory, #btnGoodTodayWeekHistory, #btnGoodTodayWeekEdit, #btnWishManage, #btnWishGrid, #btnWishPrint, #btnGoodTodayHistoryPagePrev, #btnGoodTodayHistoryPageNext, #btnGoodTodayHistoryPagePrevBottom, #btnGoodTodayHistoryPageNextBottom{
+   #btnEdit, #btnDelete, #btnAddSubgoal, #btnDeleteChecklist, #btnMove, #btnMoveChecklist, #btnRelocate, #btnChecklistAdd, #btnFilter, .add-child-row #btnArchive, .add-goal-wrap #btnArchive, #btnGoodTodayHistory, #btnGoodTodayWeekHistory, #btnGoodTodayWeekEdit, #btnWishManage, #btnWishGrid, #btnWishPrint, #btnWheelPrint, #btnGoodTodayHistoryPagePrev, #btnGoodTodayHistoryPageNext, #btnGoodTodayHistoryPagePrevBottom, #btnGoodTodayHistoryPageNextBottom{
     background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:8px;
     padding:6px 12px; font-size:12px; cursor:pointer; white-space:nowrap;
   }
@@ -268,7 +268,7 @@
      #btnMoveChecklist:hover:not(.active), #btnAddSubgoal:hover:not(.active),
       #btnRelocate:hover:not(.active), #btnFilter:hover, #btnAddGoal:hover:not(.active),
       #btnTemplates:hover:not(.active), #btnAddChild:hover:not(.active), #btnChecklistAdd:hover, #btnWishAdd:hover, #btnWishManage:hover,
-     #btnWishGrid:hover, #btnWishPrint:hover,
+     #btnWishGrid:hover, #btnWishPrint:hover, #btnWheelPrint:hover,
       #btnGoodTodayAdd:hover, .add-child-row #btnArchive:hover:not(.active),
       .add-goal-wrap #btnArchive:hover:not(.active){color:var(--muted); border-color:var(--border);}
     }
@@ -287,7 +287,7 @@
      .touch-mode #btnTemplates:hover:not(.active),
      .touch-mode #btnAddChild:hover:not(.active), .touch-mode #btnChecklistAdd:hover,
     .touch-mode #btnWishAdd:hover, .touch-mode #btnWishManage:hover,
-    .touch-mode #btnWishGrid:hover, .touch-mode #btnWishPrint:hover,
+    .touch-mode #btnWishGrid:hover, .touch-mode #btnWishPrint:hover, .touch-mode #btnWheelPrint:hover,
     .touch-mode #btnGoodTodayAdd:hover,
     .touch-mode #btnGoodTodayHistory:hover, .touch-mode #btnGoodTodayWeekHistory:hover,
     .touch-mode #btnGoodTodayWeekEdit:hover,
@@ -855,6 +855,8 @@
     /* Принтеры не печатают фон, пока это не попросить явно: иначе «как на экране» не получится
        и тема на бумаге потеряется (особенно тёмная). */
     -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  #wheelPrintRoot{display:none;
+    -webkit-print-color-adjust:exact; print-color-adjust:exact; }
   /* Скрывать приложение ради печати можно ТОЛЬКО внутри @media print. Без этой обёртки правило
      срабатывало сразу на экране: тап «Печать» убирал всё приложение, а печатный узел всё равно
      оставался display:none — получался пустой экран, который нельзя ни закрыть, ни отправить на
@@ -862,6 +864,8 @@
   @media print{
     body.wish-printing > *:not(#wishPrintRoot){ display:none !important; }
     #wishPrintRoot{ display:flex !important; }
+    body.wheel-printing > *:not(#wheelPrintRoot){ display:none !important; }
+    #wheelPrintRoot{ display:flex !important; }
   }
   .wish-grid-dropdown{position:relative; display:inline-flex;}
   .wish-grid-menu{min-width:64px;}
@@ -1077,12 +1081,13 @@
   /* Header action group for the wish map — same right-aligned button group pattern as
      .add-goal-wrap in «Важные сферы жизни», so «+» and the manager never drift apart. */
   .wish-header-actions{display:flex; align-items:center; gap:10px;}
+  .wheel-header-actions{display:flex; align-items:center; gap:10px;}
   .add-goal-wrap{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
   #btnAddGoal, #btnTemplates, #btnWishAdd, #btnGoodTodayAdd{
     background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:8px;
     padding:6px 12px; font-size:12px; cursor:pointer; white-space:nowrap;
   }
-  #btnAddGoal:hover, #btnTemplates:hover, #btnWishAdd:hover, #btnWishManage:hover, #btnWishGrid:hover, #btnWishPrint:hover, #btnGoodTodayAdd:hover{color:var(--text); border-color:var(--accent);}
+  #btnAddGoal:hover, #btnTemplates:hover, #btnWishAdd:hover, #btnWishManage:hover, #btnWishGrid:hover, #btnWishPrint:hover, #btnWheelPrint:hover, #btnGoodTodayAdd:hover{color:var(--text); border-color:var(--accent);}
   #btnAddGoal:disabled{opacity:.5; cursor:not-allowed;}
   #btnAddGoal:disabled:hover{color:var(--muted); border-color:var(--border);}
   .add-goal-msg{color:var(--red); font-size:12px; white-space:nowrap;}
@@ -1107,7 +1112,7 @@
   #btnAddChild:disabled:hover{color:var(--muted); border-color:var(--border);}
   /* Compact "+"/"−" icon style for Add/Delete, used instead of full text labels to save room on
      narrow (phone) screens. */
-    #btnAddGoal.icon-btn, #btnTemplates.icon-btn, #btnWishAdd.icon-btn, #btnWishManage.icon-btn, #btnWishGrid.icon-btn, #btnWishPrint.icon-btn, #btnAddChild.icon-btn, #btnDelete.icon-btn, #btnEdit.icon-btn, #btnAddSubgoal.icon-btn, #btnDeleteChecklist.icon-btn, #btnMove.icon-btn, #btnMoveChecklist.icon-btn, #btnRelocate.icon-btn, #btnChecklistAdd.icon-btn, #btnFilter.icon-btn, .add-child-row #btnArchive.icon-btn, .add-goal-wrap #btnArchive.icon-btn, #btnSearch.icon-btn, #btnGoodTodayHistory.icon-btn, #btnGoodTodayWeekHistory.icon-btn, #btnGoodTodayWeekEdit.icon-btn, #btnGoodTodayAdd.icon-btn, #btnGoodTodayHistoryPagePrevBottom.icon-btn, #btnGoodTodayHistoryPageNextBottom.icon-btn{
+    #btnAddGoal.icon-btn, #btnTemplates.icon-btn, #btnWishAdd.icon-btn, #btnWishManage.icon-btn, #btnWishGrid.icon-btn, #btnWishPrint.icon-btn, #btnWheelPrint.icon-btn, #btnAddChild.icon-btn, #btnDelete.icon-btn, #btnEdit.icon-btn, #btnAddSubgoal.icon-btn, #btnDeleteChecklist.icon-btn, #btnMove.icon-btn, #btnMoveChecklist.icon-btn, #btnRelocate.icon-btn, #btnChecklistAdd.icon-btn, #btnFilter.icon-btn, .add-child-row #btnArchive.icon-btn, .add-goal-wrap #btnArchive.icon-btn, #btnSearch.icon-btn, #btnGoodTodayHistory.icon-btn, #btnGoodTodayWeekHistory.icon-btn, #btnGoodTodayWeekEdit.icon-btn, #btnGoodTodayAdd.icon-btn, #btnGoodTodayHistoryPagePrevBottom.icon-btn, #btnGoodTodayHistoryPageNextBottom.icon-btn{
     font-size:16px; font-weight:700; line-height:1; padding:5px 13px;
     min-width:32px; display:inline-flex; align-items:center; justify-content:center;
   }
@@ -1116,7 +1121,7 @@
      glyph and the same 24px/2px box, so the two sections read alike. No colour override here:
      the base action-button rule's --muted is what #btnEdit uses, and overriding it to --text made
      the glyph near-white (#eef2f8) on the dark button — a white icon with nothing to read it. */
-   #btnEdit.icon-btn, #btnWishManage.icon-btn, #btnWishGrid.icon-btn, #btnWishPrint.icon-btn{ font-size:24px; padding:2px; }
+   #btnEdit.icon-btn, #btnWishManage.icon-btn, #btnWishGrid.icon-btn, #btnWishPrint.icon-btn, #btnWheelPrint.icon-btn{ font-size:24px; padding:2px; }
   /* The wish header pair («+» and the pencil): one shared 42px box so the text glyph and
      the icon font line up exactly, like the «Хорошее сегодня» header pair. */
    #btnWishAdd.icon-btn{ min-width:42px; padding:5px 0; justify-content:center; }
@@ -1220,7 +1225,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.2.11';
+const APP_VERSION = '1.2.12';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -1669,6 +1674,9 @@ const STRINGS = {
     wishPrint: 'Печать',
     wishPrintHint: 'Печать недоступна в этом приложении — откройте сайт в Safari и выберите «Поделиться» → «Печать».',
     wishPrintEmpty: 'Сначала добавьте карточки — печатать пока нечего.',
+    wheelPrint: 'Печать',
+    wheelPrintEmpty: 'Сначала добавьте сферы — печатать пока нечего.',
+    wheelPrintHint: 'Печать недоступна в этом приложении — откройте сайт в Safari и выберите «Поделиться» → «Печать».',
     wishManageTitle: 'Картинки',
     wishEditTip: 'Редактировать подпись',
     wishDeleteTip: 'Удалить карточку',
@@ -1972,6 +1980,9 @@ const STRINGS = {
     wishPrint: 'Print',
     wishPrintHint: 'Printing is not available in this app — open the site in Safari and choose Share → Print.',
     wishPrintEmpty: 'Add some cards first — there is nothing to print yet.',
+    wheelPrint: 'Print',
+    wheelPrintEmpty: 'Add some spheres first — there is nothing to print yet.',
+    wheelPrintHint: 'Printing is not available in this app — open the site in Safari and choose Share → Print.',
     wishManageTitle: 'Pictures',
     wishEditTip: 'Edit caption',
     wishDeleteTip: 'Delete card',
@@ -4088,7 +4099,94 @@ function printWishBoard(){
   const fallback = setTimeout(cleanup, 2500);
   try{ window.print(); }catch(e){ cleanup(); }
 }
-// ===== Печать в iOS PWA: страница в PNG через canvas → экран «Поделиться» =====
+// ===== Печать «Важные сферы жизни» + колесо баланса одной страницей A4 =====
+// Тот же приём, что у доски «У меня будет»: временный узел #wheelPrintRoot вне #app (рендер его
+// не пересоздаёт), window.print(), уборка по afterprint + фокусу + таймеру. На печать выходит
+// ровно два блока главной: список сфер («Важные сферы жизни») и колесо баланса.
+function printWheel(){
+  const items = activeChildren(state);
+  if(!items.length){ showPrintHint('wheelPrintEmpty'); return; }
+  // iOS PWA: window.print в Safari/standalone не открывает диалог — честная подсказка вместо
+  // молчания (у колеса нет canvas-пути в PNG, как у фото, но и не должно быть тишины).
+  if(typeof window.print !== 'function' || isIOSDevice()){
+    showPrintHint('wheelPrintHint');
+    return;
+  }
+  // Узел вне #app — ищем запросом, а не getElementById (id-сторож тестов видит только разметку,
+  // а этот id живёт лишь на время печати).
+  let root = document.querySelector('#wheelPrintRoot');
+  if(root && root.parentNode) root.parentNode.removeChild(root);
+  // Цвета из темы — печать выглядит как экран (фон/текст/рамки/шкала). Принтер фон не печатает,
+  // поэтому узел помечен print-color-adjust:exact (см. CSS #wheelPrintRoot).
+  const rootVars = (typeof getComputedStyle === 'function') ? getComputedStyle(document.documentElement) : null;
+  const bodyVars = (typeof getComputedStyle === 'function') ? getComputedStyle(document.body) : null;
+  const cssVar = (name, fallback) => (rootVars ? (rootVars.getPropertyValue(name) || '').trim() : '') || fallback;
+  const bodyBg = (bodyVars && bodyVars.backgroundImage && bodyVars.backgroundImage !== 'none')
+    ? bodyVars.backgroundImage : cssVar('--bg', '#ffffff');
+  const textC = cssVar('--text', '#111111');
+  const borderC = cssVar('--border', '#c9c9c9');
+  const mutedC = cssVar('--muted', '#6b6b6b');
+  const fontUi = '-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif';
+  const fontTitle = 'Georgia,"Iowan Old Style","Palatino Linotype","Book Antiqua",serif';
+  root = document.createElement('div');
+  root.id = 'wheelPrintRoot';
+  // A4 portrait (поля 10mm → 190×277mm). display управляется CSS: на экране display:none,
+  // в печати display:flex !important — инлайн-стиль перебил бы оба правила.
+  root.style.cssText = 'box-sizing:border-box; flex-direction:column;' +
+    'width:190mm; height:277mm; margin:0; padding:0;' +
+    'background:' + bodyBg + '; color:' + textC + ';';
+  const title = document.createElement('div');
+  title.style.cssText = 'flex:none; text-align:center; margin:2mm 0 4mm;';
+  title.innerHTML = '<div style="font:600 9mm/1.15 ' + fontTitle + '; letter-spacing:0.4mm; color:' + textC + ';">'
+    + esc(t('mainGoals')) + '</div>';
+  root.appendChild(title);
+  // Список сфер: имя + процент + шкала, в две колонки, чтобы больше сфер влезло аккуратно.
+  // Ограничение по высоте не даёт списку вытеснить колесо со страницы.
+  const list = document.createElement('div');
+  list.style.cssText = 'flex:none; max-height:72mm; overflow:hidden; display:grid;' +
+    'grid-template-columns:repeat(2,1fr); gap:1.5mm 6mm; margin:0 4mm 5mm;';
+  items.forEach(sphere => {
+    const pct = computePercent(sphere);
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex; align-items:center; gap:2mm; font:500 4mm/1.2 ' + fontUi + '; color:' + textC + ';';
+    const name = document.createElement('span');
+    name.textContent = sphere.name || '';
+    name.style.cssText = 'flex:0 0 auto; max-width:52mm; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;';
+    const pctEl = document.createElement('span');
+    pctEl.textContent = pct + '%';
+    pctEl.style.cssText = 'flex:0 0 12mm; text-align:right; color:' + mutedC + ';';
+    const bar = document.createElement('span');
+    bar.style.cssText = 'flex:1 1 auto; min-width:20mm; height:2mm; border-radius:1mm; overflow:hidden; border:0.3mm solid ' + borderC + ';';
+    const fill = document.createElement('span');
+    fill.style.cssText = 'display:block; height:100%; width:' + pct + '%; background:' + barColor(pct) + ';';
+    bar.appendChild(fill);
+    row.appendChild(name); row.appendChild(pctEl); row.appendChild(bar);
+    list.appendChild(row);
+  });
+  root.appendChild(list);
+  // Колесо — остаток страницы, тот же SVG, что на экране главной.
+  const wheelBox = document.createElement('div');
+  wheelBox.style.cssText = 'flex:1 1 auto; min-height:0; display:flex; align-items:center; justify-content:center;';
+  wheelBox.innerHTML = wheelHTML(items);
+  root.appendChild(wheelBox);
+  document.body.appendChild(root);
+  document.body.classList.add('wheel-printing');
+  let done = false;
+  const cleanup = () => {
+    if(done) return;
+    done = true;
+    clearTimeout(fallback);
+    document.body.classList.remove('wheel-printing');
+    if(root && root.parentNode) root.parentNode.removeChild(root);
+    window.removeEventListener('afterprint', cleanup);
+    window.removeEventListener('focus', cleanup);
+  };
+  window.addEventListener('afterprint', cleanup);
+  window.addEventListener('focus', cleanup);
+  const fallback = setTimeout(cleanup, 2500);
+  try{ window.print(); }catch(e){ cleanup(); }
+}
+
 // Возвращает true, когда картинка ушла в navigator.share. False — если
 // движок не умеет 2d-canvas / share (или пользователь отменил): вызывающая
 // сторона тогда показывает подсказку. Любая ошибка рисования ловится —
@@ -4896,9 +4994,14 @@ function homeViewHTML(overallPct, hintHTML, mode, protectedCount){
       html += sphereTreeHTML(expandedSphere, expandedSphereIdx);
     }
   }
-   html += `<div class="section-title" id="wheelToggle" style="margin-top:24px;">
-      <span class="wheel-arrow">${wheelOpen ? '▾' : '▸'}</span>
-      ${t('balanceWheel')}
+   html += `<div class="section-title-row" style="margin-top:24px;">
+      <div class="section-title" id="wheelToggle">
+        <span class="wheel-arrow">${wheelOpen ? '▾' : '▸'}</span>
+        ${t('balanceWheel')}
+      </div>
+      <div class="wheel-header-actions">
+        <button id="btnWheelPrint" class="icon-btn" data-tip="${t('wheelPrint')}" aria-label="${t('wheelPrint')}"><i class="ti ti-printer" aria-hidden="true"></i></button>
+      </div>
     </div>`;
     if(wheelOpen){
       // Сектора на главной — кнопки: targets[i] номер сферы в state.children для сектора i
@@ -6854,6 +6957,11 @@ function attachWishMapHandlers(){
       return;
     }
     printWishBoard();
+  });
+  // Печать «Важные сферы жизни» + колесо баланса одной страницей A4.
+  on('btnWheelPrint', 'click', (e)=>{
+    e.stopPropagation();
+    printWheel();
   });
   // Плотность доски: кнопка-сетка открывает выбор 2/3/4, выбранное значение сохраняется (state →
   // saveState → облако), как и свёрнутость доски. Закрытие по тапу вне — тот же приём, что у

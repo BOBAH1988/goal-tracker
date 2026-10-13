@@ -54,7 +54,7 @@ const EXPORT_SRC = `
    markWishUploadError, syncWishBoard, wishClearUserPhoto, WISH_MAX_UPLOAD_BYTES,
     WISH_MAX_CARDS, wishMapForCloud, mergeWishMapCloud, wishMapDisplayOrder, wishMoveCardTo,
     wishCloudReady, wishImagePath, wishImageType, wishBoardReady, wishSyncRetry, startCloudSync,
-    positionTip, printWishBoard,
+    positionTip, printWishBoard, printWheel,
     flushCloudPush, pushCloudStateNow, stateForCloud, scheduleCloudPush,
     retryCloudPushNow, resolvePushConflict, cloudPushFailed,
     stopCloudPushRetry: () => { clearTimeout(cloudPushRetryTimer); cloudPushRetryTimer = null; },
