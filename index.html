@@ -1225,7 +1225,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.2.20';
+const APP_VERSION = '1.2.21';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -4143,8 +4143,9 @@ function printWheel(){
   root.appendChild(title);
   // Список сфер — РОВНАЯ сетка: имя (режется по длине) | процент | шкала. Треки фиксированной
   // ширины, поэтому все шкалы одной длины и выровнены по правому краю независимо от названия.
+  // max-height + overflow не дают длинному списку вытолкнуть колесо за нижний край листа A4.
   const list = document.createElement('div');
-  list.style.cssText = 'flex:none; display:flex; flex-direction:column; gap:3mm; margin:2mm 6mm 7mm;';
+  list.style.cssText = 'flex:none; max-height:78mm; overflow:hidden; display:flex; flex-direction:column; gap:3mm; margin:2mm 6mm 6mm;';
   items.forEach(sphere => {
     const pct = computePercent(sphere);
     const row = document.createElement('div');
@@ -4176,7 +4177,15 @@ function printWheel(){
     viewBox: '60 0 452 320'  // кроп мёртвых полей (по 60px с краёв) → колесо крупнее ~+26%
   });
   const svg = wheelBox.querySelector('svg');
-  if(svg){ svg.style.maxWidth = 'none'; svg.style.width = '100%'; svg.style.height = 'auto'; }
+  // Колесо ВПИСЫВАЕТСЯ в доступную область страницы (width/height 100% + preserveAspectRatio),
+  // поэтому никогда не вылезает за нижний край A4 — даже с длинным списком сфер и крупным
+  // заголовком. Раньше height:auto фиксировал высоту от ширины, и колесо уезжало со страницы.
+  if(svg){
+    svg.style.maxWidth = 'none';
+    svg.style.width = '100%';
+    svg.style.height = '100%';
+    svg.style.maxHeight = '100%';
+  }
   root.appendChild(wheelBox);
   document.body.appendChild(root);
   document.body.classList.add('wheel-printing');

@@ -1260,11 +1260,15 @@ test('wheel: Print builds one A4 page with the spheres list + the wheel', () => 
   assert.equal(bars.length, 3, 'every row carries a bar');
   bars.forEach(b => assert.match(b.getAttribute('style'), /border-radius/,
     'bars share one fixed width — not stretched by the name'));
-  // Колесо — тот же SVG, крупное (экранный лимит 580px снят, тянется на всю ширину листа).
+  // Список сфер ограничен по высоте, чтобы длинный список не вытолкнул колесо за нижний край A4.
+  assert.match(list.getAttribute('style'), /max-height:\s*78mm/,
+    'the sphere list is capped so it cannot push the wheel off the page');
+  // Колесо — тот же SVG, крупное (экранный лимит 580px снят), ВПИСЫВАЕТСЯ в доступную область.
   const svg = root.querySelector('svg');
   assert.ok(svg, 'the wheel svg is on the page');
   assert.equal(svg.style.maxWidth, 'none', 'the wheel fills the page width, not the 580px screen cap');
   assert.equal(svg.style.width, '100%', 'the wheel stretches to the full sheet width');
+  assert.equal(svg.style.height, '100%', 'and fits the remaining height — it never runs off the page');
   // Колесо крупнее за счёт кропа viewBox (мёртвые поля убраны), а не transform — печать в PDF
   // игнорирует transform на width:100%.
   assert.equal(svg.getAttribute('viewBox'), '60 0 452 320',
