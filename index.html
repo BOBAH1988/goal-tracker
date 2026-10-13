@@ -1225,7 +1225,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.2.22';
+const APP_VERSION = '1.2.23';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -4139,7 +4139,7 @@ function printWheel(){
   const sectionTitle = (text) => {
     const h = document.createElement('div');
     h.style.cssText = 'flex:none; text-align:center; margin:2mm 0 4mm;';
-    h.innerHTML = '<div style="font-family:' + fontTitle + '; font-size:18mm; font-weight:700;'
+    h.innerHTML = '<div style="font-family:' + fontTitle + '; font-size:24mm; font-weight:700;'
       + ' line-height:1.1; letter-spacing:0.4mm; color:' + textC + ';">' + esc(text) + '</div>';
     return h;
   };
@@ -4176,20 +4176,24 @@ function printWheel(){
   // даёт ~300px мёртвого поля по бокам, поэтому обрезаем вид до содержимого (примерно 230×320) —
   // колесо заполняет лист по-настоящему. SVG тянется на всю ширину, высота — по пропорции.
   const wheelBox = document.createElement('div');
-  wheelBox.style.cssText = 'flex:1 1 auto; min-height:0; display:flex; align-items:center; justify-content:center;';
+  // align-items:flex-start прижимает колесо к заголовку «Колесо баланса» (без отъезда вниз при
+  // коротком списке сфер — раньше center оставлял простор между заголовком и колесом).
+  wheelBox.style.cssText = 'flex:1 1 auto; min-height:0; display:flex; align-items:flex-start; justify-content:center;';
   wheelBox.innerHTML = wheelHTML(items, {
     labelColor: textC, ringColor: '#9aa0a6', centerLabels: true,
     viewBox: '60 0 452 320'  // кроп мёртвых полей (по 60px с краёв) → колесо крупнее ~+26%
   });
   const svg = wheelBox.querySelector('svg');
   // Колесо ВПИСЫВАЕТСЯ в доступную область страницы (width/height 100% + preserveAspectRatio),
-  // поэтому никогда не вылезает за нижний край A4 — даже с длинным списком сфер и крупным
-  // заголовком. Раньше height:auto фиксировал высоту от ширины, и колесо уезжало со страницы.
+  // поэтому никогда не вылезает за нижний край A4. preserveAspectRatio="xMidYMin meet" прижимает
+  // само колесо к ВЕРХУ (к заголовку), а не центрирует по вертикали — убирает простор между
+  // заголовком и колесом. Раньше height:auto фиксировал высоту от ширины, и колесо уезжало.
   if(svg){
     svg.style.maxWidth = 'none';
     svg.style.width = '100%';
     svg.style.height = '100%';
     svg.style.maxHeight = '100%';
+    svg.setAttribute('preserveAspectRatio', 'xMidYMin meet');
   }
   root.appendChild(wheelBox);
   document.body.appendChild(root);

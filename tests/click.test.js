@@ -1244,7 +1244,7 @@ test('wheel: Print builds one A4 page with the spheres list + the wheel', () => 
   const headSpheres = root.children[0];
   assert.match(headSpheres.innerHTML, /Georgia/, 'the title uses the serif display face');
   assert.match(headSpheres.textContent, /Важные сферы жизни/, 'first section title is the spheres block');
-  assert.match(headSpheres.innerHTML, /font-size:\s*18mm/, 'section titles are large (18mm)');
+  assert.match(headSpheres.innerHTML, /font-size:\s*24mm/, 'section titles are large (24mm)');
   assert.match(headSpheres.innerHTML, /font-weight:\s*700/, 'and bold (700)');
   // Список сфер — второй ребёнок корня (между двумя заголовками).
   const list = root.children[1];
@@ -1255,7 +1255,7 @@ test('wheel: Print builds one A4 page with the spheres list + the wheel', () => 
   const headWheel = root.children[2];
   assert.ok(headWheel, 'the wheel section title is present');
   assert.match(headWheel.textContent, /Колесо баланса/, 'second section title names the wheel');
-  assert.match(headWheel.innerHTML, /font-size:\s*18mm/, 'both section titles share the same size');
+  assert.match(headWheel.innerHTML, /font-size:\s*24mm/, 'both section titles share the same size');
   // Ровная сетка: имя | % | шкала. Трек шкалы фиксированной ширины (66mm) — длина не зависит от
   // названия сферы, все шкалы выровнены по правому краю.
   const firstRow = list.children[0];
@@ -1274,6 +1274,12 @@ test('wheel: Print builds one A4 page with the spheres list + the wheel', () => 
   assert.equal(svg.style.maxWidth, 'none', 'the wheel fills the page width, not the 580px screen cap');
   assert.equal(svg.style.width, '100%', 'the wheel stretches to the full sheet width');
   assert.equal(svg.style.height, '100%', 'and fits the remaining height — it never runs off the page');
+  // Колесо прижато к заголовку: контейнер flex-start + preserveAspectRatio с привязкой к верху.
+  const wheelBox = svg.parentElement;
+  assert.match(wheelBox.getAttribute('style'), /align-items:\s*flex-start/,
+    'the wheel box pins the wheel to the top, right under its title (no gap below it)');
+  assert.equal(svg.getAttribute('preserveAspectRatio'), 'xMidYMin meet',
+    'the wheel is anchored to the top of its box, not vertically centred');
   // Колесо крупнее за счёт кропа viewBox (мёртвые поля убраны), а не transform — печать в PDF
   // игнорирует transform на width:100%.
   assert.equal(svg.getAttribute('viewBox'), '60 0 452 320',
