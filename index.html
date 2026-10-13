@@ -1225,7 +1225,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.2.16';
+const APP_VERSION = '1.2.17';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -4132,8 +4132,8 @@ function printWheel(){
     'width:190mm; height:277mm; margin:0; padding:0;' +
     'background:' + bodyBg + '; color:' + textC + ';';
   const title = document.createElement('div');
-  title.style.cssText = 'flex:none; text-align:center; margin:2mm 0 4mm;';
-  title.innerHTML = '<div style="font:600 9mm/1.15 ' + fontTitle + '; letter-spacing:0.4mm; color:' + textC + ';">'
+  title.style.cssText = 'flex:none; text-align:center; margin:4mm 0 6mm;';
+  title.innerHTML = '<div style="font:600 18mm/1.1 ' + fontTitle + '; letter-spacing:0.4mm; color:' + textC + ';">'
     + esc(t('mainGoals')) + '</div>';
   root.appendChild(title);
   // Список сфер — РОВНАЯ сетка: имя (режется по длине) | процент | шкала. Треки фиксированной
@@ -4159,11 +4159,12 @@ function printWheel(){
     list.appendChild(row);
   });
   root.appendChild(list);
-  // Колесо — остаток страницы, тот же SVG, но крупнее: снимаем экранный лимит 580px и тянем на
-  // всю ширину листа (высота сама держит пропорции viewBox).
+  // Колесо — остаток страницы. Подписи секторов центрируем сразу (centerLabels), т.к. экранный
+  // adjustWheelLabels() для этого узла не работает; тянем SVG на всю ширину листа (без боковых
+  // полей), чтобы колесо было максимально крупным.
   const wheelBox = document.createElement('div');
-  wheelBox.style.cssText = 'flex:1 1 auto; min-height:0; display:flex; align-items:center; justify-content:center; padding:0 4mm;';
-  wheelBox.innerHTML = wheelHTML(items, { labelColor: textC, ringColor: '#9aa0a6' });
+  wheelBox.style.cssText = 'flex:1 1 auto; min-height:0; display:flex; align-items:center; justify-content:center;';
+  wheelBox.innerHTML = wheelHTML(items, { labelColor: textC, ringColor: '#9aa0a6', centerLabels: true });
   const svg = wheelBox.querySelector('svg');
   if(svg){ svg.style.maxWidth = 'none'; svg.style.width = '100%'; svg.style.height = 'auto'; }
   root.appendChild(wheelBox);
@@ -6224,6 +6225,12 @@ function wheelHTML(items, opts){
   // нечитаем (баг: названия сфер пропадали при печати).
   const labelColor = opts.labelColor || 'var(--text)';
   const ringColor = opts.ringColor || 'var(--muted)';
+  // На экране подписи рендерятся прижатыми к началу дуги (startOffset 0% / start), а центрирует и
+  // подрезает их уже adjustWheelLabels() по реальным замерам в DOM. Для печати этот проход не
+  // запускается (узел вне #app), поэтому центр включаем сразу через opts.centerLabels.
+  const centerLabels = !!opts.centerLabels;
+  const labelStart = centerLabels ? '50%' : '0%';
+  const labelAnchor = centerLabels ? 'middle' : 'start';
   const n = items.length;
   if(!n) return '';
   const width = 572, height = 320, cx = 286, cy = 160, maxR = 119;
@@ -6279,7 +6286,7 @@ function wheelHTML(items, opts){
     }
     // Rendered in full, left-aligned to the start of the arc for now — adjustWheelLabels() fixes
     // this up for real once the SVG is in the DOM and can be measured (see note above).
-    svg += `<text font-size="${fontSize}" font-weight="700" fill="${labelColor}"><textPath href="#${arcIds[i]}" xlink:href="#${arcIds[i]}" startOffset="0%" text-anchor="start">${esc(item.name)}</textPath></text>`;
+    svg += `<text font-size="${fontSize}" font-weight="700" fill="${labelColor}"><textPath href="#${arcIds[i]}" xlink:href="#${arcIds[i]}" startOffset="${labelStart}" text-anchor="${labelAnchor}">${esc(item.name)}</textPath></text>`;
   });
   // Grid rings + radial dividers are drawn on top of the filled wedges.
   for(let lvl = 1; lvl <= RING_STEPS; lvl++){

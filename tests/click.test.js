@@ -1240,9 +1240,10 @@ test('wheel: Print builds one A4 page with the spheres list + the wheel', () => 
   const root = t.document.querySelector('#wheelPrintRoot');
   assert.ok(root, 'a dedicated print node is built');
   assert.equal(root.parentNode, t.document.body, 'and it lives outside #app so a re-render cannot drop it');
-  // Заголовок страницы — «Важные сферы жизни», тем же серифным набором.
+  // Заголовок страницы — «Важные сферы жизни», тем же серифным набором, в 2 раза крупнее.
   assert.match(root.firstChild.innerHTML, /Georgia/, 'the title uses the serif display face');
   assert.match(root.firstChild.textContent, /Важные сферы жизни/, 'the page title is the spheres section');
+  assert.match(root.firstChild.innerHTML, /18mm/, 'the title is doubled (9mm → 18mm)');
   // Список сфер — второй ребёнок корня (первый — заголовок), колонка строк; каждая — ровный grid.
   const list = root.children[1];
   assert.ok(list, 'the spheres list is present');
@@ -1257,15 +1258,21 @@ test('wheel: Print builds one A4 page with the spheres list + the wheel', () => 
   assert.equal(bars.length, 3, 'every row carries a bar');
   bars.forEach(b => assert.match(b.getAttribute('style'), /border-radius/,
     'bars share one fixed width — not stretched by the name'));
-  // Колесо — тот же SVG, что на экране, но крупнее (экранный лимит 580px снят).
+  // Колесо — тот же SVG, крупное (экранный лимит 580px снят, тянется на всю ширину листа).
   const svg = root.querySelector('svg');
   assert.ok(svg, 'the wheel svg is on the page');
   assert.equal(svg.style.maxWidth, 'none', 'the wheel fills the page width, not the 580px screen cap');
-  // Названия сфер — тёмные на белом листе, иначе они были бы невидимы (баг «белым по белому»).
+  assert.equal(svg.style.width, '100%', 'the wheel stretches to the full sheet width');
+  // Названия сфер — тёмные на белом листе (баг «белым по белому»).
   const label = svg.querySelector('text');
   assert.ok(label, 'the wheel carries sector labels');
   assert.equal(label.getAttribute('fill'), '#111111',
     'sector names are dark, not the theme var(--text) that vanishes on a white sheet');
+  // Подписи — ПО ЦЕНТРУ дуги, как на сайте (экранный adjustWheelLabels() для печати не работает).
+  const tp = svg.querySelector('textPath');
+  assert.ok(tp, 'a sector label sits on an arc');
+  assert.equal(tp.getAttribute('startOffset'), '50%', 'labels are centred on the arc, not left-aligned');
+  assert.equal(tp.getAttribute('text-anchor'), 'middle', 'centred text anchor, like the on-screen wheel');
   assert.ok(svg.outerHTML.indexOf('var(--text)') === -1 && svg.outerHTML.indexOf('var(--muted)') === -1,
     'no theme colour variables leak into the printed wheel');
   // Белый лист: фон всегда белый, текст тёмный (в тёмной теме иначе было бы нечитаемо).
