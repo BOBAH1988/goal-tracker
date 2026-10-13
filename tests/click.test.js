@@ -1240,10 +1240,10 @@ test('wheel: Print builds one A4 page with the spheres list + the wheel', () => 
   const root = t.document.querySelector('#wheelPrintRoot');
   assert.ok(root, 'a dedicated print node is built');
   assert.equal(root.parentNode, t.document.body, 'and it lives outside #app so a re-render cannot drop it');
-  // Заголовок страницы — «Важные сферы жизни», тем же серифным набором, в 2 раза крупнее.
+  // Заголовок страницы — «Важные сферы жизни», крупный полужирный серif.
   assert.match(root.firstChild.innerHTML, /Georgia/, 'the title uses the serif display face');
   assert.match(root.firstChild.textContent, /Важные сферы жизни/, 'the page title is the spheres section');
-  assert.match(root.firstChild.innerHTML, /18mm/, 'the title is doubled (9mm → 18mm)');
+  assert.match(root.firstChild.innerHTML, /font:\s*700\s+36mm/, 'the title is doubled (18mm → 36mm) and bold (700)');
   // Список сфер — второй ребёнок корня (первый — заголовок), колонка строк; каждая — ровный grid.
   const list = root.children[1];
   assert.ok(list, 'the spheres list is present');
@@ -1263,6 +1263,7 @@ test('wheel: Print builds one A4 page with the spheres list + the wheel', () => 
   assert.ok(svg, 'the wheel svg is on the page');
   assert.equal(svg.style.maxWidth, 'none', 'the wheel fills the page width, not the 580px screen cap');
   assert.equal(svg.style.width, '100%', 'the wheel stretches to the full sheet width');
+  assert.equal(svg.style.transform, 'scale(1.25)', 'the wheel is scaled up 25% on top of full width');
   // Названия сфер — тёмные на белом листе (баг «белым по белому»).
   const label = svg.querySelector('text');
   assert.ok(label, 'the wheel carries sector labels');

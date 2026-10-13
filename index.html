@@ -1225,7 +1225,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.2.17';
+const APP_VERSION = '1.2.18';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -4133,7 +4133,7 @@ function printWheel(){
     'background:' + bodyBg + '; color:' + textC + ';';
   const title = document.createElement('div');
   title.style.cssText = 'flex:none; text-align:center; margin:4mm 0 6mm;';
-  title.innerHTML = '<div style="font:600 18mm/1.1 ' + fontTitle + '; letter-spacing:0.4mm; color:' + textC + ';">'
+  title.innerHTML = '<div style="font:700 36mm/1.05 ' + fontTitle + '; letter-spacing:0.4mm; color:' + textC + ';">'
     + esc(t('mainGoals')) + '</div>';
   root.appendChild(title);
   // Список сфер — РОВНАЯ сетка: имя (режется по длине) | процент | шкала. Треки фиксированной
@@ -4166,7 +4166,11 @@ function printWheel(){
   wheelBox.style.cssText = 'flex:1 1 auto; min-height:0; display:flex; align-items:center; justify-content:center;';
   wheelBox.innerHTML = wheelHTML(items, { labelColor: textC, ringColor: '#9aa0a6', centerLabels: true });
   const svg = wheelBox.querySelector('svg');
-  if(svg){ svg.style.maxWidth = 'none'; svg.style.width = '100%'; svg.style.height = 'auto'; }
+  if(svg){
+    svg.style.maxWidth = 'none'; svg.style.width = '100%'; svg.style.height = 'auto';
+    // +25% к размеру колеса поверх «во всю ширину листа» (по просьбе владельца).
+    svg.style.transform = 'scale(1.25)';
+  }
   root.appendChild(wheelBox);
   document.body.appendChild(root);
   document.body.classList.add('wheel-printing');
