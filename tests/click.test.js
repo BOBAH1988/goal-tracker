@@ -1240,14 +1240,16 @@ test('wheel: Print builds one A4 page with the spheres list + the wheel', () => 
   assert.match(root.firstChild.textContent, /Важные сферы жизни/, 'the page title is the spheres section');
   // Список сфер: строка на каждую активную сферу с процентом.
   const list = root.querySelector('[style*="grid-template-columns"]');
-  assert.ok(list, 'the spheres list is a two-column grid');
+  assert.ok(list, 'the spheres list is a grid');
+  assert.match(list.getAttribute('style'), /grid-template-columns:\s*1fr/,
+    'spheres print one per row (single column)');
   assert.equal(list.children.length, 3, 'every active sphere is listed');
   assert.ok([...list.children].some(el => /100%/.test(el.textContent)), 'the done sphere reads 100%');
   // Колесо — тот же SVG, что на экране.
   assert.ok(root.querySelector('svg'), 'the wheel svg is on the page');
-  // Цвета темы, а не белый лист.
-  assert.match(root.style.background, /linear-gradient/, 'the page background is the theme gradient');
-  assert.equal(root.style.color, 'rgb(238, 242, 248)', 'the text is the theme text colour (dark theme)');
+  // Белый лист: фон всегда белый, текст тёмный (в тёмной теме иначе было бы нечитаемо).
+  assert.equal(root.style.background, 'rgb(255, 255, 255)', 'the page prints on a white sheet');
+  assert.equal(root.style.color, 'rgb(17, 17, 17)', 'the text is dark for the white sheet');
   // Метка на теле, чтобы print-CSS скрыл всё остальное, а приложение осталось на экране.
   assert.equal(t.document.body.classList.contains('wheel-printing'), true, 'the body is marked for print');
   assert.ok(t.document.getElementById('app').children.length > 0,
