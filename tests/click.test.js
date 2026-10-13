@@ -1830,7 +1830,7 @@ test('share: the menu item sits with the other items and reuses .menu-item', () 
   assert.ok(item.classList.contains('menu-item'), 'reuses the existing .menu-item styles — no new look');
   assert.ok(t.document.getElementById('btnInstructionsMenuItem'), 'neighbour «Инструкция» stays');
   assert.ok(t.document.getElementById('btnAboutMenuItem'), 'neighbour «О проекте» stays');
-  // Порядок в меню: «Поделиться приложением» без «Сбросить кэш», далее «Инструкция» и далее «Установить приложение».
+  // Порядок в меню: «Инструкция», затем «Сбросить кэш», затем «Поделиться приложением», далее «Установить приложение».
   const order = Array.from(t.document.querySelectorAll('.lang-menu .menu-item')).map((b) => b.id);
   const shareAt = order.indexOf('btnShareMenuItem');
   const instructionsAt = order.indexOf('btnInstructionsMenuItem');
@@ -1839,10 +1839,10 @@ test('share: the menu item sits with the other items and reuses .menu-item', () 
   assert.ok(shareAt !== -1, 'share item present');
   assert.ok(resetAt !== -1, 'reset cache item present');
   assert.ok(installAt !== -1, 'install item present');
-  // Под «Инструкцией» идёт «Поделиться приложением». Должно быть ровно два между инструкцией и установкой.
-  assert.ok(installAt === -1 || instructionsAt + 1 === shareAt, 'share sits right after Instructions');
-  assert.ok(installAt === -1 || shareAt + 1 === resetAt, 'clear cache sits right under share');
-  assert.ok(installAt === -1 || resetAt + 1 === installAt, 'install sits right after clear cache');
+  // Под «Инструкцией» идёт «Сбросить кэш», затем «Поделиться приложением», затем «Установить приложение».
+  assert.ok(installAt === -1 || instructionsAt + 1 === resetAt, 'clear cache sits right after Instructions');
+  assert.ok(installAt === -1 || resetAt + 1 === shareAt, 'share sits right under clear cache');
+  assert.ok(installAt === -1 || shareAt + 1 === installAt, 'install sits right after share');
   assert.ok(installAt === -1 || installAt > order.indexOf('btnShareMenuItem'),
     'share comes before the install item');
 });
