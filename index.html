@@ -1225,7 +1225,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.2.13';
+const APP_VERSION = '1.2.14';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -4122,7 +4122,6 @@ function printWheel(){
   const bodyBg = '#ffffff';
   const textC = '#111111';
   const borderC = '#c9c9c9';
-  const mutedC = '#6b6b6b';
   const fontUi = '-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif';
   const fontTitle = 'Georgia,"Iowan Old Style","Palatino Linotype","Book Antiqua",serif';
   root = document.createElement('div');
@@ -4137,23 +4136,22 @@ function printWheel(){
   title.innerHTML = '<div style="font:600 9mm/1.15 ' + fontTitle + '; letter-spacing:0.4mm; color:' + textC + ';">'
     + esc(t('mainGoals')) + '</div>';
   root.appendChild(title);
-  // Список сфер: имя + процент + шкала, по ОДНОЙ сфере в ряд. Ограничение по высоте не даёт
-  // списку вытеснить колесо со страницы.
+  // Список сфер — РОВНАЯ сетка: имя (режется по длине) | процент | шкала. Треки фиксированной
+  // ширины, поэтому все шкалы одной длины и выровнены по правому краю независимо от названия.
   const list = document.createElement('div');
-  list.style.cssText = 'flex:none; max-height:78mm; overflow:hidden; display:grid;' +
-    'grid-template-columns:1fr; gap:1.5mm; margin:0 4mm 5mm;';
+  list.style.cssText = 'flex:none; display:flex; flex-direction:column; gap:3mm; margin:2mm 6mm 7mm;';
   items.forEach(sphere => {
     const pct = computePercent(sphere);
     const row = document.createElement('div');
-    row.style.cssText = 'display:flex; align-items:center; gap:2mm; font:500 4mm/1.2 ' + fontUi + '; color:' + textC + ';';
+    row.style.cssText = 'display:grid; grid-template-columns:1fr 14mm 66mm; align-items:center; gap:4mm;';
     const name = document.createElement('span');
     name.textContent = sphere.name || '';
-    name.style.cssText = 'flex:1 1 auto; max-width:96mm; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;';
+    name.style.cssText = 'font:500 5mm/1.2 ' + fontUi + '; color:' + textC + '; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;';
     const pctEl = document.createElement('span');
     pctEl.textContent = pct + '%';
-    pctEl.style.cssText = 'flex:0 0 12mm; text-align:right; color:' + mutedC + ';';
+    pctEl.style.cssText = 'font:600 4.5mm/1.2 ' + fontUi + '; text-align:right; color:' + textC + '; font-variant-numeric:tabular-nums;';
     const bar = document.createElement('span');
-    bar.style.cssText = 'flex:1 1 auto; min-width:20mm; height:2mm; border-radius:1mm; overflow:hidden; border:0.3mm solid ' + borderC + ';';
+    bar.style.cssText = 'display:block; height:3.6mm; border-radius:1.8mm; overflow:hidden; border:0.3mm solid ' + borderC + ';';
     const fill = document.createElement('span');
     fill.style.cssText = 'display:block; height:100%; width:' + pct + '%; background:' + barColor(pct) + ';';
     bar.appendChild(fill);
@@ -4161,10 +4159,13 @@ function printWheel(){
     list.appendChild(row);
   });
   root.appendChild(list);
-  // Колесо — остаток страницы, тот же SVG, что на экране главной.
+  // Колесо — остаток страницы, тот же SVG, но крупнее: снимаем экранный лимит 580px и тянем на
+  // всю ширину листа (высота сама держит пропорции viewBox).
   const wheelBox = document.createElement('div');
-  wheelBox.style.cssText = 'flex:1 1 auto; min-height:0; display:flex; align-items:center; justify-content:center;';
+  wheelBox.style.cssText = 'flex:1 1 auto; min-height:0; display:flex; align-items:center; justify-content:center; padding:0 4mm;';
   wheelBox.innerHTML = wheelHTML(items);
+  const svg = wheelBox.querySelector('svg');
+  if(svg){ svg.style.maxWidth = 'none'; svg.style.width = '100%'; svg.style.height = 'auto'; }
   root.appendChild(wheelBox);
   document.body.appendChild(root);
   document.body.classList.add('wheel-printing');

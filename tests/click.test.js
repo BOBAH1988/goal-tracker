@@ -1238,15 +1238,24 @@ test('wheel: Print builds one A4 page with the spheres list + the wheel', () => 
   // Заголовок страницы — «Важные сферы жизни», тем же серифным набором.
   assert.match(root.firstChild.innerHTML, /Georgia/, 'the title uses the serif display face');
   assert.match(root.firstChild.textContent, /Важные сферы жизни/, 'the page title is the spheres section');
-  // Список сфер: строка на каждую активную сферу с процентом.
-  const list = root.querySelector('[style*="grid-template-columns"]');
-  assert.ok(list, 'the spheres list is a grid');
-  assert.match(list.getAttribute('style'), /grid-template-columns:\s*1fr/,
-    'spheres print one per row (single column)');
+  // Список сфер — второй ребёнок корня (первый — заголовок), колонка строк; каждая — ровный grid.
+  const list = root.children[1];
+  assert.ok(list, 'the spheres list is present');
   assert.equal(list.children.length, 3, 'every active sphere is listed');
   assert.ok([...list.children].some(el => /100%/.test(el.textContent)), 'the done sphere reads 100%');
-  // Колесо — тот же SVG, что на экране.
-  assert.ok(root.querySelector('svg'), 'the wheel svg is on the page');
+  // Ровная сетка: имя | % | шкала. Трек шкалы фиксированной ширины (66mm) — длина не зависит от
+  // названия сферы, все шкалы выровнены по правому краю.
+  const firstRow = list.children[0];
+  assert.match(firstRow.getAttribute('style'), /grid-template-columns:\s*1fr 14mm 66mm/,
+    'each row is a fixed 3-track grid: name | percent | bar');
+  const bars = [...list.children].map(row => row.children[2]);
+  assert.equal(bars.length, 3, 'every row carries a bar');
+  bars.forEach(b => assert.match(b.getAttribute('style'), /border-radius/,
+    'bars share one fixed width — not stretched by the name'));
+  // Колесо — тот же SVG, что на экране, но крупнее (экранный лимит 580px снят).
+  const svg = root.querySelector('svg');
+  assert.ok(svg, 'the wheel svg is on the page');
+  assert.equal(svg.style.maxWidth, 'none', 'the wheel fills the page width, not the 580px screen cap');
   // Белый лист: фон всегда белый, текст тёмный (в тёмной теме иначе было бы нечитаемо).
   assert.equal(root.style.background, 'rgb(255, 255, 255)', 'the page prints on a white sheet');
   assert.equal(root.style.color, 'rgb(17, 17, 17)', 'the text is dark for the white sheet');
