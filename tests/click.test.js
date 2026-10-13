@@ -1333,17 +1333,21 @@ test('wheel: Print with no spheres says «add spheres first», not silence', () 
     'the toast asks to add spheres first');
 });
 
-/* iOS PWA: window.print не открывает диалог — честная подсказка, а не молчание. */
-test('wheel: on iPhone, Print shows the Safari hint, not silence', () => {
+/* iOS PWA: window.print не открывает диалог — рисуем PNG и делимся (AirPrint), иначе подсказка. */
+test('wheel: on iPhone, Print takes the PNG/share path, not the DOM print', async () => {
   const t = bootDom(null, { userAgent: 'iPhone' });
   t.app.setState(Object.assign(t.app.getState(), {
     children: [{ name: 'Здоровье', children: [{ name: 'Бег', done: true, children: [] }] }],
   }));
   t.window.render();
+  // iPhone: путь принудительно share, даже если window.print формально существует (jsdom его
+  // определяет) — на нём диалог печати не открывается. В jsdom нет 2d-canvas, поэтому
+  // drawWheelPng() вернёт false и покажется подсказка — но важно, что DOM-печать не строится.
   t.window.isIOSDevice = () => true;
   let printed = 0;
   t.window.print = () => { printed++; };
   t.click('#btnWheelPrint');
+  await new Promise(r => setTimeout(r, 0));   // shareWheelPng — async
   assert.equal(printed, 0, 'window.print is not called on iOS');
   assert.ok(!t.document.querySelector('#wheelPrintRoot'), 'no DOM print node on the iOS path');
   assert.ok([...t.document.querySelectorAll('.undo-toast')]

@@ -1225,7 +1225,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.2.23';
+const APP_VERSION = '1.2.24';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -4108,10 +4108,13 @@ function printWishBoard(){
 function printWheel(){
   const items = activeChildren(state);
   if(!items.length){ showPrintHint('wheelPrintEmpty'); return; }
-  // iOS PWA: window.print в Safari/standalone не открывает диалог — честная подсказка вместо
-  // молчания (у колеса нет canvas-пути в PNG, как у фото, но и не должно быть тишины).
+  // iOS PWA: window.print в Safari/standalone не открывает диалог. Как у доски «У меня будет»:
+  // рисуем страницу в PNG и предлагаем через navigator.share — в листе есть AirPrint «Печать».
+  // Без share/при ошибке — честная подсказка, а не молчание.
   if(typeof window.print !== 'function' || isIOSDevice()){
-    showPrintHint('wheelPrintHint');
+    shareWheelPng()
+      .then(shared => { if(!shared) showPrintHint('wheelPrintHint'); })
+      .catch(()=>showPrintHint('wheelPrintHint'));
     return;
   }
   // Узел вне #app — ищем запросом, а не getElementById (id-сторож тестов видит только разметку,
@@ -4319,6 +4322,107 @@ async function drawWishBoardPng(cards, cols){
   if(typeof navigator.share !== 'function') return false;
   await navigator.share({files: [file], title: t('wishMapTitle')});
   return true;
+}
+// Печать «Важные сферы жизни + колесо» для iOS PWA: window.print на iPhone диалог не открывает,
+// поэтому, как у доски, рисуем страницу в PNG и предлагаем через navigator.share (AirPrint).
+// Колесо — SVG, поэтому сериализуем его (добавляем xmlns + абсолютные размеры для <img>) и рисуем
+// на canvas. Любая ошибка → false → вызывающая сторона показывает подсказку, а не молчание.
+async function drawWheelPng(){
+  const items = activeChildren(state);
+  if(!items.length) return false;
+  const canvas = document.createElement('canvas');
+  if(!canvas || !canvas.getContext) return false;
+  const g = canvas.getContext('2d');
+  if(!g) return false;   // без 2d-canvas (jsdom, старые движки) рисовать нечем
+  const W = 1240, H = 1754;   // A4 portrait, ~150 dpi
+  canvas.width = W; canvas.height = H;
+  const rootVars = (typeof getComputedStyle === 'function') ? getComputedStyle(document.documentElement) : null;
+  const cssVar = (name, fallback) => (rootVars ? (rootVars.getPropertyValue(name) || '').trim() : '') || fallback;
+  // Белый лист (как DOM-печать колеса): фон и текст фиксированы; шкалы — цвет темы.
+  const textC = '#111111';
+  const borderC = '#c9c9c9';
+  const green = cssVar('--green', '#3ecf8e');
+  const yellow = cssVar('--yellow', '#f2b84b');
+  const redSoft = cssVar('--red-soft', '#eb8478');
+  const barColorHex = (pct) => pct >= 75 ? green : pct >= 50 ? yellow : redSoft;
+  const fontUi = '-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif';
+  const fontTitle = 'Georgia,"Iowan Old Style","Palatino Linotype","Book Antiqua",serif';
+  g.fillStyle = '#ffffff';
+  g.fillRect(0, 0, W, H);
+  const margin = 60;   // ~10 mm
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  g.fillStyle = textC;
+  // Заголовок раздела «Важные сферы жизни».
+  g.font = '700 96px ' + fontTitle;
+  g.fillText(t('mainGoals'), W / 2, 130);
+  // Список сфер: имя | % | шкала. Не больше ~6 строк, иначе колесо не влезет на лист.
+  const rowH = 66;
+  const maxListY = 220 + rowH * 6;
+  let ly = 220;
+  items.forEach(sphere => {
+    if(ly > maxListY) return;   // лишние сферы обрезаем — колесу нужно место (как overflow на экране)
+    const pct = computePercent(sphere);
+    const barW = 320, barH = 18;
+    const barX = W - margin - barW;
+    g.textBaseline = 'middle';
+    g.textAlign = 'left';
+    g.fillStyle = textC;
+    g.font = '500 40px ' + fontUi;
+    let name = String(sphere.name || '');
+    while(name.length > 1 && g.measureText(name).width > (barX - margin - 160)) name = name.slice(0, -1);
+    g.fillText(name, margin, ly);
+    g.textAlign = 'right';
+    g.font = '600 38px ' + fontUi;
+    g.fillText(pct + '%', barX - 20, ly);
+    // Шкала: трек + заливка по проценту.
+    roundRectPath(g, barX, ly - barH / 2, barW, barH, 9);
+    g.fillStyle = borderC;
+    g.fill();
+    g.fillStyle = barColorHex(pct);
+    g.fillRect(barX, ly - barH / 2, barW * pct / 100, barH);
+    ly += rowH;
+  });
+  // Заголовок раздела «Колесо баланса».
+  g.textAlign = 'center';
+  g.fillStyle = textC;
+  g.font = '700 96px ' + fontTitle;
+  g.fillText(t('balanceWheel'), W / 2, ly + 60);
+  // Колесо — сериализуем SVG и рисуем на canvas в остатке страницы.
+  let svgStr = wheelHTML(items, {
+    labelColor: textC, ringColor: '#9aa0a6', centerLabels: true,
+    viewBox: '60 0 452 320'
+  });
+  if(svgStr.indexOf('xmlns=') === -1){
+    svgStr = svgStr.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"');
+  }
+  // Абсолютные размеры для <img> (иначе Image(SVG) не знает размеров) + убираем экранный style.
+  svgStr = svgStr.replace('width="100%"', 'width="904"');
+  svgStr = svgStr.replace(/style="[^"]*"/, 'style="display:block"');
+  svgStr = svgStr.replace('<svg ', '<svg height="640" ');
+  const svgUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgStr);
+  const img = await new Promise((res, rej) => {
+    const im = new Image();
+    im.onload = () => res(im);
+    im.onerror = () => rej(new Error('wheel svg failed to load'));
+    im.src = svgUrl;
+  });
+  const wheelTop = ly + 110;
+  const wheelBottom = H - margin;
+  const wheelH = wheelBottom - wheelTop;
+  const ratio = 452 / 320;
+  const wheelW = Math.min(W - margin * 2, wheelH * ratio);
+  const wheelX = (W - wheelW) / 2;
+  g.drawImage(img, wheelX, wheelTop, wheelW, wheelH);
+  const blob = await new Promise(res => canvas.toBlob(res, 'image/png'));
+  if(!blob || typeof File !== 'function') return false;
+  const file = new File([blob], 'balance-wheel.png', {type: 'image/png'});
+  if(typeof navigator.share !== 'function') return false;
+  await navigator.share({files: [file], title: t('balanceWheel')});
+  return true;
+}
+async function shareWheelPng(){
+  try{ return await drawWheelPng(); }catch(e){ return false; }
 }
 // Скруглённый прямоугольный путь (ctx.roundRect есть не везде — рисуем руками).
 function roundRectPath(g, x, y, w, h, r){
