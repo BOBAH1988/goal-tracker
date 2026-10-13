@@ -1225,7 +1225,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.2.21';
+const APP_VERSION = '1.2.22';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -4133,14 +4133,17 @@ function printWheel(){
   root.style.cssText = 'box-sizing:border-box; flex-direction:column;' +
     'width:190mm; height:277mm; margin:0; padding:0;' +
     'background:' + bodyBg + '; color:' + textC + ';';
-  const title = document.createElement('div');
-  title.style.cssText = 'flex:none; text-align:center; margin:4mm 0 6mm;';
-  // Явные font-size/font-weight вместо шортката font:700 36mm — шорткат некоторые движки печати
-  // отбрасывают целиком, и размер/насыщенность не применяются (баг «заголовок не меняется»).
-  title.innerHTML = '<div style="font-family:' + fontTitle + '; font-size:36mm; font-weight:700;'
-    + ' line-height:1.05; letter-spacing:0.4mm; color:' + textC + ';">'
-    + esc(t('mainGoals')) + '</div>';
-  root.appendChild(title);
+  // Заголовок раздела на печати — крупный, полужирный, тёмный. Общий хелпер для обоих блоков
+  // («Важные сферы жизни» и «Колесо баланса»), чтобы они были симметричны и читались как на экране.
+  // Явные font-size/font-weight (не шорткат font:) — иначе печать их отбрасывает (баг v1.2.20).
+  const sectionTitle = (text) => {
+    const h = document.createElement('div');
+    h.style.cssText = 'flex:none; text-align:center; margin:2mm 0 4mm;';
+    h.innerHTML = '<div style="font-family:' + fontTitle + '; font-size:18mm; font-weight:700;'
+      + ' line-height:1.1; letter-spacing:0.4mm; color:' + textC + ';">' + esc(text) + '</div>';
+    return h;
+  };
+  root.appendChild(sectionTitle(t('mainGoals')));
   // Список сфер — РОВНАЯ сетка: имя (режется по длине) | процент | шкала. Треки фиксированной
   // ширины, поэтому все шкалы одной длины и выровнены по правому краю независимо от названия.
   // max-height + overflow не дают длинному списку вытолкнуть колесо за нижний край листа A4.
@@ -4165,6 +4168,8 @@ function printWheel(){
     list.appendChild(row);
   });
   root.appendChild(list);
+  // Заголовок раздела «Колесо баланса» — над колесом (его раньше не было вовсе).
+  root.appendChild(sectionTitle(t('balanceWheel')));
   // Колесо — остаток страницы. Подписи секторов центрируем сразу (centerLabels), т.к. экранный
   // adjustWheelLabels() для этого узла не работает. Вместо ненадёжного transform:scale (его печать
   // в PDF игнорирует/обрезает) реально увеличиваем колесо кропом viewBox: родной "0 0 572 320"
