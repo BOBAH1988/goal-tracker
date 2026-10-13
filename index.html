@@ -1225,7 +1225,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.2.19';
+const APP_VERSION = '1.2.20';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -4135,7 +4135,10 @@ function printWheel(){
     'background:' + bodyBg + '; color:' + textC + ';';
   const title = document.createElement('div');
   title.style.cssText = 'flex:none; text-align:center; margin:4mm 0 6mm;';
-  title.innerHTML = '<div style="font:700 36mm/1.05 ' + fontTitle + '; letter-spacing:0.4mm; color:' + textC + ';">'
+  // Явные font-size/font-weight вместо шортката font:700 36mm — шорткат некоторые движки печати
+  // отбрасывают целиком, и размер/насыщенность не применяются (баг «заголовок не меняется»).
+  title.innerHTML = '<div style="font-family:' + fontTitle + '; font-size:36mm; font-weight:700;'
+    + ' line-height:1.05; letter-spacing:0.4mm; color:' + textC + ';">'
     + esc(t('mainGoals')) + '</div>';
   root.appendChild(title);
   // Список сфер — РОВНАЯ сетка: имя (режется по длине) | процент | шкала. Треки фиксированной
@@ -4162,17 +4165,18 @@ function printWheel(){
   });
   root.appendChild(list);
   // Колесо — остаток страницы. Подписи секторов центрируем сразу (centerLabels), т.к. экранный
-  // adjustWheelLabels() для этого узла не работает; тянем SVG на всю ширину листа (без боковых
-  // полей), чтобы колесо было максимально крупным.
+  // adjustWheelLabels() для этого узла не работает. Вместо ненадёжного transform:scale (его печать
+  // в PDF игнорирует/обрезает) реально увеличиваем колесо кропом viewBox: родной "0 0 572 320"
+  // даёт ~300px мёртвого поля по бокам, поэтому обрезаем вид до содержимого (примерно 230×320) —
+  // колесо заполняет лист по-настоящему. SVG тянется на всю ширину, высота — по пропорции.
   const wheelBox = document.createElement('div');
   wheelBox.style.cssText = 'flex:1 1 auto; min-height:0; display:flex; align-items:center; justify-content:center;';
-  wheelBox.innerHTML = wheelHTML(items, { labelColor: textC, ringColor: '#9aa0a6', centerLabels: true });
+  wheelBox.innerHTML = wheelHTML(items, {
+    labelColor: textC, ringColor: '#9aa0a6', centerLabels: true,
+    viewBox: '60 0 452 320'  // кроп мёртвых полей (по 60px с краёв) → колесо крупнее ~+26%
+  });
   const svg = wheelBox.querySelector('svg');
-  if(svg){
-    svg.style.maxWidth = 'none'; svg.style.width = '100%'; svg.style.height = 'auto';
-    // +25% к размеру колеса поверх «во всю ширину листа» (по просьбе владельца).
-    svg.style.transform = 'scale(1.25)';
-  }
+  if(svg){ svg.style.maxWidth = 'none'; svg.style.width = '100%'; svg.style.height = 'auto'; }
   root.appendChild(wheelBox);
   document.body.appendChild(root);
   document.body.classList.add('wheel-printing');
@@ -6271,7 +6275,7 @@ function wheelHTML(items, opts){
     return id;
   });
 
-  let svg = `<svg viewBox="0 0 ${width} ${height}" width="100%" style="max-width:580px; height:auto; display:block; margin:0 auto;" role="group" aria-label="${esc(t('balanceWheel'))}" xmlns:xlink="http://www.w3.org/1999/xlink">`;
+  let svg = `<svg viewBox="${opts.viewBox || ('0 0 ' + width + ' ' + height)}" width="100%" style="max-width:580px; height:auto; display:block; margin:0 auto;" role="group" aria-label="${esc(t('balanceWheel'))}" xmlns:xlink="http://www.w3.org/1999/xlink">`;
   svg += `<defs>${defsInner}</defs>`;
   const RING_STEPS = 10;
   items.forEach((item, i) => {

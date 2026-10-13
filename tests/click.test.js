@@ -1243,7 +1243,9 @@ test('wheel: Print builds one A4 page with the spheres list + the wheel', () => 
   // Заголовок страницы — «Важные сферы жизни», крупный полужирный серif.
   assert.match(root.firstChild.innerHTML, /Georgia/, 'the title uses the serif display face');
   assert.match(root.firstChild.textContent, /Важные сферы жизни/, 'the page title is the spheres section');
-  assert.match(root.firstChild.innerHTML, /font:\s*700\s+36mm/, 'the title is doubled (18mm → 36mm) and bold (700)');
+  // Явные font-size/font-weight (не шорткат font:), иначе печать их отбрасывает.
+  assert.match(root.firstChild.innerHTML, /font-size:\s*36mm/, 'the title is doubled (18mm → 36mm)');
+  assert.match(root.firstChild.innerHTML, /font-weight:\s*700/, 'and bold (700)');
   // Список сфер — второй ребёнок корня (первый — заголовок), колонка строк; каждая — ровный grid.
   const list = root.children[1];
   assert.ok(list, 'the spheres list is present');
@@ -1263,7 +1265,11 @@ test('wheel: Print builds one A4 page with the spheres list + the wheel', () => 
   assert.ok(svg, 'the wheel svg is on the page');
   assert.equal(svg.style.maxWidth, 'none', 'the wheel fills the page width, not the 580px screen cap');
   assert.equal(svg.style.width, '100%', 'the wheel stretches to the full sheet width');
-  assert.equal(svg.style.transform, 'scale(1.25)', 'the wheel is scaled up 25% on top of full width');
+  // Колесо крупнее за счёт кропа viewBox (мёртвые поля убраны), а не transform — печать в PDF
+  // игнорирует transform на width:100%.
+  assert.equal(svg.getAttribute('viewBox'), '60 0 452 320',
+    'the wheel viewBox is cropped to the content, so it renders ~27% larger on the sheet');
+  assert.notEqual(svg.style.transform, 'scale(1.25)', 'no transform — print does not honour it');
   // Названия сфер — тёмные на белом листе (баг «белым по белому»).
   const label = svg.querySelector('text');
   assert.ok(label, 'the wheel carries sector labels');
