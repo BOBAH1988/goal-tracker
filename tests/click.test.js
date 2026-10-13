@@ -1256,6 +1256,13 @@ test('wheel: Print builds one A4 page with the spheres list + the wheel', () => 
   const svg = root.querySelector('svg');
   assert.ok(svg, 'the wheel svg is on the page');
   assert.equal(svg.style.maxWidth, 'none', 'the wheel fills the page width, not the 580px screen cap');
+  // Названия сфер — тёмные на белом листе, иначе они были бы невидимы (баг «белым по белому»).
+  const label = svg.querySelector('text');
+  assert.ok(label, 'the wheel carries sector labels');
+  assert.equal(label.getAttribute('fill'), '#111111',
+    'sector names are dark, not the theme var(--text) that vanishes on a white sheet');
+  assert.ok(svg.outerHTML.indexOf('var(--text)') === -1 && svg.outerHTML.indexOf('var(--muted)') === -1,
+    'no theme colour variables leak into the printed wheel');
   // Белый лист: фон всегда белый, текст тёмный (в тёмной теме иначе было бы нечитаемо).
   assert.equal(root.style.background, 'rgb(255, 255, 255)', 'the page prints on a white sheet');
   assert.equal(root.style.color, 'rgb(17, 17, 17)', 'the text is dark for the white sheet');

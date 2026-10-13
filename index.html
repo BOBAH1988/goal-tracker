@@ -1225,7 +1225,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.2.14';
+const APP_VERSION = '1.2.15';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -4163,7 +4163,7 @@ function printWheel(){
   // всю ширину листа (высота сама держит пропорции viewBox).
   const wheelBox = document.createElement('div');
   wheelBox.style.cssText = 'flex:1 1 auto; min-height:0; display:flex; align-items:center; justify-content:center; padding:0 4mm;';
-  wheelBox.innerHTML = wheelHTML(items);
+  wheelBox.innerHTML = wheelHTML(items, { labelColor: textC, ringColor: '#9aa0a6' });
   const svg = wheelBox.querySelector('svg');
   if(svg){ svg.style.maxWidth = 'none'; svg.style.width = '100%'; svg.style.height = 'auto'; }
   root.appendChild(wheelBox);
@@ -6217,6 +6217,11 @@ function wheelHTML(items, opts){
   const targets = Array.isArray(opts.targets) ? opts.targets : null;
   const activeIdx = Number.isFinite(opts.activeIdx) ? opts.activeIdx : null;
   const interactive = !!targets;
+  // Цвета подписей и колец. На экране — переменные темы (--text / --muted). Для печати на белом
+  // листе (printWheel) можно передать тёмные оттенки через opts, иначе светлый текст на белом фоне
+  // нечитаем (баг: названия сфер пропадали при печати).
+  const labelColor = opts.labelColor || 'var(--text)';
+  const ringColor = opts.ringColor || 'var(--muted)';
   const n = items.length;
   if(!n) return '';
   const width = 572, height = 320, cx = 286, cy = 160, maxR = 119;
@@ -6272,21 +6277,21 @@ function wheelHTML(items, opts){
     }
     // Rendered in full, left-aligned to the start of the arc for now — adjustWheelLabels() fixes
     // this up for real once the SVG is in the DOM and can be measured (see note above).
-    svg += `<text font-size="${fontSize}" font-weight="700" fill="var(--text)"><textPath href="#${arcIds[i]}" xlink:href="#${arcIds[i]}" startOffset="0%" text-anchor="start">${esc(item.name)}</textPath></text>`;
+    svg += `<text font-size="${fontSize}" font-weight="700" fill="${labelColor}"><textPath href="#${arcIds[i]}" xlink:href="#${arcIds[i]}" startOffset="0%" text-anchor="start">${esc(item.name)}</textPath></text>`;
   });
   // Grid rings + radial dividers are drawn on top of the filled wedges.
   for(let lvl = 1; lvl <= RING_STEPS; lvl++){
     const r = maxR * lvl / RING_STEPS;
-    svg += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--muted)" stroke-width="1"/>`;
+    svg += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${ringColor}" stroke-width="1"/>`;
   }
   if(n > 1){
     for(let i = 0; i < n; i++){
       const boundary = i * sectorSpan + sectorSpan / 2;
       const p = polarToCartesian(cx, cy, maxR, boundary);
-      svg += `<line x1="${cx}" y1="${cy}" x2="${p.x.toFixed(2)}" y2="${p.y.toFixed(2)}" stroke="var(--muted)" stroke-width="1"/>`;
+      svg += `<line x1="${cx}" y1="${cy}" x2="${p.x.toFixed(2)}" y2="${p.y.toFixed(2)}" stroke="${ringColor}" stroke-width="1"/>`;
     }
   }
-  svg += `<circle cx="${cx}" cy="${cy}" r="3" fill="var(--text)"/>`;
+  svg += `<circle cx="${cx}" cy="${cy}" r="3" fill="${labelColor}"/>`;
   // Интерактивные хит-пути — ПОСЛЕДНИЕ, поверх всех декоративных элементов,
   // чтобы клики/касания не блокировались кольцами и линиями.
   if(interactive){
