@@ -679,7 +679,11 @@
   .node-header .meta{color:var(--muted); font-size:13px; margin-bottom:10px;}
   /* ===== Cards grid & drag states ===== */
   .grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:14px;}
-  .grid-goals{grid-template-columns:repeat(2,1fr); grid-auto-rows:140px; align-items:start;}
+  .grid-goals{grid-template-columns:repeat(2,1fr); gap:10px; align-items:start;}
+  /* Compact sphere cards: less vertical air inside, so rows sit tight (no 140px fixed rows). */
+  .grid-goals .card{padding:12px 14px;}
+  .grid-goals .card .title{margin-bottom:6px;}
+  .grid-goals .card .sub{margin-bottom:6px;}
   .grid-hero-first{grid-template-columns:repeat(2,1fr);}
   .grid-hero-first > *:first-child{grid-column:1 / -1;}
   /* Below this width two fixed columns get too narrow (long goal names force overflow) —
@@ -1228,7 +1232,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.2.30';
+const APP_VERSION = '1.2.31';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
