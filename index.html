@@ -1635,6 +1635,7 @@ const STRINGS = {
     dateMonthPlaceholder: 'ММ',
     dateYearPlaceholder: 'ГГГГ',
     dateInPastError: 'Дата не может быть раньше сегодняшней',
+    dateInvalidError: 'Некорректная дата — проверьте день, месяц и год',
     tipClearDate: 'Убрать срок',
     rename: 'Переименовать',
     renamePrompt: 'Новое название шага:',
@@ -1953,6 +1954,7 @@ const STRINGS = {
     dateMonthPlaceholder: 'MM',
     dateYearPlaceholder: 'YYYY',
     dateInPastError: "The date can't be earlier than today",
+    dateInvalidError: 'Invalid date — check the day, month and year',
     tipClearDate: 'Clear due date',
     rename: 'Rename',
     renamePrompt: 'New step name:',
@@ -8687,7 +8689,15 @@ function attachLeafHandlers(){
       const valid = Number.isInteger(day) && day>=1 && day<=31
         && Number.isInteger(month) && month>=1 && month<=12
         && Number.isInteger(year) && year>=1900 && year<=2100;
-      if(!valid) return;
+      if(!valid){
+        const msg = document.getElementById('priorityMsg');
+        if(msg){
+          msg.textContent = t('dateInvalidError');
+          clearTimeout(priorityMsgTimer);
+          priorityMsgTimer = setTimeout(()=>{ if(msg) msg.textContent = ''; }, 3000);
+        }
+        return;
+      }
       const iso = `${String(year).padStart(4,'0')}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
       if(iso < isoToday()){
         const msg = document.getElementById('priorityMsg');
