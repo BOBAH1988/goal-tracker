@@ -929,7 +929,6 @@
   .wish-print-btn:active{background:var(--accent); color:#fff;}
   /* Columns: 1 on very narrow screens, 2 on phones (default), 3 on tablets, 4 on desktop. */
   .wish-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:10px;}
-  @media (max-width:360px){ .wish-grid{grid-template-columns:1fr;} }
   @media (min-width:600px){ .wish-grid{grid-template-columns:repeat(3,1fr);} }
   @media (min-width:960px){ .wish-grid{grid-template-columns:repeat(4,1fr);} }
   /* Явный выбор плотности (кнопка в шапке доски) сильнее адаптива по ширине — но не безусловно:
@@ -938,7 +937,11 @@
   .wish-grid[data-cols="2"]{grid-template-columns:repeat(2,1fr);}
   .wish-grid[data-cols="3"]{grid-template-columns:repeat(3,1fr);}
   .wish-grid[data-cols="4"]{grid-template-columns:repeat(4,1fr);}
+  /* Оба max-width:360px-правила собраны в один блок (аудит: дубли были разбросаны по файлу).
+     Блок СОЗНАТЕЛЬНО стоит ПОСЛЕ data-cols-правил: они имеют ту же специфичность (0-2-0),
+     и без этого порядка «3/4 в ряд» выиграли бы на узком экране у сжатия до двух. */
   @media (max-width:360px){
+    .wish-grid{grid-template-columns:1fr;}
     .wish-grid[data-cols="3"], .wish-grid[data-cols="4"]{grid-template-columns:repeat(2,1fr);}
   }
   /* Обёртка кнопки плотности — тот же приём, что у .filter-dropdown у целей: чтобы всплывающее
@@ -1345,7 +1348,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.2.47';
+const APP_VERSION = '1.2.48';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the

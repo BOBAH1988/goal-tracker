@@ -450,3 +450,18 @@ test('CSS guard: no font-size below 12px', () => {
     `font sizes below 12px are unreadable on touch: ${tooSmall.join(', ')}px`);
 });
 
+/* Аудит: два дубля @media (max-width:360px) для .wish-grid были разбросаны по файлу.
+   Собраны в один блок — и он должен стоять ПОСЛЕ data-cols-правил, иначе каскад
+   (та же специфичность 0-2-0) отдаст узкому экрану «3/4 в ряд» вместо сжатия до двух. */
+test('CSS guard: exactly one max-width:360px block, after the wish-grid data-cols rules', () => {
+  const css = rawCss(HTML);
+  const blocks = [...css.matchAll(/@media \(max-width:360px\)/g)];
+  assert.equal(blocks.length, 1,
+    `expected a single max-width:360px block, found ${blocks.length}`);
+  const blockPos = css.search(/@media \(max-width:360px\)/);
+  const colsPos = css.search(/\.wish-grid\[data-cols="4"\]/);
+  assert.ok(colsPos > -1, 'the data-cols rules must still exist');
+  assert.ok(blockPos > colsPos,
+    'the 360px block must come AFTER the data-cols rules (same specificity — order decides)');
+});
+
