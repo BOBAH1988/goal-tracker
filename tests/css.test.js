@@ -440,3 +440,13 @@ test('CSS guard: --muted text meets WCAG AA (4.5:1) against its own card backgro
   });
 });
 
+/* Аудит: шрифт 11px — ниже комфортного минимума на телефоне (6 мест). Сторож: в CSS не
+   должно остаться ни одного кегля меньше 12px. */
+test('CSS guard: no font-size below 12px', () => {
+  const sizes = [...rawCss(HTML).matchAll(/font-size:\s*(\d+)px/g)].map(m => Number(m[1]));
+  assert.ok(sizes.length > 100, `expected plenty of font-size declarations, got ${sizes.length}`);
+  const tooSmall = [...new Set(sizes.filter(s => s < 12))].sort((a, b) => a - b);
+  assert.deepEqual(tooSmall, [],
+    `font sizes below 12px are unreadable on touch: ${tooSmall.join(', ')}px`);
+});
+

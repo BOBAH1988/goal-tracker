@@ -360,7 +360,7 @@
   .templates-preview ul{margin:0; padding-left:16px;}
   .templates-preview li{font-size:13px; color:var(--text); margin:2px 0;}
   .templates-preview li > li{margin:2px 0 0 16px; font-size:12px; color:var(--muted);}
-  .template-merge-note{font-size:11px; color:var(--muted);}
+  .template-merge-note{font-size:12px; color:var(--muted);}
   .templates-panel .auth-btn-row{margin-top:8px;}
   .auth-panel input{
     background:var(--card2); border:1px solid var(--border); color:var(--text); border-radius:8px;
@@ -664,7 +664,7 @@
      border:1px solid var(--border); border-radius:8px; padding:8px 10px; margin-bottom:8px;
      background:var(--card2);
    }
-   .good-today-entry-date{color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.04em; margin-bottom:4px;}
+   .good-today-entry-date{color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.04em; margin-bottom:4px;}
    .good-today-entry-text{font-size:14px; line-height:1.4; word-break:break-word;}
     .good-today-entry-actions{
       display:flex; gap:6px; margin-top:6px;
@@ -701,7 +701,7 @@
      colour (--text) instead of the generic muted label. Only inside the weekly form — the
      journal's own «Сегодня» / «Последняя запись» labels keep the muted style. */
    .good-today-week-form .good-today-week-label{color:var(--text);}
-   .good-today-week-label{color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.04em;}
+   .good-today-week-label{color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.04em;}
    /* History view */
    .good-today-history-view{margin-top:12px;}
    .good-today-history-group{
@@ -1078,7 +1078,7 @@
    /* Failed upload: a visible, honest state — never a silently blank card. */
    .wish-img-pending.wish-img-error{color:var(--red); background:rgba(229,100,90,.10);}
    .wish-card-error{border-color:var(--red);}
-   .wish-state-tag{color:var(--muted); font-size:11px; white-space:nowrap;}
+   .wish-state-tag{color:var(--muted); font-size:12px; white-space:nowrap;}
    .wish-state-tag.wish-state-err{color:var(--red);}
    .wish-retry-btn{
      background:var(--card2); border:1px solid var(--border); color:var(--text);
@@ -1134,13 +1134,13 @@
   @media (hover: hover) and (pointer: fine){
     .add-sub button:hover{color:var(--text); border-color:var(--accent);}
   }
-  footer{color:var(--muted); font-size:11px; text-align:center; margin-top:24px; padding-top:4px; opacity:.7;}
+  footer{color:var(--muted); font-size:12px; text-align:center; margin-top:24px; padding-top:4px; opacity:.7;}
   /* The feedback link is part of the footer text, not a button: it inherits the muted 11px look in
      both themes, adds only a thin underline as an affordance, and turns accent on tap — no padding,
      no border, no background, so it can never read as a separate control on a phone. */
   footer a{color:inherit; font-size:inherit; line-height:inherit; text-decoration:underline; text-decoration-thickness:1px; text-underline-offset:2px;}
   footer a:active{color:var(--accent);}
-  .cat-label{font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin:2px 0 10px;}
+  .cat-label{font-size:12px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin:2px 0 10px;}
   .section-title{font-size:15px; font-weight:600; color:var(--text); margin:4px 0 12px;}
   /* Custom tooltip bubble for [data-tip] elements (the "Важные сферы жизни" action buttons).
       Replaces the browser's native title tooltip, which is slow, plain-styled and never shows on
@@ -1345,7 +1345,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.2.45';
+const APP_VERSION = '1.2.46';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
