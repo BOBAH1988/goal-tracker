@@ -223,6 +223,21 @@ test('CSS guard: hiding the app for print happens ONLY inside @media print', () 
     'on screen the print node must stay display:none');
   assert.match(HTML, /#wishPrintRoot\{[^}]*-webkit-print-color-adjust:exact[^}]*\}/s,
     'and must ask the printer to keep the theme background');
+  /* Аудит: печать КОЛЕСА — та же механика (body.wheel-printing + #wheelPrintRoot), но до сих
+     пор не была под guard'ом: одно случайное правило вне @media print снова пустит владельца
+     на пустой экран. Те же четыре проверки. */
+  const wheelHide = printBlocks.filter(r => /body\.wheel-printing/.test(r.body));
+  assert.ok(wheelHide.length >= 1, 'the print block must hide the app for the WHEEL print too');
+  assert.ok(printBlocks.some(r => /#wheelPrintRoot\{[^}]*display:flex/.test(r.body.replace(/\s+/g, ' '))),
+    'and must show #wheelPrintRoot there');
+  const strayWheelHide = rules.filter(r => !/@media print/.test(r.selectors.join(' '))
+    && /body\.wheel-printing/.test(r.body));
+  assert.equal(strayWheelHide.length, 0,
+    'no wheel-print hide rule outside @media print — same blank-screen bug as the wish board');
+  assert.match(HTML, /#wheelPrintRoot\{[^}]*display:none[^}]*\}/s,
+    'on screen the wheel print node must stay display:none');
+  assert.match(HTML, /#wheelPrintRoot\{[^}]*-webkit-print-color-adjust:exact[^}]*\}/s,
+    'and must ask the printer to keep colours');
 });
 
 /* Репорт владельца: меню кнопки «Аккаунт» рисовало слово «Выйти» вертикально —
