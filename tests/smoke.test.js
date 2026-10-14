@@ -48,6 +48,15 @@ test('index.html: shells out the PWA hooks', () => {
   assert.ok(html.includes('./sw.js') || html.includes("'./sw.js'"), 'service worker registration missing');
 });
 
+/* Репорт 14.10.2026: под футером виден кусок кода «e: true, once: true });» — после </html>
+   остался мусорный хвост неудачной правки, а браузер рендерит текст после </html> как обычный
+   контент страницы. Сторож: ровно один </html>, и файл обязан им заканчиваться. */
+test('index.html: the document ends with a single </html>, nothing after it', () => {
+  const html = readProjectFile('index.html');
+  assert.equal((html.match(/<\/html>/g) || []).length, 1, 'exactly one closing </html> tag');
+  assert.match(html, /<\/html>\s*$/, 'no visible junk after </html> — the browser paints it under the footer');
+});
+
 /* Аудит: переключатели (режимы «−/↕/⇄/✎», ☆, сортировка, язык, тема) не сообщали
    скринридеру своё состояние. Сторож: любая кнопка с динамическим классом 'active'
    обязана нести aria-pressed. */
