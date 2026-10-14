@@ -1316,7 +1316,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.2.37';
+const APP_VERSION = '1.2.38';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -8345,6 +8345,16 @@ function attachMainViewHandlers(){
 }
 
 function attachTreeHandlers(){
+  // Аудит: фокус на инпуте переименования только что добавленной цели. Вызывать ПОСЛЕ render()
+  // в режиме editMode — тогда карточка это <input data-goal-idx>. Текст выделен, чтобы новая
+  // цель переименовывалась одной печатью, а не удалением «Цель N» вручную.
+  function focusGoalInput(idx){
+    const input = document.querySelector(`[data-goal-idx="${idx}"]`);
+    if(input){
+      input.focus();
+      try{ input.select(); }catch(e){}
+    }
+  }
   const btnAddGoal = document.getElementById('btnAddGoal');
   if(btnAddGoal){
     btnAddGoal.addEventListener('click', ()=>{
@@ -8374,8 +8384,12 @@ function attachTreeHandlers(){
       state.children.push(newSphere);
       // A brand-new sphere arrives with fresh leaf goals — its own sticky total starts at its
       // leaf count; ancestors (here just the root) grow by the same amount.
+      // Аудит: 4–5 кликов на переименование после «+». Сразу входим в режим правки и фокусируем
+      // инпут новой цели с выделенным текстом — имя заменяется одной печатью, Enter подтверждает.
+      editMode = true;
       saveState();
       render();
+      focusGoalInput(state.children.length - 1);
     });
   }
   const btnAddChild = document.getElementById('btnAddChild');
@@ -8420,8 +8434,11 @@ function attachTreeHandlers(){
       }
       // Новая цель растёт внутри сферы, страница которой открыта — это взаимодействие с ней.
       touchSphereAtPath(path);
+      // Аудит: авто-правка после «+» — фокус на инпуте новой цели, текст выделен (см. выше).
+      editMode = true;
       saveState();
       render();
+      focusGoalInput(parent.children.length - 1);
     });
   }
   document.querySelectorAll('[data-delete-idx]').forEach(el=>{

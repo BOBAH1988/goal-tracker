@@ -124,6 +124,27 @@ test('checklist: submitting the add-form appends an item', () => {
   assert.equal(t.app.getState().children[0].checklist.length, 2, 'item must be appended');
 });
 
+/* Аудит: 4–5 кликов на переименование после «+». После добавления режим правки включается
+   автоматически и фокус встаёт на инпут новой цели с выделенным текстом — имя меняется
+   одной печатью, Enter подтверждает. */
+test("add goal: entering edit mode focuses the new goal's input for instant rename (audit fix)", () => {
+  const t = bootDom();
+  t.app.setState({ name: 'root', children: [{ name: 'Здоровье', children: [] }] });
+  t.window.render();
+  t.click('#btnAddGoal');
+  // The page is now in edit mode and every card is an input.
+  const inputs = t.document.querySelectorAll('[data-goal-idx]');
+  assert.ok(inputs.length >= 2, 'edit mode renders the cards as inputs');
+  const newInput = t.document.querySelector('[data-goal-idx="1"]');
+  assert.ok(newInput, 'the newly added sphere has an input');
+  assert.equal(t.document.activeElement, newInput, 'the new goal input must be focused');
+  // Rename by simply typing — no need to clear «Цель 2» first.
+  newInput.value = 'Финансы';
+  newInput.dispatchEvent(new t.window.KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+  assert.equal(t.app.getState().children[1].name, 'Финансы', 'Enter confirms the new name');
+});
+
+
 test('checklist delete: confirm panel opens, Yes removes the checklist and goes back', () => {
   const t = bootDom();
   t.app.setState({ name: 'root', children: [leaf(false, { name: 'L', checklist: [{ text: 'a', done: false }] })] });
