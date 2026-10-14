@@ -83,7 +83,9 @@
   }
   /* Pink theme — soft pastel pink palette. */
   :root[data-theme="pink"]{
-    --bg:#fff0f5; --card:#ffffff; --card2:#ffe4ef; --text:#5a2340; --muted:#a1657f;
+    /* --muted:#a1657f давал ≈3.7:1 на фоне card2 (ниже нормы 4.5:1) — аудит по контрасту;
+       #8f5469 даёт ≈4.8:1 на #ffe4ef и ≈5.8:1 на белом, оттенок остался розово-серым. */
+    --bg:#fff0f5; --card:#ffffff; --card2:#ffe4ef; --text:#5a2340; --muted:#8f5469;
     --green:#3ecf9e; --yellow:#e0a23f; --orange:#e08a55; --red:#e0567e; --red-soft:#ef7d9f; --accent:#ff6fa5; --border:#f6c9dd; --track:#ffe0ec;
     color-scheme: light;
   }
@@ -833,7 +835,9 @@
     flex:1; font-size:14px; line-height:1.4; border:none; outline:none;
     background:transparent; color:var(--text); min-width:0; word-break:break-word; font-family:inherit;
   }
-  .today-input:focus{border:none; outline:none; background:var(--card2);}
+  /* Аудит: раньше фокус гасился полностью (outline:none) и поле не отличить от обычного —
+     оставляем смену фона и добавляем акцентное кольцо box-shadow. */
+  .today-input:focus{border:none; outline:none; background:var(--card2); box-shadow:0 0 0 2px var(--accent); border-radius:6px;}
   .today-input.done{color:var(--muted); text-decoration:line-through;}
   .today-action{
     background:none; border:none; color:var(--muted); font-size:16px; cursor:pointer;
@@ -1305,6 +1309,17 @@
    .sphere-tree-item-bar > span{display:block; height:100%;}
    .sphere-tree-empty{font-size:13px; color:var(--muted); padding:2px 0 8px;}
    .sphere-tree-open-page{background:none; border:none; color:var(--accent); font-weight:600; font-size:13px; cursor:pointer; padding:6px 0; min-height:44px;}
+   /* Аудит: приложение полностью игнорировало prefers-reduced-motion. Гасим все переходы и
+      анимации для пользователей, просящих меньше движения (стандартный паттерн; !important
+      глобально, длительность 0.01ms — состояние всё ещё применяется, без прокрутки/скольжения). */
+   @media (prefers-reduced-motion: reduce){
+     *, *::before, *::after{
+       animation-duration:0.01ms !important;
+       animation-iteration-count:1 !important;
+       transition-duration:0.01ms !important;
+       scroll-behavior:auto !important;
+     }
+   }
 </style>
 </head>
 <body>
@@ -1325,7 +1340,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.2.41';
+const APP_VERSION = '1.2.42';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the

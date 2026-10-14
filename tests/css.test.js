@@ -402,3 +402,41 @@ test('CSS guard: modals carry safe-area padding and a 100dvh fallback', () => {
     'max-height must be declared twice: 100vh fallback first, then 100dvh');
 });
 
+/* ===== Аудит: доступность и контраст ===== */
+
+test('CSS guard: prefers-reduced-motion is honoured', () => {
+  const css = rawCss(HTML);
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\)/,
+    'the app must respect the reduced-motion preference');
+  const block = css.match(/@media \(prefers-reduced-motion: reduce\)\{[\s\S]*?\}\s*\}/);
+  assert.ok(block, 'the reduced-motion block must contain a rule');
+  assert.match(block[0], /transition-duration\s*:\s*0\.01ms\s*!important/,
+    'transitions must be neutralised');
+  assert.match(block[0], /animation-duration\s*:\s*0\.01ms\s*!important/,
+    'animations must be neutralised');
+});
+
+/* WCAG relative luminance + contrast ratio — used by the palette guard below. */
+function hexLum(hex) {
+  const m = hex.match(/^#([0-9a-f]{6})$/i);
+  assert.ok(m, `not a 6-digit hex colour: ${hex}`);
+  const ch = [0, 2, 4].map(i => parseInt(m[1].slice(i, i + 2), 16) / 255)
+    .map(c => c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
+  return 0.2126 * ch[0] + 0.7152 * ch[1] + 0.0722 * ch[2];
+}
+function contrastRatio(a, b) {
+  const [hi, lo] = [hexLum(a), hexLum(b)].sort((x, y) => y - x);
+  return (hi + 0.05) / (lo + 0.05);
+}
+
+test('CSS guard: --muted text meets WCAG AA (4.5:1) against its own card background', () => {
+  // Аудит: в розовой теме --muted:#a1657f давал ≈3.7:1 на card2. Сторож проверяет все темы.
+  const themes = [...rawCss(HTML).matchAll(/(?:--card2:(#[0-9a-f]{6}).*?--muted:(#[0-9a-f]{6}))/gi)];
+  assert.ok(themes.length >= 3, `expected three themes, got ${themes.length}`);
+  themes.forEach(([, card2, muted]) => {
+    const ratio = contrastRatio(muted, card2);
+    assert.ok(ratio >= 4.5,
+      `--muted:${muted} on card2:${card2} is ${ratio.toFixed(2)}:1 — must be ≥4.5:1`);
+  });
+});
+
