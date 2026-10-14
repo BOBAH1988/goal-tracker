@@ -1340,7 +1340,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.2.43';
+const APP_VERSION = '1.2.44';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -1577,6 +1577,9 @@ const STRINGS = {
     deleteHint: n => n === 0 ? '— нажмите на красную карточку, чтобы удалить (можно удалить все)' : n === 1 ? '— нажмите на красную карточку, чтобы удалить (первая всегда защищена)' : `— нажмите на красную карточку, чтобы удалить (первые ${n} всегда защищены)`,
     deleteSubtreeConfirm: 'Внутри есть цели — нажмите ещё раз, чтобы удалить всё',
     maxN: n => `Максимум ${n} целей`,
+    /* Лимит звёздочек приоритета считает collectPriorityItems() — он включает и пункты
+       чек-листа, поэтому «целей» здесь врало (аудит): правильное слово — приоритеты. */
+    maxPriority: n => `Максимум ${n} приоритетов ☆`,
     minN: n => `Минимум ${n}`,
     deletedMsg: 'Цель удалена',
     deletedItemMsg: 'Пункт удалён',
@@ -1897,6 +1900,7 @@ const STRINGS = {
     deleteHint: n => n === 0 ? '— click a red card to delete it (you can delete all of them)' : n === 1 ? '— click a red card to delete it (the first one is always protected)' : `— click a red card to delete it (the first ${n} are always protected)`,
     deleteSubtreeConfirm: 'It contains goals — tap again to delete everything',
     maxN: n => `Maximum ${n} goals`,
+    maxPriority: n => `Maximum ${n} priorities ☆`,
     minN: n => `Minimum ${n}`,
     deletedMsg: 'Goal deleted',
     deletedItemMsg: 'Item deleted',
@@ -8893,7 +8897,7 @@ function attachLeafHandlers(){
       if(!node.priority && collectPriorityItems().length >= PRIORITY_MAX){
         const msg = document.getElementById('priorityMsg');
         if(msg){
-          msg.textContent = t('maxN')(PRIORITY_MAX);
+          msg.textContent = t('maxPriority')(PRIORITY_MAX);
           clearTimeout(priorityMsgTimer);
           priorityMsgTimer = setTimeout(()=>{ if(msg) msg.textContent = ''; }, 3000);
         }
@@ -8932,7 +8936,7 @@ function attachLeafHandlers(){
       if(!item.priority && collectPriorityItems().length >= PRIORITY_MAX){
         const msg = document.getElementById('priorityMsg');
         if(msg){
-          msg.textContent = t('maxN')(PRIORITY_MAX);
+          msg.textContent = t('maxPriority')(PRIORITY_MAX);
           clearTimeout(priorityMsgTimer);
           priorityMsgTimer = setTimeout(()=>{ if(msg) msg.textContent = ''; }, 3000);
         }
