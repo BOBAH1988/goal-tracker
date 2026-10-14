@@ -1316,7 +1316,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.2.36';
+const APP_VERSION = '1.2.37';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -6429,7 +6429,7 @@ function topbarHTML(){
   const accAsIcon = isStandalonePwa() || accountIconOnly;
   return `<div class="topbar">
     <div class="top-menu-dropdown">
-      <button id="btnTopMenu" title="${t('menuTitle')}" aria-label="${t('menuTitle')}">☰</button>
+      <button id="btnTopMenu" data-tip="${t('menuTitle')}" aria-label="${t('menuTitle')}">☰</button>
       ${topMenuOpen ? `<div class="lang-menu">
         <button id="btnHomeMenuItem" class="menu-item">${t('home')}</button>
         <button id="btnAboutMenuItem" class="menu-item">${t('aboutTitle')}</button>
@@ -6940,7 +6940,7 @@ function leafDetailHTML(node){
           <span class="date-sep">.</span>
           <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="4" id="leafYear" class="date-field date-field-year" placeholder="${t('dateYearPlaceholder')}" value="${esc(y||'')}">
         </div>
-        ${node.date ? `<button id="btnClearDate" title="${t('tipClearDate')}" aria-label="${t('tipClearDate')}">✕</button>` : ''}
+        ${node.date ? `<button id="btnClearDate" data-tip="${t('tipClearDate')}" aria-label="${t('tipClearDate')}">✕</button>` : ''}
       </div>
       <span id="priorityMsg" class="add-goal-msg"></span>
     </div>
