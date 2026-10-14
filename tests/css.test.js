@@ -382,3 +382,23 @@ test('CSS guard: wheel sectors show no focus rectangle on click, but keep a keyb
     'keyboard focus keeps a visible accent ring');
 });
 
+/* Аудит: модалки на статическом 100vh уезжали за экран на iPhone (клавиатура/панель браузера),
+   а кнопки формы — под home-indicator. Сторож: overlay обязан нести safe-area-отступы,
+   scrollable-панель — dvh-фолбэк после vh. */
+test('CSS guard: modals carry safe-area padding and a 100dvh fallback', () => {
+  // cssNoComments: у .auth-modal-overlay перед селектором стоит блочный комментарий-заголовок,
+  // иначе splitCss склеивает его с селектором.
+  const rules = splitCss(cssNoComments(HTML));
+  const overlay = rules.find(r => r.selectors.includes('.auth-modal-overlay'));
+  assert.ok(overlay, 'the modal overlay rule must exist');
+  assert.match(overlay.body, /env\(safe-area-inset-bottom\)/,
+    'the overlay must pad for the home indicator');
+  assert.match(overlay.body, /env\(safe-area-inset-top\)/,
+    'the overlay must pad for the notch/status bar');
+  const panel = rules.find(r => r.selectors.includes('.auth-panel.scrollable'));
+  assert.ok(panel, 'the scrollable panel rule must exist');
+  const maxes = [...panel.body.matchAll(/max-height\s*:\s*calc\(100(v|d)?vh/g)].map(m => m[1] || 'v');
+  assert.deepEqual(maxes, ['v', 'd'],
+    'max-height must be declared twice: 100vh fallback first, then 100dvh');
+});
+
