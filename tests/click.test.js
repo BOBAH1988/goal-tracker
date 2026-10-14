@@ -362,6 +362,46 @@ test('container page: relocate is two-step — arm mode, tap a card to open the 
   assert.ok(!t.document.getElementById('relocateOverlay'), 'close must dismiss the picker');
 });
 
+/* Аудит: пикер relocate без поиска — при 50+ узлах нужную папку искали руками по уровням.
+   Поиск ходит по ВСЕМУ дереву, клик по совпадению перекидывает пикер в найденную папку. */
+test('relocate picker: search finds a folder anywhere in the tree (audit fix)', () => {
+  const t = bootDom();
+  t.app.setState({ name: 'root', children: [
+    leaf(false, { name: 'Перенести' }),
+    { name: 'Сфера', children: [
+      leaf(false, { name: 'Обычная цель' }),
+      { name: 'Глубокая папка', children: [leaf(false, { name: 'Дно' })] },
+    ] },
+  ] });
+  t.window.render();
+  t.click('#btnRelocate');
+  t.click('[data-relocate-idx="0"]');
+  assert.ok(t.document.getElementById('relocateOverlay'), 'the picker opened');
+  // Level 1 of the picker lists only «Сфера» — «Глубокая папка» is one level deeper.
+  assert.ok(!t.document.querySelector('[data-relocate-goto]'),
+    'with an empty query the picker shows the plain level list, no search matches');
+  const input = t.document.getElementById('relocateSearchInput');
+  assert.ok(input, 'the picker must have a search input');
+  input.value = 'глуб';
+  input.dispatchEvent(new t.window.Event('input', { bubbles: true }));
+  const go = t.document.querySelector('[data-relocate-goto="1.1"]');
+  assert.ok(go, 'the search finds the deep folder across the whole tree');
+  // The source subtree is excluded: the leaf «Перенести» is not a container, but even a
+  // container source must never appear in the results.
+  go.click();
+  assert.ok(!t.document.getElementById('relocateSearchInput').value,
+    'picking a result clears the query');
+  assert.ok(t.document.getElementById('btnRelocateHere').textContent.includes('Глубокая папка'),
+    'the picker now targets the found folder');
+  t.click('#btnRelocateHere');
+  const rootAfter = t.app.getState().children;
+  assert.equal(rootAfter.length, 1, 'the source left the home level');
+  const dest = rootAfter[0].children[1];
+  assert.equal(dest.name, 'Глубокая папка', 'the folder exists');
+  assert.ok(dest.children.some(c => c.name === 'Перенести'),
+    'the goal was relocated into the folder found by search');
+});
+
 test('theme switcher changes the root data-theme attribute', () => {
   const t = bootDom();
   let root = t.document.documentElement;

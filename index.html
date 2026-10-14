@@ -502,6 +502,11 @@
   }
   .relocate-breadcrumb .sep{opacity:.4;}
   .relocate-list{display:flex; flex-direction:column; gap:6px; max-height:240px; overflow-y:auto;}
+  /* Аудит: пикер без поиска — при 50+ узлах нужную папку приходилось искать руками по уровням. */
+  .relocate-search{width:100%; box-sizing:border-box; background:var(--card2); color:var(--text);
+    border:1px solid var(--border); border-radius:8px; padding:9px 12px; font-size:14px;
+    font-family:inherit; margin-top:8px;}
+  .relocate-search:focus{outline:2px solid var(--accent); outline-offset:1px;}
   /* Scoped to .auth-panel (raising specificity above the plain ".auth-panel button" rule, which
      otherwise forces white-space:nowrap + flex:1 on every button in a panel) so long goal names
      wrap onto a second line instead of spilling off the edge — same pattern as .auth-link-center. */
@@ -1340,7 +1345,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.2.44';
+const APP_VERSION = '1.2.45';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -1687,6 +1692,7 @@ const STRINGS = {
     relocateTitle: 'Куда перенести?',
     relocateMoving: 'Переносим:',
     relocateEmptyState: 'Здесь нет подходящих целей — тут можно только оставить перенесённый пункт.',
+    relocateSearch: 'Найти папку по всему дереву…',
     relocateHereBtn: dest => `Переместить сюда — «${dest}»`,
     relocateMaxError: 'В этой цели уже максимум пунктов — перенос невозможен.',
     account: 'Аккаунт',
@@ -2008,6 +2014,7 @@ const STRINGS = {
     relocateTitle: 'Move where?',
     relocateMoving: 'Moving:',
     relocateEmptyState: "There's nothing to navigate into here — you can only drop the item at this level.",
+    relocateSearch: 'Find a folder anywhere in the tree…',
     relocateHereBtn: dest => `Move here — "${dest}"`,
     relocateMaxError: "That goal is already full — can't move it there.",
     account: 'Account',
@@ -2382,6 +2389,9 @@ let relocateSourcePath = null;
 // Where the destination picker is currently browsing, relative to `state` (starts at the root —
 // an empty path lets "move here" target the top level itself).
 let relocatePickerPath = [];
+/* Аудит: без поиска при 50+ узлах. Пустой query = обычный режим уровней; непустой = плоский
+   список совпадений-контейнеров по ВСЕМУ дереву (с путём), клик — перейти в найденный. */
+let relocateQuery = '';
 // «Карта желаний» (vision board) — transient dialog state. The cards themselves live in
 // state.wishMap (persisted + backed up with everything else); these flags only say which
 // dialog is open right now and reset on reload, like the other panel flags above.
@@ -5101,10 +5111,6 @@ function relocatePickerHTML(){
     pickerNode = pickerNode.children[i];
   }
   if(!valid){ relocatePickerPath = []; pickerNode = state; }
-  const children = pickerNode.children || [];
-  const eligible = children
-    .map((c, i) => ({ c, i }))
-    .filter(({ c }) => c !== sourceNode && !isLeaf(c));
   const destName = relocatePickerPath.length === 0 ? t('home') : esc(pickerNode.name);
 
   let crumbNode = state;
@@ -5120,13 +5126,55 @@ function relocatePickerHTML(){
       <h2 style="margin:0 0 4px; font-size:16px;">${t('relocateTitle')}</h2>
       <div class="relocate-source-name">${t('relocateMoving')} «${esc(sourceNode.name)}»</div>
       <div class="relocate-breadcrumb">${crumbs.join('')}</div>
-      <div class="relocate-list">
-        ${eligible.length
-          ? eligible.map(({ c, i }) => `<button type="button" class="relocate-row" data-relocate-nav="${i}">${esc(c.name)} ›</button>`).join('')
-          : `<div class="empty-state">${t('relocateEmptyState')}</div>`}
-      </div>
+      <input type="search" class="relocate-search" id="relocateSearchInput" autocomplete="off"
+        value="${esc(relocateQuery)}" placeholder="${t('relocateSearch')}" aria-label="${t('relocateSearch')}">
+      ${relocateResultsHTML(sourceNode)}
       <button type="button" id="btnRelocateHere" class="relocate-here-btn">${t('relocateHereBtn')(destName)}</button>
     </div>
+  </div>`;
+}
+
+/* Содержимое списка пикера: обычный режим уровней или — при непустом relocateQuery —
+   плоский список совпадений-контейнеров по всему дереву (аудит: при 50+ узлах переход
+   по уровням не находишь). В обеих ветках — одни и те же классы/кнопки, стили общие. */
+function relocateResultsHTML(sourceNode){
+  const query = relocateQuery.trim().toLowerCase();
+  if(!query){
+    let pickerNode = state;
+    let valid = true;
+    for(const i of relocatePickerPath){
+      if(!pickerNode.children || !pickerNode.children[i]){ valid = false; break; }
+      pickerNode = pickerNode.children[i];
+    }
+    if(!valid){ relocatePickerPath = []; pickerNode = state; }
+    const eligible = (pickerNode.children || [])
+      .map((c, i) => ({ c, i }))
+      .filter(({ c }) => c !== sourceNode && !isLeaf(c));
+    return `<div class="relocate-list">
+      ${eligible.length
+        ? eligible.map(({ c, i }) => `<button type="button" class="relocate-row" data-relocate-nav="${i}">${esc(c.name)} ›</button>`).join('')
+        : `<div class="empty-state">${t('relocateEmptyState')}</div>`}
+    </div>`;
+  }
+  // Search mode: walk the WHOLE tree for containers whose name contains the query. The source
+  // subtree is skipped (a node cannot be moved into itself) — same rule as the level list.
+  const srcPath = relocateSourcePath || [];
+  const matches = [];
+  const walk = (node, nodePath, names)=>{
+    (node.children || []).forEach((c, i)=>{
+      if(isLeaf(c)) return;
+      const p = [...nodePath, i];
+      const n = [...names, c.name || ''];
+      if(srcPath.length && srcPath.every((v, k) => p[k] === v)) return;
+      if((c.name || '').toLowerCase().includes(query)) matches.push({ p, names: n });
+      walk(c, p, n);
+    });
+  };
+  walk(state, [], []);
+  return `<div class="relocate-list">
+    ${matches.length
+      ? matches.map(({ p, names }) => `<button type="button" class="relocate-row" data-relocate-goto="${p.join('.')}">${esc(names.join(' › '))}</button>`).join('')
+      : `<div class="empty-state">${t('relocateEmptyState')}</div>`}
   </div>`;
 }
 
@@ -8654,6 +8702,7 @@ function attachTreeHandlers(){
       relocateMode = false;
       relocateSourcePath = [...path, idx];
       relocatePickerPath = [];
+      relocateQuery = '';
       render();
     });
   });
@@ -8677,6 +8726,7 @@ function attachTreeHandlers(){
     el.addEventListener('click', ()=>{
       const idx = parseInt(el.dataset.relocateNav,10);
       relocatePickerPath = [...relocatePickerPath, idx];
+      relocateQuery = '';
       render();
     });
   });
@@ -8684,6 +8734,23 @@ function attachTreeHandlers(){
     el.addEventListener('click', ()=>{
       const depth = parseInt(el.dataset.relocateCrumb,10);
       relocatePickerPath = relocatePickerPath.slice(0, depth);
+      relocateQuery = '';
+      render();
+    });
+  });
+  /* Аудит: поиск по всему дереву в пикере. Живой ввод — полный render(), но фокус и позиция
+     курсора возвращаются штатным механизмом render() (v1.2.43), набор не прерывается. */
+  const relocateSearchInput = document.getElementById('relocateSearchInput');
+  if(relocateSearchInput){
+    relocateSearchInput.addEventListener('input', ()=>{
+      relocateQuery = relocateSearchInput.value;
+      render();
+    });
+  }
+  document.querySelectorAll('[data-relocate-goto]').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      relocatePickerPath = (el.dataset.relocateGoto || '').split('.').filter(Boolean).map(Number);
+      relocateQuery = '';
       render();
     });
   });
