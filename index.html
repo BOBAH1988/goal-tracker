@@ -1345,7 +1345,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.2.46';
+const APP_VERSION = '1.2.47';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -5348,20 +5348,20 @@ function nodeViewHTML(node, mode, protectedCount, hintHTML){
     html += `<div class="add-child-row">
       <span id="addChildMsg" class="add-goal-msg"></span>
       <button id="btnAddChild" class="icon-btn" data-tip="${t('tipAdd')}" aria-label="${t('tipAdd')}">+</button>
-      <button id="btnDelete" class="${deleteMode?'active':'icon-btn'}" data-tip="${deleteMode?t('done'):t('tipDelete')}" aria-label="${deleteMode?t('done'):t('tipDelete')}">${deleteMode ? t('done') : '−'}</button>
-      <button id="btnMove" class="${moveMode?'active':'icon-btn'}" data-tip="${moveMode?t('done'):t('tipMove')}" aria-label="${moveMode?t('done'):t('tipMove')}">${moveMode ? t('done') : '↕'}</button>
+      <button id="btnDelete" class="${deleteMode?'active':'icon-btn'}" aria-pressed="${deleteMode}" data-tip="${deleteMode?t('done'):t('tipDelete')}" aria-label="${deleteMode?t('done'):t('tipDelete')}">${deleteMode ? t('done') : '−'}</button>
+      <button id="btnMove" class="${moveMode?'active':'icon-btn'}" aria-pressed="${moveMode}" data-tip="${moveMode?t('done'):t('tipMove')}" aria-label="${moveMode?t('done'):t('tipMove')}">${moveMode ? t('done') : '↕'}</button>
       <div class="filter-dropdown">
         <button id="btnFilter" class="icon-btn" data-tip="${t('tipSort')}" aria-label="${t('tipSort')}"><i class="ti ti-filter" aria-hidden="true"></i></button>
         ${filterMenuOpen ? `<div class="filter-menu" id="filterMenu">
-          <button data-sort="desc" class="${goalsSort==='desc'?'active':''}">${t('sortDesc')}</button>
-          <button data-sort="asc" class="${goalsSort==='asc'?'active':''}">${t('sortAsc')}</button>
-          <button data-sort="custom" class="${goalsSort==='custom'?'active':''}">${t('sortCustom')}</button>
+          <button data-sort="desc" class="${goalsSort==='desc'?'active':''}" aria-pressed="${goalsSort==='desc'}">${t('sortDesc')}</button>
+          <button data-sort="asc" class="${goalsSort==='asc'?'active':''}" aria-pressed="${goalsSort==='asc'}">${t('sortAsc')}</button>
+          <button data-sort="custom" class="${goalsSort==='custom'?'active':''}" aria-pressed="${goalsSort==='custom'}">${t('sortCustom')}</button>
         </div>` : ''}
       </div>
-      <button id="btnRelocate" class="${relocateMode?'active':'icon-btn'}" data-tip="${relocateMode?t('done'):t('tipRelocate')}" aria-label="${relocateMode?t('done'):t('tipRelocate')}">${relocateMode ? t('done') : '<i class="ti ti-folder-symlink" aria-hidden="true"></i>'}</button>
-      ${path.length === 2 ? `<button id="btnAddSubgoal" class="${addSubMode?'active':'icon-btn'}" data-tip="${addSubMode?t('done'):t('tipExpand')}" aria-label="${addSubMode?t('done'):t('tipExpand')}">${addSubMode ? t('done') : '<i class="ti ti-sitemap" aria-hidden="true"></i>'}</button>` : ''}
-      <button id="btnEdit" class="${editMode?'active':'icon-btn'}" data-tip="${editMode?t('done'):t('tipEdit')}" aria-label="${editMode?t('done'):t('tipEdit')}">${editMode ? t('done') : '<i class="ti ti-edit" aria-hidden="true"></i>'}</button>
-      <button id="btnArchive" class="${node.archived?'active':'icon-btn'}" data-tip="${node.archived ? t('tipUnarchive') : t('tipArchive')}" aria-label="${node.archived ? t('tipUnarchive') : t('tipArchive')}"><i class="ti ${node.archived ? 'ti-archive-off' : 'ti-archive'}" aria-hidden="true"></i></button>
+      <button id="btnRelocate" class="${relocateMode?'active':'icon-btn'}" aria-pressed="${relocateMode}" data-tip="${relocateMode?t('done'):t('tipRelocate')}" aria-label="${relocateMode?t('done'):t('tipRelocate')}">${relocateMode ? t('done') : '<i class="ti ti-folder-symlink" aria-hidden="true"></i>'}</button>
+      ${path.length === 2 ? `<button id="btnAddSubgoal" class="${addSubMode?'active':'icon-btn'}" aria-pressed="${addSubMode}" data-tip="${addSubMode?t('done'):t('tipExpand')}" aria-label="${addSubMode?t('done'):t('tipExpand')}">${addSubMode ? t('done') : '<i class="ti ti-sitemap" aria-hidden="true"></i>'}</button>` : ''}
+      <button id="btnEdit" class="${editMode?'active':'icon-btn'}" aria-pressed="${editMode}" data-tip="${editMode?t('done'):t('tipEdit')}" aria-label="${editMode?t('done'):t('tipEdit')}">${editMode ? t('done') : '<i class="ti ti-edit" aria-hidden="true"></i>'}</button>
+      <button id="btnArchive" class="${node.archived?'active':'icon-btn'}" aria-pressed="${node.archived}" data-tip="${node.archived ? t('tipUnarchive') : t('tipArchive')}" aria-label="${node.archived ? t('tipUnarchive') : t('tipArchive')}"><i class="ti ${node.archived ? 'ti-archive-off' : 'ti-archive'}" aria-hidden="true"></i></button>
       <span id="deleteMsg" class="add-goal-msg"></span>
     </div>`;
     if(node.children.length){
@@ -5488,18 +5488,18 @@ function homeViewHTML(overallPct, hintHTML, mode, protectedCount){
        <span id="addGoalMsg" class="add-goal-msg"></span>
       <button id="btnAddGoal" class="icon-btn" data-tip="${t('tipAdd')}" aria-label="${t('tipAdd')}">+</button>
       <button id="btnTemplates" class="icon-btn" data-tip="${t('tipTemplates')}" aria-label="${t('tipTemplates')}"><i class="ti ti-file-text" aria-hidden="true"></i></button>
-      <button id="btnDelete" class="${deleteMode?'active':'icon-btn'}" data-tip="${deleteMode?t('done'):t('tipDelete')}" aria-label="${deleteMode?t('done'):t('tipDelete')}">${deleteMode ? t('done') : '−'}</button>
-      <button id="btnMove" class="${moveMode?'active':'icon-btn'}" data-tip="${moveMode?t('done'):t('tipMove')}" aria-label="${moveMode?t('done'):t('tipMove')}">${moveMode ? t('done') : '↕'}</button>
+      <button id="btnDelete" class="${deleteMode?'active':'icon-btn'}" aria-pressed="${deleteMode}" data-tip="${deleteMode?t('done'):t('tipDelete')}" aria-label="${deleteMode?t('done'):t('tipDelete')}">${deleteMode ? t('done') : '−'}</button>
+      <button id="btnMove" class="${moveMode?'active':'icon-btn'}" aria-pressed="${moveMode}" data-tip="${moveMode?t('done'):t('tipMove')}" aria-label="${moveMode?t('done'):t('tipMove')}">${moveMode ? t('done') : '↕'}</button>
       <div class="filter-dropdown">
         <button id="btnFilter" class="icon-btn" data-tip="${t('tipSort')}" aria-label="${t('tipSort')}"><i class="ti ti-filter" aria-hidden="true"></i></button>
         ${filterMenuOpen ? `<div class="filter-menu" id="filterMenu">
-          <button data-sort="desc" class="${goalsSort==='desc'?'active':''}">${t('sortDesc')}</button>
-          <button data-sort="asc" class="${goalsSort==='asc'?'active':''}">${t('sortAsc')}</button>
-          <button data-sort="custom" class="${goalsSort==='custom'?'active':''}">${t('sortCustom')}</button>
+          <button data-sort="desc" class="${goalsSort==='desc'?'active':''}" aria-pressed="${goalsSort==='desc'}">${t('sortDesc')}</button>
+          <button data-sort="asc" class="${goalsSort==='asc'?'active':''}" aria-pressed="${goalsSort==='asc'}">${t('sortAsc')}</button>
+          <button data-sort="custom" class="${goalsSort==='custom'?'active':''}" aria-pressed="${goalsSort==='custom'}">${t('sortCustom')}</button>
         </div>` : ''}
       </div>
-      <button id="btnRelocate" class="${relocateMode?'active':'icon-btn'}" data-tip="${relocateMode?t('done'):t('tipRelocate')}" aria-label="${relocateMode?t('done'):t('tipRelocate')}">${relocateMode ? t('done') : '<i class="ti ti-folder-symlink" aria-hidden="true"></i>'}</button>
-       <button id="btnEdit" class="${editMode?'active':'icon-btn'}" data-tip="${editMode?t('done'):t('tipEdit')}" aria-label="${editMode?t('done'):t('tipEdit')}">${editMode ? t('done') : '<i class="ti ti-edit" aria-hidden="true"></i>'}</button>
+      <button id="btnRelocate" class="${relocateMode?'active':'icon-btn'}" aria-pressed="${relocateMode}" data-tip="${relocateMode?t('done'):t('tipRelocate')}" aria-label="${relocateMode?t('done'):t('tipRelocate')}">${relocateMode ? t('done') : '<i class="ti ti-folder-symlink" aria-hidden="true"></i>'}</button>
+       <button id="btnEdit" class="${editMode?'active':'icon-btn'}" aria-pressed="${editMode}" data-tip="${editMode?t('done'):t('tipEdit')}" aria-label="${editMode?t('done'):t('tipEdit')}">${editMode ? t('done') : '<i class="ti ti-edit" aria-hidden="true"></i>'}</button>
        <span id="deleteMsg" class="add-goal-msg"></span>
      </div>` : ''}
    </div>`;
@@ -6555,10 +6555,10 @@ function topbarHTML(){
         ${!isStandalonePwa() ? `<button id="btnInstallAppMenuItem" class="menu-item">${t('installAppTitle')}</button>` : ''}
          <input type="file" id="importFileInput" accept="application/json,.json" style="display:none">
          <div class="menu-lang-row">
-          ${Object.keys(LANG_FLAGS).map(code => `<button class="lang-option ${lang===code?'active':''}" data-lang="${code}" title="${code==='ru'?'Русский':'English'}">${LANG_FLAGS[code]}</button>`).join('')}
+          ${Object.keys(LANG_FLAGS).map(code => `<button class="lang-option ${lang===code?'active':''}" aria-pressed="${lang===code}" data-lang="${code}" title="${code==='ru'?'Русский':'English'}">${LANG_FLAGS[code]}</button>`).join('')}
         </div>
         <div class="menu-theme-row">
-          ${Object.keys(THEME_ICONS).map(code => `<button class="theme-option ${theme===code?'active':''}" data-theme-choice="${code}" title="${t(THEME_TITLES[code])}" aria-label="${t(THEME_TITLES[code])}">${THEME_ICONS[code]}</button>`).join('')}
+          ${Object.keys(THEME_ICONS).map(code => `<button class="theme-option ${theme===code?'active':''}" aria-pressed="${theme===code}" data-theme-choice="${code}" title="${t(THEME_TITLES[code])}" aria-label="${t(THEME_TITLES[code])}">${THEME_ICONS[code]}</button>`).join('')}
         </div>
       </div>` : ''}
     </div>
@@ -7039,8 +7039,8 @@ function leafDetailHTML(node){
       <div class="leaf-title-row">
         <div class="leaf-title">${esc(node.name)}</div>
         <div style="display:flex; align-items:center; gap:8px;">
-          <button id="btnArchive" class="star-btn ${node.archived?'active':''}" data-tip="${node.archived ? t('tipUnarchive') : t('tipArchive')}" aria-label="${node.archived ? t('tipUnarchive') : t('tipArchive')}"><i class="ti ${node.archived ? 'ti-archive-off' : 'ti-archive'}" aria-hidden="true"></i></button>
-          <button id="btnTogglePriority" class="star-btn ${node.priority?'active':''}" data-tip="${node.priority ? t('tipRemovePriority') : t('tipAddPriority')}" aria-label="${node.priority ? t('tipRemovePriority') : t('tipAddPriority')}">${node.priority ? '⭐' : '☆'}</button>
+          <button id="btnArchive" class="star-btn ${node.archived?'active':''}" aria-pressed="${node.archived}" data-tip="${node.archived ? t('tipUnarchive') : t('tipArchive')}" aria-label="${node.archived ? t('tipUnarchive') : t('tipArchive')}"><i class="ti ${node.archived ? 'ti-archive-off' : 'ti-archive'}" aria-hidden="true"></i></button>
+          <button id="btnTogglePriority" class="star-btn ${node.priority?'active':''}" aria-pressed="${node.priority}" data-tip="${node.priority ? t('tipRemovePriority') : t('tipAddPriority')}" aria-label="${node.priority ? t('tipRemovePriority') : t('tipAddPriority')}">${node.priority ? '⭐' : '☆'}</button>
         </div>
       </div>
       <div class="leaf-meta">
@@ -7067,7 +7067,7 @@ function checklistHTML(list){
     <div class="section-title-row" style="margin-top:20px;">
       <div class="section-title">${t('checklistTitle')}</div>
       <div style="display:flex; align-items:center; gap:8px;">
-        <button id="btnMoveChecklist" class="${moveMode?'active':'icon-btn'}" data-tip="${moveMode?t('done'):t('tipMove')}" aria-label="${moveMode?t('done'):t('tipMove')}">${moveMode ? t('done') : '↕'}</button>
+        <button id="btnMoveChecklist" class="${moveMode?'active':'icon-btn'}" aria-pressed="${moveMode}" data-tip="${moveMode?t('done'):t('tipMove')}" aria-label="${moveMode?t('done'):t('tipMove')}">${moveMode ? t('done') : '↕'}</button>
         <button id="btnDeleteChecklist" class="icon-btn" data-tip="${t('tipDeleteChecklist')}" aria-label="${t('tipDeleteChecklist')}">🗑️</button>
       </div>
     </div>`;
@@ -7091,7 +7091,7 @@ function checklistHTML(list){
         ${isEditing
           ? `<form class="checklist-edit-form" style="display:contents"><input type="text" class="checklist-edit-input" data-checklist-edit-idx="${i}" data-original="${esc(item.text)}" value="${esc(item.text)}" maxlength="80" enterkeyhint="done"></form>`
           : `<span class="checklist-text ${item.done?'done':''}">${esc(item.text)}</span>`}
-        <button class="star-btn checklist-star ${item.priority?'active':''}" data-checklist-priority="${i}" data-tip="${item.priority ? t('tipRemovePriority') : t('tipAddPriority')}" aria-label="${item.priority ? t('tipRemovePriority') : t('tipAddPriority')}">${item.priority ? '⭐' : '☆'}</button>
+        <button class="star-btn checklist-star ${item.priority?'active':''}" aria-pressed="${item.priority}" data-checklist-priority="${i}" data-tip="${item.priority ? t('tipRemovePriority') : t('tipAddPriority')}" aria-label="${item.priority ? t('tipRemovePriority') : t('tipAddPriority')}">${item.priority ? '⭐' : '☆'}</button>
         <button class="checklist-edit" data-checklist-edit="${i}" data-tip="${t('tipEditItem')}" aria-label="${t('tipEditItem')}"><i class="ti ti-edit" aria-hidden="true"></i></button>
         <button class="checklist-remove" data-checklist-remove="${i}" data-tip="${t('tipDelete')}" aria-label="${t('tipDelete')}">✕</button>
       </div>`;

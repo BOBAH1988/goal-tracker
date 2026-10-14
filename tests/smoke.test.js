@@ -47,3 +47,18 @@ test('index.html: shells out the PWA hooks', () => {
   assert.ok(html.includes('manifest.json'), 'manifest link missing');
   assert.ok(html.includes('./sw.js') || html.includes("'./sw.js'"), 'service worker registration missing');
 });
+
+/* Аудит: переключатели (режимы «−/↕/⇄/✎», ☆, сортировка, язык, тема) не сообщали
+   скринридеру своё состояние. Сторож: любая кнопка с динамическим классом 'active'
+   обязана нести aria-pressed. */
+test('a11y: every toggle button carries aria-pressed', () => {
+  const html = readProjectFile('index.html');
+  const toggles = html.split('\n').filter(l =>
+    l.includes('<button') && /\?'active'/.test(l));
+  assert.ok(toggles.length >= 15, `expected the known toggle buttons, found ${toggles.length}`);
+  const missing = toggles
+    .filter(l => !l.includes('aria-pressed'))
+    .map(l => (l.match(/id="[^"]+"|class="[^"]{0,40}/) || [''])[0]);
+  assert.deepEqual(missing, [],
+    'these toggle buttons declare an active class but no aria-pressed: ' + missing.join(' | '));
+});
