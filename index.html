@@ -1316,7 +1316,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.2.38';
+const APP_VERSION = '1.2.40';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -1551,6 +1551,7 @@ const STRINGS = {
     done: 'Готово',
     editHint: '— впишите новое название прямо в карточке',
     deleteHint: n => n === 0 ? '— нажмите на красную карточку, чтобы удалить (можно удалить все)' : n === 1 ? '— нажмите на красную карточку, чтобы удалить (первая всегда защищена)' : `— нажмите на красную карточку, чтобы удалить (первые ${n} всегда защищены)`,
+    deleteSubtreeConfirm: 'Внутри есть цели — нажмите ещё раз, чтобы удалить всё',
     maxN: n => `Максимум ${n} целей`,
     minN: n => `Минимум ${n}`,
     deletedMsg: 'Цель удалена',
@@ -1870,6 +1871,7 @@ const STRINGS = {
     done: 'Done',
     editHint: '— type a new name right in the card',
     deleteHint: n => n === 0 ? '— click a red card to delete it (you can delete all of them)' : n === 1 ? '— click a red card to delete it (the first one is always protected)' : `— click a red card to delete it (the first ${n} are always protected)`,
+    deleteSubtreeConfirm: 'It contains goals — tap again to delete everything',
     maxN: n => `Maximum ${n} goals`,
     minN: n => `Minimum ${n}`,
     deletedMsg: 'Goal deleted',
@@ -2458,6 +2460,11 @@ let checklistDeletePanelOpen = false;
 let addGoalMsgTimer = null;
 let addChildMsgTimer = null;
 let priorityMsgTimer = null;
+// Аудит: удаление поддерева (цель с вложенными) одним тапом. Индекс карточки, по которой
+// уже запрошено подтверждение — второй тап по ней удаляет, тап по другой или уход со
+// страницы сбрасывает. Живёт вне state, только для текущей страницы.
+let deleteConfirmIdx = null;
+let deleteMsgTimer = null;
 // Undo-delete toast. undoSnapshot holds a {state, path} copy taken right before a card is
 // deleted, so the deletion (which may also collapse the parent into a leaf and step `path`
 // up) can be rolled back within a few seconds. The toast lives in document.body — outside
@@ -7206,8 +7213,10 @@ function showUndoToast(msg){
   toast.appendChild(btn);
   document.body.appendChild(toast);
   undoToastEl = toast;
-  // Auto-dismiss after 5s; a manual Undo or a fresh delete clears it earlier.
-  undoToastTimer = setTimeout(hideUndoToast, 5000);
+  // Auto-dismiss: 10s on touch (аудит — на телефоне 5с мало, отмена не успевает),
+  // 5s с мышью. Тач определяем по pointer:coarse — надёжнее, чем (hover: none).
+  const toastMs = (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) ? 10000 : 5000;
+  undoToastTimer = setTimeout(hideUndoToast, toastMs);
 }
 function hideUndoToast(){
   clearTimeout(undoToastTimer);
@@ -8034,6 +8043,9 @@ function exitAllModes(){
   addSubMode = false;
   moveMode = false;
   relocateMode = false;
+  // Уходя со страницы, сбрасываем и незавершённый запрос на удаление поддерева — иначе
+  // на новой странице первый тап по карточке удалил бы её без подтверждения (аудит).
+  deleteConfirmIdx = null;
 }
 function attachMainViewHandlers(){
   document.querySelectorAll('[data-crumb]').forEach(el=>{
@@ -8449,8 +8461,24 @@ function attachTreeHandlers(){
       const msg = document.getElementById('deleteMsg');
       if(parent.children.length <= min){
         if(msg) msg.textContent = t('minN')(min);
+        deleteConfirmIdx = null;
         return;
       }
+      // Аудит: поддерево с вложенными целями — не удаляем одним тапом. Первый тап по такой
+      // карточке только запрашивает подтверждение (сообщение deleteMsg); второй тап по ТОЙ ЖЕ
+      // карточке удаляет. Тап по другой карточке или уход со страницы сбрасывают запрос.
+      const node = parent.children[idx];
+      const hasNested = node && Array.isArray(node.children) && node.children.length > 0;
+      if(hasNested && deleteConfirmIdx !== idx){
+        deleteConfirmIdx = idx;
+        if(msg){
+          msg.textContent = t('deleteSubtreeConfirm');
+          clearTimeout(deleteMsgTimer);
+          deleteMsgTimer = setTimeout(()=>{ if(msg) msg.textContent = ''; }, 3000);
+        }
+        return;
+      }
+      deleteConfirmIdx = null;
       // Snapshot the whole {state, path} right before mutating: deletion can also collapse an
       // emptied container into a leaf and step `path` up, so a single deep copy rolls all of it
       // back at once via the Undo toast.
@@ -8527,6 +8555,8 @@ function attachTreeHandlers(){
     btnDelete.addEventListener('click', ()=>{
       deleteMode = !deleteMode;
       if(deleteMode){ editMode = false; addSubMode = false; moveMode = false; relocateMode = false; }
+      // Любое переключение режима удаления сбрасывает незавершённый запрос подтверждения.
+      deleteConfirmIdx = null;
       render();
     });
   }

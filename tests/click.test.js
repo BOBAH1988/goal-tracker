@@ -449,6 +449,34 @@ test('a breadcrumb tap exits the armed delete mode (audit fix)', () => {
   assert.equal(t.app.getPath().length, 1, 'the sphere opens, it is not deleted');
 });
 
+
+/* Аудит: поддерево (карточка с вложенными целями) удалялось одним тапом без подтверждения.
+   Первый тап — только запрос (сообщение deleteMsg), второй тап по ТОЙ ЖЕ карточке — удаление. */
+test('subtree delete needs a second tap on the same card (audit fix)', () => {
+  const t = bootDom();
+  t.app.setState({ name: 'root', children: [
+    leaf(false, { name: 'Оставить' }),
+    { name: 'Удаляемая', children: [leaf(false, { name: 'Вложенная' })] },
+  ] });
+  t.window.render();
+  t.click('#btnDelete');
+  const redCard = () => t.document.querySelector('[data-delete-idx="1"]');
+  assert.ok(redCard(), 'delete mode must expose the second card');
+  // First tap on a card WITH nested goals — only a confirmation hint, nothing is deleted.
+  redCard().click();
+  assert.equal(t.app.getState().children.length, 2, 'the first tap must NOT delete the subtree');
+  const msg = t.document.getElementById('deleteMsg');
+  assert.ok(msg && msg.textContent, 'the confirmation message must be shown');
+  // Second tap on the SAME card — now the subtree goes away.
+  redCard().click();
+  assert.equal(t.app.getState().children.length, 1, 'the second tap must delete the subtree');
+  assert.equal(t.app.getState().children[0] && t.app.getState().children[0].name, 'Оставить',
+    'only the other sphere remains');
+  const toast = t.document.querySelector('.undo-toast');
+  assert.ok(toast, 'an undo toast must appear after the confirmed delete');
+});
+
+
 // ===== Global search (opened from the topbar button; live results without losing input focus) =====
 test('global search: opens from the topbar button, finds a goal by name and navigates to it', () => {
   const t = bootDom();
