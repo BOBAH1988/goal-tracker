@@ -859,6 +859,11 @@
      тап-таргет до 44px, не меняя вид (::after невидим, фон/ховер остаются на .chk). */
   .chk::after{content:''; position:absolute; inset:-12px;}
   .chk.done{background:var(--green); border-color:var(--green); color:#0b0e17; font-weight:700;}
+  /* Аудит: клавиатура. Фокусный ринг на карточках и чекбоксах (как у секторов колеса) —
+     наведение мыши его не рисует, клавиатура (Tab) видит, где фокус. */
+  .card[data-nav]:focus-visible, .chk:focus-visible, .checklist-circle:focus-visible{
+    outline:2px solid var(--accent); outline-offset:2px;
+  }
   .leaf-body{flex:1;}
   .leaf-title{font-size:14px; line-height:1.4;}
   .leaf-meta{display:flex; gap:14px; margin-top:6px; font-size:12px; color:var(--muted); align-items:center; flex-wrap:wrap;}
@@ -1311,7 +1316,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.2.35';
+const APP_VERSION = '1.2.36';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -6505,7 +6510,11 @@ function cardModeAttrs(node, idx, mode, protectedCount){
     // itself, just where it lives, so there's nothing here worth protecting against.
     return { cls:'selectable', attrs:`data-relocate-idx="${idx}"` };
   }
-  return { cls:'', attrs:`data-nav="${idx}"` };
+  // Аудит: карточка — div с click, недоступная с клавиатуры. Обычная (data-nav) карточка
+  // получает role=button/tabindex=0/aria-label, как сектора колеса; Enter/Space навешаны
+  // в attachMainViewHandlers. Режимы (delete/move/relocate/addsub) не фокусируем — там
+  // действует жест/тап, а не клавиатура.
+  return { cls:'', attrs:`data-nav="${idx}" role="button" tabindex="0" aria-label="${esc(node.name)}"` };
 }
 function cardModeTitle(node, idx, mode, defaultArrow, protectedCount){
   if(mode === 'edit'){
@@ -6913,7 +6922,7 @@ function leafDetailHTML(node){
   // fields don't have that segment-auto-complete behavior, so this sidesteps the bug entirely.
   const [y, m, d] = (node.date || '').split('-');
   return `<div class="leaf-row ${node.done?'done':''} ${node.archived?'archived':''}">
-    <div class="chk ${node.done?'done':''}" id="leafToggle">${node.done?'✓':''}</div>
+    <div class="chk ${node.done?'done':''}" id="leafToggle" role="checkbox" tabindex="0" aria-checked="${node.done?'true':'false'}" aria-label="${esc(node.name)}">${node.done?'✓':''}</div>
     <div class="leaf-body">
       <div class="leaf-title-row">
         <div class="leaf-title">${esc(node.name)}</div>
@@ -6966,7 +6975,7 @@ function checklistHTML(list){
     list.forEach((item, i) => {
       const isEditing = checklistEditIdx === i;
       html += `<div class="checklist-row">
-        <div class="checklist-circle ${item.done?'done':''}" data-checklist-toggle="${i}">${item.done?'✓':''}</div>
+        <div class="checklist-circle ${item.done?'done':''}" data-checklist-toggle="${i}" role="checkbox" tabindex="0" aria-checked="${item.done?'true':'false'}" aria-label="${esc(item.text)}">${item.done?'✓':''}</div>
         ${isEditing
           ? `<form class="checklist-edit-form" style="display:contents"><input type="text" class="checklist-edit-input" data-checklist-edit-idx="${i}" data-original="${esc(item.text)}" value="${esc(item.text)}" maxlength="80" enterkeyhint="done"></form>`
           : `<span class="checklist-text ${item.done?'done':''}">${esc(item.text)}</span>`}
@@ -8135,6 +8144,15 @@ function attachMainViewHandlers(){
       path = [...path, idx];
       render();
     });
+    // Аудит: клавиатура. role=button/tabindex=0 в разметке — Enter/Space открывает карточку
+    // тем же путём, что и тап (Space preventDefault, иначе скроллит страницу). Образец —
+    // сектора колеса.
+    el.addEventListener('keydown', (e)=>{
+      if(e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar'){
+        e.preventDefault();
+        el.click();
+      }
+    });
   });
   const mainGoalsToggle = document.getElementById('mainGoalsToggle');
   if(mainGoalsToggle){
@@ -8637,12 +8655,20 @@ function attachTreeHandlers(){
 function attachLeafHandlers(){
   const leafToggle = document.getElementById('leafToggle');
   if(leafToggle){
-    leafToggle.addEventListener('click', ()=>{
+    const toggle = ()=>{
       const node = resolve(path);
       node.done = !node.done;
       touchSphereAtPath(path);
       saveState();
       render();
+    };
+    leafToggle.addEventListener('click', toggle);
+    // Аудит: клавиатура. role=checkbox/tabindex=0 в разметке, Enter/Space переключает.
+    leafToggle.addEventListener('keydown', (e)=>{
+      if(e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar'){
+        e.preventDefault();
+        toggle();
+      }
     });
   }
   // Day/month/year are three plain text inputs (see leafDetailHTML for why, instead of one
@@ -8780,13 +8806,21 @@ function attachLeafHandlers(){
     });
   }
   document.querySelectorAll('[data-checklist-toggle]').forEach(el=>{
-    el.addEventListener('click', ()=>{
+    const toggle = ()=>{
       const idx = parseInt(el.dataset.checklistToggle,10);
       const node = resolve(path);
       node.checklist[idx].done = !node.checklist[idx].done;
       touchSphereAtPath(path);
       saveState();
       render();
+    };
+    el.addEventListener('click', toggle);
+    // Аудит: клавиатура для пункта чек-листа (role=checkbox/tabindex=0 в разметке).
+    el.addEventListener('keydown', (e)=>{
+      if(e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar'){
+        e.preventDefault();
+        toggle();
+      }
     });
   });
   document.querySelectorAll('[data-checklist-priority]').forEach(el=>{

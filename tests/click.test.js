@@ -2360,6 +2360,61 @@ test('wheel: home page sectors are interactive buttons with role/aria/tabindex',
   });
 });
 
+/* Аудит: дерево целей было недоступно с клавиатуры — карточки и чекбоксы это div с click,
+   без tabindex/role. Образец уже был у секторов колеса; теперь то же у [data-nav] и чекбоксов. */
+test('keyboard: goal cards expose role=button/tabindex/aria and Enter opens them (audit fix)', () => {
+  const t = bootDom();
+  t.app.setState({ name: 'root', children: [
+    { name: 'Сфера', children: [leaf(false, { name: 'Подцель' })] },
+    { name: 'Вторая', children: [] },
+  ] });
+  t.window.render();
+  const card = t.document.querySelector('[data-nav="0"]');
+  assert.ok(card, 'a navigate card is rendered');
+  assert.equal(card.getAttribute('role'), 'button', 'role=button for screen readers');
+  assert.equal(card.getAttribute('tabindex'), '0', 'tabindex=0 so Tab reaches it');
+  assert.equal(card.getAttribute('aria-label'), 'Сфера', 'aria-label carries the goal name');
+  // Enter on the card navigates, exactly like a tap.
+  card.dispatchEvent(new t.window.KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+  assert.equal(t.app.getPath().length, 1, 'Enter opened the sphere');
+  assert.equal(t.app.getPath()[0], 0, 'it opened the first sphere');
+});
+
+/* Space тоже открывает (и preventDefault — иначе страница скроллится). */
+test('keyboard: Space on a goal card opens it too (audit fix)', () => {
+  const t = bootDom();
+  t.app.setState({ name: 'root', children: [{ name: 'Сфера', children: [leaf(false, { name: 'Подцель' })] }] });
+  t.window.render();
+  const ev = new t.window.KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true });
+  t.document.querySelector('[data-nav="0"]').dispatchEvent(ev);
+  assert.equal(t.app.getPath().length, 1, 'Space opened the sphere');
+  assert.equal(ev.defaultPrevented, true, 'Space must preventDefault so the page does not scroll');
+});
+
+/* Чекбокс листа и пункт чек-листа — role=checkbox/tabindex/aria-checked + Enter/Space. */
+test('keyboard: the leaf checkbox and checklist items are toggleable from the keyboard (audit fix)', () => {
+  const t = bootDom();
+  t.app.setState({ name: 'root', children: [leaf(false, {
+    name: 'L',
+    checklist: [{ text: 'пункт', done: false }],
+  })] });
+  t.app.setPath([0]);
+  t.window.render();
+  // Leaf done-toggle (the .chk).
+  const chk = t.document.getElementById('leafToggle');
+  assert.equal(chk.getAttribute('role'), 'checkbox', 'leaf checkbox role');
+  assert.equal(chk.getAttribute('tabindex'), '0', 'leaf checkbox tabindex');
+  assert.equal(chk.getAttribute('aria-checked'), 'false', 'aria-checked starts false');
+  chk.dispatchEvent(new t.window.KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+  assert.equal(t.app.getState().children[0].done, true, 'Enter toggled the leaf done');
+  // Checklist item toggle (the .checklist-circle).
+  const circle = t.document.querySelector('[data-checklist-toggle="0"]');
+  assert.equal(circle.getAttribute('role'), 'checkbox', 'checklist item role');
+  assert.equal(circle.getAttribute('tabindex'), '0', 'checklist item tabindex');
+  circle.dispatchEvent(new t.window.KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }));
+  assert.equal(t.app.getState().children[0].checklist[0].done, true, 'Space toggled the checklist item');
+});
+
 test('wheel: clicking a sector opens the sphere tree panel and highlights the sector', () => {
   const t = bootDom();
   t.click('#btnTopMenu');
