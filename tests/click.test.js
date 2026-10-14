@@ -449,6 +449,26 @@ test('a breadcrumb tap exits the armed delete mode (audit fix)', () => {
   assert.equal(t.app.getPath().length, 1, 'the sphere opens, it is not deleted');
 });
 
+/* Аудит: полный innerHTML-rebuild в render() терял фокус и скролл. На одной и той же
+   странице render() обязан вернуть фокус на тот же элемент (по id). */
+test('render() restores focus on the same page after the innerHTML rebuild (audit fix)', () => {
+  const t = bootDom();
+  t.app.setState({ name: 'root', children: [leaf(false, { name: 'Цель' })] });
+  t.window.render();
+  const btn = t.document.getElementById('btnDelete');
+  assert.ok(btn, 'the delete button exists on the home page');
+  btn.focus();
+  assert.equal(t.document.activeElement, btn, 'precondition: the button holds focus');
+  t.window.render();
+  assert.equal(t.document.activeElement && t.document.activeElement.id, 'btnDelete',
+    'a re-render on the same page must put focus back on the same element');
+  // After NAVIGATING, the old focus target is not the current page — no restore, no crash.
+  t.app.setPath([0]);
+  t.window.render();
+  assert.notEqual(t.document.activeElement && t.document.activeElement.id, 'btnDelete',
+    'a page change must not drag the old focus target along');
+});
+
 
 /* Аудит: поддерево (карточка с вложенными целями) удалялось одним тапом без подтверждения.
    Первый тап — только запрос (сообщение deleteMsg), второй тап по ТОЙ ЖЕ карточке — удаление. */

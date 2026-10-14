@@ -1340,7 +1340,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.2.42';
+const APP_VERSION = '1.2.43';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -5127,6 +5127,12 @@ function relocatePickerHTML(){
 }
 
 /* ===== Render ===== */
+/* Аудит: полный innerHTML-rebuild терял позицию прокрутки и фокус активного поля (инпут
+   правки/поиска «уезжал» на другой конец страницы, курсор прыгал в конец). render()
+   сохраняет скролл/фокус/курсор и восстанавливает их после пересборки; скролл — только
+   если страница не сменилась (lastRenderPath), навигация не должна притягивать старый
+   скролл. lastRenderPath обновляется в конце каждого render(). */
+let lastRenderPath = null;
 function render(){
   // If a card/checklist-row drag is still in progress when render() gets triggered by something
   // else entirely (e.g. a Firestore cloud-sync snapshot landing mid-gesture — more likely for
@@ -5200,11 +5206,34 @@ function render(){
   }
 
   html += footerHTML();
+  // Capture the pre-render viewport/focus state (see the comment above render()).
+  const keepScrollY = window.scrollY || window.pageYOffset || 0;
+  const samePage = lastRenderPath !== null && lastRenderPath === path.join('/');
+  const act = document.activeElement;
+  const keepId = act && act.id ? act.id : null;
+  let keepSel = null;
+  if(act && typeof act.selectionStart === 'number'){
+    try{ keepSel = [act.selectionStart, act.selectionEnd]; }catch(e){ keepSel = null; }
+  }
   app.innerHTML = html;
   attachHandlers();
   adjustWheelLabels();
   fitQuoteInput();
   fitAccountButton();
+  // Restore: focus first (it may scroll on old engines), then pin the scroll back.
+  if(keepId && samePage){
+    const el = document.getElementById(keepId);
+    if(el && typeof el.focus === 'function'){
+      try{ el.focus({preventScroll:true}); }catch(e){ try{ el.focus(); }catch(e2){} }
+      if(keepSel && typeof el.setSelectionRange === 'function'){
+        try{ el.setSelectionRange(keepSel[0], keepSel[1]); }catch(e){}
+      }
+    }
+  }
+  if(samePage && typeof window.scrollTo === 'function' && (window.scrollY || 0) !== keepScrollY){
+    try{ window.scrollTo(0, keepScrollY); }catch(e){}
+  }
+  lastRenderPath = path.join('/');
 }
 
 /* The motivation line is a <textarea> (an <input> cannot wrap), so its height must follow the
