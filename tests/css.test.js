@@ -32,6 +32,17 @@ function splitCss(html) {
     return { selectors, body: m[2] };
   }).filter(Boolean);
 }
+/* The full <style> text (with comments), for guards that must see comments. */
+function rawCss(html) {
+  return [...html.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/g)].map(m => m[1]).join('\n');
+}
+/* CSS without block comments — the splitCss parser treats a leading comment as part of
+   the selector text, which would confuse guards that match selector prefixes. Returns
+   the HTML with the <style> tags intact, so splitCss() can still find the blocks. */
+function cssNoComments(html) {
+  return html.replace(/<style[^>]*>([\s\S]*?)<\/style>/g,
+    (m) => m.replace(/\/\*[\s\S]*?\*\//g, ''));
+}
 /* id of a selector's subject — '#btnEdit.icon-btn' → 'btnEdit' */
 function subjectId(sel) {
   const m = sel.match(/(^|[\s>])#([A-Za-z0-9_-]+)/);
@@ -253,6 +264,83 @@ test('CSS guard: hover feedback is gated to real pointers, so no touch button ca
    «Перемещение» светится акцентом. Третья линия обороны не зависит от
    медиа-фич: документ помечается на первом touchstart, ховеры глушатся
    классом; цвета режимов (.active) остаются — они вне :not(). */
+test('CSS guard: no // comments inside <style> (they invalidate whole rules)', () => {
+  // Аудит: внутри CSS были //-комментарии — невалидный синтаксис. Парсер браузера
+  // отбрасывает правило, на котором стоит такая строка, целиком: .touch-mode
+  // .wheel-sector-hit:hover и .touch-mode .sphere-reminder-actions… молча не работали.
+  const css = rawCss(HTML);
+  const bad = [];
+  css.split('\n').forEach((line, i) => {
+    if (/^\s*\/\//.test(line)) bad.push(`line ${i + 1}: ${line.trim().slice(0, 60)}`);
+  });
+  assert.deepEqual(bad, [],
+    `// inside CSS is invalid syntax — the rule it sits on is dropped by the parser: ${bad.join('; ')}`);
+  // And the two rules that were lost must actually parse now.
+  const rules = splitCss(cssNoComments(HTML));
+  const touchRules = rules.filter(r => r.selectors.some(s => /^\.touch-mode /.test(s)));
+  assert.ok(touchRules.some(r => r.selectors.some(s => /\.wheel-sector-hit:hover/.test(s))),
+    'the .touch-mode .wheel-sector-hit:hover rule must survive the parser');
+  assert.ok(touchRules.some(r => r.selectors.some(s => /\.sphere-reminder-actions/.test(s))),
+    'the .touch-mode .sphere-reminder-actions rule must survive the parser');
+});
+
+/* Аудит: ховер-правила вне гейта (hover: hover) and (pointer: fine) залипают на
+   тач-устройствах после тапа (баг v1.1.87, «↕ голубая в PWA»). Сторож: каждое
+   :hover-правило с цветом/рамкой либо внутри гейта, либо в списке .touch-mode. */
+test('CSS guard: every paint-changing :hover rule is gated or neutralised for touch', () => {
+  const rules = splitCss(cssNoComments(HTML));
+  const isGated = (r) => r.selectors.join(' ').startsWith('@media (hover: hover) and (pointer: fine)');
+  const isTouchNeutral = (r) => r.selectors.some(s => /^\.touch-mode /.test(s));
+  const strays = [];
+  rules.forEach(r => {
+    if (isGated(r) || isTouchNeutral(r)) return;
+    if (/\[data-tip\]/.test(r.selectors.join(' '))) return; // tooltip bubble has its own rules
+    if (/::file-selector-button|::after|::before/.test(r.selectors.join(' '))) return;
+    r.selectors.forEach(s => {
+      if (/:hover/.test(s) && /color|background|border|fill|opacity|transform/.test(r.body)) {
+        strays.push(s);
+      }
+    });
+  });
+  assert.deepEqual(strays, [],
+    `these :hover rules paint outside the hover/pointer gate and stick after a tap on iOS/Android: ${strays.join(', ')}`);
+});
+
+/* Аудит: тап-таргеты 18–24px вместо ≥44px на частых действиях (.chk, .star-btn,
+   .priority-remove, .crumb). Прозрачный ::after{inset:-Npx} доводит зону до 44px,
+   не меняя вид. Сторож: у каждого такого элемента есть и position:relative, и ::after. */
+test('CSS guard: the small frequent targets carry a ≥44px hit area', () => {
+  const rules = splitCss(cssNoComments(HTML));
+  const find = (sel) => rules.find(r => r.selectors.includes(sel));
+  ['.chk', '.star-btn', '.priority-remove', '.breadcrumb span.crumb'].forEach(sel => {
+    const base = find(sel);
+    assert.ok(base, `${sel} rule must exist`);
+    assert.match(base.body, /position\s*:\s*relative/,
+      `${sel} needs position:relative so its hit-area ::after anchors to it`);
+    const after = find(`${sel}::after`);
+    assert.ok(after, `${sel}::after hit-area rule must exist`);
+    assert.match(after.body, /inset\s*:\s*-\d+px/,
+      `${sel}::after must expand the tap target (inset:-Npx)`);
+    // Math check: on at least one axis the visible box plus the inset must reach 44px.
+    const insets = [...after.body.matchAll(/inset\s*:\s*-(\d+)px(?:\s+-(\d+)px)?/g)]
+      .map(m => [Number(m[1]), m[2] ? Number(m[2]) : Number(m[1])]);
+    const bestInset = Math.max(...insets.flat());
+    // The real box is width/height when present; font-size is the fallback for bare text
+    // glyphs (.star-btn, .priority-remove) that have no explicit box.
+    const box = [...base.body.matchAll(/(?:width|height)\s*:\s*(\d+)px/g)].map(m => Number(m[1]));
+    const font = [...base.body.matchAll(/font-size\s*:\s*(\d+)px/g)].map(m => Number(m[1]));
+    // A padded text chip (breadcrumb) has no explicit box: padding + the inherited line box
+    // is its size, so fall back to padding×2 + a conservative 13px line height.
+    const pad = [...base.body.matchAll(/padding\s*:\s*(\d+)px/g)].map(m => Number(m[1]));
+    const measured = box.length ? box : (font.length ? font : pad.map(p => p * 2 + 13));
+    assert.ok(measured.length > 0, `${sel}: no measurable size found`);
+    measured.forEach(size => {
+      assert.ok(size + 2 * bestInset >= 44,
+        `${sel}: ${size}px + 2×${bestInset}px must reach ≥44px on one axis, got ${size + 2 * bestInset}px`);
+    });
+  });
+});
+
 test('CSS guard: the touch-mode class neutralises every stuck hover', () => {
   const rules = splitCss(HTML);
   const move = rules.find(r => r.selectors.includes('.touch-mode #btnMove:hover:not(.active)'));

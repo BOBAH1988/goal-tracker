@@ -185,13 +185,17 @@
     background:none; border:1px solid transparent; border-radius:8px; padding:4px; font-size:20px;
     line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center; flex:none;
   }
-  .topbar .lang-option:hover{background:var(--card); border-color:var(--border);}
+  @media (hover: hover) and (pointer: fine){
+    .topbar .lang-option:hover{background:var(--card); border-color:var(--border);}
+  }
   .topbar .lang-option.active{border-color:var(--accent); box-shadow:0 0 0 1px var(--accent);}
   .topbar .menu-item{
     background:none; border:none; color:var(--text); border-radius:8px; padding:8px; font-size:13px;
     cursor:pointer; text-align:left; white-space:normal; word-break:break-word;
   }
-   .topbar .menu-item:hover{background:var(--card);}
+  @media (hover: hover) and (pointer: fine){
+    .topbar .menu-item:hover{background:var(--card);}
+  }
   /* Same horizontal padding (8px) as .menu-item above, so the flag/theme rows line up flush with
      the text items instead of sitting slightly indented relative to them. */
   .menu-lang-row{display:flex; gap:4px; justify-content:flex-start; padding:8px 8px 0; margin-top:4px; border-top:1px solid var(--border);}
@@ -200,7 +204,9 @@
     background:none; border:1px solid transparent; border-radius:8px; padding:4px; font-size:18px;
     line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center;
   }
-  .topbar .theme-option:hover{background:var(--card); border-color:var(--border);}
+  @media (hover: hover) and (pointer: fine){
+    .topbar .theme-option:hover{background:var(--card); border-color:var(--border);}
+  }
   .topbar .theme-option.active{border-color:var(--accent); box-shadow:0 0 0 1px var(--accent);}
    /* The top-right trio — ☰ menu, search, account — ONE box, ONE glyph size, ONE border.
       Before this they were three different controls in the same corner: ☰ at 24px with a
@@ -297,10 +303,10 @@
     .touch-mode .add-goal-wrap #btnArchive:hover:not(.active),
     .touch-mode .topbar button:hover,
     .touch-mode .goal-row .actions button:hover{color:var(--muted); border-color:var(--border);}
-    // Мягкое напоминание: у его второй кнопки hover меняет только рамку, поэтому в тач-режиме
-    // гасим именно её (акцентная кнопка «Открыть сферу» вне списка — её цвет не ховерный).
+    /* Мягкое напоминание: у его второй кнопки hover меняет только рамка, поэтому в тач-режиме
+       гасим именно её (акцентная кнопка «Открыть сферу» вне списка — её цвет не ховерный). */
     .touch-mode .sphere-reminder-actions button:not(.sphere-reminder-open):hover{border-color:var(--border);}
-    // Тач-режим гасит и ховеры нового колеса/панели: сектор, строки дерева и кнопка «Свернуть».
+    /* Тач-режим гасит и ховеры нового колеса/панели: сектор, строки дерева и кнопка «Свернуть». */
     .touch-mode .wheel-sector-hit:hover{fill-opacity:0;}
     .touch-mode .sphere-tree-item:hover{border-color:var(--border);}
     .touch-mode .sphere-tree-close:hover{color:var(--text); border-color:var(--border);}
@@ -324,12 +330,16 @@
     position:absolute; top:8px; right:8px; background:none; border:none; color:var(--muted);
     font-size:18px; cursor:pointer; line-height:1; padding:6px; flex:none;
   }
-  .auth-panel button.auth-close:hover{color:var(--text);}
+  @media (hover: hover) and (pointer: fine){
+    .auth-panel button.auth-close:hover{color:var(--text);}
+  }
   /* Templates modal panel */
   .auth-panel.templates-panel{max-width:420px;}
   .templates-list{display:flex; flex-direction:column; gap:8px;}
   .template-item{display:flex; align-items:flex-start; gap:12px; padding:10px 12px; background:var(--card2); border:1px solid var(--border); border-radius:10px; cursor:pointer; transition:background .15s, border-color .15s;}
-  .template-item:hover{background:var(--card); border-color:var(--accent);}
+  @media (hover: hover) and (pointer: fine){
+    .template-item:hover{background:var(--card); border-color:var(--accent);}
+  }
   .template-item input[type="checkbox"]{flex:none; margin-top:2px; width:18px; height:18px; accent-color:var(--accent);}
   .template-info{flex:1; min-width:0;}
   .template-info strong{display:block; font-size:14px; color:var(--text); margin-bottom:2px;}
@@ -360,9 +370,11 @@
     background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:8px;
     padding:9px 14px; font-size:12px; cursor:pointer; white-space:nowrap; flex:1;
   }
-  .auth-panel button:hover{color:var(--text); border-color:var(--accent);}
   .auth-panel button.btn-danger{color:var(--red); border-color:var(--red); background:rgba(229,100,90,0.14);}
-  .auth-panel button.btn-danger:hover{background:rgba(229,100,90,0.24); border-color:var(--red);}
+  @media (hover: hover) and (pointer: fine){
+    .auth-panel button:hover{color:var(--text); border-color:var(--accent);}
+    .auth-panel button.btn-danger:hover{background:rgba(229,100,90,0.24); border-color:var(--red);}
+  }
   .auth-panel button:disabled{opacity:.5; cursor:not-allowed;}
   .auth-error{color:var(--red); font-size:12px;}
   .auth-hint{color:var(--muted); font-size:12px;}
@@ -380,7 +392,9 @@
     padding:9px 10px; font-size:13px; cursor:pointer; text-align:left; line-height:1.3;
     flex:none; white-space:normal;
   }
-  .auth-panel .search-result:hover{border-color:var(--accent);}
+  @media (hover: hover) and (pointer: fine){
+    .auth-panel .search-result:hover{border-color:var(--accent);}
+  }
   .auth-panel .search-result.archived{opacity:.5;}
   .search-kind{color:var(--muted); margin-right:6px;}
   .auth-link{
@@ -411,7 +425,9 @@
     background:none; border:none; color:var(--text); border-radius:6px; padding:9px 12px; font-size:13px;
     cursor:pointer; text-align:left; white-space:nowrap;
   }
-  .account-menu button:hover{background:var(--card);}
+  @media (hover: hover) and (pointer: fine){
+    .account-menu button:hover{background:var(--card);}
+  }
   .account-menu button.danger{color:var(--red);}
   /* Home goals sort dropdown — opened by the #btnFilter button next to reorder. Mirrors
      .account-menu styling; options get a check mark when active. */
@@ -425,7 +441,9 @@
     background:none; border:none; color:var(--text); border-radius:6px; padding:9px 12px; font-size:13px;
     cursor:pointer; text-align:left; white-space:nowrap; display:flex; align-items:center; justify-content:space-between; gap:10px;
   }
-  .filter-menu button:hover{background:var(--card);}
+  @media (hover: hover) and (pointer: fine){
+    .filter-menu button:hover{background:var(--card);}
+  }
   .filter-menu button.active{color:var(--accent); font-weight:600;}
   .filter-menu button.active::after{content:'✓';}
   .verify-banner{
@@ -437,7 +455,9 @@
     background:var(--card2); border:1px solid var(--border); color:var(--text); border-radius:8px;
     padding:5px 10px; font-size:12px; cursor:pointer; white-space:nowrap;
   }
-  .verify-banner button:hover{background:var(--card);}
+  @media (hover: hover) and (pointer: fine){
+    .verify-banner button:hover{background:var(--card);}
+  }
   .verify-banner button:disabled{opacity:.5; cursor:not-allowed;}
   .verify-msg{color:var(--muted);}
   .edit-account-panel{max-width:380px;}
@@ -449,18 +469,26 @@
   /* ===== Breadcrumb & relocate picker ===== */
   .breadcrumb-row{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:16px;}
   .breadcrumb{display:flex; gap:6px; align-items:center; flex-wrap:wrap; font-size:13px; color:var(--muted);}
-  .breadcrumb span.crumb{cursor:pointer; padding:3px 8px; border-radius:6px;}
-  .breadcrumb span.crumb:hover{background:var(--card2); color:var(--text);}
+  .breadcrumb span.crumb{cursor:pointer; padding:3px 8px; border-radius:6px; position:relative;}
+  /* Аудит: хлебная крошка ~19px высотой — ±13px по вертикали дают 45px тап-таргет. */
+  .breadcrumb span.crumb::after{content:''; position:absolute; inset:-13px 0;}
+  @media (hover: hover) and (pointer: fine){
+    .breadcrumb span.crumb:hover{background:var(--card2); color:var(--text);}
+  }
   .breadcrumb span.sep{opacity:.4;}
   .back-btn{
     background:var(--card2); border:1px solid var(--border); color:var(--text); border-radius:8px;
     padding:5px 12px; font-size:13px; cursor:pointer; white-space:nowrap; flex-shrink:0;
   }
-  .back-btn:hover{border-color:var(--accent);}
+  @media (hover: hover) and (pointer: fine){
+    .back-btn:hover{border-color:var(--accent);}
+  }
   .relocate-source-name{font-size:13px; color:var(--muted);}
   .relocate-breadcrumb{display:flex; gap:6px; align-items:center; flex-wrap:wrap; font-size:13px; color:var(--muted); padding:8px 0; border-top:1px solid var(--border); border-bottom:1px solid var(--border);}
   .relocate-breadcrumb .relocate-crumb{cursor:pointer; padding:3px 6px; border-radius:6px;}
-  .relocate-breadcrumb .relocate-crumb:hover{background:var(--card2); color:var(--text);}
+  @media (hover: hover) and (pointer: fine){
+    .relocate-breadcrumb .relocate-crumb:hover{background:var(--card2); color:var(--text);}
+  }
   .relocate-breadcrumb .sep{opacity:.4;}
   .relocate-list{display:flex; flex-direction:column; gap:6px; max-height:240px; overflow-y:auto;}
   /* Scoped to .auth-panel (raising specificity above the plain ".auth-panel button" rule, which
@@ -470,12 +498,16 @@
     background:var(--card2); border:1px solid var(--border); color:var(--text); border-radius:8px;
     padding:9px 12px; font-size:13px; cursor:pointer; text-align:left; white-space:normal; flex:none; width:100%;
   }
-  .auth-panel .relocate-row:hover{border-color:var(--accent); color:var(--accent);}
+  @media (hover: hover) and (pointer: fine){
+    .auth-panel .relocate-row:hover{border-color:var(--accent); color:var(--accent);}
+  }
   .auth-panel .relocate-here-btn{
     background:var(--accent); border:1px solid var(--accent); color:#fff; font-weight:600;
     white-space:normal; flex:none; width:100%;
   }
-  .auth-panel .relocate-here-btn:hover{opacity:.9; border-color:var(--accent);}
+  @media (hover: hover) and (pointer: fine){
+    .auth-panel .relocate-here-btn:hover{opacity:.9; border-color:var(--accent);}
+  }
   /* ===== Home: overall progress & priority block ===== */
   .overall{
     background:var(--card); border:1px solid var(--border); border-radius:16px; padding:12px 16px; margin-bottom:14px;
@@ -500,26 +532,40 @@
   .priority-row{display:flex; align-items:center; gap:12px; touch-action:manipulation;}
   .priority-row .chk{margin-top:0;}
   .priority-name{flex:1; font-size:14px; line-height:1.4; cursor:pointer; min-width:0; overflow-wrap:break-word; word-break:break-word;}
-  .priority-name:hover{color:var(--accent);}
+  @media (hover: hover) and (pointer: fine){
+    .priority-name:hover{color:var(--accent);}
+  }
   .priority-name.done{color:var(--muted); text-decoration:line-through;}
   .priority-date{font-size:12px; color:var(--muted); white-space:nowrap; flex-shrink:0;}
   .priority-remove{
     background:none; border:none; color:var(--muted); font-size:14px; line-height:1; cursor:pointer;
-    padding:2px; flex-shrink:0;
+    padding:2px; flex-shrink:0; position:relative;
   }
-  .priority-remove:hover{color:var(--red);}
+  /* Аудит: «✕» приоритета 14px — ±15px по горизонтали дают 44px; по вертикали ±8px,
+     чтобы хит-зоны соседних строк списка (ряды 28px) не перекрывались. */
+  .priority-remove::after{content:''; position:absolute; inset:-8px -15px;}
+  @media (hover: hover) and (pointer: fine){
+    .priority-remove:hover{color:var(--red);}
+  }
   /* ===== Leaf detail: title, stars, bars, node header ===== */
   .leaf-title-row{display:flex; align-items:flex-start; justify-content:space-between; gap:8px;}
   .leaf-title-row .leaf-title{min-width:0; overflow-wrap:break-word; word-break:break-word;}
   .star-btn{
     background:none; border:none; color:var(--muted); font-size:18px; line-height:1; cursor:pointer;
-    padding:0; flex-shrink:0;
+    padding:0; flex-shrink:0; position:relative;
   }
-  .star-btn:hover{color:var(--yellow);}
+  /* Аудит: звёздочка 18px — ±13px по вертикали дают 44px тап-таргет; по горизонтали
+     ±6px, чтобы хит-зоны «архив» и «приоритет» (рядом, gap 8px) не перекрывались. */
+  .star-btn::after{content:''; position:absolute; inset:-13px -6px;}
+  @media (hover: hover) and (pointer: fine){
+    .star-btn:hover{color:var(--yellow);}
+  }
   .star-btn.active{color:var(--yellow);}
   /* Archive uses its own color (not the priority star's yellow) so the two toggles read as
      distinct actions even though they share the same button styling. */
-  #btnArchive:hover{color:var(--accent);}
+  @media (hover: hover) and (pointer: fine){
+    #btnArchive:hover{color:var(--accent);}
+  }
   #btnArchive.active{color:var(--accent);}
    .checklist-star{font-size:15px;}
    /* «Хорошее сегодня» journal module — styled like «Карта желаний» (same .section-title-row /
@@ -535,7 +581,9 @@
       padding:4px; min-width:32px; font-size:14px; cursor:pointer;
       display:inline-flex; align-items:center; justify-content:center;
     }
+  @media (hover: hover) and (pointer: fine){
     #btnGoodTodayCalendar.icon-btn:hover{color:var(--text); border-color:var(--accent);}
+  }
     /* Native date picker (jump-to-date in history) — themed, not browser-white. */
     #goodTodayDatePicker{
       position:absolute; z-index:60; top:0; left:0;
@@ -573,7 +621,9 @@
        border-radius:10px; border:1px solid var(--border); background:var(--card2); color:var(--muted);
        cursor:pointer; font-size:13px; display:inline-flex; align-items:center; justify-content:center;
      }
+  @media (hover: hover) and (pointer: fine){
      .good-today-history-nav .icon-btn:hover{color:var(--text); border-color:var(--accent);}
+  }
      /* Мягкое напоминание о сфере («К сфере … давно не возвращались»). Ненавязчивая карточка
         над «Важными сферами жизни»: тёмная тема, светлая и розовая — всё на переменных, без
         предупреждающих красных и оценок. Кнопки — как у «Хорошего сегодня»: тач-цели 44px. */
@@ -607,11 +657,13 @@
       background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:8px;
       padding:4px; min-width:32px; font-size:14px; line-height:1; display:inline-flex; align-items:center; justify-content:center;
     }
-    .good-today-entry-actions .icon-btn:hover{
-      color:var(--text); border-color:var(--accent);
-    }
-    [data-goodtoday-delete].icon-btn:hover{
-      border-color:var(--red); color:var(--red);
+    @media (hover: hover) and (pointer: fine){
+      .good-today-entry-actions .icon-btn:hover{
+        color:var(--text); border-color:var(--accent);
+      }
+      [data-goodtoday-delete].icon-btn:hover{
+        border-color:var(--red); color:var(--red);
+      }
     }
    .good-today-last-entry{
      margin-top:12px; padding-top:10px; border-top:1px solid var(--border); font-size:13px; color:var(--muted);
@@ -647,16 +699,18 @@
      border:1px solid var(--border); border-radius:8px; padding:8px 10px;
      background:var(--card2); cursor:pointer;
    }
-    .good-today-history-item:hover{background:rgba(0,0,0,.03);}
-    .good-today-history-item.selected{background:rgba(91,140,255,.10); border-color:var(--accent);}
+    @media (hover: hover) and (pointer: fine){
+      .good-today-history-item:hover{background:rgba(0,0,0,.03);}
+    }
     .good-today-history-item{display:flex; align-items:center; gap:10px;}
     .good-today-history-item .good-today-entry-text{flex:1; min-width:0;}
     .good-today-history-delete{
       flex:none; background:none; border:none; color:var(--muted);
       font-size:14px; line-height:1; cursor:pointer; padding:4px;
     }
-    .good-today-history-delete:hover{color:var(--red);}
-   .good-today-history-empty{color:var(--muted); font-size:13px; text-align:center; padding:14px;}
+    @media (hover: hover) and (pointer: fine){
+      .good-today-history-delete:hover{color:var(--red);}
+    }
     /* «Хорошее сегодня» mood badge in the today block — progressive text based on done count.
        0 → «Начнём?» (red), 1 → «Хорошее начало» (dark yellow), 2 → «Осталось чуть-чуть» (lighter yellow),
        3 → «Отличный день!» (soft green). No icons — text only. */
@@ -716,15 +770,25 @@
     background:var(--card); border:1px solid var(--border); border-radius:14px; padding:16px;
     cursor:pointer; transition:border-color .15s, transform .1s;
   }
-  .card:hover{border-color:var(--accent); transform:translateY(-1px);}
   .card.editable{cursor:default; border-color:var(--red); box-shadow:0 0 0 1px var(--red);}
-  .card.editable:hover{transform:none; border-color:var(--red);}
   .card.deletable{cursor:pointer; border-color:var(--red); box-shadow:0 0 0 1px var(--red); background:rgba(229,100,90,0.14);}
-  .card.deletable:hover{border-color:var(--red); background:rgba(229,100,90,0.24);}
   .card.locked{cursor:default; opacity:.5;}
-  .card.locked:hover{transform:none; border-color:var(--border);}
   .card.selectable{cursor:pointer; border-color:var(--accent); box-shadow:0 0 0 1px var(--accent); background:rgba(91,140,255,0.14);}
-  .card.selectable:hover{border-color:var(--accent); background:rgba(91,140,255,0.24);}
+  .card.movable{
+    cursor:grab;
+    user-select:none; -webkit-user-select:none;
+    -webkit-touch-callout:none;
+  }
+  .card.archived{opacity:.45;}
+  @media (hover: hover) and (pointer: fine){
+    .card:hover{border-color:var(--accent); transform:translateY(-1px);}
+    .card.editable:hover{transform:none; border-color:var(--red);}
+    .card.deletable:hover{border-color:var(--red); background:rgba(229,100,90,0.24);}
+    .card.locked:hover{transform:none; border-color:var(--border);}
+    .card.selectable:hover{border-color:var(--accent); background:rgba(91,140,255,0.24);}
+    .card.movable:hover{border-color:var(--accent);}
+    .card.archived:hover{opacity:.6;}
+  }
   .card .title{font-size:15px; font-weight:600; margin-bottom:8px; display:flex; justify-content:space-between; gap:8px;}
   /* Flex items default to min-width:auto, which refuses to shrink below the text's full
      (unwrapped) width — with a long goal name that pushes the card wider than its grid column
@@ -734,16 +798,8 @@
   .card .sub{font-size:12px; color:var(--muted); margin-bottom:10px; display:flex; justify-content:space-between;}
   .card .bar{margin-top:2px;}
   .card[data-nav], .card[data-drag-idx]{touch-action:pan-y;}
-  .card.movable{
-    cursor:grab;
-    user-select:none; -webkit-user-select:none;
-    -webkit-touch-callout:none;
-  }
-  .card.movable:hover{border-color:var(--accent);}
   /* Archived goals stay visible (dimmed, not hidden) — computePercent/doneCount already leave them
      out of the rating math (see activeChildren), this is just the visual signal to match. */
-  .card.archived{opacity:.45;}
-  .card.archived:hover{opacity:.6;}
   .leaf-row.archived{opacity:.5;}
   .dragging{
     box-shadow:0 10px 22px rgba(0,0,0,.4); opacity:.85; cursor:grabbing;
@@ -753,7 +809,9 @@
     background:var(--card2); border:1px solid var(--border); border-radius:6px; font-size:13px;
     padding:2px 7px; cursor:pointer; line-height:1.4;
   }
-  .edit-pencil:hover{border-color:var(--accent);}
+  @media (hover: hover) and (pointer: fine){
+    .edit-pencil:hover{border-color:var(--accent);}
+  }
   /* ===== Leaf rows: inline edit, checkbox, due dates ===== */
   .goal-input{
     background:transparent; border:none; border-bottom:1px dashed var(--red); color:var(--text);
@@ -795,7 +853,11 @@
   .chk{
     width:20px; height:20px; border-radius:5px; border:2px solid var(--muted); flex:none; cursor:pointer;
     display:flex; align-items:center; justify-content:center; font-size:12px; margin-top:2px; user-select:none;
+    position:relative;
   }
+  /* Аудит: чекбокс 20×20 промахивается пальцем. Прозрачная область ±12px доводит
+     тап-таргет до 44px, не меняя вид (::after невидим, фон/ховер остаются на .chk). */
+  .chk::after{content:''; position:absolute; inset:-12px;}
   .chk.done{background:var(--green); border-color:var(--green); color:#0b0e17; font-weight:700;}
   .leaf-body{flex:1;}
   .leaf-title{font-size:14px; line-height:1.4;}
@@ -811,13 +873,17 @@
   .leaf-meta button, .nav-arrow{
     background:none; border:1px solid var(--border); color:var(--muted); border-radius:6px; padding:2px 8px; font-size:12px; cursor:pointer;
   }
-  .leaf-meta button:hover{color:var(--text); border-color:var(--accent);}
+  @media (hover: hover) and (pointer: fine){
+    .leaf-meta button:hover{color:var(--text); border-color:var(--accent);}
+  }
   .add-checklist-btn{
     margin-top:12px; background:var(--accent); color:#fff; border:none; border-radius:10px;
     padding:10px 16px; font-size:13px; font-weight:600; cursor:pointer; display:inline-flex;
     align-items:center; gap:6px;
   }
-  .add-checklist-btn:hover{opacity:.9;}
+  @media (hover: hover) and (pointer: fine){
+    .add-checklist-btn:hover{opacity:.9;}
+  }
   /* ===== Sections: empty state, titles, add-rows ===== */
   .empty-state{color:var(--muted); font-size:13px; padding:20px; text-align:center; border:1px dashed var(--border); border-radius:12px;}
   /* ===== Wish map («Карта желаний») — independent vision board under the wheel ===== */
@@ -830,9 +896,13 @@
     background:var(--accent); color:#fff; border:none; border-radius:10px;
     padding:12px 20px; font-size:14px; font-weight:600; cursor:pointer; min-height:44px;
   }
-  .wish-add-btn:hover{opacity:.9;}
+  @media (hover: hover) and (pointer: fine){
+    .wish-add-btn:hover{opacity:.9;}
+  }
   .wish-print-btn{background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:8px; padding:5px 9px; font-size:12px; cursor:pointer; display:inline-flex; align-items:center; gap:5px; margin-top:8px; white-space:nowrap;}
-  .wish-print-btn:hover{color:var(--text); border-color:var(--accent);}
+  @media (hover: hover) and (pointer: fine){
+    .wish-print-btn:hover{color:var(--text); border-color:var(--accent);}
+  }
   .wish-print-btn:active{background:var(--accent); color:#fff;}
   /* Columns: 1 on very narrow screens, 2 on phones (default), 3 on tablets, 4 on desktop. */
   .wish-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:10px;}
@@ -904,7 +974,10 @@
     display:inline-flex; align-items:center; justify-content:center;
     background:var(--card2); color:var(--muted);
   }
-  .wish-manage-btn:hover{color:var(--text); border-color:var(--accent);}
+  @media (hover: hover) and (pointer: fine){
+    .wish-manage-btn:hover{color:var(--text); border-color:var(--accent);}
+    [data-wish-manage-del].wish-manage-btn:hover{color:var(--red); border-color:var(--red);}
+  }
   /* Manual reorder (manager): the row picked up for a move gets the accent ring; the hint says
      plainly that the next tap decides where it lands. */
   .wish-manage-row.is-moving{border-color:var(--accent); box-shadow:0 0 0 1px var(--accent);}
@@ -914,7 +987,6 @@
   .wish-manage-row[data-wish-place]{cursor:pointer;}
   .wish-place-hint{flex:1; min-width:0; font-size:12px; color:var(--muted); text-align:right; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
   .wish-place-glyph{flex:none; color:var(--accent); font-size:20px; line-height:1;}
-  [data-wish-manage-del].wish-manage-btn:hover{color:var(--red); border-color:var(--red);}
   .wish-form{
     background:var(--card); border:1px solid var(--border); border-radius:12px;
     padding:14px; display:flex; flex-direction:column; gap:10px; margin-bottom:12px;
@@ -933,12 +1005,14 @@
     background:var(--card2); border:1px solid var(--border); color:var(--text);
     border-radius:8px; padding:8px 14px; font-size:13px; cursor:pointer; margin-right:10px;
   }
-  .wish-file-label input[type=file]::file-selector-button:hover{border-color:var(--accent);}
+  @media (hover: hover) and (pointer: fine){
+    .wish-file-label input[type=file]::file-selector-button:hover{border-color:var(--accent);}
+    .wish-file-label input[type=file]::-webkit-file-upload-button:hover{border-color:var(--accent);}
+  }
   .wish-file-label input[type=file]::-webkit-file-upload-button{
     background:var(--card2); border:1px solid var(--border); color:var(--text);
     border-radius:8px; padding:8px 14px; font-size:13px; cursor:pointer; margin-right:10px;
   }
-  .wish-file-label input[type=file]::-webkit-file-upload-button:hover{border-color:var(--accent);}
   .wish-form input[type=text]{
     background:var(--card2); border:1px solid var(--border); color:var(--text);
     border-radius:8px; padding:10px; font-size:16px; outline:none; width:100%;
@@ -967,7 +1041,9 @@
     border:none; border-radius:50%; background:rgba(6,9,16,.7); color:#fff;
     font-size:18px; cursor:pointer; line-height:1;
   }
-  .wish-lightbox-close:hover{background:rgba(6,9,16,.9);}
+  @media (hover: hover) and (pointer: fine){
+    .wish-lightbox-close:hover{background:rgba(6,9,16,.9);}
+  }
   /* Personal photo («isUserPhoto»): same size/ratio/rectangular format as every other card —
      only the accent outline tells it apart (no badge, so the board stays uncluttered). */
   .wish-card-me{outline:2px solid var(--accent); outline-offset:-2px;}
@@ -985,7 +1061,9 @@
      background:var(--card2); border:1px solid var(--border); color:var(--text);
      border-radius:8px; padding:4px 10px; font-size:12px; cursor:pointer; white-space:nowrap;
    }
-   .wish-retry-btn:hover{color:var(--text); border-color:var(--accent);}
+  @media (hover: hover) and (pointer: fine){
+    .wish-retry-btn:hover{color:var(--text); border-color:var(--accent);}
+  }
    .wish-upload-note{margin-top:10px; text-align:center;}
   /* Calm limit note: the board holds at most WISH_MAX_CARDS images. */
   .wish-limit-note{margin-top:10px; color:var(--muted); font-size:12.5px; text-align:center;}
@@ -1030,7 +1108,9 @@
   .add-sub button{
     background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:8px; padding:8px 14px; font-size:13px; cursor:pointer;
   }
-  .add-sub button:hover{color:var(--text); border-color:var(--accent);}
+  @media (hover: hover) and (pointer: fine){
+    .add-sub button:hover{color:var(--text); border-color:var(--accent);}
+  }
   footer{color:var(--muted); font-size:11px; text-align:center; margin-top:24px; padding-top:4px; opacity:.7;}
   /* The feedback link is part of the footer text, not a button: it inherits the muted 11px look in
      both themes, adds only a thin underline as an affordance, and turns accent on tap — no padding,
@@ -1094,9 +1174,7 @@
     background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:8px;
     padding:6px 12px; font-size:12px; cursor:pointer; white-space:nowrap;
   }
-  #btnAddGoal:hover, #btnTemplates:hover, #btnWishAdd:hover, #btnWishManage:hover, #btnWishGrid:hover, #btnWishPrint:hover, #btnWishShare:hover, #btnWheelPrint:hover, #btnWheelShare:hover, #btnGoodTodayAdd:hover{color:var(--text); border-color:var(--accent);}
   #btnAddGoal:disabled{opacity:.5; cursor:not-allowed;}
-  #btnAddGoal:disabled:hover{color:var(--muted); border-color:var(--border);}
   .add-goal-msg{color:var(--red); font-size:12px; white-space:nowrap;}
   /* Undo-delete toast. Lives in document.body (outside #app), centered at the bottom, so
      render()'s innerHTML rebuild never destroys it mid-flight. */
@@ -1113,10 +1191,7 @@
     background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:8px;
     padding:6px 12px; font-size:12px; cursor:pointer; white-space:nowrap;
   }
-  #btnAddChild:hover{color:var(--text); border-color:var(--accent);}
-  #btnChecklistAdd:hover{color:var(--text); border-color:var(--accent);}
   #btnAddChild:disabled{opacity:.5; cursor:not-allowed;}
-  #btnAddChild:disabled:hover{color:var(--muted); border-color:var(--border);}
   /* Compact "+"/"−" icon style for Add/Delete, used instead of full text labels to save room on
      narrow (phone) screens. */
     #btnAddGoal.icon-btn, #btnTemplates.icon-btn, #btnWishAdd.icon-btn, #btnWishManage.icon-btn, #btnWishGrid.icon-btn, #btnWishPrint.icon-btn, #btnWishShare.icon-btn, #btnWheelPrint.icon-btn, #btnWheelShare.icon-btn, #btnAddChild.icon-btn, #btnDelete.icon-btn, #btnEdit.icon-btn, #btnAddSubgoal.icon-btn, #btnDeleteChecklist.icon-btn, #btnMove.icon-btn, #btnMoveChecklist.icon-btn, #btnRelocate.icon-btn, #btnChecklistAdd.icon-btn, #btnFilter.icon-btn, .add-child-row #btnArchive.icon-btn, .add-goal-wrap #btnArchive.icon-btn, #btnSearch.icon-btn, #btnGoodTodayHistory.icon-btn, #btnGoodTodayWeekHistory.icon-btn, #btnGoodTodayWeekEdit.icon-btn, #btnGoodTodayAdd.icon-btn, #btnGoodTodayHistoryPagePrevBottom.icon-btn, #btnGoodTodayHistoryPageNextBottom.icon-btn{
@@ -1151,7 +1226,9 @@
     user-select:none; -webkit-user-select:none;
     -webkit-touch-callout:none;
   }
-  .checklist-row.movable:hover{border-color:var(--accent);}
+  @media (hover: hover) and (pointer: fine){
+    .checklist-row.movable:hover{border-color:var(--accent);}
+  }
   .move-handle{color:var(--muted); font-size:16px; flex-shrink:0;}
   .checklist-row{
     display:flex; align-items:center; gap:10px; background:var(--card); border:1px solid var(--border);
@@ -1171,11 +1248,13 @@
   .checklist-edit{
     background:none; border:none; color:var(--muted); cursor:pointer; font-size:13px; padding:2px 6px; flex:none;
   }
-  .checklist-edit:hover{color:var(--accent);}
+  @media (hover: hover) and (pointer: fine){
+    .checklist-edit:hover{color:var(--accent);}
+    .checklist-remove:hover{color:var(--red);}
+  }
   .checklist-remove{
     background:none; border:none; color:var(--muted); cursor:pointer; font-size:13px; padding:2px 6px; flex:none;
   }
-  .checklist-remove:hover{color:var(--red);}
   .checklist-add-row{display:flex; gap:8px; margin-top:4px;}
   .checklist-add-row input{
     flex:1; background:var(--card2); border:1px solid var(--border); color:var(--text); border-radius:8px;
@@ -1232,7 +1311,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.2.34';
+const APP_VERSION = '1.2.35';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -1470,6 +1549,7 @@ const STRINGS = {
     maxN: n => `Максимум ${n} целей`,
     minN: n => `Минимум ${n}`,
     deletedMsg: 'Цель удалена',
+    deletedItemMsg: 'Пункт удалён',
     undoBtn: 'Отменить',
     searchTitle: 'Поиск',
     searchPlaceholder: 'Название цели или пункта…',
@@ -1787,6 +1867,7 @@ const STRINGS = {
     maxN: n => `Maximum ${n} goals`,
     minN: n => `Minimum ${n}`,
     deletedMsg: 'Goal deleted',
+    deletedItemMsg: 'Item deleted',
     undoBtn: 'Undo',
     searchTitle: 'Search',
     searchPlaceholder: 'Goal or item name…',
@@ -6719,6 +6800,9 @@ function toggleSphereTree(idx){
   // (синхронизируется). Сворачивание — не посещение, ничего не трогаем.
   expandedSphereIdx = opening ? idx : null;
   if(opening){
+    // Аудит: уход в дерево сферы — тоже навигация; режимы страницы (особенно «−»)
+    // не должны переживать её и удалять карточку в дереве вместо перехода внутрь.
+    exitAllModes();
     // v1.2.0: «Важные сферы жизни» свёрнуты по умолчанию, а дерево сферы рендерится
     // ВНУТРИ этой секции — без раскрытия клик по сектору колеса выглядел бы как «ничего
     // не произошло». Открытие сектора раскрывает и секцию (state — тоже сохранится).
@@ -6794,6 +6878,7 @@ function attachWheelSectorHandlers(){
   document.querySelectorAll('[data-tree-nav]').forEach(el=>{
     el.addEventListener('click', (e)=>{
       e.stopPropagation();
+      exitAllModes();
       const parts = (el.dataset.treeNav || '').split(':');
       const s = parseInt(parts[0], 10), c = parseInt(parts[1], 10);
       const sphere = state.children[s];
@@ -6885,7 +6970,7 @@ function checklistHTML(list){
           : `<span class="checklist-text ${item.done?'done':''}">${esc(item.text)}</span>`}
         <button class="star-btn checklist-star ${item.priority?'active':''}" data-checklist-priority="${i}" data-tip="${item.priority ? t('tipRemovePriority') : t('tipAddPriority')}" aria-label="${item.priority ? t('tipRemovePriority') : t('tipAddPriority')}">${item.priority ? '⭐' : '☆'}</button>
         <button class="checklist-edit" data-checklist-edit="${i}" data-tip="${t('tipEditItem')}" aria-label="${t('tipEditItem')}"><i class="ti ti-edit" aria-hidden="true"></i></button>
-        <button class="checklist-remove" data-checklist-remove="${i}" title="${t('tipDelete')}" aria-label="${t('tipDelete')}">✕</button>
+        <button class="checklist-remove" data-checklist-remove="${i}" data-tip="${t('tipDelete')}" aria-label="${t('tipDelete')}">✕</button>
       </div>`;
     });
     html += `<form id="checklistAddForm" class="checklist-add-row">
@@ -7084,13 +7169,13 @@ function on(id, event, fn){
 // Undo-delete toast (imperative — see undoToastEl comment in the State section). Builds a
 // self-contained element into document.body, so it survives render()'s innerHTML rebuild;
 // deliberately avoids getElementById so the id-watchdog test never sees a dangling id.
-function showUndoToast(){
+function showUndoToast(msg){
   clearTimeout(undoToastTimer);
   hideUndoToast(); // drop any previous toast so rapid deletes don't stack two toasts
   const toast = document.createElement('div');
   toast.className = 'undo-toast';
   const label = document.createElement('span');
-  label.textContent = t('deletedMsg');
+  label.textContent = msg || t('deletedMsg');
   const btn = document.createElement('button');
   btn.type = 'button';
   btn.textContent = t('undoBtn');
@@ -7928,9 +8013,21 @@ function attachHandlers(){
   attachWishMapHandlers();
   attachGoodTodayHandlers();
 }
+// Аудит: режимы (edit/delete/move/addsub/relocate) переживали навигацию — ушёл по крошке или
+// «Назад» в другую сферу, а тап по карточке там удалял её вместо открытия (в режиме у карточки
+// data-delete-idx вместо data-nav). Любой уход со страницы гасит все пять флагов: режим —
+// свойство страницы, на которой его включили.
+function exitAllModes(){
+  editMode = false;
+  deleteMode = false;
+  addSubMode = false;
+  moveMode = false;
+  relocateMode = false;
+}
 function attachMainViewHandlers(){
   document.querySelectorAll('[data-crumb]').forEach(el=>{
     el.addEventListener('click', ()=>{
+      exitAllModes();
       const c = parseInt(el.dataset.crumb,10);
       path = path.slice(0, c);
       render();
@@ -7939,6 +8036,7 @@ function attachMainViewHandlers(){
   const btnBack = document.getElementById('btnBack');
   if(btnBack){
     btnBack.addEventListener('click', ()=>{
+      exitAllModes();
       path = path.slice(0, -1);
       render();
     });
@@ -8023,6 +8121,7 @@ function attachMainViewHandlers(){
         e.stopPropagation();
         return;
       }
+      exitAllModes();
       const idx = parseInt(el.dataset.nav,10);
       // Every card — leaf or container — opens its own page on click. For leaves this is what
       // exposes the done-toggle, due-date input and "add checklist" button (leafDetailHTML);
@@ -8707,6 +8806,10 @@ function attachLeafHandlers(){
       const node = resolve(path);
       // Удаление пункта чек-листа — правка цели внутри сферы.
       touchSphereAtPath(path);
+      // Snapshot BEFORE mutating: removing the last item can also collapse the leaf back to a
+      // plain checkbox and step `path` up (removeChecklistItem returns true), so one deep copy
+      // rolls the whole thing back via the Undo toast (audit: item deletion had no undo at all).
+      undoSnapshot = { state: structuredCloneFallback(state), path: path.slice() };
       // Last item removed → collapses back to a plain checkbox leaf inside the helper (no
       // phantom `checklist: []`); we only fix up page state when that happens.
       if(removeChecklistItem(node, idx)){
@@ -8715,6 +8818,7 @@ function attachLeafHandlers(){
       }
       saveState();
       render();
+      showUndoToast(t('deletedItemMsg'));
     });
   });
 }
@@ -9712,6 +9816,10 @@ window.addEventListener('beforeinstallprompt', (e)=>{
 window.addEventListener('touchstart', ()=>{
   document.documentElement.classList.add('touch-mode');
 }, { passive: true, once: true });
+</script>
+</body>
+</html>
+e: true, once: true });
 </script>
 </body>
 </html>

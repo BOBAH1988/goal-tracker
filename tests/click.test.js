@@ -137,6 +137,49 @@ test('checklist delete: confirm panel opens, Yes removes the checklist and goes 
   assert.equal(t.app.getPath().length, 0, 'must navigate back one level');
 });
 
+/* Аудит удобства: удаление пункта чек-листа было без отмены — крошечный «✕» сносил
+   строку навсегда. Теперь снимок состояния уходит в undo-тост, и «Отменить» возвращает
+   пункт (включая случай, когда удалён последний пункт и лист схлопнулся в чекбокс). */
+test('checklist item delete: an undo toast restores the removed item (audit fix)', () => {
+  const t = bootDom();
+  t.app.setState({ name: 'root', children: [leaf(false, {
+    name: 'L',
+    checklist: [{ text: 'первый', done: false }, { text: 'второй', done: false }],
+  })] });
+  t.app.setPath([0]);
+  t.window.render();
+  t.click('[data-checklist-remove="1"]');
+  assert.deepEqual(t.app.getState().children[0].checklist.map(i => i.text), ['первый'],
+    'the second item must be deleted');
+  const toast = t.document.querySelector('.undo-toast');
+  assert.ok(toast, 'deleting a checklist item must show the undo toast');
+  assert.match(toast.querySelector('span').textContent, /Пункт удалён/,
+    'the toast says an item was deleted, not a goal');
+  toast.querySelector('button').click();
+  assert.equal(t.app.getState().children[0].checklist.length, 2,
+    'Undo must bring the removed item back');
+  assert.equal(t.app.getState().children[0].checklist[1].text, 'второй',
+    'the restored item keeps its text');
+});
+
+/* Аудит: удаление ПОСЛЕДНЕГО пункта схлопывает лист в чекбокс и поднимает path на уровень
+   вверх — отмена должна откатить и это, вернув пользователя на страницу чек-листа. */
+test('checklist item delete: undo also restores the collapsed checklist and the page (audit fix)', () => {
+  const t = bootDom();
+  t.app.setState({ name: 'root', children: [leaf(false, { name: 'L', checklist: [{ text: 'единственный', done: false }] })] });
+  t.app.setPath([0]);
+  t.window.render();
+  t.click('[data-checklist-remove="0"]');
+  assert.ok(!('checklist' in t.app.getState().children[0]),
+    'the last item removed must collapse the leaf back to a plain checkbox');
+  assert.equal(t.app.getPath().length, 0, 'the page stepped back up');
+  t.document.querySelector('.undo-toast button').click();
+  assert.ok(Array.isArray(t.app.getState().children[0].checklist),
+    'Undo must restore the checklist itself');
+  assert.equal(t.app.getState().children[0].checklist.length, 1, 'with its item');
+  assert.equal(t.app.getPath().length, 1, 'and put us back on the leaf page');
+});
+
 test('persistence: a saved tree survives a page reload', () => {
   const t1 = bootDom();
   t1.app.setState({
@@ -337,6 +380,52 @@ test('delete shows an undo toast; clicking Undo restores the deleted goal', () =
   assert.equal(t.app.getState().children.length, 2, 'Undo must restore the deleted sphere');
   assert.equal(t.app.getState().children[1].name, 'Удалить', 'the restored sphere keeps its name');
   assert.ok(!t.document.querySelector('.undo-toast'), 'the toast must be gone after Undo');
+});
+
+/* Аудит удобства: режимы переживали навигацию. Включил «−», ушёл по крошке/«Назад» в
+   другую сферу — тап по карточке там удалял её вместо открытия (в режиме у карточки
+   data-delete-idx вместо data-nav). Любой уход со страницы должен гасить все пять флагов. */
+test('navigation (back / crumb / card) exits every interaction mode (audit fix)', () => {
+  const t = bootDom();
+  t.app.setState({ name: 'root', children: [
+    { name: 'Сфера', children: [leaf(false, { name: 'Подцель' })] },
+    { name: 'Вторая', children: [] },
+  ] });
+  t.window.render();
+  // Enter the sphere, arm delete mode there, then navigate back home.
+  t.click('[data-nav="0"]');
+  assert.equal(t.app.getPath().length, 1, 'we are inside the sphere');
+  t.click('#btnDelete');
+  assert.ok(t.document.querySelector('#btnDelete').classList.contains('active'),
+    'delete mode must be armed');
+  t.click('#btnBack');
+  assert.equal(t.app.getPath().length, 0, 'back to home');
+  assert.ok(!t.document.querySelector('#btnDelete').classList.contains('active'),
+    'navigating back must exit delete mode');
+  // A plain tap on a card must NAVIGATE, not delete — the card carries data-nav again.
+  t.click('[data-nav="1"]');
+  assert.equal(t.app.getPath().length, 1, 'the tap opened the sphere');
+  assert.equal(t.app.getPath()[0], 1, 'it opened the SECOND sphere — not deleted');
+  assert.equal(t.app.getState().children.length, 2, 'nothing was deleted');
+});
+
+/* Тот же баг через хлебные крошки: режим удаления включён на вложенной странице,
+   уход по крошке домой должен его погасить. */
+test('a breadcrumb tap exits the armed delete mode (audit fix)', () => {
+  const t = bootDom();
+  t.app.setState({ name: 'root', children: [
+    { name: 'Сфера', children: [leaf(false, { name: 'Подцель' })] },
+  ] });
+  t.window.render();
+  t.click('[data-nav="0"]');
+  t.click('#btnDelete');
+  assert.ok(t.document.querySelector('#btnDelete').classList.contains('active'), 'mode armed');
+  t.click('[data-crumb="0"]');
+  assert.equal(t.app.getPath().length, 0, 'crumb went home');
+  assert.ok(!t.document.querySelector('#btnDelete').classList.contains('active'),
+    'the crumb tap must exit delete mode');
+  t.click('[data-nav="0"]');
+  assert.equal(t.app.getPath().length, 1, 'the sphere opens, it is not deleted');
 });
 
 // ===== Global search (opened from the topbar button; live results without losing input focus) =====
