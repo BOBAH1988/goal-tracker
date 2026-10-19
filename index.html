@@ -167,22 +167,22 @@
      (coarse pointer — and iOS, where (hover: none) is not reliable) never paints these rules at
      all, so there is nothing left to stick. A mouse-driven desktop keeps the feedback. */
   @media (hover: hover) and (pointer: fine){
-    .topbar button:hover{color:var(--text); border-color:var(--accent);}
-    .topbar .lang-option:hover{background:var(--card); border-color:var(--border);}
-    .topbar .menu-item:hover{background:var(--card);}
-    .topbar .theme-option:hover{background:var(--card); border-color:var(--border);}
-    #btnFilter:hover,#btnGoodTodayHistory:hover,#btnGoodTodayWeekHistory:hover,#btnGoodTodayWeekEdit:hover,#btnGoodTodayHistoryPagePrev:hover,#btnGoodTodayHistoryPageNext:hover,#btnGoodTodayHistoryPagePrevBottom:hover,#btnGoodTodayHistoryPageNextBottom:hover{color:var(--text); border-color:var(--accent);}
-    #btnEdit:hover{color:var(--text); border-color:var(--accent);}
-    #btnDelete:hover{border-color:var(--red); color:var(--red);}
-    #btnDeleteChecklist:hover{border-color:var(--red); color:var(--red);}
-    #btnMove:hover, #btnMoveChecklist:hover{color:var(--text); border-color:var(--accent);}
-    #btnAddSubgoal:hover{color:var(--text); border-color:var(--accent);}
-    #btnRelocate:hover{color:var(--text); border-color:var(--accent);}
-    .add-child-row #btnArchive:hover, .add-goal-wrap #btnArchive:hover{color:var(--text); border-color:var(--accent);}
-    .sphere-reminder-actions button:not(.sphere-reminder-open):hover{border-color:var(--accent);}
-    .wheel-sector-hit:hover{fill:var(--accent); fill-opacity:.10;}
-    .sphere-tree-item:hover{border-color:var(--accent);}
-    .sphere-tree-close:hover{color:var(--text); border-color:var(--accent);}
+    :where(html:not(.touch-mode)) .topbar button:hover{color:var(--text); border-color:var(--accent);}
+    :where(html:not(.touch-mode)) .topbar .lang-option:hover{background:var(--card); border-color:var(--border);}
+    :where(html:not(.touch-mode)) .topbar .menu-item:hover{background:var(--card);}
+    :where(html:not(.touch-mode)) .topbar .theme-option:hover{background:var(--card); border-color:var(--border);}
+    :where(html:not(.touch-mode)) #btnFilter:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistory:hover,:where(html:not(.touch-mode)) #btnGoodTodayWeekHistory:hover,:where(html:not(.touch-mode)) #btnGoodTodayWeekEdit:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPagePrev:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPageNext:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPagePrevBottom:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPageNextBottom:hover{color:var(--text); border-color:var(--accent);}
+    :where(html:not(.touch-mode)) #btnEdit:hover{color:var(--text); border-color:var(--accent);}
+    :where(html:not(.touch-mode)) #btnDelete:hover{border-color:var(--red); color:var(--red);}
+    :where(html:not(.touch-mode)) #btnDeleteChecklist:hover{border-color:var(--red); color:var(--red);}
+    :where(html:not(.touch-mode)) #btnMove:hover, :where(html:not(.touch-mode)) #btnMoveChecklist:hover{color:var(--text); border-color:var(--accent);}
+    :where(html:not(.touch-mode)) #btnAddSubgoal:hover{color:var(--text); border-color:var(--accent);}
+    :where(html:not(.touch-mode)) #btnRelocate:hover{color:var(--text); border-color:var(--accent);}
+    :where(html:not(.touch-mode)) .add-child-row #btnArchive:hover, :where(html:not(.touch-mode)) .add-goal-wrap #btnArchive:hover{color:var(--text); border-color:var(--accent);}
+    :where(html:not(.touch-mode)) .sphere-reminder-actions button:not(.sphere-reminder-open):hover{border-color:var(--accent);}
+    :where(html:not(.touch-mode)) .wheel-sector-hit:hover{fill:var(--accent); fill-opacity:.10;}
+    :where(html:not(.touch-mode)) .sphere-tree-item:hover{border-color:var(--accent);}
+    :where(html:not(.touch-mode)) .sphere-tree-close:hover{color:var(--text); border-color:var(--accent);}
   }
   #btnTopMenu{padding:1px 2px !important; font-size:24px !important; line-height:1; display:flex; align-items:center; justify-content:center; border-color:transparent;}
   /* z-index:11 keeps the button (and its open dropdown) above .menu-backdrop (z-index:9) once
@@ -203,7 +203,7 @@
     line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center; flex:none;
   }
   @media (hover: hover) and (pointer: fine){
-    .topbar .lang-option:hover{background:var(--card); border-color:var(--border);}
+    :where(html:not(.touch-mode)) .topbar .lang-option:hover{background:var(--card); border-color:var(--border);}
   }
   .topbar .lang-option.active{border-color:var(--accent); box-shadow:0 0 0 1px var(--accent);}
   .topbar .menu-item{
@@ -211,7 +211,7 @@
     cursor:pointer; text-align:left; white-space:normal; word-break:break-word;
   }
   @media (hover: hover) and (pointer: fine){
-    .topbar .menu-item:hover{background:var(--card);}
+    :where(html:not(.touch-mode)) .topbar .menu-item:hover{background:var(--card);}
   }
   /* Same horizontal padding (8px) as .menu-item above, so the flag/theme rows line up flush with
      the text items instead of sitting slightly indented relative to them. */
@@ -222,7 +222,7 @@
     line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center;
   }
   @media (hover: hover) and (pointer: fine){
-    .topbar .theme-option:hover{background:var(--card); border-color:var(--border);}
+    :where(html:not(.touch-mode)) .topbar .theme-option:hover{background:var(--card); border-color:var(--border);}
   }
   .topbar .theme-option.active{border-color:var(--accent); box-shadow:0 0 0 1px var(--accent);}
    /* The top-right trio — ☰ menu, search, account — ONE box, ONE glyph size, ONE border.
@@ -251,18 +251,18 @@
       never paints these, so nothing can stick; a mouse keeps the feedback. The REAL mode colours
       (.active rules) are deliberately OUTSIDE this gate: they signal a working mode. */
    @media (hover: hover) and (pointer: fine){
-     #btnFilter:hover,#btnGoodTodayHistory:hover,#btnGoodTodayWeekHistory:hover,#btnGoodTodayWeekEdit:hover,#btnGoodTodayHistoryPagePrev:hover,#btnGoodTodayHistoryPageNext:hover,#btnGoodTodayHistoryPagePrevBottom:hover,#btnGoodTodayHistoryPageNextBottom:hover{color:var(--text); border-color:var(--accent);}
-     #btnEdit:hover{color:var(--text); border-color:var(--accent);}
-     #btnDelete:hover{border-color:var(--red); color:var(--red);}
-     #btnDeleteChecklist:hover{border-color:var(--red); color:var(--red);}
-     #btnMove:hover, #btnMoveChecklist:hover{color:var(--text); border-color:var(--accent);}
-     #btnAddSubgoal:hover{color:var(--text); border-color:var(--accent);}
-     #btnRelocate:hover{color:var(--text); border-color:var(--accent);}
-      .add-child-row #btnArchive:hover, .add-goal-wrap #btnArchive:hover{color:var(--text); border-color:var(--accent);}
-      .sphere-reminder-actions button:not(.sphere-reminder-open):hover{border-color:var(--accent);}
-      .wheel-sector-hit:hover{fill:var(--accent); fill-opacity:.10;}
-      .sphere-tree-item:hover{border-color:var(--accent);}
-      .sphere-tree-close:hover{color:var(--text); border-color:var(--accent);}
+     :where(html:not(.touch-mode)) #btnFilter:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistory:hover,:where(html:not(.touch-mode)) #btnGoodTodayWeekHistory:hover,:where(html:not(.touch-mode)) #btnGoodTodayWeekEdit:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPagePrev:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPageNext:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPagePrevBottom:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPageNextBottom:hover{color:var(--text); border-color:var(--accent);}
+     :where(html:not(.touch-mode)) #btnEdit:hover{color:var(--text); border-color:var(--accent);}
+     :where(html:not(.touch-mode)) #btnDelete:hover{border-color:var(--red); color:var(--red);}
+     :where(html:not(.touch-mode)) #btnDeleteChecklist:hover{border-color:var(--red); color:var(--red);}
+     :where(html:not(.touch-mode)) #btnMove:hover, :where(html:not(.touch-mode)) #btnMoveChecklist:hover{color:var(--text); border-color:var(--accent);}
+     :where(html:not(.touch-mode)) #btnAddSubgoal:hover{color:var(--text); border-color:var(--accent);}
+     :where(html:not(.touch-mode)) #btnRelocate:hover{color:var(--text); border-color:var(--accent);}
+      :where(html:not(.touch-mode)) .add-child-row #btnArchive:hover, :where(html:not(.touch-mode)) .add-goal-wrap #btnArchive:hover{color:var(--text); border-color:var(--accent);}
+      :where(html:not(.touch-mode)) .sphere-reminder-actions button:not(.sphere-reminder-open):hover{border-color:var(--accent);}
+      :where(html:not(.touch-mode)) .wheel-sector-hit:hover{fill:var(--accent); fill-opacity:.10;}
+      :where(html:not(.touch-mode)) .sphere-tree-item:hover{border-color:var(--accent);}
+      :where(html:not(.touch-mode)) .sphere-tree-close:hover{color:var(--text); border-color:var(--accent);}
     }
    /* The REAL mode colours: OUTSIDE the gate on purpose — they signal a working mode (move /
       delete / rename), not a hover affordance, and a touch user must see them just like a mouse
@@ -310,7 +310,7 @@
      .touch-mode #btnTemplates:hover:not(.active),
      .touch-mode #btnAddChild:hover:not(.active), .touch-mode #btnChecklistAdd:hover,
     .touch-mode #btnWishAdd:hover, .touch-mode #btnWishManage:hover,
-    .touch-mode #btnWishGrid:hover, .touch-mode #btnWishPrint:hover, .touch-mode #btnWishShare:hover, .touch-mode #btnWheelPrint:hover, .touch-mode #btnWheelShare:hover,
+    .touch-mode #btnWishGrid:hover, .touch-mode #btnWishPrint:hover, .touch-mode #btnWishShare:hover, .touch-mode .wish-manage-btn:hover:not(.active), .touch-mode #btnWheelPrint:hover, .touch-mode #btnWheelShare:hover,
     .touch-mode #btnGoodTodayAdd:hover,
     .touch-mode #btnGoodTodayHistory:hover, .touch-mode #btnGoodTodayWeekHistory:hover,
     .touch-mode #btnGoodTodayWeekEdit:hover,
@@ -357,14 +357,14 @@
     font-size:18px; cursor:pointer; line-height:1; padding:6px; flex:none;
   }
   @media (hover: hover) and (pointer: fine){
-    .auth-panel button.auth-close:hover{color:var(--text);}
+    :where(html:not(.touch-mode)) .auth-panel button.auth-close:hover{color:var(--text);}
   }
   /* Templates modal panel */
   .auth-panel.templates-panel{max-width:420px;}
   .templates-list{display:flex; flex-direction:column; gap:8px;}
   .template-item{display:flex; align-items:flex-start; gap:12px; padding:10px 12px; background:var(--card2); border:1px solid var(--border); border-radius:10px; cursor:pointer; transition:background .15s, border-color .15s;}
   @media (hover: hover) and (pointer: fine){
-    .template-item:hover{background:var(--card); border-color:var(--accent);}
+    :where(html:not(.touch-mode)) .template-item:hover{background:var(--card); border-color:var(--accent);}
   }
   .template-item input[type="checkbox"]{flex:none; margin-top:2px; width:18px; height:18px; accent-color:var(--accent);}
   .template-info{flex:1; min-width:0;}
@@ -398,8 +398,8 @@
   }
   .auth-panel button.btn-danger{color:var(--red); border-color:var(--red); background:rgba(229,100,90,0.14);}
   @media (hover: hover) and (pointer: fine){
-    .auth-panel button:hover{color:var(--text); border-color:var(--accent);}
-    .auth-panel button.btn-danger:hover{background:rgba(229,100,90,0.24); border-color:var(--red);}
+    :where(html:not(.touch-mode)) .auth-panel button:hover{color:var(--text); border-color:var(--accent);}
+    :where(html:not(.touch-mode)) .auth-panel button.btn-danger:hover{background:rgba(229,100,90,0.24); border-color:var(--red);}
   }
   .auth-panel button:disabled{opacity:.5; cursor:not-allowed;}
   .auth-error{color:var(--red); font-size:12px;}
@@ -419,7 +419,7 @@
     flex:none; white-space:normal;
   }
   @media (hover: hover) and (pointer: fine){
-    .auth-panel .search-result:hover{border-color:var(--accent);}
+    :where(html:not(.touch-mode)) .auth-panel .search-result:hover{border-color:var(--accent);}
   }
   .auth-panel .search-result.archived{opacity:.5;}
   .search-kind{color:var(--muted); margin-right:6px;}
@@ -452,7 +452,7 @@
     cursor:pointer; text-align:left; white-space:nowrap;
   }
   @media (hover: hover) and (pointer: fine){
-    .account-menu button:hover{background:var(--card);}
+    :where(html:not(.touch-mode)) .account-menu button:hover{background:var(--card);}
   }
   .account-menu button.danger{color:var(--red);}
   /* Home goals sort dropdown — opened by the #btnFilter button next to reorder. Mirrors
@@ -468,7 +468,7 @@
     cursor:pointer; text-align:left; white-space:nowrap; display:flex; align-items:center; justify-content:space-between; gap:10px;
   }
   @media (hover: hover) and (pointer: fine){
-    .filter-menu button:hover{background:var(--card);}
+    :where(html:not(.touch-mode)) .filter-menu button:hover{background:var(--card);}
   }
   .filter-menu button.active{color:var(--accent); font-weight:600;}
   .filter-menu button.active::after{content:'✓';}
@@ -482,7 +482,7 @@
     padding:5px 10px; font-size:12px; cursor:pointer; white-space:nowrap;
   }
   @media (hover: hover) and (pointer: fine){
-    .verify-banner button:hover{background:var(--card);}
+    :where(html:not(.touch-mode)) .verify-banner button:hover{background:var(--card);}
   }
   .verify-banner button:disabled{opacity:.5; cursor:not-allowed;}
   .verify-msg{color:var(--muted);}
@@ -499,7 +499,7 @@
   /* Аудит: хлебная крошка ~19px высотой — ±13px по вертикали дают 45px тап-таргет. */
   .breadcrumb span.crumb::after{content:''; position:absolute; inset:-13px 0;}
   @media (hover: hover) and (pointer: fine){
-    .breadcrumb span.crumb:hover{background:var(--card2); color:var(--text);}
+    :where(html:not(.touch-mode)) .breadcrumb span.crumb:hover{background:var(--card2); color:var(--text);}
   }
   .breadcrumb span.sep{opacity:.4;}
   .back-btn{
@@ -507,13 +507,13 @@
     padding:5px 12px; font-size:13px; cursor:pointer; white-space:nowrap; flex-shrink:0;
   }
   @media (hover: hover) and (pointer: fine){
-    .back-btn:hover{border-color:var(--accent);}
+    :where(html:not(.touch-mode)) .back-btn:hover{border-color:var(--accent);}
   }
   .relocate-source-name{font-size:13px; color:var(--muted);}
   .relocate-breadcrumb{display:flex; gap:6px; align-items:center; flex-wrap:wrap; font-size:13px; color:var(--muted); padding:8px 0; border-top:1px solid var(--border); border-bottom:1px solid var(--border);}
   .relocate-breadcrumb .relocate-crumb{cursor:pointer; padding:3px 6px; border-radius:6px;}
   @media (hover: hover) and (pointer: fine){
-    .relocate-breadcrumb .relocate-crumb:hover{background:var(--card2); color:var(--text);}
+    :where(html:not(.touch-mode)) .relocate-breadcrumb .relocate-crumb:hover{background:var(--card2); color:var(--text);}
   }
   .relocate-breadcrumb .sep{opacity:.4;}
   .relocate-list{display:flex; flex-direction:column; gap:6px; max-height:240px; overflow-y:auto;}
@@ -530,14 +530,14 @@
     padding:9px 12px; font-size:13px; cursor:pointer; text-align:left; white-space:normal; flex:none; width:100%;
   }
   @media (hover: hover) and (pointer: fine){
-    .auth-panel .relocate-row:hover{border-color:var(--accent); color:var(--accent);}
+    :where(html:not(.touch-mode)) .auth-panel .relocate-row:hover{border-color:var(--accent); color:var(--accent);}
   }
   .auth-panel .relocate-here-btn{
     background:var(--accent); border:1px solid var(--accent); color:#fff; font-weight:600;
     white-space:normal; flex:none; width:100%;
   }
   @media (hover: hover) and (pointer: fine){
-    .auth-panel .relocate-here-btn:hover{opacity:.9; border-color:var(--accent);}
+    :where(html:not(.touch-mode)) .auth-panel .relocate-here-btn:hover{opacity:.9; border-color:var(--accent);}
   }
   /* ===== Home: overall progress & priority block ===== */
   .overall{
@@ -564,7 +564,7 @@
   .priority-row .chk{margin-top:0;}
   .priority-name{flex:1; font-size:14px; line-height:1.4; cursor:pointer; min-width:0; overflow-wrap:break-word; word-break:break-word;}
   @media (hover: hover) and (pointer: fine){
-    .priority-name:hover{color:var(--accent);}
+    :where(html:not(.touch-mode)) .priority-name:hover{color:var(--accent);}
   }
   .priority-name.done{color:var(--muted); text-decoration:line-through;}
   .priority-date{font-size:12px; color:var(--muted); white-space:nowrap; flex-shrink:0;}
@@ -576,7 +576,7 @@
      чтобы хит-зоны соседних строк списка (ряды 28px) не перекрывались. */
   .priority-remove::after{content:''; position:absolute; inset:-8px -15px;}
   @media (hover: hover) and (pointer: fine){
-    .priority-remove:hover{color:var(--red);}
+    :where(html:not(.touch-mode)) .priority-remove:hover{color:var(--red);}
   }
   /* ===== Leaf detail: title, stars, bars, node header ===== */
   .leaf-title-row{display:flex; align-items:flex-start; justify-content:space-between; gap:8px;}
@@ -589,13 +589,13 @@
      ±6px, чтобы хит-зоны «архив» и «приоритет» (рядом, gap 8px) не перекрывались. */
   .star-btn::after{content:''; position:absolute; inset:-13px -6px;}
   @media (hover: hover) and (pointer: fine){
-    .star-btn:hover{color:var(--yellow);}
+    :where(html:not(.touch-mode)) .star-btn:hover{color:var(--yellow);}
   }
   .star-btn.active{color:var(--yellow);}
   /* Archive uses its own color (not the priority star's yellow) so the two toggles read as
      distinct actions even though they share the same button styling. */
   @media (hover: hover) and (pointer: fine){
-    #btnArchive:hover{color:var(--accent);}
+    :where(html:not(.touch-mode)) #btnArchive:hover{color:var(--accent);}
   }
   #btnArchive.active{color:var(--accent);}
    .checklist-star{font-size:15px;}
@@ -613,7 +613,7 @@
       display:inline-flex; align-items:center; justify-content:center;
     }
   @media (hover: hover) and (pointer: fine){
-    #btnGoodTodayCalendar.icon-btn:hover{color:var(--text); border-color:var(--accent);}
+    :where(html:not(.touch-mode)) #btnGoodTodayCalendar.icon-btn:hover{color:var(--text); border-color:var(--accent);}
   }
     /* Native date picker (jump-to-date in history) — themed, not browser-white. */
     #goodTodayDatePicker{
@@ -653,7 +653,7 @@
        cursor:pointer; font-size:13px; display:inline-flex; align-items:center; justify-content:center;
      }
   @media (hover: hover) and (pointer: fine){
-     .good-today-history-nav .icon-btn:hover{color:var(--text); border-color:var(--accent);}
+     :where(html:not(.touch-mode)) .good-today-history-nav .icon-btn:hover{color:var(--text); border-color:var(--accent);}
   }
      /* Мягкое напоминание о сфере («К сфере … давно не возвращались»). Ненавязчивая карточка
         над «Важными сферами жизни»: тёмная тема, светлая и розовая — всё на переменных, без
@@ -689,10 +689,10 @@
       padding:4px; min-width:32px; font-size:14px; line-height:1; display:inline-flex; align-items:center; justify-content:center;
     }
     @media (hover: hover) and (pointer: fine){
-      .good-today-entry-actions .icon-btn:hover{
+      :where(html:not(.touch-mode)) .good-today-entry-actions .icon-btn:hover{
         color:var(--text); border-color:var(--accent);
       }
-      [data-goodtoday-delete].icon-btn:hover{
+      :where(html:not(.touch-mode)) [data-goodtoday-delete].icon-btn:hover{
         border-color:var(--red); color:var(--red);
       }
     }
@@ -731,7 +731,7 @@
      background:var(--card2); cursor:pointer;
    }
     @media (hover: hover) and (pointer: fine){
-      .good-today-history-item:hover{background:rgba(0,0,0,.03);}
+      :where(html:not(.touch-mode)) .good-today-history-item:hover{background:rgba(0,0,0,.03);}
     }
     .good-today-history-item{display:flex; align-items:center; gap:10px;}
     .good-today-history-item .good-today-entry-text{flex:1; min-width:0;}
@@ -740,7 +740,7 @@
       font-size:14px; line-height:1; cursor:pointer; padding:4px;
     }
     @media (hover: hover) and (pointer: fine){
-      .good-today-history-delete:hover{color:var(--red);}
+      :where(html:not(.touch-mode)) .good-today-history-delete:hover{color:var(--red);}
     }
     /* «Хорошее сегодня» mood badge in the today block — progressive text based on done count.
        0 → «Начнём?» (red), 1 → «Хорошее начало» (dark yellow), 2 → «Осталось чуть-чуть» (lighter yellow),
@@ -812,13 +812,13 @@
   }
   .card.archived{opacity:.45;}
   @media (hover: hover) and (pointer: fine){
-    .card:hover{border-color:var(--accent); transform:translateY(-1px);}
-    .card.editable:hover{transform:none; border-color:var(--red);}
-    .card.deletable:hover{border-color:var(--red); background:rgba(229,100,90,0.24);}
-    .card.locked:hover{transform:none; border-color:var(--border);}
-    .card.selectable:hover{border-color:var(--accent); background:rgba(91,140,255,0.24);}
-    .card.movable:hover{border-color:var(--accent);}
-    .card.archived:hover{opacity:.6;}
+    :where(html:not(.touch-mode)) .card:hover{border-color:var(--accent); transform:translateY(-1px);}
+    :where(html:not(.touch-mode)) .card.editable:hover{transform:none; border-color:var(--red);}
+    :where(html:not(.touch-mode)) .card.deletable:hover{border-color:var(--red); background:rgba(229,100,90,0.24);}
+    :where(html:not(.touch-mode)) .card.locked:hover{transform:none; border-color:var(--border);}
+    :where(html:not(.touch-mode)) .card.selectable:hover{border-color:var(--accent); background:rgba(91,140,255,0.24);}
+    :where(html:not(.touch-mode)) .card.movable:hover{border-color:var(--accent);}
+    :where(html:not(.touch-mode)) .card.archived:hover{opacity:.6;}
   }
   .card .title{font-size:15px; font-weight:600; margin-bottom:8px; display:flex; justify-content:space-between; gap:8px;}
   /* Flex items default to min-width:auto, which refuses to shrink below the text's full
@@ -841,7 +841,7 @@
     padding:2px 7px; cursor:pointer; line-height:1.4;
   }
   @media (hover: hover) and (pointer: fine){
-    .edit-pencil:hover{border-color:var(--accent);}
+    :where(html:not(.touch-mode)) .edit-pencil:hover{border-color:var(--accent);}
   }
   /* ===== Leaf rows: inline edit, checkbox, due dates ===== */
   .goal-input{
@@ -912,7 +912,7 @@
     background:none; border:1px solid var(--border); color:var(--muted); border-radius:6px; padding:2px 8px; font-size:12px; cursor:pointer;
   }
   @media (hover: hover) and (pointer: fine){
-    .leaf-meta button:hover{color:var(--text); border-color:var(--accent);}
+    :where(html:not(.touch-mode)) .leaf-meta button:hover{color:var(--text); border-color:var(--accent);}
   }
   .add-checklist-btn{
     margin-top:12px; background:var(--accent); color:#fff; border:none; border-radius:10px;
@@ -920,7 +920,7 @@
     align-items:center; gap:6px;
   }
   @media (hover: hover) and (pointer: fine){
-    .add-checklist-btn:hover{opacity:.9;}
+    :where(html:not(.touch-mode)) .add-checklist-btn:hover{opacity:.9;}
   }
   /* ===== Sections: empty state, titles, add-rows ===== */
   .empty-state{color:var(--muted); font-size:13px; padding:20px; text-align:center; border:1px dashed var(--border); border-radius:12px;}
@@ -935,11 +935,11 @@
     padding:12px 20px; font-size:14px; font-weight:600; cursor:pointer; min-height:44px;
   }
   @media (hover: hover) and (pointer: fine){
-    .wish-add-btn:hover{opacity:.9;}
+    :where(html:not(.touch-mode)) .wish-add-btn:hover{opacity:.9;}
   }
   .wish-print-btn{background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:8px; padding:5px 9px; font-size:12px; cursor:pointer; display:inline-flex; align-items:center; gap:5px; margin-top:8px; white-space:nowrap;}
   @media (hover: hover) and (pointer: fine){
-    .wish-print-btn:hover{color:var(--text); border-color:var(--accent);}
+    :where(html:not(.touch-mode)) .wish-print-btn:hover{color:var(--text); border-color:var(--accent);}
   }
   .wish-print-btn:active{background:var(--accent); color:#fff;}
   /* Columns: 1 on very narrow screens, 2 on phones (default), 3 on tablets, 4 on desktop. */
@@ -1016,8 +1016,8 @@
     background:var(--card2); color:var(--muted);
   }
   @media (hover: hover) and (pointer: fine){
-    .wish-manage-btn:hover{color:var(--text); border-color:var(--accent);}
-    [data-wish-manage-del].wish-manage-btn:hover{color:var(--red); border-color:var(--red);}
+    :where(html:not(.touch-mode)) .wish-manage-btn:hover{color:var(--text); border-color:var(--accent);}
+    :where(html:not(.touch-mode)) [data-wish-manage-del].wish-manage-btn:hover{color:var(--red); border-color:var(--red);}
   }
   /* Manual reorder (manager): the row picked up for a move gets the accent ring; the hint says
      plainly that the next tap decides where it lands. */
@@ -1047,8 +1047,8 @@
     border-radius:8px; padding:8px 14px; font-size:13px; cursor:pointer; margin-right:10px;
   }
   @media (hover: hover) and (pointer: fine){
-    .wish-file-label input[type=file]::file-selector-button:hover{border-color:var(--accent);}
-    .wish-file-label input[type=file]::-webkit-file-upload-button:hover{border-color:var(--accent);}
+    :where(html:not(.touch-mode)) .wish-file-label input[type=file]::file-selector-button:hover{border-color:var(--accent);}
+    :where(html:not(.touch-mode)) .wish-file-label input[type=file]::-webkit-file-upload-button:hover{border-color:var(--accent);}
   }
   .wish-file-label input[type=file]::-webkit-file-upload-button{
     background:var(--card2); border:1px solid var(--border); color:var(--text);
@@ -1083,7 +1083,7 @@
     font-size:18px; cursor:pointer; line-height:1;
   }
   @media (hover: hover) and (pointer: fine){
-    .wish-lightbox-close:hover{background:rgba(6,9,16,.9);}
+    :where(html:not(.touch-mode)) .wish-lightbox-close:hover{background:rgba(6,9,16,.9);}
   }
   /* Personal photo («isUserPhoto»): same size/ratio/rectangular format as every other card —
      only the accent outline tells it apart (no badge, so the board stays uncluttered). */
@@ -1103,7 +1103,7 @@
      border-radius:8px; padding:4px 10px; font-size:12px; cursor:pointer; white-space:nowrap;
    }
   @media (hover: hover) and (pointer: fine){
-    .wish-retry-btn:hover{color:var(--text); border-color:var(--accent);}
+    :where(html:not(.touch-mode)) .wish-retry-btn:hover{color:var(--text); border-color:var(--accent);}
   }
    .wish-upload-note{margin-top:10px; text-align:center;}
   /* Calm limit note: the board holds at most WISH_MAX_CARDS images. */
@@ -1150,7 +1150,7 @@
     background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:8px; padding:8px 14px; font-size:13px; cursor:pointer;
   }
   @media (hover: hover) and (pointer: fine){
-    .add-sub button:hover{color:var(--text); border-color:var(--accent);}
+    :where(html:not(.touch-mode)) .add-sub button:hover{color:var(--text); border-color:var(--accent);}
   }
   footer{color:var(--muted); font-size:12px; text-align:center; margin-top:24px; padding-top:4px; opacity:.7;}
   /* The feedback link is part of the footer text, not a button: it inherits the muted 11px look in
@@ -1167,7 +1167,7 @@
       driven by the .tip-live class instead: the JS adds it on tap and removes it after 1s,
       because touch has no hover to leave and a CSS :hover bubble would hang forever. */
    [data-tip]{position:relative;}
-   [data-tip]:hover::after, [data-tip]:focus-visible::after, [data-tip].tip-live::after{
+   :where(html:not(.touch-mode)) [data-tip]:hover::after, [data-tip]:focus-visible::after, [data-tip].tip-live::after{
     content:attr(data-tip);
     position:absolute; left:50%; bottom:calc(100% + 8px); transform:translateX(-50%);
     background:var(--card2); color:var(--text); border:1px solid var(--border);
@@ -1186,15 +1186,17 @@
    [data-tip].tip-right::after{ left:auto; right:0; transform:none; }
    [data-tip].tip-left::before{ left:12px; transform:none; }
    [data-tip].tip-right::before{ left:auto; right:12px; transform:none; }
-   [data-tip]:hover::before, [data-tip]:focus-visible::before, [data-tip].tip-live::before{
+   :where(html:not(.touch-mode)) [data-tip]:hover::before, [data-tip]:focus-visible::before, [data-tip].tip-live::before{
     content:''; position:absolute; left:50%; bottom:calc(100% + 2px); transform:translateX(-50%);
     border:6px solid transparent; border-top-color:var(--border);
     pointer-events:none; z-index:1000;
   }
    /* Installed PWA on a touch screen: after a tap the element stays in :hover indefinitely, so
-      the hover bubble would never go away. Only the timed .tip-live bubble (JS, 1s) shows. */
+      the hover bubble would never go away. Only the timed .tip-live bubble (JS, 1s) shows.
+      :not(.tip-live) обязателен: без него этот подавитель перебивал и .tip-live-пузырь
+      (специфичность одинаковая, а правило ниже) — в Android-PWA подсказок не было бы вовсе. */
    @media (display-mode: standalone) and (hover: none){
-     [data-tip]:hover::after, [data-tip]:hover::before{content:none;}
+     [data-tip]:not(.tip-live):hover::after, [data-tip]:not(.tip-live):hover::before{content:none;}
    }
   .section-title-row{display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:8px;}
   .section-title-row .section-title{margin:0;}
@@ -1268,7 +1270,7 @@
     -webkit-touch-callout:none;
   }
   @media (hover: hover) and (pointer: fine){
-    .checklist-row.movable:hover{border-color:var(--accent);}
+    :where(html:not(.touch-mode)) .checklist-row.movable:hover{border-color:var(--accent);}
   }
   .move-handle{color:var(--muted); font-size:16px; flex-shrink:0;}
   .checklist-row{
@@ -1290,8 +1292,8 @@
     background:none; border:none; color:var(--muted); cursor:pointer; font-size:13px; padding:2px 6px; flex:none;
   }
   @media (hover: hover) and (pointer: fine){
-    .checklist-edit:hover{color:var(--accent);}
-    .checklist-remove:hover{color:var(--red);}
+    :where(html:not(.touch-mode)) .checklist-edit:hover{color:var(--accent);}
+    :where(html:not(.touch-mode)) .checklist-remove:hover{color:var(--red);}
   }
   .checklist-remove{
     background:none; border:none; color:var(--muted); cursor:pointer; font-size:13px; padding:2px 6px; flex:none;
@@ -1363,7 +1365,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.2.52';
+const APP_VERSION = '1.2.54';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -9830,7 +9832,17 @@ function positionTip(el){
   else if(mid + maxTip / 2 > vw - margin) el.classList.add('tip-right');
 }
 document.addEventListener('pointerdown', (e)=>{
-  if(!isStandalonePwa()) return;
+  // Тач-устройство (любое) ИЛИ установленная PWA: пузырь показываем через .tip-live.
+  // На таче CSS-пузырь по :hover выключен (html:not(.touch-mode)), иначе он залипает
+  // навсегда после тапа (WebKit держит :hover). В мобильном браузере подсказка тоже
+  // нужна — просто показываем её на 1 секунду, а не до следующего тапа.
+  // pointerType — основной признак; matchMedia — запасной для старых браузеров без PointerEvent.
+  // Проверка «pointerType есть» обязательна: на ноутбуке с тач-экраном (pointer: coarse)
+  // мышиный клик не должен считаться тачем.
+  const isTouchPointer = e.pointerType
+    ? (e.pointerType !== 'mouse')
+    : !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+  if(!isStandalonePwa() && !isTouchPointer) return;
   const el = e.target && e.target.closest ? e.target.closest('[data-tip]') : null;
   if(!el) return;
   positionTip(el);

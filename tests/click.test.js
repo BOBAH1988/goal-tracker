@@ -1890,6 +1890,27 @@ test('touch mode: the first touch marks the document so stuck :hover can be neut
     'the first touch marks the document — CSS drops every :hover accent');
 });
 
+/* На таче CSS-пузырь [data-tip]:hover выключен (html:not(.touch-mode)) — иначе он
+   залипает навсегда после тапа (WebKit держит :hover, баг 158517). Значит подсказку
+   должен показать JS-класс .tip-live. Раньше он работал ТОЛЬКО в установленной
+   PWA (isStandalonePwa()), и в обычном мобильном браузере подсказки не было бы
+   вовсе. Сторож: тап по кнопке с data-tip на тач-указателе даёт .tip-live
+   (на 1 секунду) и в браузере, и в PWA; мышь в браузере — не даёт. */
+test('tooltip: a touch tap shows the timed .tip-live bubble, a mouse click does not', () => {
+  const t = bootDom();
+  const btn = t.document.querySelector('[data-tip]');
+  assert.ok(btn, 'a data-tip control must be rendered');
+  // Тач-указатель: пузырь появляется (и исчезает через 1с — проверяем класс).
+  btn.dispatchEvent(new t.window.PointerEvent('pointerdown', { bubbles: true, pointerType: 'touch' }));
+  assert.ok(btn.classList.contains('tip-live'),
+    'a touch tap must show the timed .tip-live bubble — the CSS :hover bubble is closed on touch');
+  // Мышь в обычном браузере: пузырь и так появляется по наведению, .tip-live не нужен.
+  const btn2 = t.document.querySelector('[data-tip]:not(.tip-live)') || btn;
+  btn2.dispatchEvent(new t.window.PointerEvent('pointerdown', { bubbles: true, pointerType: 'mouse' }));
+  assert.ok(!btn2.classList.contains('tip-live'),
+    'a mouse click in a browser tab must not add .tip-live (the hover bubble covers it)');
+});
+
 test('wish map: the grid-density default is 3 in an installed PWA', () => {
   const t = bootDom();
   // Установленное приложение: matchMedia отвечает «standalone» — ровно как на телефоне.

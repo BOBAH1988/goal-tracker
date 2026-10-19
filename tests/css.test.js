@@ -36,6 +36,44 @@ function splitCss(html) {
 function rawCss(html) {
   return [...html.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/g)].map(m => m[1]).join('\n');
 }
+/* ---- recursive parser: rules nested in @media keep their media context ----
+   splitCss() above treats an @media block as ONE rule (its selector text is the
+   media query, its body the whole block), so a guard that walks the rules never
+   sees the hover rules INSIDE the gate. This parser descends into @media and
+   reports every leaf rule with the list of media conditions it lives under.
+   At-rules that are not containers of style rules (@keyframes) are skipped. */
+function splitCssNested(html) {
+  const css = [...html.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/g)].map(m => m[1]).join('\n');
+  const rules = [];
+  const walk = (text, media) => {
+    let i = 0;
+    while (i < text.length) {
+      const open = text.indexOf('{', i);
+      if (open < 0) break;
+      const prelude = text.slice(i, open).trim();
+      // find the matching closing brace
+      let depth = 0, j = open;
+      for (; j < text.length; j++) {
+        if (text[j] === '{') depth++;
+        else if (text[j] === '}') { depth--; if (depth === 0) break; }
+      }
+      const body = text.slice(open + 1, j);
+      if (prelude.startsWith('@media')) {
+        walk(body, media.concat(prelude));
+      } else if (prelude.startsWith('@keyframes') || prelude.startsWith('@font-face')) {
+        // not a container of style rules — ignore
+      } else {
+        const selectors = prelude.split(',').map(s => s.trim()).filter(Boolean);
+        rules.push({ selectors, body, media });
+      }
+      i = j + 1;
+    }
+  };
+  walk(css, []);
+  return rules;
+}
+/* the media condition of the fine-pointer gate — the one that holds the hover rules */
+const FINE_POINTER = '@media (hover: hover) and (pointer: fine)';
 /* CSS without block comments — the splitCss parser treats a leading comment as part of
    the selector text, which would confuse guards that match selector prefixes. Returns
    the HTML with the <style> tags intact, so splitCss() can still find the blocks. */
@@ -102,10 +140,16 @@ test('CSS guard: PWA tooltips time out — a .tip-live bubble exists and the stu
   const bubble = rules.filter(r => r.selectors.some(s => /\[data-tip\]\.tip-live::after/.test(s)));
   assert.ok(bubble.length > 0, 'the PWA tooltip needs a [data-tip].tip-live::after bubble rule');
   // Touch has no hover to leave: without this the bubble hangs forever after a tap (owner report).
+  // The suppressor must NOT match .tip-live — it has the same specificity and comes later,
+  // so it would kill the timed bubble that is the ONLY hint a touch user gets.
   const suppressed = rules.filter(r =>
     /@media \(display-mode: standalone\) and \(hover: none\)/.test(r.selectors.join(' ')) &&
-    /\[data-tip\]:hover::after[^}]*\{[^}]*content:none/.test(r.body.replace(/\s+/g, ' ')));
+    /\[data-tip\][^{]*:hover::after[^}]*\{[^}]*content:none/.test(r.body.replace(/\s+/g, ' ')));
   assert.equal(suppressed.length, 1, 'a touch standalone PWA must suppress the hanging :hover tooltip');
+  assert.doesNotMatch(suppressed.map(r => r.body).join(' '), /\[data-tip\]:hover::after/,
+    'the suppressor must skip .tip-live — otherwise it kills the timed bubble on touch');
+  assert.match(suppressed.map(r => r.body).join(' '), /:not\(\.tip-live\)/,
+    'the suppressor must exclude .tip-live explicitly');
 });
 
 /* A double-tap used to zoom the page in the installed PWA: the app widened and ran off both
@@ -259,18 +303,75 @@ test('CSS guard: the account menu sizes to its content, words stay horizontal', 
 });
 
 test('CSS guard: hover feedback is gated to real pointers, so no touch button can stay blue', () => {
-  const rules = splitCss(HTML);
-  const gated = rules.filter(r => /@media \(hover: hover\) and \(pointer: fine\)/.test(r.selectors.join(' ')));
+  const rules = splitCssNested(cssNoComments(HTML));
+  const gated = rules.filter(r => r.media.includes(FINE_POINTER));
   assert.ok(gated.length >= 1, 'the hover/pointer:fine gate must exist');
+  const gateSel = gated.flatMap(r => r.selectors).join(' ');
+  assert.match(gateSel, /#btnMove:hover/, 'the ↕ hover accent must live INSIDE the gate — outside it, it sticks after a tap');
+  assert.match(gateSel, /#btnMoveChecklist:hover/, 'the checklist ↕ too');
   const gateBody = gated.map(r => r.body).join(' ');
-  assert.match(gateBody, /#btnMove:hover, #btnMoveChecklist:hover/,
-    'the ↕ hover accent must live INSIDE the gate — outside it, it sticks after a tap');
   assert.doesNotMatch(gateBody, /#btnMove\.active/,
     'the real move-mode colour must stay OUTSIDE the gate: a touch user must still see the mode');
-  const neutral = rules.filter(r => /pointer: coarse/.test(r.selectors.join(' '))
-    && /#btnMove:hover:not\(\.active\)/.test(r.body));
+  const neutral = rules.filter(r => r.media.some(m => /pointer: coarse/.test(m))
+    && r.selectors.some(s => /#btnMove:hover:not\(\.active\)/.test(s)));
   assert.ok(neutral.length >= 1,
     'the stuck-hover neutralisation must also match a coarse pointer (iOS says hover: hover)');
+});
+
+/* Регресс-сторож на «ховеры внутри гейта ещё и с touch-mode префиксом».
+   Смысл: гейт (hover: hover) and (pointer: fine) НЕ спасает iOS — он рапортует
+   hover:hover вместе с pointer:fine, поэтому гейт срабатывает, а :hover после тапа
+   остаётся (WebKit, баг 158517). Третья линия обороны — класс .touch-mode на
+   <html>: каждый hover-селектор ВНУТРИ гейта дополнительно закрыт
+   :where(html:not(.touch-mode)), поэтому после первого касания ховер не красит.
+   :where() выбран не случайно — он не добавляет специфичности, в отличие от
+   html:not(.touch-mode), поэтому каскад остальных правил не меняется.
+   Сторож обходит @media рекурсивно: старый splitCss() схлопывал медиа-блок в
+   одно «правило» и не видел вложенных hover-правил вовсе. */
+test('CSS guard: every hover rule inside the fine-pointer gate is closed by the touch-mode guard', () => {
+  const rules = splitCssNested(cssNoComments(HTML));
+  const gated = rules.filter(r => r.media.includes(FINE_POINTER));
+  assert.ok(gated.length >= 1, 'the hover/pointer:fine gate must exist');
+  const bad = [];
+  let checked = 0;
+  gated.forEach(r => {
+    r.selectors.forEach(s => {
+      if (!/:hover/.test(s)) return;
+      checked++;
+      if (!/^:where\(html:not\(\.touch-mode\)\)/.test(s)) bad.push(s);
+    });
+  });
+  assert.ok(checked >= 50, `expected many hover rules in the gate, got ${checked}`);
+  assert.deepEqual(bad, [],
+    `these hover rules inside the fine-pointer gate are not closed by html:not(.touch-mode) — they stick after a tap on iOS: ${bad.join(', ')}`);
+});
+
+/* Подсказки [data-tip] — тот же класс проблемы: на таче пузырь висит вечно,
+   потому что :hover не уходит. Поэтому hover-пузырь закрыт тем же префиксом,
+   а показывает подсказку JS-класс .tip-live (1 секунда) — и в PWA, и в обычном
+   мобильном браузере. Сторож: hover-пузырь закрыт, .tip-live — нет. */
+test('CSS guard: the tooltip hover bubble is closed by the touch-mode guard, .tip-live is not', () => {
+  const rules = splitCssNested(cssNoComments(HTML));
+  const tipHover = rules.filter(r => r.selectors.some(s => /\[data-tip\]:hover::(after|before)$/.test(s))
+    && !/content\s*:\s*none/.test(r.body));   // the content:none rule is a SUPPRESSOR, it must stay plain
+  assert.ok(tipHover.length >= 1, 'the tooltip hover bubble rules must exist');
+  tipHover.forEach(r => {
+    r.selectors.forEach(s => {
+      if (!/\[data-tip\]:hover::(after|before)$/.test(s)) return;
+      assert.match(s, /^:where\(html:not\(\.touch-mode\)\)/,
+        `the tooltip hover bubble must be closed by the touch-mode guard, got: ${s}`);
+    });
+  });
+  const live = rules.filter(r => r.selectors.some(s => /\[data-tip\]\.tip-live::(after|before)$/.test(s)));
+  assert.ok(live.length >= 1,
+    'the timed .tip-live bubble must exist — it is what shows the hint on a touch screen');
+  live.forEach(r => {
+    r.selectors.forEach(s => {
+      if (!/\[data-tip\]\.tip-live::(after|before)$/.test(s)) return;
+      assert.doesNotMatch(s, /touch-mode/,
+        `.tip-live must NOT be gated by touch-mode — it is the touch bubble itself: ${s}`);
+    });
+  });
 });
 
 /* Репорт владельца 11.10.2026: «↕ снова голубая в PWA». iOS рапортует
