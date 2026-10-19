@@ -1896,6 +1896,34 @@ test('touch mode: the first touch marks the document so stuck :hover can be neut
    PWA (isStandalonePwa()), и в обычном мобильном браузере подсказки не было бы
    вовсе. Сторож: тап по кнопке с data-tip на тач-указателе даёт .tip-live
    (на 1 секунду) и в браузере, и в PWA; мышь в браузере — не даёт. */
+/* Репорт владельца 19.10.2026: после тапа кнопка «↕» в PWA остаётся залита
+   СВЕТЛО-СИНИМ (скриншот iPhone). Четыре прежние попытки (v1.1.61, v1.1.87, v1.2.52,
+   v1.2.54) гасили только наш собственный :hover — а заливку рисует САМ БРАУЗЕР
+   поверх содержимого: наш :hover меняет лишь цвет текста и рамку, фон не красит
+   (а .active дал бы надпись «Готово», а не стрелки «↕»). Никакой авторский
+   background такую заливку не перебьёт, поэтому чинить надо UA-слой.
+   Сторож здесь — на реальном DOM: проверяем, что приложение вообще снимает
+   нативный вид кнопок и системную подсветку нажатия, и что режимные цвета
+   (.active) при этом УЦЕЛЕЛИ. */
+test('touch PWA: the native press highlight and the native button chrome are switched off', () => {
+  const t = bootDom();
+  const style = t.document.querySelector('style');
+  assert.ok(style, 'the app stylesheet must be present');
+  const css = style.textContent;
+  assert.match(css, /html\s*\{[^}]*-webkit-tap-highlight-color\s*:\s*transparent/,
+    'the UA tap highlight must be off — it is painted OVER the content, so no author background can hide it');
+  assert.match(css, /button\s*\{[^}]*appearance\s*:\s*none/,
+    'the native button appearance must be off — iOS 26 otherwise draws its own glass capsule over the button');
+  // Режимные цвета обязаны выжить: .active — это НЕ :hover, его тач-пользователь видит.
+  assert.match(css, /#btnMove\.active\s*,\s*#btnMoveChecklist\.active\s*\{[^}]*background\s*:\s*var\(--accent\)/,
+    'the real move-mode colour must survive the touch guards');
+  // Кнопка «↕» в шапке сфер — та самая, что жаловалась.
+  const btnMove = t.document.getElementById('btnMove');
+  assert.ok(btnMove, 'the ↕ button must be rendered');
+  assert.ok(!/\bactive\b/.test(btnMove.className),
+    'the ↕ button starts in the normal mode (not «Готово»/active)');
+});
+
 test('tooltip: a touch tap shows the timed .tip-live bubble, a mouse click does not', () => {
   const t = bootDom();
   const btn = t.document.querySelector('[data-tip]');

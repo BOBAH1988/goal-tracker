@@ -468,6 +468,146 @@ test('CSS guard: the touch-mode class neutralises every stuck hover', () => {
     'card action buttons are covered too');
 });
 
+/* Репорт владельца 19.10.2026 (v1.2.55): в PWA на iPhone кнопка «↕» после тапа
+   остаётся залита СВЕТЛО-СИНИМ. Разбор, почему прежние фиксы не помогали:
+   наши :hover-правила меняют только ЦВЕТ ТЕКСТА и РАМКУ — фона они не красят
+   (а .active дал бы надпись «Готово», а не стрелки «↕»). Значит заливку рисует
+   САМ БРАУЗЕР поверх содержимого, и никакой авторский background её не перебьёт.
+   Четыре предыдущие попытки (v1.1.61, v1.1.87, v1.2.52, v1.2.54) гасили только
+   наш собственный :hover — поэтому и не помогали.
+   Три линии защиты, каждая проверяется этим сторожем:
+     1) -webkit-tap-highlight-color:transparent — гасит системную подсветку тапа;
+     2) appearance:none на <button> — убирает нативную «стеклянную» отрисовку
+        кнопки (iOS 26 рисует её поверх авторского фона);
+     3) .touch-mode … :active — гасит залипающее нажатие. */
+/* Разбор CSS на правила с ЧИСТЫМ селектором: комментарий перед правилом
+   не должен попадать в селектор (иначе искажение селектора ломает проверки).
+   Скан по глубине скобок — как в splitCss выше, только без @media-разбора. */
+function rules_with_sel(css) {
+  const out = [];
+  let buf = '', depth = 0;
+  for (const ch of css) {
+    buf += ch;
+    if (ch === '{') depth++;
+    if (ch === '}') depth--;
+    if (ch === '}' && depth === 0) {
+      const m = buf.trim().match(/^([^{]+)\{([\s\S]*)\}$/);
+      if (m) {
+        const sel = m[1].replace(/\/\*[\s\S]*?\*\//g, '').trim();
+        if (sel && !sel.startsWith('@')) out.push({ sel, body: m[2] });
+      }
+      buf = '';
+    }
+  }
+  return out;
+}
+
+test('CSS guard: the UA press highlight and the native button chrome are switched off', () => {
+  const css = rawCss(HTML);
+  // 1) системная подсветка нажатия
+  assert.match(css, /-webkit-tap-highlight-color\s*:\s*transparent/,
+    'the UA tap highlight must be switched off — it is painted OVER the content');
+  // Правило <html>{…} с этим свойством: свойство НАСЛЕДУЕТСЯ, поэтому одного
+  // правила на <html> достаточно для всего документа.
+  assert.match(css, /html\s*\{[^}]*-webkit-tap-highlight-color\s*:\s*transparent/,
+    'the tap-highlight reset must sit on <html> — the property is inherited, so one rule covers the document');
+  // 2) нативная отрисовка кнопки
+  assert.match(css, /button\s*\{[^}]*appearance\s*:\s*none/,
+    'the native button appearance must be switched off (appearance:none) — iOS 26 otherwise draws its own glass capsule over the button');
+  // 3) залипающее нажатие. Проверяем СТРОГО: :active должен быть в СЕЛЕКТОРЕ
+  // того же правила, что и .touch-mode (иначе регулярка нашла бы «чужое» :active
+  // через запятую или закрывающую скобку — проверка вскрыла бы, но не поймала).
+  const touchActive = rules_with_sel(css).filter(r =>
+    r.sel.includes('.touch-mode') && r.sel.includes(':active'));
+  assert.ok(touchActive.length >= 1,
+    'the stuck :active state must be neutralised for touch');
+  // Конкретно: единственные правила, красящие :active, — «Печать» на доске желаний
+  // и ссылка в подвале. Обе должны быть погашены на тач.
+  assert.ok(touchActive.some(r => r.sel.includes('.wish-print-btn:active')),
+    'the wish «Печать» button paints :active with the accent — it must be neutralised for touch');
+  assert.ok(touchActive.some(r => r.sel.includes('footer a:active')),
+    'the footer link paints :active with the accent — it must be neutralised for touch');
+  // Режимные цвета (.active) обязаны УЦЕЛЕТЬ — их тач-пользователь видит.
+  assert.match(css, /#btnMove\.active\s*,\s*#btnMoveChecklist\.active\s*\{[^}]*background\s*:\s*var\(--accent\)/,
+    'the real move-mode colour must survive the touch guards');
+});
+
+/* Снимает нативный вид кнопки — только если у КАЖДОЙ кнопки фон, рамка, отступы
+   и кегль заданы явно. Иначе кнопка осталась бы «голой» (тот самый баг с
+   белыми кнопками, что ловили четыре раза). */
+function rules_with(css, selector) {
+  const out = [];
+  const re = new RegExp('(^|[},])\\s*' + selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*\\{([^}]*)\\}', 'g');
+  let m;
+  while ((m = re.exec(css))) out.push(m[2]);
+  return out;
+}
+
+test('CSS guard: every button keeps its own background, border, padding and font-size', () => {
+  const css = rawCss(HTML);
+  // Каждая кнопка получает вид из СВОЕГО правила (по id/классу) либо из правила
+  // контейнера («.auth-panel button{…}», «.topbar button{…}») — и то и другое задано
+  // автором. Проверяем инвариант по исходнику: у каждого <button> есть правило,
+  // которое даёт ему фон (не none), рамку, отступы и кегль.
+  const decl = (body, prop) => {
+    const m = body.match(new RegExp('(?:^|;)\\s*' + prop + '\\s*:\\s*([^;]+)'));
+    return m ? m[1].trim() : null;
+  };
+  // Фон должен быть ЗАДАН автором — любым значением. `background:none` (голые иконки
+  // .star-btn, .today-action, .quote-btn) — тоже авторское решение: заливки нет by design.
+  // Важно лишь, что решение есть: без него appearance:none оставил бы кнопку с
+  // НАТИВНОЙ заливкой браузера (тот баг с «белыми кнопками»).
+  const hasBgDecl = (r) => decl(r.body, 'background') || decl(r.body, 'background-color');
+  // Все правила CSS: селектор → тело.
+  const rules = [...css.matchAll(/([^{}]+)\{([^}]*)\}/g)].map(m => ({
+    sel: m[1].trim().replace(/\s+/g, ' '), body: m[2],
+  }));
+  // <style> исключаем: текст «<button>» в CSS-комментарии не кнопка.
+  const markup = HTML.replace(/<style[^>]*>[\s\S]*?<\/style>/g, '');
+  const buttons = [...markup.matchAll(/<button\b[^>]*>/g)].map(m => m[0]);
+  assert.ok(buttons.length > 100, `expected plenty of buttons, got ${buttons.length}`);
+  const seen = new Set();
+  const naked = [];
+  for (const tag of buttons) {
+    const id = (tag.match(/id="([^"]+)"/) || [])[1] || '';
+    const cls = ((tag.match(/class="([^"]+)"/) || [])[1] || '').replace(/\$\{[^}]*\}/g, '').trim();
+    const key = id + '|' + cls;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    // Классы-контейнеры вокруг кнопки: разметка собирается в шаблонных строках,
+    // поэтому берём окно исходника вокруг тега.
+    const at = HTML.indexOf(tag);
+    const around = HTML.slice(Math.max(0, at - 4000), at + tag.length + 4000);
+    const ctxClasses = [...around.matchAll(/class="([^"$]+)"/g)]
+      .flatMap(m => m[1].split(/\s+/)).filter(Boolean);
+    // Правила, которые могут красить эту кнопку: по её id/классу ИЛИ по контейнеру.
+    const hits = rules.filter(r => {
+      if (id && r.sel.includes('#' + id)) return true;
+      if (cls.split(/\s+/).filter(Boolean).some(c => r.sel.includes('.' + c))) return true;
+      // правило-контейнер: «.X … button»
+      if (!/(^|[\s,>+~])button(?![\w-])/.test(r.sel)) return false;
+      return ctxClasses.some(c => r.sel.includes('.' + c));
+    });
+    const hasBg = hits.some(r => hasBgDecl(r));
+    const hasBorder = hits.some(r => decl(r.body, 'border'));
+    const hasPad = hits.some(r => decl(r.body, 'padding'));
+    const hasFont = hits.some(r => decl(r.body, 'font-size'));
+    if (!(hasBg && hasBorder && hasPad && hasFont)) {
+      naked.push({ id: id || '.' + cls, hasBg, hasBorder, hasPad, hasFont });
+    }
+  }
+  // Кнопка должна получать от автора ВСЕ ЧЕТЫРЕ свойства: фон, рамку, отступы и кегль.
+  // Фоном может быть и `background:none` (осознанный «голый» вид иконки — .star-btn,
+  // .today-action, .checklist-remove): тогда и рамка должна быть none, иначе appearance:none
+  // оставил бы кнопку с чужой нативной рамкой.
+  const problems = naked.filter(b => !(b.hasBorder && b.hasPad && b.hasFont));
+  assert.deepEqual(problems, [],
+    `these buttons have no border/padding/font of their own — appearance:none would strip the native ones: ${JSON.stringify(problems)}`);
+  const noBg = naked.filter(b => !b.hasBg).map(b => b.id);
+  assert.deepEqual(noBg, [],
+    `these buttons have no background of their own — appearance:none would leave them unpainted: ${noBg.join(', ')}`);
+});
+
 test('CSS guard: touch standalone PWA neutralizes the stuck hover on the goal action buttons', () => {
   const rules = splitCss(HTML);
   const block = rules.find(r =>

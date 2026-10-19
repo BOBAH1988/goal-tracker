@@ -327,6 +327,34 @@
     .touch-mode .wheel-sector-hit:hover{fill-opacity:0;}
     .touch-mode .sphere-tree-item:hover{border-color:var(--border);}
     .touch-mode .sphere-tree-close:hover{color:var(--text); border-color:var(--border);}
+  /* ===== iOS 26: системная подсветка нажатия («стеклянная» капсула) =====
+     Репорт владельца 19.10.2026: после тапа кнопка «↕» в PWA остаётся залита
+     СВЕТЛО-СИНИМ (скриншот iPhone). Разбор: наши :hover-правила меняют только
+     цвет текста и рамку — ФОНА они не красят, а .active дал бы надпись «Готово»,
+     а не стрелки. Значит заливку рисует сам WebKit ПОВЕРХ содержимого: в iOS 26
+     это новая системная «нажатая» капсула. Её не перебивает ни один авторский
+     background, поэтому прежние фиксы ховера (v1.1.61, v1.1.87, v1.2.52, v1.2.54)
+     её не убирали — они гасили только наш собственный :hover.
+     Лечится системной настройкой: -webkit-tap-highlight-color:transparent.
+     Свойство НАСЛЕДУЕТСЯ, поэтому правила на <html> хватает всему документу;
+     кнопкам/ссылкам дублируем явно — на случай если наследование не сработает. */
+  html{ -webkit-tap-highlight-color: transparent; }
+  button, a, [role="button"], [data-tip], summary, label, input, select, textarea{
+    -webkit-tap-highlight-color: transparent;
+  }
+  /* Вторая линия той же защиты: снимаем НАТИВНУЮ отрисовку кнопки. В iOS 26
+     <button> с appearance:auto рисует свою «стеклянную» подложку (светло-синюю)
+     поверх авторского background — автором её не перебить, только отключив
+     appearance. Аудит всех 125 кнопок приложения: у каждой явно заданы фон,
+     рамка и отступы (свои или правилом контейнера), так что снятие нативного
+     вида ничего не ломает — размеры и цвета остаются нашими. */
+  button{ -webkit-appearance:none; appearance:none; }
+  /* Третья линия: залипающий :active (тот же WebKit-баг, что и :hover) оставил бы
+     кнопку залитой акцентом. В touch-mode возвращаем БАЗОВЫЕ цвета кнопки:
+     фон и текст — те же, что у кнопки без нажатия (background:inherit здесь
+     не годится — он взял бы фон родителя, а не свой). */
+  .touch-mode .wish-print-btn:active{ background:var(--card2); color:var(--muted); }
+  .touch-mode footer a:active{ color:inherit; }
   .edit-hint{color:var(--muted); font-weight:400; font-size:12px;}
   .edit-hint.delete-hint{color:var(--red);}
   /* ===== Modal overlays & panels (auth, install, about, confirm) ===== */
@@ -1365,7 +1393,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.2.54';
+const APP_VERSION = '1.2.55';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
