@@ -168,6 +168,21 @@
      all, so there is nothing left to stick. A mouse-driven desktop keeps the feedback. */
   @media (hover: hover) and (pointer: fine){
     .topbar button:hover{color:var(--text); border-color:var(--accent);}
+    .topbar .lang-option:hover{background:var(--card); border-color:var(--border);}
+    .topbar .menu-item:hover{background:var(--card);}
+    .topbar .theme-option:hover{background:var(--card); border-color:var(--border);}
+    #btnFilter:hover,#btnGoodTodayHistory:hover,#btnGoodTodayWeekHistory:hover,#btnGoodTodayWeekEdit:hover,#btnGoodTodayHistoryPagePrev:hover,#btnGoodTodayHistoryPageNext:hover,#btnGoodTodayHistoryPagePrevBottom:hover,#btnGoodTodayHistoryPageNextBottom:hover{color:var(--text); border-color:var(--accent);}
+    #btnEdit:hover{color:var(--text); border-color:var(--accent);}
+    #btnDelete:hover{border-color:var(--red); color:var(--red);}
+    #btnDeleteChecklist:hover{border-color:var(--red); color:var(--red);}
+    #btnMove:hover, #btnMoveChecklist:hover{color:var(--text); border-color:var(--accent);}
+    #btnAddSubgoal:hover{color:var(--text); border-color:var(--accent);}
+    #btnRelocate:hover{color:var(--text); border-color:var(--accent);}
+    .add-child-row #btnArchive:hover, .add-goal-wrap #btnArchive:hover{color:var(--text); border-color:var(--accent);}
+    .sphere-reminder-actions button:not(.sphere-reminder-open):hover{border-color:var(--accent);}
+    .wheel-sector-hit:hover{fill:var(--accent); fill-opacity:.10;}
+    .sphere-tree-item:hover{border-color:var(--accent);}
+    .sphere-tree-close:hover{color:var(--text); border-color:var(--accent);}
   }
   #btnTopMenu{padding:1px 2px !important; font-size:24px !important; line-height:1; display:flex; align-items:center; justify-content:center; border-color:transparent;}
   /* z-index:11 keeps the button (and its open dropdown) above .menu-backdrop (z-index:9) once
@@ -1348,7 +1363,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.2.51';
+const APP_VERSION = '1.2.52';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
