@@ -269,10 +269,17 @@ test('CSS guard: the language and theme switches are compact pills, not text row
     assert.match(active.body.replace(/\s+/g, ' '), /background:var\(--accent\)/,
       `${sel}.active: the chosen variant must be filled with the accent colour`);
   }
-  // The two switch rows live in one block — no separator line between them.
-  const row = rules.find(r => r.selectors.some(x => /\.menu-lang-row/.test(x)) && r.selectors.some(x => /\.menu-theme-row/.test(x)));
-  assert.ok(row, 'the shared switch-row rule must exist');
-  assert.doesNotMatch(row.body, /border-top/, 'the switch rows must not be split by a line');
+  // The two switch groups share ONE row (flex), so the menu stays compact.
+  const row = rules.find(r => r.selectors.some(x => /\.menu-switch-row/.test(x)));
+  assert.ok(row, 'the .menu-switch-row rule must exist');
+  const rowBody = row.body.replace(/\s+/g, ' ');
+  assert.match(rowBody, /display:flex/, 'the language and theme switches must sit in one row');
+  assert.match(rowBody, /align-items:center/, 'both switch groups must be centred on the row');
+  // The groups themselves are plain flex rows of pills.
+  const groups = rules.find(r => r.selectors.some(x => /\.menu-lang-row/.test(x)) && r.selectors.some(x => /\.menu-theme-row/.test(x)));
+  assert.ok(groups, 'the shared switch-group rule must exist');
+  assert.match(groups.body.replace(/\s+/g, ' '), /display:flex/, 'each switch group must be a flex row');
+  assert.doesNotMatch(groups.body, /border-top/, 'the switch rows must not be split by a line');
 });
 
 test('CSS guard: the narrow/PWA topbar moves the whole title wrap and puts ☰ last on its row', () => {

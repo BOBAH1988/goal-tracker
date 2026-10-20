@@ -2447,6 +2447,23 @@ test('sphere reminder: interaction dates persist to localStorage and ride the cl
 });
 
 // ===== «Поделиться» (меню ☰): системное окно Web Share API с запасным копированием =====
+test('top menu: the language and theme switches share ONE row', () => {
+  const t = bootDom();
+  t.click('#btnTopMenu');
+  const row = t.document.querySelector('.lang-menu .menu-switch-row');
+  assert.ok(row, 'the switches must live in one shared row');
+  const lang = row.querySelector('.menu-lang-row');
+  const theme = row.querySelector('.menu-theme-row');
+  assert.ok(lang, 'the language group must be inside the shared row');
+  assert.ok(theme, 'the theme group must be inside the shared row');
+  // The language pills come first, the theme pills after — both in the same container.
+  assert.equal(lang.nextElementSibling, theme, 'the theme group must follow the language group');
+  assert.equal(theme.nextElementSibling, null, 'the shared row must hold nothing else');
+  // Both groups are rendered with their switches.
+  assert.ok(lang.querySelector('.lang-option'), 'the language pills must be rendered');
+  assert.ok(theme.querySelector('.theme-option'), 'the theme pills must be rendered');
+});
+
 test('top menu: the «Меню» caption sits in the same row as the ✕', () => {
   const t = bootDom();
   t.click('#btnTopMenu');

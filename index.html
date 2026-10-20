@@ -259,11 +259,11 @@
   }
   /* Фокус с клавиатуры — тот же акцент, что и при наведении. */
   .lang-menu .menu-item:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
-  /* Переключатели языка и темы — таблетки в одном блоке, выровнены по левому краю плиток. */
-  /* Два ряда переключателей — один общий блок под пунктами, без разделяющих линий. */
-  .menu-lang-row,.menu-theme-row{display:flex; gap:5px; justify-content:flex-start; padding:3px 11px;}
-  .menu-lang-row{margin-top:8px;}
-  .menu-theme-row{margin-top:2px;}
+  /* Переключатели языка и темы — таблетки в ОДНОМ ряду под пунктами (экономия места):
+     слева язык, справа тема, между группами тонкий вертикальный разделитель. */
+  .menu-switch-row{display:flex; align-items:center; gap:8px; padding:4px 11px; margin-top:8px;}
+  .menu-lang-row,.menu-theme-row{display:flex; gap:5px; align-items:center;}
+  .menu-theme-row{border-left:1px solid var(--border); padding-left:8px;}
   .lang-menu .theme-option{
     display:flex; align-items:center; justify-content:center; flex:none;
     background:var(--card2); border:1px solid var(--border); color:var(--muted);
@@ -1536,7 +1536,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.2.79';
+const APP_VERSION = '1.2.80';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -7182,11 +7182,13 @@ function topbarHTML(){
         <button id="btnShareMenuItem" class="menu-item"><i class="ti ti-share-2" aria-hidden="true"></i><span>${t('share')}</span></button>
         ${!isStandalonePwa() ? `<button id="btnInstallAppMenuItem" class="menu-item"><i class="ti ti-device-mobile" aria-hidden="true"></i><span>${t('installAppTitle')}</span></button>` : ''}
          <input type="file" id="importFileInput" accept="application/json,.json" style="display:none">
-         <div class="menu-lang-row">
-          ${Object.keys(LANG_FLAGS).map(code => `<button class="lang-option ${lang===code?'active':''}" aria-pressed="${lang===code}" data-lang="${code}" title="${code==='ru'?'Русский':'English'}">${LANG_FLAGS[code]}</button>`).join('')}
-        </div>
-        <div class="menu-theme-row">
-          ${Object.keys(THEME_ICONS).map(code => `<button class="theme-option ${theme===code?'active':''}" aria-pressed="${theme===code}" data-theme-choice="${code}" title="${t(THEME_TITLES[code])}" aria-label="${t(THEME_TITLES[code])}">${THEME_ICONS[code]}</button>`).join('')}
+         <div class="menu-switch-row">
+          <div class="menu-lang-row">
+           ${Object.keys(LANG_FLAGS).map(code => `<button class="lang-option ${lang===code?'active':''}" aria-pressed="${lang===code}" data-lang="${code}" title="${code==='ru'?'Русский':'English'}">${LANG_FLAGS[code]}</button>`).join('')}
+          </div>
+          <div class="menu-theme-row">
+            ${Object.keys(THEME_ICONS).map(code => `<button class="theme-option ${theme===code?'active':''}" aria-pressed="${theme===code}" data-theme-choice="${code}" title="${t(THEME_TITLES[code])}" aria-label="${t(THEME_TITLES[code])}">${THEME_ICONS[code]}</button>`).join('')}
+          </div>
         </div>
       </div></div>` : ''}`;
 }
