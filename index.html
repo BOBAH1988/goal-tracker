@@ -545,9 +545,11 @@
   }
   .relocate-breadcrumb .sep{opacity:.4;}
   .relocate-list{display:flex; flex-direction:column; gap:6px; max-height:240px; overflow-y:auto;}
-  /* Аудит: пикер без поиска — при 50+ узлах нужную папку приходилось искать руками по уровням. */
+  /* Аудит: пикер без поиска — при 50+ узлах нужную папку приходилось искать руками по уровням.
+     v1.2.61: 16px, не 14px — редактируемое поле мельче 16px триггерит zoom-on-focus
+     вьюпорта PWA на iOS («экран расширяется», репорт владельца). */
   .relocate-search{width:100%; box-sizing:border-box; background:var(--card2); color:var(--text);
-    border:1px solid var(--border); border-radius:8px; padding:9px 12px; font-size:14px;
+    border:1px solid var(--border); border-radius:8px; padding:9px 12px; font-size:16px;
     font-family:inherit; margin-top:8px;}
   .relocate-search:focus{outline:2px solid var(--accent); outline-offset:1px;}
   /* Scoped to .auth-panel (raising specificity above the plain ".auth-panel button" rule, which
@@ -651,10 +653,12 @@
       padding:8px 10px; font-size:14px; font-family:inherit;
       color-scheme:inherit;
     }
-   .good-today-textarea{
-     width:100%; min-height:72px; resize:vertical;
-     background:var(--card2); border:1px solid var(--border); border-radius:10px;
-     padding:10px 12px; font-size:14px; line-height:1.4; color:var(--text);
+    /* v1.2.61: 16px, не 14px — Safari zoom-on-focus расширяет весь вьюпорт PWA, когда
+       редактируемое поле мельче 16px («экран расширяется», репорт владельца). */
+    .good-today-textarea{
+      width:100%; min-height:72px; resize:vertical;
+      background:var(--card2); border:1px solid var(--border); border-radius:10px;
+      padding:10px 12px; font-size:16px; line-height:1.4; color:var(--text);
      font-family:inherit; box-sizing:border-box;
    }
    .good-today-textarea:focus{outline:2px solid var(--accent); outline-offset:1px; border-color:var(--accent);}
@@ -878,9 +882,12 @@
   }
   .goal-input:focus{border-bottom-style:solid; border-bottom-color:var(--red);}
   /* Inline text input for the "Three important things" editable checklist — looks like plain text
-     until focused, so the block reads as a todo list you can tap to edit, not a form. */
+     until focused, so the block reads as a todo list you can tap to edit, not a form.
+     v1.2.61: 16px, не 14px — Safari zooms the whole PWA viewport on focus when an editable
+     field renders below 16px («экран расширяется, контент вылезает», репорт владельца;
+     двойной тап возвращал зум). 16px — порог iOS, ниже него зум-при-фокусе срабатывает. */
   .today-input{
-    flex:1; font-size:14px; line-height:1.4; border:none; outline:none;
+    flex:1; font-size:16px; line-height:1.4; border:none; outline:none;
     background:transparent; color:var(--text); min-width:0; word-break:break-word; font-family:inherit;
   }
   /* Аудит: раньше фокус гасился полностью (outline:none) и поле не отличить от обычного —
@@ -1393,7 +1400,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.2.60';
+const APP_VERSION = '1.2.61';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -6591,7 +6598,7 @@ function systemPanelsHTML(){
       <div class="auth-panel">
         <button class="auth-close" id="btnSearchClose" aria-label="close" title="${t('done')}">✕</button>
         <h2 style="margin:0 0 4px; font-size:16px;">${t('searchTitle')}</h2>
-        <input type="text" id="searchInput" autocomplete="off" placeholder="${t('searchPlaceholder')}" style="width:100%; padding:10px 12px; border-radius:8px; border:1px solid var(--border); background:var(--card2); color:var(--text); font-size:14px; box-sizing:border-box;">
+        <input type="text" id="searchInput" autocomplete="off" placeholder="${t('searchPlaceholder')}" style="width:100%; padding:10px 12px; border-radius:8px; border:1px solid var(--border); background:var(--card2); color:var(--text); font-size:16px; box-sizing:border-box;">
         <div style="color:var(--muted); font-size:12px; margin:6px 0 8px;">${t('searchHint')}</div>
         <div class="search-results" id="searchResults"></div>
       </div>

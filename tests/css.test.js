@@ -706,6 +706,40 @@ test('CSS guard: no font-size below 12px', () => {
     `font sizes below 12px are unreadable on touch: ${tooSmall.join(', ')}px`);
 });
 
+/* v1.2.61: iOS zoom-on-focus. Safari расширяет весь вьюпорт («экран расширяется, контент
+   вылезает»), когда фокус падает на редактируемое поле с кеглем НИЖЕ 16px — это порог iOS.
+   Владелец заметил на «Хорошем сегодня» и модалках; двойной тап возвращал зум. Сторож:
+   у каждого редактируемого поля (открывает клавиатуру) кегль ≥ 16px. */
+test('CSS guard: editable text fields are at least 16px (iOS zoom-on-focus)', () => {
+  const css = rawCss(HTML);
+  // Селекторы редактируемых полей, что открывают клавиатуру: инлайн-правка целей/дел,
+  // дневник, недельная рефлексия, поиск по дереву, поиск в пикере переноса.
+  const editable = [
+    '.today-input{',            // «Три важных дела» — инлайн-правка
+    '.good-today-textarea{',    // «Хорошее сегодня» + «Победы за неделю»
+    '.goal-input{',             // инлайн-переименование карточек
+    '.checklist-edit-input{',   // правка пункта чек-листа
+    '.checklist-add-row input{',// добавление пункта чек-листа
+    '.relocate-search{',        // поиск в пикере переноса
+    '.auth-panel input{',       // формы авторизации/аккаунта
+    '.wish-form input[type=text]{', // подпись карточки желаний
+  ];
+  for(const sel of editable){
+    const rule = css.match(new RegExp(sel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '[^}]*\\}'));
+    assert.ok(rule, `editable field rule ${sel} must exist`);
+    const fs = rule[0].match(/font-size:\s*(\d+)px/);
+    assert.ok(fs, `${sel} must declare a px font-size`);
+    assert.ok(Number(fs[1]) >= 16,
+      `${sel} is ${fs[1]}px — iOS zooms the PWA viewport on focus below 16px`);
+  }
+  // Глобальный поиск в модалке задаёт кегль инлайн-стилем, не CSS-правилом.
+  const searchInput = HTML.match(/id="searchInput"[\s\S]*?>/);
+  assert.ok(searchInput, 'searchInput must render');
+  const inlineFs = searchInput[0].match(/font-size:\s*(\d+)px/);
+  assert.ok(inlineFs && Number(inlineFs[1]) >= 16,
+    'searchInput inline style must be at least 16px (iOS zoom-on-focus)');
+});
+
 /* Аудит: два дубля @media (max-width:360px) для .wish-grid были разбросаны по файлу.
    Собраны в один блок — и он должен стоять ПОСЛЕ data-cols-правил, иначе каскад
    (та же специфичность 0-2-0) отдаст узкому экрану «3/4 в ряд» вместо сжатия до двух. */
