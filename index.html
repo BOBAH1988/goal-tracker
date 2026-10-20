@@ -1393,7 +1393,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.2.57';
+const APP_VERSION = '1.2.58';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -1626,6 +1626,7 @@ const STRINGS = {
     editGoal: 'Изменить',
     deleteGoal: 'Удалить',
     done: 'Готово',
+    ok: 'ОК',
     editHint: '— впишите новое название прямо в карточке',
     deleteHint: n => n === 0 ? '— нажмите на красную карточку, чтобы удалить (можно удалить все)' : n === 1 ? '— нажмите на красную карточку, чтобы удалить (первая всегда защищена)' : `— нажмите на красную карточку, чтобы удалить (первые ${n} всегда защищены)`,
     deleteSubtreeConfirm: 'Внутри есть цели — нажмите ещё раз, чтобы удалить всё',
@@ -1950,6 +1951,7 @@ const STRINGS = {
     editGoal: 'Edit',
     deleteGoal: 'Delete',
     done: 'Done',
+    ok: 'OK',
     editHint: '— type a new name right in the card',
     deleteHint: n => n === 0 ? '— click a red card to delete it (you can delete all of them)' : n === 1 ? '— click a red card to delete it (the first one is always protected)' : `— click a red card to delete it (the first ${n} are always protected)`,
     deleteSubtreeConfirm: 'It contains goals — tap again to delete everything',
@@ -5407,7 +5409,7 @@ function nodeViewHTML(node, mode, protectedCount, hintHTML){
       <span id="addChildMsg" class="add-goal-msg"></span>
       <button id="btnAddChild" class="icon-btn" data-tip="${t('tipAdd')}" aria-label="${t('tipAdd')}">+</button>
       <button id="btnDelete" class="${deleteMode?'active':'icon-btn'}" aria-pressed="${deleteMode}" data-tip="${deleteMode?t('done'):t('tipDelete')}" aria-label="${deleteMode?t('done'):t('tipDelete')}">${deleteMode ? t('done') : '−'}</button>
-      <button id="btnMove" class="${moveMode?'active':'icon-btn'}" aria-pressed="${moveMode}" data-tip="${moveMode?t('done'):t('tipMove')}" aria-label="${moveMode?t('done'):t('tipMove')}">${moveMode ? t('done') : '<i class="ti ti-arrows-move" aria-hidden="true"></i>'}</button>
+      <button id="btnMove" class="${moveMode?'active':'icon-btn'}" aria-pressed="${moveMode}" data-tip="${moveMode?t('ok'):t('tipMove')}" aria-label="${moveMode?t('ok'):t('tipMove')}">${moveMode ? t('ok') : '<i class="ti ti-arrows-move" aria-hidden="true"></i>'}</button>
       <div class="filter-dropdown">
         <button id="btnFilter" class="icon-btn" data-tip="${t('tipSort')}" aria-label="${t('tipSort')}"><i class="ti ti-filter" aria-hidden="true"></i></button>
         ${filterMenuOpen ? `<div class="filter-menu" id="filterMenu">
@@ -5547,7 +5549,7 @@ function homeViewHTML(overallPct, hintHTML, mode, protectedCount){
       <button id="btnAddGoal" class="icon-btn" data-tip="${t('tipAdd')}" aria-label="${t('tipAdd')}">+</button>
       <button id="btnTemplates" class="icon-btn" data-tip="${t('tipTemplates')}" aria-label="${t('tipTemplates')}"><i class="ti ti-file-text" aria-hidden="true"></i></button>
       <button id="btnDelete" class="${deleteMode?'active':'icon-btn'}" aria-pressed="${deleteMode}" data-tip="${deleteMode?t('done'):t('tipDelete')}" aria-label="${deleteMode?t('done'):t('tipDelete')}">${deleteMode ? t('done') : '−'}</button>
-      <button id="btnMove" class="${moveMode?'active':'icon-btn'}" aria-pressed="${moveMode}" data-tip="${moveMode?t('done'):t('tipMove')}" aria-label="${moveMode?t('done'):t('tipMove')}">${moveMode ? t('done') : '<i class="ti ti-arrows-move" aria-hidden="true"></i>'}</button>
+      <button id="btnMove" class="${moveMode?'active':'icon-btn'}" aria-pressed="${moveMode}" data-tip="${moveMode?t('ok'):t('tipMove')}" aria-label="${moveMode?t('ok'):t('tipMove')}">${moveMode ? t('ok') : '<i class="ti ti-arrows-move" aria-hidden="true"></i>'}</button>
       <div class="filter-dropdown">
         <button id="btnFilter" class="icon-btn" data-tip="${t('tipSort')}" aria-label="${t('tipSort')}"><i class="ti ti-filter" aria-hidden="true"></i></button>
         ${filterMenuOpen ? `<div class="filter-menu" id="filterMenu">
@@ -7125,7 +7127,7 @@ function checklistHTML(list){
     <div class="section-title-row" style="margin-top:20px;">
       <div class="section-title">${t('checklistTitle')}</div>
       <div style="display:flex; align-items:center; gap:8px;">
-        <button id="btnMoveChecklist" class="${moveMode?'active':'icon-btn'}" aria-pressed="${moveMode}" data-tip="${moveMode?t('done'):t('tipMove')}" aria-label="${moveMode?t('done'):t('tipMove')}">${moveMode ? t('done') : '<i class="ti ti-arrows-move" aria-hidden="true"></i>'}</button>
+        <button id="btnMoveChecklist" class="${moveMode?'active':'icon-btn'}" aria-pressed="${moveMode}" data-tip="${moveMode?t('ok'):t('tipMove')}" aria-label="${moveMode?t('ok'):t('tipMove')}">${moveMode ? t('ok') : '<i class="ti ti-arrows-move" aria-hidden="true"></i>'}</button>
         <button id="btnDeleteChecklist" class="icon-btn" data-tip="${t('tipDeleteChecklist')}" aria-label="${t('tipDeleteChecklist')}">🗑️</button>
       </div>
     </div>`;
