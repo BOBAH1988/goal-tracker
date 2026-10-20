@@ -1476,7 +1476,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.2.63';
+const APP_VERSION = '1.2.64';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -5871,12 +5871,18 @@ function challengeStats(ch){
   const pct = Math.max(0, Math.min(100, Math.round(100 * done / Math.max(total, 1))));
   return { done, total, remaining, dayNum: Math.max(elapsed, 1), finished, pct, lastDay, elapsed };
 }
-// 42 cells (6 weeks × 7 days) for one month, Monday-first — the same order as the
-// challengeWeekdays locale string (пн…вс / Mon…Sun).
+// Cells for one month, Monday-first — the same order as the challengeWeekdays locale
+// string (пн…вс / Mon…Sun). The row count is DYNAMIC: most months need 5 weeks (35 cells),
+// but a month that starts late in the week and has 31 days needs a 6th row (март, август,
+// ноябрь 2026…). Cutting the grid to a hard 5 rows would drop the last days of those months
+// from the calendar — they could not be marked at all. The minimum is 5 so that short
+// months (like February starting on Monday) keep a stable grid height.
 function challengeMonthCells(y, m){
   const offset = (new Date(y, m, 1).getDay() + 6) % 7;   // Monday = 0
+  const daysInMonth = new Date(y, m + 1, 0).getDate();
+  const rows = Math.max(5, Math.ceil((offset + daysInMonth) / 7));
   const cells = [];
-  for(let i = 0; i < 42; i++){
+  for(let i = 0; i < rows * 7; i++){
     const d = new Date(y, m, 1 - offset + i);
     cells.push({ iso: challengeISO(d), day: d.getDate(), inMonth: d.getMonth() === m });
   }

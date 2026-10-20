@@ -45,14 +45,45 @@ test('challenge: date math helpers (add days, signed distance, Monday-first mont
   assert.equal(t.app.challengeDaysBetween('2026-10-01', '2026-10-11'), 10);
   assert.equal(t.app.challengeDaysBetween('2026-10-11', '2026-10-01'), -10, 'signed distance');
   const cells = t.app.challengeMonthCells(2026, 9);   // October 2026 (months are 0-based)
-  assert.equal(cells.length, 42, 'six weeks × seven days');
+  assert.equal(cells.length, 35, 'a month that fits in five weeks gets exactly five rows');
   assert.equal(cells[0].iso, '2026-09-28', 'the grid starts on the Monday before Oct 1 2026');
   assert.equal(new Date(2026, 8, 28).getDay(), 1, 'and that day really is a Monday');
   assert.equal(cells[0].inMonth, false, 'the leading cells belong to the previous month');
   assert.equal(cells[6].iso, '2026-10-04', 'the 7th cell is Sunday Oct 4 2026');
   assert.equal(cells[6].inMonth, true, 'and belongs to the visible month');
   assert.equal(cells[30].iso, '2026-10-28', 'the 31st cell is the Wednesday of the 5th week');
-  assert.equal(cells[41].iso, '2026-11-08', 'the grid always covers 6 whole weeks');
+  assert.equal(cells[34].iso, '2026-11-01', 'the last cell of a five-row grid is the next Sunday');
+});
+
+/* v1.2.64: the grid is five rows tall for most months — but a month that starts late in
+   the week and has 31 days (март, август, ноябрь 2026) needs a sixth row. A hard five-row
+   cut would drop the last days of those months from the calendar, and they could not be
+   marked at all. The guard: EVERY day of EVERY month must be present in the grid, and the
+   grid is never taller than six rows. */
+test('challenge: the month grid is five rows tall — but never drops a day of the month', () => {
+  const t = boot();
+  for(let y = 2026; y <= 2027; y++){
+    for(let m = 0; m < 12; m++){
+      const cells = t.app.challengeMonthCells(y, m);
+      const rows = cells.length / 7;
+      assert.ok(rows === 5 || rows === 6,
+        `${y}-${m + 1}: the grid must be five or six rows, got ${rows}`);
+      const daysInMonth = new Date(y, m + 1, 0).getDate();
+      const shown = cells.filter(c => c.inMonth).map(c => c.day);
+      assert.equal(shown.length, daysInMonth,
+        `${y}-${m + 1}: all ${daysInMonth} days of the month must be in the grid`);
+      assert.equal(new Set(shown).size, daysInMonth, `${y}-${m + 1}: no duplicated days`);
+      for(let d = 1; d <= daysInMonth; d++){
+        assert.ok(shown.includes(d), `${y}-${m + 1}: day ${d} is missing from the grid`);
+      }
+    }
+  }
+  // The known six-row months (a Monday-first grid that starts late in the week).
+  assert.equal(t.app.challengeMonthCells(2026, 2).length, 42, 'March 2026 needs a sixth row');
+  assert.equal(t.app.challengeMonthCells(2026, 7).length, 42, 'August 2026 needs a sixth row');
+  assert.equal(t.app.challengeMonthCells(2026, 10).length, 42, 'November 2026 needs a sixth row');
+  assert.equal(t.app.challengeMonthCells(2026, 9).length, 35, 'October 2026 fits in five rows');
+  assert.equal(t.app.challengeMonthCells(2027, 1).length, 35, 'February 2027 fits in five rows');
 });
 
 test('challenge: stats — countdown, day number, progress, finished term', () => {
