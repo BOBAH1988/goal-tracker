@@ -2358,12 +2358,14 @@ test('top menu: an online reinstall validates the shell before wiping caches', a
 // Клики по НАСТОЯЩИМ обработчикам: блок рисуется на главной, «Скрыть» глушит сферу на 14 дней,
 // «Открыть сферу» ведёт в дерево, а открытие/выполнение целей сбрасывают отсчёт.
 const DAY = 24 * 60 * 60 * 1000;
-function staleSphereState(name, daysAgo) {
+function staleSphereState(name, daysAgo, at) {
   return {
     name: 'root',
     children: [{
       name,
-      sphereActivityAt: Date.now() - daysAgo * DAY,
+      // The caller may pass the exact timestamp it expects back — otherwise a millisecond
+      // tick between this Date.now() and the caller's own call makes the two differ by 1ms.
+      sphereActivityAt: at !== undefined ? at : Date.now() - daysAgo * DAY,
       children: [{ name: 'Цель', done: false, children: [] }],
     }],
   };
@@ -2404,7 +2406,7 @@ test('sphere reminder: «Скрыть» removes the block and mutes the sphere f
 test('sphere reminder: «Открыть сферу» opens the tree and restarts the countdown', () => {
   const t = bootDom();
   const old = Date.now() - 20 * DAY;
-  t.app.setState(staleSphereState('Здоровье', 20));
+  t.app.setState(staleSphereState('Здоровье', 20, old));
   t.window.render();
   t.click('#btnSphereReminderOpen');
   assert.deepEqual(Array.from(t.app.getPath()), [0], 'the sphere tree must open');
@@ -2417,7 +2419,7 @@ test('sphere reminder: «Открыть сферу» opens the tree and restarts
 test('sphere reminder: opening a sphere card or completing its goal counts as interaction', () => {
   const t = bootDom();
   const old = Date.now() - 20 * DAY;
-  t.app.setState(staleSphereState('Здоровье', 20));
+  t.app.setState(staleSphereState('Здоровье', 20, old));
   t.window.render();
   // Card tap on the home screen opens the sphere's tree — a deliberate interaction.
   t.click('[data-nav]');
@@ -2432,7 +2434,7 @@ test('sphere reminder: opening a sphere card or completing its goal counts as in
 test('sphere reminder: interaction dates persist to localStorage and ride the cloud doc', () => {
   const t = bootDom();
   const old = Date.now() - 20 * DAY;
-  t.app.setState(staleSphereState('Здоровье', 20));
+  t.app.setState(staleSphereState('Здоровье', 20, old));
   t.app.saveState();
   const raw = t.window.localStorage.getItem(t.app.STORAGE_KEY);
   assert.ok(raw.includes('sphereActivityAt'), 'the date must persist');

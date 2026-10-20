@@ -212,6 +212,34 @@ test('CSS guard: the main menu items are button tiles — own background, border
   assert.match(iconRule.body.replace(/\s+/g, ' '), /width:19px/, 'the icon column is fixed-width');
 });
 
+test('CSS guard: the language and theme switches are compact pills, not text rows', () => {
+  const rules = splitCss(HTML);
+  // splitCss keeps a leading comment inside the selector text — match on the tail, not equality.
+  const find = (sel) => rules.find(r => r.selectors.some(x => {
+    const tail = x.replace(/\s+/g, ' ').trim();
+    return tail === sel || tail.endsWith(' ' + sel);
+  }));
+  for (const sel of ['.lang-menu .lang-option', '.lang-menu .theme-option']) {
+    const r = find(sel);
+    assert.ok(r, `the ${sel} rule must exist`);
+    const body = r.body.replace(/\s+/g, ' ');
+    assert.match(body, /background:var\(--card2\)/, `${sel}: the switch needs its own background`);
+    assert.match(body, /border:1px solid var\(--border\)/, `${sel}: the switch needs its own border`);
+    assert.match(body, /border-radius:9px/, `${sel}: the switch must be a pill`);
+    assert.match(body, /padding:5px/, `${sel}: the switch must stay compact`);
+    assert.match(body, /font-size:16px/, `${sel}: the switch needs its own font size`);
+    // The ACTIVE variant is a filled pill — that is what makes it read as a switch.
+    const active = find(sel + '.active');
+    assert.ok(active, `the ${sel}.active rule must exist`);
+    assert.match(active.body.replace(/\s+/g, ' '), /background:var\(--accent\)/,
+      `${sel}.active: the chosen variant must be filled with the accent colour`);
+  }
+  // The two switch rows live in one block — no separator line between them.
+  const row = rules.find(r => r.selectors.some(x => /\.menu-lang-row/.test(x)) && r.selectors.some(x => /\.menu-theme-row/.test(x)));
+  assert.ok(row, 'the shared switch-row rule must exist');
+  assert.doesNotMatch(row.body, /border-top/, 'the switch rows must not be split by a line');
+});
+
 test('CSS guard: the narrow/PWA topbar moves the whole title wrap and puts ☰ last on its row', () => {
   const rules = splitCss(HTML);
   const narrow = rules.find(r => /@media \(max-width:480px\)/.test(r.selectors.join(' ')));
