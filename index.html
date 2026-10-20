@@ -411,8 +411,10 @@
   /* «Настройки блоков»: список чекбоксов show/hide на главном экране. */
   .block-settings-list{display:flex; flex-direction:column; gap:4px; margin:0 0 8px;}
   .block-setting-item{display:flex; align-items:center; justify-content:flex-start; gap:10px; padding:8px 10px; border:1px solid var(--border); border-radius:8px; font-size:14px; cursor:pointer; text-align:left;}
-  .block-setting-item input{width:auto; flex:none; margin:0; accent-color:var(--accent);}
-  .block-setting-item span{flex:1; text-align:left;}
+  .block-setting-item span{flex:1; min-width:0; text-align:left;}
+  /* Ниже .auth-panel input (0,1,1): равная специфичность проиграла бы порядком,
+     поэтому селектор усилен до 0,2,1 — иначе чекбокс растягивается на width:100%. */
+  .auth-panel .block-setting-item input{width:18px; height:18px; flex:none; margin:0; padding:0; background:none; border:none; accent-color:var(--accent);}
   .auth-panel input{
     background:var(--card2); border:1px solid var(--border); color:var(--text); border-radius:8px;
     padding:9px 10px; font-size:16px; outline:none; width:100%;
@@ -1483,7 +1485,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.2.68';
+const APP_VERSION = '1.2.69';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
