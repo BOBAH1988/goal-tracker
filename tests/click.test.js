@@ -3225,3 +3225,67 @@ test('challenge: the challenge never leaks into the wheel, priorities or totals'
     Array.from(totalsBefore), 'the wheel counters are not touched either');
   assert.equal(t.app.getState().priority, undefined, 'and the priority block stays empty');
 });
+
+test('block settings: the menu item opens the modal with seven checkboxes', () => {
+  const t = bootDom();
+  t.click('#btnTopMenu');
+  t.click('#btnBlockSettingsMenuItem');
+  assert.ok(t.document.getElementById('blockSettingsOverlay'), 'the modal opens from the menu');
+  const boxes = t.document.querySelectorAll('#blockSettingsOverlay input[data-block-id]');
+  assert.equal(boxes.length, 7, 'seven blocks, seven checkboxes');
+  assert.deepEqual(Array.from(boxes).map(b => b.dataset.blockId).sort(),
+    ['challenge', 'goodToday', 'mainGoals', 'priority', 'today', 'wheel', 'wishMap'],
+    'checkbox ids are the BLOCK_IDS storage keys');
+  assert.ok(Array.from(boxes).every(b => b.checked), 'all visible by default');
+  // Cancel closes without touching the state.
+  t.click('#btnBlockSettingsCancel');
+  assert.ok(!t.document.getElementById('blockSettingsOverlay'), 'Cancel closes the modal');
+  assert.deepEqual(Array.from(t.app.getHiddenBlocks()), [], 'nothing hidden after Cancel');
+});
+
+test('block settings: unchecking hides the block, survives a reload, re-checking brings it back', () => {
+  const t = bootDom();
+  t.click('#btnTopMenu');
+  t.click('#btnBlockSettingsMenuItem');
+  const wheel = t.document.querySelector('#blockSettingsOverlay input[data-block-id="wheel"]');
+  assert.ok(wheel, 'the wheel checkbox exists');
+  wheel.checked = false;
+  t.click('#btnBlockSettingsSave');
+  assert.deepEqual(Array.from(t.app.getHiddenBlocks()), ['wheel'], 'save records the hidden id');
+  assert.ok(!t.document.getElementById('wheelWrap'), 'the wheel block is gone from the home screen');
+  assert.ok(t.document.getElementById('mainGoalsToggle'), 'other blocks stay');
+  // A reload keeps it hidden: boot a fresh DOM from the saved localStorage.
+  const seed = {};
+  for (let i = 0; i < t.window.localStorage.length; i++) {
+    const k = t.window.localStorage.key(i);
+    seed[k] = t.window.localStorage.getItem(k);
+  }
+  const t2 = bootDom(seed);
+  assert.deepEqual(Array.from(t2.app.getHiddenBlocks()), ['wheel'], 'hiddenBlocks persists');
+  assert.ok(!t2.document.getElementById('wheelWrap'), 'still hidden after reload');
+  // Re-checking restores the block.
+  t2.click('#btnTopMenu');
+  t2.click('#btnBlockSettingsMenuItem');
+  // jsdom does not toggle .checked on click for us — set it like a user un-ticking would leave it.
+  t2.document.querySelector('#blockSettingsOverlay input[data-block-id="wheel"]').checked = true;
+  t2.click('#btnBlockSettingsSave');
+  assert.deepEqual(Array.from(t2.app.getHiddenBlocks()), [], 'empty again');
+  assert.ok(t2.document.getElementById('wheelWrap'), 'the wheel is back');
+});
+
+test('block settings: a state swap without hiddenBlocks never breaks the render', () => {
+  const t = bootDom();
+  // An old cloud snapshot / backup has no hiddenBlocks field at all.
+  t.app.setState({ name: 'Главная', children: [], today: [], todayOpen: false });
+  t.window.render();
+  assert.ok(t.document.getElementById('app').innerHTML.length > 1000, 'the home screen still renders');
+  assert.ok(t.document.getElementById('wheelWrap'), 'all blocks visible by default');
+  assert.deepEqual(Array.from(t.app.getHiddenBlocks()), [], 'missing field backfills to []');
+  // Junk ids from a corrupt save are filtered, not rendered.
+  t.app.setState(Object.assign(t.app.getState(), { hiddenBlocks: ['wheel', 'nope', 42] }));
+  t.window.render();
+  assert.ok(!t.document.getElementById('wheelWrap'), 'valid id still hides');
+  assert.ok(t.document.getElementById('mainGoalsToggle'), 'the rest stays visible');
+  const kept = t.app.getState().hiddenBlocks;
+  assert.ok(!kept.includes('nope') && !kept.includes(42), 'junk ids are dropped by the sanitizer');
+});

@@ -16,14 +16,28 @@ const vm = require('vm');
 
 const ROOT = path.join(__dirname, '..');
 
+
 function readProjectFile(name) {
   return fs.readFileSync(path.join(ROOT, name), 'utf8');
 }
 
+
+
 function inlineScript(html) {
-  const blocks = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((m) => m[1]);
-  if (!blocks.length) throw new Error('inline <script> not found in index.html');
-  return blocks.join('\n');
+  // index.html carries ONE inline <script> block (the whole app) — the big
+  // <script> at line 1473, ending with </script> right before </body></html>.
+  // index.html also carries two other <script> blocks: a JSON-LD metadata
+  // block (line 40) and CDN script tags (lines 1468-1471). A naive
+  // non-greedy match stops at the FIRST </script>, truncating the extracted
+  // source and breaking vm boot. Anchor at the last <script> opening and the
+  // last </script> closing so we return the full app block.
+  const open = html.lastIndexOf('<script>');
+  const close = html.lastIndexOf('</script>');
+  if (open === -1) throw new Error('inline <script> not found in index.html');
+  if (close === -1) throw new Error('inline <script> is missing </script> in index.html');
+  const full = html.slice(open + 8, close);
+  if (full.length === 0) throw new Error('inline <script> is empty in index.html');
+  return full;
 }
 
 // Appends to the production source: publishes its internals for tests. Runs in the same
@@ -111,6 +125,11 @@ const EXPORT_SRC = `
   setLastInteractionWasTouch: (v) => { lastInteractionWasTouch = !!v; },
   setCloudEnabled: (v) => { cloudEnabled = !!v; },
   setAuthUser: (u) => { authUser = u; },
+  // «Настройки блоков» (v1.2.66): hide/show home-screen blocks
+  BLOCK_IDS, ensureHiddenBlocks, blockSettingsModalHTML,
+  getBlockSettingsOpen: () => blockSettingsOpen,
+  setBlockSettingsOpen: (v) => { blockSettingsOpen = !!v; },
+  getHiddenBlocks: () => state.hiddenBlocks || [],
   checkForAppUpdate,
   getPath: () => path,
   setPath: (v) => { path = v; },

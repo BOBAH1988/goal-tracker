@@ -408,6 +408,10 @@
   .templates-preview li > li{margin:2px 0 0 16px; font-size:12px; color:var(--muted);}
   .template-merge-note{font-size:12px; color:var(--muted);}
   .templates-panel .auth-btn-row{margin-top:8px;}
+  /* «Настройки блоков»: список чекбоксов show/hide на главном экране. */
+  .block-settings-list{display:flex; flex-direction:column; gap:4px; margin:0 0 8px;}
+  .block-setting-item{display:flex; align-items:center; gap:10px; padding:8px 10px; border:1px solid var(--border); border-radius:8px; font-size:14px; cursor:pointer;}
+  .block-setting-item input{width:auto; accent-color:var(--accent);}
   .auth-panel input{
     background:var(--card2); border:1px solid var(--border); color:var(--text); border-radius:8px;
     padding:9px 10px; font-size:16px; outline:none; width:100%;
@@ -1478,7 +1482,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.2.65';
+const APP_VERSION = '1.2.67';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -1684,7 +1688,8 @@ function emptyTemplate(){
   ],
   today: [{text:"",done:false},{text:"",done:false},{text:"",done:false}],
   todayOpen: true,
-  priorityDefaultsSeeded: true };
+  priorityDefaultsSeeded: true,
+  hiddenBlocks: [] };
 }
 
 /* ===== Language ===== */
@@ -2045,6 +2050,18 @@ const STRINGS = {
     challengeDayHint: 'Нажмите на день — отметите его выполнение. Прошедший день без отметки показан красным ✗ — нажмите его, чтобы поставить ✓, если задание всё-таки было выполнено.',
     challengePrevMonth: 'Предыдущий месяц',
     challengeNextMonth: 'Следующий месяц',
+    /* ===== «Настройки блоков» (v1.2.66) — скрыть/показать блоки на главном экране ===== */
+    blockSettings: 'Настройки блоков',
+    blockSettingsDesc: 'Скрыть или показать блоки на главном экране — содержимое не удаляется.',
+    blockToday: 'Три важных дела на сегодня',
+    blockPriority: 'Главные цели',
+    blockMainGoals: 'Важные сферы жизни',
+    blockWheel: 'Колесо баланса',
+    blockChallenge: 'Челлендж',
+    blockWishMap: 'У меня будет',
+    blockGoodToday: 'Хорошее сегодня',
+    blockSettingsSave: 'Готово',
+    blockSettingsCancel: 'Отмена',
   },
   en: {
     appTitle: 'Only What Matters',
@@ -2394,6 +2411,18 @@ const STRINGS = {
     challengeDayHint: 'Tap a day to check it off. A red ✗ means the day passed without a mark — tap it to set ✓ if the task was actually done.',
     challengePrevMonth: 'Previous month',
     challengeNextMonth: 'Next month',
+    /* ===== «Block settings» (v1.2.66) — show/hide home-screen blocks ===== */
+    blockSettings: 'Block settings',
+    blockSettingsDesc: 'Show or hide home-screen blocks — nothing is deleted.',
+    blockToday: 'Three important things for today',
+    blockPriority: 'Main Goals',
+    blockMainGoals: 'Important Life Areas',
+    blockWheel: 'Balance Wheel',
+    blockChallenge: 'Challenge',
+    blockWishMap: 'I will have',
+    blockGoodToday: 'Good Today',
+    blockSettingsSave: 'Done',
+    blockSettingsCancel: 'Cancel',
   }
 };
 function loadLang(){
@@ -2405,6 +2434,7 @@ function loadLang(){
 }
 let lang = loadLang();
 let topMenuOpen = false;
+let blockSettingsOpen = false;   // «Настройки блоков» модалка — сбрасывается при перезагрузке
 // Интерактивное «Колесо баланса»: индекс сферы, дерево которой раскрыто на главной
 // (path.length === 0). Только вид — в state не пишется, saveState и синхронизацию не вызывает:
 // открытие/закрытие сферы не меняет пользовательские данные. null = ничего не раскрыто.
@@ -2435,6 +2465,18 @@ function capWord(key){
 
 /* ===== State ===== */
 const STORAGE_KEY = "goal_tracker_state_v7";
+// Stable ids of the seven home-screen blocks the user can hide/show via «Настройки блоков».
+// Order matches homeViewHTML top-to-bottom. Referenced by ensureHiddenBlocks() and by the
+// settings modal checkboxes — never localise these ids, they are storage keys.
+const BLOCK_IDS = [
+  'today',        // «Три важных дела на сегодня»
+  'priority',     // «Главные цели»
+  'mainGoals',    // «Важные сферы жизни»
+  'wheel',        // «Колесо баланса»
+  'challenge',    // «Челлендж»
+  'wishMap',      // «У меня будет»
+  'goodToday',    // «Хорошее сегодня»
+];
 
 /* ===== Templates (starter packs for spheres & goals) =====
    Each template defines spheres with goals and optional checklists.
@@ -2755,6 +2797,7 @@ function loadState(){
          ensureWishMap(parsed);
          ensureSphereActivity(parsed);
          ensureChallenge(parsed);
+         ensureHiddenBlocks(parsed);
          return parsed;
        }
     }
@@ -2768,6 +2811,7 @@ function loadState(){
    ensureGoodToday(fresh);
    ensureSphereActivity(fresh);
    ensureChallenge(fresh);
+   ensureHiddenBlocks(fresh);
    return fresh;
 }
 function structuredCloneFallback(obj){
@@ -3119,6 +3163,7 @@ function startCloudSync(uid){
         ensurePriorityDefaults(state);
         ensureSphereActivity(state);
         ensureChallenge(state);   // a cloud snapshot from an older build has no «Челлендж» yet
+        ensureHiddenBlocks(state);
         // The cloud board carries metadata only; keep local cached images for cards we
         // The third argument is the document's own updatedAt: a local card whose file is
         // already uploaded but which this older write does not contain yet is kept instead of
@@ -3149,6 +3194,7 @@ function startCloudSync(uid){
       state = initial;
       ensureSphereActivity(state);
       ensureChallenge(state);   // a fresh template has no «Челлендж» yet
+      ensureHiddenBlocks(state);
       path = [];
       saveState();
       applyingRemoteUpdate = false;
@@ -3764,6 +3810,18 @@ function ensureChallenge(node){
     });
   }
   ch.days = days;
+}
+/* «Настройки блоков»: hiddenBlocks — множество id блоков, которые пользователь
+   спрятал с главного экрана. Содержимое блоков не удаляется, они просто не рдерятся.
+   Надёжный набор id — см. BLOCK_IDS в homeViewHTML. */
+function ensureHiddenBlocks(node){
+  if(!node) return;
+  const valid = new Set(BLOCK_IDS);
+  if(!Array.isArray(node.hiddenBlocks)){
+    node.hiddenBlocks = [];
+    return;
+  }
+  node.hiddenBlocks = node.hiddenBlocks.filter(id => typeof id === 'string' && valid.has(id));
 }
 function ensureGoodToday(node){
   if(!node) return;
@@ -5260,6 +5318,7 @@ function doImportData(file){
      ensureWishMap(state);
      ensureSphereActivity(state);
      ensureChallenge(state);   // an old backup has no «Челлендж» yet — backfill an empty one
+     ensureHiddenBlocks(state);
     path = [];
     // Restore «Карта желаний» photos (v2 backups carry them as base64). They go straight into the
     // IndexedDB cache — never into state — so the board renders them from blob URLs like any local
@@ -5446,6 +5505,7 @@ function render(){
    // fresh signup, undo) goes through render(), so a challenge-less state must never break
    // homeViewHTML — an old cloud snapshot or a fresh template has no `challenge` field at all.
    ensureChallenge(state);
+   ensureHiddenBlocks(state);
    // The collapsed/expanded flag lives in the state, so a swapped state must carry it over
    // (otherwise an imported or synced «open» block would silently stay closed).
    if(typeof state.challengeOpen === 'boolean') challengeOpen = state.challengeOpen;
@@ -5475,6 +5535,7 @@ function render(){
 
   html += authPanelsHTML();
   html += templatesModalHTML();
+  html += blockSettingsModalHTML();
 
   html += renderBreadcrumb();
 
@@ -5631,6 +5692,10 @@ function nodeViewHTML(node, mode, protectedCount, hintHTML){
 
 function homeViewHTML(overallPct, hintHTML, mode, protectedCount){
   let html = '';
+  // «Настройки блоков»: набор id спрятанных блоков — они не рендерятся, но их содержимое
+  // в state не удаляется. «Путь к балансу» (overall) и напоминание о сфере — всегда видны.
+  const hidden = new Set(state.hiddenBlocks || []);
+  const blockShown = (id)=>!hidden.has(id);
   // v1.2.0: the motivation line reads as an address to the user — «Владимир, Действуй, даже если
   // страшно.» The greeting comes from the signed-in account name; without one the quote stays plain.
   const quoteGreet = (authUser && authUser.name) ? esc(authUser.name) + ', ' : '';
@@ -5644,7 +5709,8 @@ function homeViewHTML(overallPct, hintHTML, mode, protectedCount){
       </button>
     </div>
   </div>`;
-   const todayItems = Array.isArray(state.today) ? state.today : [{text:"",done:false},{text:"",done:false},{text:"",done:false}];
+   if(blockShown('today')){
+     const todayItems = Array.isArray(state.today) ? state.today : [{text:"",done:false},{text:"",done:false},{text:"",done:false}];
    const todayDoneCount = todayItems.filter(it => it.done).length;
    const moodClass = todayDoneCount === 0 ? 'good-today-start'
      : todayDoneCount === 1 ? 'good-today-begin'
@@ -5684,9 +5750,11 @@ function homeViewHTML(overallPct, hintHTML, mode, protectedCount){
          }).join('')}
        </div>` : ''}
      </div>`;
+   }
    lastPriorityItems = collectPriorityItems();
-   const priorityOpen = !!state.priorityOpen;
-   html += `<div class="priority-block">
+   if(blockShown('priority')){
+     const priorityOpen = !!state.priorityOpen;
+     html += `<div class="priority-block">
      <div class="priority-header" id="priorityToggle">
        <span class="priority-arrow">${priorityOpen ? '▾' : '▸'}</span>
        <span class="section-title">${t('priorityTitle')}</span>
@@ -5709,6 +5777,7 @@ function homeViewHTML(overallPct, hintHTML, mode, protectedCount){
          : `<div class="empty-state">${t('priorityEmpty')}</div>`}
       </div>` : ''}
     </div>`;
+   }
     // Мягкое напоминание о сфере, к которой давно не возвращались. Ненавязчивый блок над
     // списком сфер: без сроков, красных цветов и оценок — только предложение заглянуть.
     // Считается по-настоящему загруженным данным (sphereDataReady) и только для ОДНОЙ сферы —
@@ -5723,6 +5792,7 @@ function homeViewHTML(overallPct, hintHTML, mode, protectedCount){
         </div>
       </div>`;
     }
+   if(blockShown('mainGoals')){
     html += `<div class="section-title-row">
       <div class="section-title" id="mainGoalsToggle">
         <span class="main-goals-arrow">${mainGoalsOpen ? '▾' : '▸'}</span>
@@ -5769,6 +5839,8 @@ function homeViewHTML(overallPct, hintHTML, mode, protectedCount){
       html += sphereTreeHTML(expandedSphere, expandedSphereIdx);
     }
   }
+   }
+   if(blockShown('wheel')){
    html += `<div class="section-title-row" style="margin-top:24px;">
       <div class="section-title" id="wheelToggle" style="margin-top:10px;">
         <span class="wheel-arrow">${wheelOpen ? '▾' : '▸'}</span>
@@ -5788,12 +5860,16 @@ function homeViewHTML(overallPct, hintHTML, mode, protectedCount){
       state.children.forEach((c, i) => { if(!c.archived) targets.push(i); });
       html += `<div class="wheel-wrap" id="wheelWrap">${wheelHTML(activeChildren(state), { targets, activeIdx: expandedSphereIdx, interactive: !!targets.length })}<div class="wheel-hint">${t('wheelSectorHint')}</div></div>`;
     }
+   }
     // «Челленж» (v1.2.62) — сворачиваемый блок привычки/челленжа прямо под колесом:
     // ежедневные отметки в календаре + обратный отсчёт. Живёт в state.challenge и
     // ни на что другое (колесо, приоритеты, итоги) не влияет.
-    html += challengeSectionHTML();
+   if(blockShown('challenge')){
+     html += challengeSectionHTML();
+   }
     // «Карта желаний» — optional vision board directly under the wheel. Fully independent:
     // cards live in state.wishMap only and never feed the wheel, ratings or any totals.
+   if(blockShown('wishMap')){
       html += `<div class="section-title-row" style="margin-top:24px;">
         <div class="section-title" id="wishToggle">
           <span class="wheel-arrow">${wishMapOpen ? '▾' : '▸'}</span>${t('wishMapTitle')}
@@ -5818,9 +5894,12 @@ function homeViewHTML(overallPct, hintHTML, mode, protectedCount){
        html += wishMapSectionHTML();
      }
      // «Хорошее сегодня» — independent daily journal after the wish map. Stores plain text
+   }
      // entries in state.goodTodayEntries and optional weekly reflections in
      // state.goodTodayWeekReflections. Never feeds the wheel / priorities / any totals.
-     html += goodTodaySectionHTML();
+   if(blockShown('goodToday')){
+        html += goodTodaySectionHTML();
+   }
    return html;
 }
 
@@ -6619,6 +6698,44 @@ function templatesModalHTML(){
   return html;
 }
 
+/* ===== «Настройки блоков» modal (v1.2.66) =====
+   Checkbox list of the seven home-screen blocks. Unchecking hides the block
+   (its id goes into state.hiddenBlocks); its content is never deleted. */
+function blockSettingsModalHTML(){
+  if(!blockSettingsOpen) return '';
+  const hidden = new Set(state.hiddenBlocks || []);
+  let html = `<div class="auth-modal-overlay" id="blockSettingsOverlay">
+    <div class="auth-panel">
+      <button class="auth-close" id="btnBlockSettingsClose" aria-label="close" title="${t('done')}">✕</button>
+      <h2 style="margin:0 0 4px; font-size:16px;">${t('blockSettings')}</h2>
+      <p style="margin:0 0 16px; font-size:14px; color:var(--muted);">${t('blockSettingsDesc')}</p>
+      <div class="block-settings-list">`;
+  const labels = [
+    ['today', 'blockToday'],
+    ['priority', 'blockPriority'],
+    ['mainGoals', 'blockMainGoals'],
+    ['wheel', 'blockWheel'],
+    ['challenge', 'blockChallenge'],
+    ['wishMap', 'blockWishMap'],
+    ['goodToday', 'blockGoodToday'],
+  ];
+  for(const [id, key] of labels){
+    const checked = !hidden.has(id) ? 'checked' : '';
+    html += `<label class="block-setting-item">
+        <input type="checkbox" data-block-id="${id}" ${checked}>
+        <span>${t(key)}</span>
+      </label>`;
+  }
+  html += `</div>
+      <div class="auth-btn-row">
+        <button type="button" id="btnBlockSettingsCancel" class="auth-link">${t('blockSettingsCancel')}</button>
+        <button id="btnBlockSettingsSave" class="btn-primary">${t('blockSettingsSave')}</button>
+      </div>
+    </div>
+  </div>`;
+  return html;
+}
+
 /* Deep-copies one template goal definition into a real goal node. Containers
    keep nesting; the deepest level becomes plain leaf goals. */
 function templateNode(def){
@@ -6985,6 +7102,7 @@ function topbarHTML(){
       <button id="btnTopMenu" data-tip="${t('menuTitle')}" aria-label="${t('menuTitle')}">☰</button>
       ${topMenuOpen ? `<div class="lang-menu">
         <button id="btnHomeMenuItem" class="menu-item">${t('home')}</button>
+        <button id="btnBlockSettingsMenuItem" class="menu-item" data-tip="${t('blockSettings')}">${t('blockSettings')}</button>
         <button id="btnAboutMenuItem" class="menu-item">${t('aboutTitle')}</button>
         <button id="btnInstructionsMenuItem" class="menu-item">${t('instructionsTitle')}</button>
         <button id="btnResetPwaCacheMenuItem" class="menu-item">${t('resetPwaCache')}</button>
@@ -9672,6 +9790,7 @@ function attachSyncConflictHandlers(){
       ensurePriorityDefaults(state);
       ensureSphereActivity(state);
       ensureChallenge(state);   // a cloud snapshot from an older build has no «Челлендж» yet
+      ensureHiddenBlocks(state);
       // The account document holds the wish board as METADATA ONLY: no uploadState flags and no
       // bytes. Without this merge the cards keep no state at all and nothing ever downloads
       // them — the board stays blank on this device until a reload. mergeWishMapCloud() restores
@@ -10090,6 +10209,15 @@ function attachTopMenuHandlers(){
       render();
     });
   }
+  const btnBlockSettingsMenuItem = document.getElementById('btnBlockSettingsMenuItem');
+  if(btnBlockSettingsMenuItem){
+    btnBlockSettingsMenuItem.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      topMenuOpen = false;
+      blockSettingsOpen = true;
+      render();
+    });
+  }
   const btnAboutMenuItem = document.getElementById('btnAboutMenuItem');
   if(btnAboutMenuItem){
     btnAboutMenuItem.addEventListener('click', (e)=>{
@@ -10367,6 +10495,42 @@ function attachModalHandlers(){
       touchSphereAtPath(hit.path);
       path = hit.path;
       searchPanelOpen = false;
+      render();
+    });
+  }
+  const blockSettingsOverlay = document.getElementById('blockSettingsOverlay');
+  if(blockSettingsOverlay){
+    blockSettingsOverlay.addEventListener('click', (e)=>{
+      if(e.target === blockSettingsOverlay){
+        blockSettingsOpen = false;
+        render();
+      }
+    });
+  }
+  const btnBlockSettingsClose = document.getElementById('btnBlockSettingsClose');
+  if(btnBlockSettingsClose){
+    btnBlockSettingsClose.addEventListener('click', ()=>{
+      blockSettingsOpen = false;
+      render();
+    });
+  }
+  const btnBlockSettingsCancel = document.getElementById('btnBlockSettingsCancel');
+  if(btnBlockSettingsCancel){
+    btnBlockSettingsCancel.addEventListener('click', ()=>{
+      blockSettingsOpen = false;
+      render();
+    });
+  }
+  const btnBlockSettingsSave = document.getElementById('btnBlockSettingsSave');
+  if(btnBlockSettingsSave){
+    btnBlockSettingsSave.addEventListener('click', ()=>{
+      const hidden = [];
+      document.querySelectorAll('#blockSettingsOverlay input[data-block-id]').forEach(el=>{
+        if(!el.checked) hidden.push(el.dataset.blockId);
+      });
+      state.hiddenBlocks = hidden;
+      saveState();
+      blockSettingsOpen = false;
       render();
     });
   }

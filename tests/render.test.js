@@ -15,6 +15,7 @@ const PANEL_FLAGS = [
   'topMenuOpen', 'installPanelOpen', 'aboutPanelOpen', 'instructionsPanelOpen',
   'checklistDeletePanelOpen', 'searchPanelOpen', 'authPanelOpen', 'signupPanelOpen',
   'accountMenuOpen', 'editAccountOpen', 'updatePanelOpen',
+  'blockSettingsOpen',
   'wishAddOpen', 'wishEditIdx', 'wishLightboxIdx', 'wishMapOpen', 'wishCropSrc', 'wishManageOpen',
   'goodTodayEntriesOpen', 'goodTodayHistoryOpen', 'goodTodayEditId',
   'goodTodayHistoryEditId', 'goodTodayHistoryPage', 'goodTodayFormOpen',
