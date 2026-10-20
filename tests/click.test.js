@@ -2461,18 +2461,21 @@ test('share: the menu item sits with the other items and reuses .menu-item', () 
   const resetAt = order.indexOf('btnResetPwaCacheMenuItem');
   const exportAt = order.indexOf('btnExportData');
   const importAt = order.indexOf('btnImportData');
+  const blockSettingsAt = order.indexOf('btnBlockSettingsMenuItem');
   const resetDataAt = order.indexOf('btnResetData');
   const installAt = order.indexOf('btnInstallAppMenuItem');
   assert.ok(shareAt !== -1, 'share item present');
   assert.ok(resetAt !== -1, 'reset cache item present');
   assert.ok(exportAt !== -1, 'export item present');
   assert.ok(importAt !== -1, 'import item present');
+  assert.ok(blockSettingsAt !== -1, 'block settings item present');
   assert.ok(installAt === -1 || installAt !== -1, 'install item present');
   // Под «Инструкцией» идёт «Сбросить кэш», затем экспорт, импорт, затем «Поделиться приложением», затем «Установить приложка».
   assert.ok(installAt === -1 || instructionsAt + 1 === resetAt, 'clear cache sits right after Instructions');
   assert.ok(installAt === -1 || resetAt + 1 === exportAt, 'export sits right after clear cache');
   assert.ok(installAt === -1 || exportAt + 1 === importAt, 'import sits right after export');
-  assert.ok(installAt === -1 || importAt + 1 === shareAt || (resetDataAt !== -1 && importAt + 1 === resetDataAt && resetDataAt + 1 === shareAt), 'share sits right after import (or after reset-data when unauthenticated)');
+  assert.ok(blockSettingsAt !== -1 && importAt + 1 === blockSettingsAt, 'block settings sits right after import');
+  assert.ok(installAt === -1 || (blockSettingsAt !== -1 && resetDataAt !== -1 && blockSettingsAt + 1 === resetDataAt && resetDataAt + 1 === shareAt) || blockSettingsAt !== -1 && blockSettingsAt + 1 === shareAt, 'share sits after block settings (with reset-data between when unauthenticated)');
   assert.ok(installAt === -1 || shareAt + 1 === installAt, 'install sits right after share');
 });
 

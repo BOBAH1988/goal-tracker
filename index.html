@@ -1491,7 +1491,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.2.73';
+const APP_VERSION = '1.2.74';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -7131,11 +7131,11 @@ function topbarHTML(){
         <button id="btnResetPwaCacheMenuItem" class="menu-item">${t('resetPwaCache')}</button>
         <button id="btnExportData" class="menu-item">${t('exportData')}</button>
         <button id="btnImportData" class="menu-item">${t('importData')}</button>
+        <button id="btnBlockSettingsMenuItem" class="menu-item">${t('blockSettings')}</button>
         ${!authUser ? `<button id="btnResetData" class="menu-item">${t('tipReset')}</button>` : ''}
         ${(cloudEnabled && authUser) ? `<button id="btnEditAccount" class="menu-item">${t('editAccount')}</button>` : ''}
         <button id="btnShareMenuItem" class="menu-item">${t('share')}</button>
         ${!isStandalonePwa() ? `<button id="btnInstallAppMenuItem" class="menu-item">${t('installAppTitle')}</button>` : ''}
-        <button id="btnBlockSettingsMenuItem" class="menu-item">${t('blockSettings')}</button>
          <input type="file" id="importFileInput" accept="application/json,.json" style="display:none">
          <div class="menu-lang-row">
           ${Object.keys(LANG_FLAGS).map(code => `<button class="lang-option ${lang===code?'active':''}" aria-pressed="${lang===code}" data-lang="${code}" title="${code==='ru'?'Русский':'English'}">${LANG_FLAGS[code]}</button>`).join('')}
