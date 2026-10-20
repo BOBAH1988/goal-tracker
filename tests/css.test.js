@@ -207,16 +207,20 @@ test('CSS guard: the narrow/PWA topbar moves the whole title wrap and puts ☰ l
   // assertion is order+flex TOGETHER on the wrap, never on .topbar h1.
   assert.match(body, /\.app-title-wrap\{[^}]*order:1[^}]*flex:1 1 auto[^}]*min-width:0/,
     'the title wrap must get order+flex, not .topbar h1');
-  // Auto margin on .actions pushes itself AND the ☰ behind it to the right edge, so ☰ still
-  // anchors its dropdown (right:0) where it always did.
+  // Auto margin on .actions pushes itself AND the ☰ behind it to the right edge.
   assert.match(body, /\.actions\{[^}]*order:2[^}]*margin-left:auto/,
     'the actions row must push itself (and ☰) to the right edge');
   assert.match(body, /\.top-menu-dropdown\{[^}]*order:3[^}]*\}/,
     'the menu button must come last (right) in the shared top row');
   assert.doesNotMatch(body, /\.topbar h1\{[^}]*order:/,
     'an order on h1 re-orders the wrap column — subtitle above title');
-  assert.match(body, /\.lang-menu\{left:auto; right:0;?\}/,
-    'a right-edge ☰ needs its dropdown anchored right');
+  // Главное меню — центрированная модалка (.menu-backdrop — flex-контейнер, .lang-menu внутри
+  // него), привязка к краю (left/right) запрещена: она уводила бы панель из центра.
+  const cssText = rules.map(r => r.selectors.join(',') + '{' + r.body + '}').join('\n');
+  assert.doesNotMatch(cssText, /\.lang-menu\{[^}]*\b(left|right)\s*:/,
+    'the main menu is a centered modal — no left/right anchoring on .lang-menu');
+  assert.match(cssText, /\.menu-backdrop\{[^}]*display:flex[^}]*justify-content:center/,
+    'the backdrop must centre the menu (flex + justify-content:center)');
 });
 
 /* On touch, WebKit deliberately keeps :hover sticky after a tap (see the long note in index.html).

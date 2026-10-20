@@ -168,9 +168,9 @@
      all, so there is nothing left to stick. A mouse-driven desktop keeps the feedback. */
   @media (hover: hover) and (pointer: fine){
     :where(html:not(.touch-mode)) .topbar button:hover{color:var(--text); border-color:var(--accent);}
-    :where(html:not(.touch-mode)) .topbar .lang-option:hover{background:var(--card); border-color:var(--border);}
-    :where(html:not(.touch-mode)) .topbar .menu-item:hover{background:var(--card);}
-    :where(html:not(.touch-mode)) .topbar .theme-option:hover{background:var(--card); border-color:var(--border);}
+    :where(html:not(.touch-mode)) .lang-menu .lang-option:hover{background:var(--card); border-color:var(--border);}
+    :where(html:not(.touch-mode)) .lang-menu .menu-item:hover{background:var(--card);}
+    :where(html:not(.touch-mode)) .lang-menu .theme-option:hover{background:var(--card); border-color:var(--border);}
     :where(html:not(.touch-mode)) #btnFilter:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistory:hover,:where(html:not(.touch-mode)) #btnGoodTodayWeekHistory:hover,:where(html:not(.touch-mode)) #btnGoodTodayWeekEdit:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPagePrev:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPageNext:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPagePrevBottom:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPageNextBottom:hover{color:var(--text); border-color:var(--accent);}
     :where(html:not(.touch-mode)) #btnEdit:hover{color:var(--text); border-color:var(--accent);}
     :where(html:not(.touch-mode)) #btnDelete:hover{border-color:var(--red); color:var(--red);}
@@ -185,46 +185,45 @@
     :where(html:not(.touch-mode)) .sphere-tree-close:hover{color:var(--text); border-color:var(--accent);}
   }
   #btnTopMenu{padding:1px 2px !important; font-size:24px !important; line-height:1; display:flex; align-items:center; justify-content:center; border-color:transparent;}
-  /* z-index:11 keeps the button (and its open dropdown) above .menu-backdrop (z-index:9) once
-     the menu is open — it now sits in the top-left corner instead of inside .actions. */
+  /* z-index:11 keeps the button above .menu-backdrop (z-index:9) once the menu is open. */
   .top-menu-dropdown{position:relative; display:inline-flex; z-index:11;}
+  /* Главное меню — центрированная панель в стиле .auth-panel: затемнение на весь экран,
+     сама панель по центру (как «Настройки блоков» и другие модалки сайта). */
+  .menu-backdrop{position:fixed; inset:0; background:rgba(6,9,16,0.6); z-index:9;
+    display:flex; align-items:center; justify-content:center; padding:20px;}
   .lang-menu{
-    position:absolute; top:calc(100% + 6px); left:0; background:var(--card2); border:1px solid var(--border);
-    border-radius:12px; padding:6px; display:flex; flex-direction:column; gap:2px; z-index:10; width:max-content;
-    max-width:calc(100vw - 32px); box-shadow:0 12px 28px rgba(0,0,0,.4);
+    position:relative; background:var(--card); border:1px solid var(--border);
+    border-radius:14px; padding:24px 20px 18px; display:flex; flex-direction:column; gap:2px; z-index:10;
+    width:100%; max-width:340px; max-height:calc(100vh - 40px); max-height:calc(100dvh - 40px);
+    overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,.45);
   }
-  /* Dims the rest of the page while the ☰ menu is open. Purely visual — the existing
-     document-level click-away listener already closes the menu on any outside click, and since
-     this sits above everything but below the dropdown itself, that click naturally lands on the
-     backdrop (not on a card behind it) and still bubbles up to close the menu as before. */
-  .menu-backdrop{position:fixed; inset:0; background:rgba(6,9,16,0.6); z-index:9;}
-  .topbar .lang-option{
+  .lang-menu .lang-option{
     background:none; border:1px solid transparent; border-radius:8px; padding:4px; font-size:20px;
     line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center; flex:none;
   }
   @media (hover: hover) and (pointer: fine){
-    :where(html:not(.touch-mode)) .topbar .lang-option:hover{background:var(--card); border-color:var(--border);}
+    :where(html:not(.touch-mode)) .lang-menu .lang-option:hover{background:var(--card); border-color:var(--border);}
   }
-  .topbar .lang-option.active{border-color:var(--accent); box-shadow:0 0 0 1px var(--accent);}
-  .topbar .menu-item{
+  .lang-menu .lang-option.active{border-color:var(--accent); box-shadow:0 0 0 1px var(--accent);}
+  .lang-menu .menu-item{
     background:none; border:none; color:var(--text); border-radius:8px; padding:8px; font-size:13px;
     cursor:pointer; text-align:left; white-space:normal; word-break:break-word;
   }
   @media (hover: hover) and (pointer: fine){
-    :where(html:not(.touch-mode)) .topbar .menu-item:hover{background:var(--card);}
+    :where(html:not(.touch-mode)) .lang-menu .menu-item:hover{background:var(--card);}
   }
   /* Same horizontal padding (8px) as .menu-item above, so the flag/theme rows line up flush with
      the text items instead of sitting slightly indented relative to them. */
   .menu-lang-row{display:flex; gap:4px; justify-content:flex-start; padding:8px 8px 0; margin-top:4px; border-top:1px solid var(--border);}
   .menu-theme-row{display:flex; gap:4px; justify-content:flex-start; padding:8px 8px 4px; margin-top:4px; border-top:1px solid var(--border);}
-  .topbar .theme-option{
+  .lang-menu .theme-option{
     background:none; border:1px solid transparent; border-radius:8px; padding:4px; font-size:18px;
     line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center;
   }
   @media (hover: hover) and (pointer: fine){
-    :where(html:not(.touch-mode)) .topbar .theme-option:hover{background:var(--card); border-color:var(--border);}
+    :where(html:not(.touch-mode)) .lang-menu .theme-option:hover{background:var(--card); border-color:var(--border);}
   }
-  .topbar .theme-option.active{border-color:var(--accent); box-shadow:0 0 0 1px var(--accent);}
+  .lang-menu .theme-option.active{border-color:var(--accent); box-shadow:0 0 0 1px var(--accent);}
    /* The top-right trio — ☰ menu, search, account — ONE box, ONE glyph size, ONE border.
       Before this they were three different controls in the same corner: ☰ at 24px with a
       transparent border, search 16px inside a 32px box, account 18px inside a 34px box, so the
@@ -905,8 +904,7 @@
     .top-menu-dropdown{order:3; margin-left:0;}
     .topbar h1{justify-content:flex-start; margin-top:2px; font-size:17px;}
     .app-subtitle{text-align:left;}
-    /* ☰ now sits at the right edge, so its dropdown must anchor to that edge, not to its left. */
-    .lang-menu{left:auto; right:0;}
+    /* Главное меню — центрированная модалка (см. .menu-backdrop выше), привязка к краю не нужна. */
     .account-dropdown #btnAccount{max-width:44vw; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   }
   .card{
@@ -1485,7 +1483,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.2.69';
+const APP_VERSION = '1.2.70';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -7103,7 +7101,21 @@ function topbarHTML(){
   return `<div class="topbar">
     <div class="top-menu-dropdown">
       <button id="btnTopMenu" data-tip="${t('menuTitle')}" aria-label="${t('menuTitle')}">☰</button>
-      ${topMenuOpen ? `<div class="lang-menu">
+    </div>
+    <div class="app-title-wrap"><h1><img class="app-logo" src="./icon-192.png" alt="" aria-hidden="true">${t('appTitle')}</h1>
+    <div class="app-subtitle">${esc(t('appSubtitle'))}</div></div>
+    <div class="actions">
+      <button id="btnSearch" class="icon-btn" data-tip="${t('search')}" aria-label="${t('search')}"><i class="ti ti-search" aria-hidden="true"></i></button>
+      ${cloudEnabled ? (authUser
+        ? `<div class="account-dropdown">
+            <button id="btnAccount" ${accAsIcon ? `data-tip="${esc(authUser.name || authUser.email)}" aria-label="${esc(authUser.name || authUser.email)}"` : `title="${esc(authUser.email)}"`}>${accAsIcon ? '<i class="ti ti-user" aria-hidden="true"></i>' : esc(authUser.name || authUser.email)}</button>
+            ${accountMenuOpen ? `<div class="account-menu">
+              <button id="btnSignOutMenu" class="danger">${t('accountSignOut')}</button>
+            </div>` : ''}
+          </div>`
+        : `<button id="btnAccount">🔐 ${t('account')}</button>`) : ''}
+    </div>
+  </div>${topMenuOpen ? `<div class="menu-backdrop"><div class="lang-menu">
         <button id="btnHomeMenuItem" class="menu-item">${t('home')}</button>
         <button id="btnBlockSettingsMenuItem" class="menu-item" data-tip="${t('blockSettings')}">${t('blockSettings')}</button>
         <button id="btnAboutMenuItem" class="menu-item">${t('aboutTitle')}</button>
@@ -7122,22 +7134,7 @@ function topbarHTML(){
         <div class="menu-theme-row">
           ${Object.keys(THEME_ICONS).map(code => `<button class="theme-option ${theme===code?'active':''}" aria-pressed="${theme===code}" data-theme-choice="${code}" title="${t(THEME_TITLES[code])}" aria-label="${t(THEME_TITLES[code])}">${THEME_ICONS[code]}</button>`).join('')}
         </div>
-      </div>` : ''}
-    </div>
-    <div class="app-title-wrap"><h1><img class="app-logo" src="./icon-192.png" alt="" aria-hidden="true">${t('appTitle')}</h1>
-    <div class="app-subtitle">${esc(t('appSubtitle'))}</div></div>
-    <div class="actions">
-      <button id="btnSearch" class="icon-btn" data-tip="${t('search')}" aria-label="${t('search')}"><i class="ti ti-search" aria-hidden="true"></i></button>
-      ${cloudEnabled ? (authUser
-        ? `<div class="account-dropdown">
-            <button id="btnAccount" ${accAsIcon ? `data-tip="${esc(authUser.name || authUser.email)}" aria-label="${esc(authUser.name || authUser.email)}"` : `title="${esc(authUser.email)}"`}>${accAsIcon ? '<i class="ti ti-user" aria-hidden="true"></i>' : esc(authUser.name || authUser.email)}</button>
-            ${accountMenuOpen ? `<div class="account-menu">
-              <button id="btnSignOutMenu" class="danger">${t('accountSignOut')}</button>
-            </div>` : ''}
-          </div>`
-        : `<button id="btnAccount">🔐 ${t('account')}</button>`) : ''}
-    </div>
-  </div>${topMenuOpen ? '<div class="menu-backdrop"></div>' : ''}`;
+      </div></div>` : ''}`;
 }
 
 function renderBreadcrumb(){
@@ -10430,6 +10427,22 @@ function attachModalHandlers(){
       document.removeEventListener('click', closeTopMenu);
       render();
     }, { once:true });
+    // Клики внутри панели не должны всплывать до closeTopMenu — иначе выбор пункта
+    // закрыл бы меню в том же тике, не дав обработчику пункта сработать.
+    const langMenu = document.querySelector('.menu-backdrop .lang-menu');
+    if(langMenu){
+      langMenu.addEventListener('click', (e)=>{ e.stopPropagation(); });
+    }
+    // Клик по затемнению (мимо панели) = закрыть, как у остальных модалок сайта.
+    const menuBackdrop = document.querySelector('.menu-backdrop');
+    if(menuBackdrop){
+      menuBackdrop.addEventListener('click', (e)=>{
+        if(e.target === menuBackdrop){
+          topMenuOpen = false;
+          render();
+        }
+      });
+    }
   }
   const aboutOverlay = document.getElementById('aboutOverlay');
   if(aboutOverlay){
