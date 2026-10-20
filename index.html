@@ -1393,7 +1393,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.2.55';
+const APP_VERSION = '1.2.56';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -5233,6 +5233,11 @@ function relocateResultsHTML(sourceNode){
    если страница не сменилась (lastRenderPath), навигация не должна притягивать старый
    скролл. lastRenderPath обновляется в конце каждого render(). */
 let lastRenderPath = null;
+/* После тача/pointer-тапа приложение samo восстанавливает фокус на кнопку в render() —
+   на iOS 26 это порождает залипающую системную «капсулу» (репорт 19.10.2026). После такого
+   взаимодействия не возвращаем фокус на action-кнопки (#btn*); клавиатурная доступность
+   сохраняется: сброс флага по keydown возвращает обычное поведение для таб-навигации. */
+let lastInteractionWasTouch = false;
 function render(){
   // If a card/checklist-row drag is still in progress when render() gets triggered by something
   // else entirely (e.g. a Firestore cloud-sync snapshot landing mid-gesture — more likely for
@@ -5321,7 +5326,12 @@ function render(){
   fitQuoteInput();
   fitAccountButton();
   // Restore: focus first (it may scroll on old engines), then pin the scroll back.
-  if(keepId && samePage){
+  // После тача/pointer-тапа не возвращаем фокус на action-кнопки (#btn*): на iOS 26 это
+  // оставляет кнопку сфокусированной и WebKit рисует залипающую «капсулу». Клавиатурная
+  // доступность не страдает: сброс флага по keydown (см. listener в конце скрипта)
+  // возвращает обычное поведение для таб-навигации, а инпуты/поиск фокус не теряют
+  // (их id не начинается с btn).
+  if(keepId && samePage && !(lastInteractionWasTouch && /^btn/.test(keepId))){
     const el = document.getElementById(keepId);
     if(el && typeof el.focus === 'function'){
       try{ el.focus({preventScroll:true}); }catch(e){ try{ el.focus(); }catch(e2){} }
@@ -10089,6 +10099,12 @@ window.addEventListener('beforeinstallprompt', (e)=>{
 window.addEventListener('touchstart', ()=>{
   document.documentElement.classList.add('touch-mode');
 }, { passive: true, once: true });
+/* Флаг тач/pointer-взаимодействия: render() не возвращает фокус на #btn* после тача,
+   чтобы iOS 26 не оставила залипающую системную «капсулу» (репорт 19.10.2026).
+   Клавиатурный ввод сбрасывает флаг — таб-навигация работает как прежде. */
+window.addEventListener('touchstart', ()=>{ lastInteractionWasTouch = true; }, { passive: true });
+window.addEventListener('pointerdown', (e)=>{ if(e.pointerType !== 'mouse') lastInteractionWasTouch = true; }, { passive: true });
+window.addEventListener('keydown', ()=>{ lastInteractionWasTouch = false; });
 </script>
 </body>
 </html>

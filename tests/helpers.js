@@ -99,6 +99,7 @@ const EXPORT_SRC = `
   // account button fit (lexical lets — tests set them directly,
   // jsdom has no layout to measure the real clipping)
   setAccountIconOnly: (v) => { accountIconOnly = !!v; },
+  setLastInteractionWasTouch: (v) => { lastInteractionWasTouch = !!v; },
   setCloudEnabled: (v) => { cloudEnabled = !!v; },
   setAuthUser: (u) => { authUser = u; },
   checkForAppUpdate,

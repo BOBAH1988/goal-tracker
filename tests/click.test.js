@@ -509,6 +509,21 @@ test('render() restores focus on the same page after the innerHTML rebuild (audi
     'a page change must not drag the old focus target along');
 });
 
+test('render() does not restore focus on #btnMove after a touch tap (iOS sticky-capsule fix)', () => {
+  const t = bootDom();
+  t.app.setState({ name: 'root', children: [leaf(false, { name: 'Цель' })] });
+  t.window.render();
+  const btn = t.document.getElementById('btnMove');
+  assert.ok(btn, 'btnMove exists on the home page');
+  btn.focus();
+  assert.equal(t.document.activeElement, btn, 'precondition: btnMove holds focus');
+  // simulate a touch tap before re-rendering
+  t.app.setLastInteractionWasTouch(true);
+  t.window.render();
+  assert.notEqual(t.document.activeElement && t.document.activeElement.id, 'btnMove',
+    'after a touch tap, focus must not be restored to btnMove');
+});
+
 
 /* Аудит: поддерево (карточка с вложенными целями) удалялось одним тапом без подтверждения.
    Первый тап — только запрос (сообщение deleteMsg), второй тап по ТОЙ ЖЕ карточке — удаление. */
