@@ -1393,7 +1393,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.2.59';
+const APP_VERSION = '1.2.60';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -1789,11 +1789,16 @@ const STRINGS = {
     resetConfirm: 'Это удалит все цели и настройки, восстановив данные из начального шаблона. Продолжить?',
     confirmYes: 'Да',
     confirmNo: 'Нет',
-    syncConflictTitle: 'На этом устройстве есть несохранённые данные',
-    syncConflictText: 'Данные в этом браузере отличаются от данных в вашем аккаунте. Если продолжить с данными аккаунта, несохранённые данные с этого устройства будут потеряны. Выберите, что оставить, или сначала сохраните резервную копию.',
-    syncConflictUseCloud: 'Использовать данные аккаунта',
+    /* v1.2.60: текст конфликта синхронизации переписан для человека: раньше заголовок
+       «несохранённые данные» и кнопки «данные аккаунта»/«данные с устройства» звучали
+       технически и владелец жаловался, что непонятно, что делать. Теперь: одна фраза
+       про причину + последствия каждой кнопки прямо в тексте. \n работает через
+       white-space:pre-line в statusPanelsHTML(). */
+    syncConflictTitle: 'Данные на устройстве и в аккаунте разные',
+    syncConflictText: 'Похоже, цели менялись и здесь, и в аккаунте (например, на другом телефоне) — версии разошлись, и приложение не знает, какую оставить.\n\n«Загрузить данные аккаунта» — заменит цели на этом устройстве данными из аккаунта.\n«Оставить данные с этого устройства» — отправит текущие цели в аккаунт вместо облачной версии.\n\nВторая версия при этом исчезнет. Если она может быть нужна — сначала нажмите «Сначала скачать копию», файл сохранится на устройство.',
+    syncConflictUseCloud: 'Загрузить данные аккаунта',
     syncConflictUseLocal: 'Оставить данные с этого устройства',
-    syncConflictExport: 'Скачать резервную копию сначала',
+    syncConflictExport: 'Сначала скачать копию',
     verifyBannerText: 'Подтвердите email — мы отправили письмо со ссылкой на подтверждение.',
     verifyResend: 'Отправить письмо ещё раз',
     verifyRecheck: 'Я подтвердил(а)',
@@ -2112,9 +2117,9 @@ const STRINGS = {
     resetConfirm: 'This will delete all goals and settings and restore the initial sample data. Continue?',
     confirmYes: 'Yes',
     confirmNo: 'No',
-    syncConflictTitle: 'This device has unsaved data',
-    syncConflictText: "The data in this browser is different from the data in your account. Continuing with the account data will lose the unsaved data on this device. Choose which to keep, or download a backup first.",
-    syncConflictUseCloud: 'Use account data',
+    syncConflictTitle: 'Data on this device and in your account differ',
+    syncConflictText: 'It looks like you edited your goals both here and in your account (say, on another phone) — the two versions drifted apart and the app cannot pick one for you.\n\n"Load account data" replaces the goals on this device with the ones stored in your account.\n"Keep this device\'s data" uploads your current goals to the account, replacing the cloud version.\n\nThe other version will be gone. If it might still be needed — tap "Download a backup first"; the file is saved to this device.',
+    syncConflictUseCloud: 'Load account data',
     syncConflictUseLocal: 'Keep this device\'s data',
     syncConflictExport: 'Download a backup first',
     verifyBannerText: 'Please verify your email — we sent a confirmation link.',
@@ -6454,7 +6459,7 @@ function statusPanelsHTML(){
     html += `<div class="auth-modal-overlay" id="syncConflictOverlay">
       <div class="auth-panel">
         <h2 style="margin:0 0 4px; font-size:16px;">${t('syncConflictTitle')}</h2>
-        <p style="margin:0; font-size:14px;">${esc(t('syncConflictText'))}</p>
+        <p style="margin:0; font-size:14px; white-space:pre-line;">${esc(t('syncConflictText'))}</p>
         <div class="auth-btn-col">
           <button id="btnSyncConflictUseCloud">${t('syncConflictUseCloud')}</button>
           <button id="btnSyncConflictUseLocal" class="btn-danger">${t('syncConflictUseLocal')}</button>

@@ -205,6 +205,14 @@ test('п.7: чужая правка при наших незапушенных �
   assert.equal(t.app.getState().children[0].name, 'А (моя правка)', 'наша незапушенная правка цела');
   const panel = vm.runInContext('statusPanelsHTML()', t.ctx);
   assert.ok(panel.includes('syncConflictOverlay'), 'показан диалог выбора вместо молчаливой перезаписи');
+  // v1.2.60: диалог объясняет последствия каждой кнопки простым языком (жалоба владельца:
+  // «непонятно, что делать»), а не отсылает к техническим «данным аккаунта».
+  assert.ok(panel.includes(t.app.STRINGS.ru.syncConflictUseCloud), 'кнопка «Загрузить данные аккаунта» на месте');
+  assert.ok(panel.includes(t.app.STRINGS.ru.syncConflictUseLocal), 'кнопка «Оставить данные с этого устройства» на месте');
+  const text = t.app.STRINGS.ru.syncConflictText;
+  assert.ok(text.includes('«Загрузить данные аккаунта»') && text.includes('«Оставить данные с этого устройства»'),
+    'в тексте расписано, что делает каждая кнопка');
+  assert.ok(panel.includes('white-space:pre-line'), 'абзацы-пояснения не схлопываются в один');
 });
 
 test('п.7: эхо нашего собственного push НЕ считается чужим изменением', async () => {
