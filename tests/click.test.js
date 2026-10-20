@@ -2447,6 +2447,22 @@ test('sphere reminder: interaction dates persist to localStorage and ride the cl
 });
 
 // ===== «Поделиться» (меню ☰): системное окно Web Share API с запасным копированием =====
+test('top menu: the «Меню» caption sits in the same row as the ✕', () => {
+  const t = bootDom();
+  t.click('#btnTopMenu');
+  const head = t.document.querySelector('.lang-menu .menu-head');
+  assert.ok(head, 'the menu must have a head row');
+  const title = head.querySelector('.menu-title');
+  const close = head.querySelector('#btnTopMenuClose');
+  assert.ok(title, 'the head row must carry the caption');
+  assert.ok(close, 'the head row must carry the ✕');
+  assert.equal(title.textContent.trim(), 'Меню', 'the caption must read «Меню»');
+  // Same row, caption on the left of the ✕.
+  assert.equal(title.nextElementSibling, close, 'the caption must sit directly left of the ✕');
+  // The caption is a plain label, not a button — it must not be focusable.
+  assert.equal(title.tagName, 'SPAN', 'the caption must be a label, not a button');
+});
+
 test('top menu: every item is a real button — icon + label, not a bare text row', () => {
   const t = bootDom();
   t.click('#btnTopMenu');

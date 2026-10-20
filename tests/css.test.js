@@ -212,6 +212,35 @@ test('CSS guard: the main menu items are button tiles — own background, border
   assert.match(iconRule.body.replace(/\s+/g, ' '), /width:19px/, 'the icon column is fixed-width');
 });
 
+test('CSS guard: the main menu has a «Меню» caption right next to the ✕, in one row', () => {
+  const css = rawCss(HTML);
+  const rules = [...css.matchAll(/([^{}]+)\{([^}]*)\}/g)].map(m => ({
+    sel: m[1].trim().replace(/\s+/g, ' '), body: m[2],
+  }));
+  const find = (sel) => rules.find(r => r.sel.split(',').some(x => x.trim().replace(/\s+/g, ' ').endsWith(sel)));
+  // The head row: caption + close button, side by side, vertically centred.
+  const head = find('.lang-menu .menu-head');
+  assert.ok(head, 'the .menu-head rule must exist');
+  assert.match(head.body, /display:flex/, 'the menu head must be a flex row');
+  assert.match(head.body, /align-items:center/, 'the caption and the ✕ must be centred on one line');
+  assert.match(head.body, /justify-content:flex-end/, 'the caption must sit directly left of the ✕');
+  // The caption itself.
+  const title = find('.lang-menu .menu-title');
+  assert.ok(title, 'the .menu-title rule must exist');
+  assert.match(title.body, /font-size:15px/, 'the caption needs its own font size');
+  assert.match(title.body, /white-space:nowrap/, 'the caption must stay on one line');
+  // The ✕ is no longer absolutely positioned — it shares the row with the caption.
+  const close = find('.lang-menu button.menu-close');
+  assert.ok(close, 'the .menu-close rule must exist');
+  assert.match(close.body, /position:static/, 'the ✕ must share the row with the caption, not float over it');
+  assert.match(close.body, /background:none/, 'the ✕ keeps its own background');
+  assert.match(close.body, /padding:6px/, 'the ✕ keeps its own padding');
+  // The panel no longer reserves 40px of empty space at the top for the floating ✕.
+  const panel = find('.lang-menu');
+  assert.ok(panel, 'the .lang-menu rule must exist');
+  assert.doesNotMatch(panel.body, /padding:40px/, 'the panel must not reserve empty space for an absolute ✕');
+});
+
 test('CSS guard: the language and theme switches are compact pills, not text rows', () => {
   const rules = splitCss(HTML);
   // splitCss keeps a leading comment inside the selector text — match on the tail, not equality.
