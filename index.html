@@ -725,17 +725,22 @@
   .challenge-progress i{display:block; height:100%; background:var(--green); border-radius:inherit;}
   .challenge-cal-head{display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px;}
   .challenge-cal-title{font-size:14px; font-weight:600; color:var(--text);}
-  .challenge-weekdays, .challenge-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:6px;}
+  /* Календарь: клетка 32px (было 44px) — колонки фиксированной ширины, иначе 1fr
+     растянул бы их на всю ширину карточки и клетка снова стала бы огромной.
+     justify-content:center держит сетку по центру, когда она уже карточки. */
+  .challenge-weekdays, .challenge-grid{display:grid; grid-template-columns:repeat(7,32px); gap:4px; justify-content:center;}
   .challenge-weekdays{margin-bottom:2px;}
   .challenge-weekdays span{text-align:center; font-size:12px; color:var(--muted);}
   .challenge-day{
-    position:relative; aspect-ratio:1/1; min-height:44px;
-    background:var(--card2); border:1px solid var(--border); border-radius:10px;
-    color:var(--text); font-size:13px; cursor:pointer; padding:2px;
+    position:relative; width:32px; height:32px;
+    background:var(--card2); border:1px solid var(--border); border-radius:8px;
+    color:var(--text); font-size:13px; cursor:pointer; padding:0;
     display:flex; align-items:center; justify-content:center;
   }
-  .challenge-day .cd-num{position:absolute; top:2px; left:5px; font-size:12px; color:var(--muted); line-height:1;}
-  .challenge-day .cd-mark{font-size:15px; font-weight:700; line-height:1;}
+  /* Число дня — сверху слева; метка ✓/✗ — снизу по центру. В клетке 32px они
+     больше не наезжают друг на друга (раньше стояли рядом в центре). */
+  .challenge-day .cd-num{position:absolute; top:2px; left:3px; font-size:12px; color:var(--muted); line-height:1;}
+  .challenge-day .cd-mark{position:absolute; bottom:1px; left:0; right:0; text-align:center; font-size:12px; font-weight:700; line-height:1;}
   .challenge-day.done{background:rgba(46,204,113,.16); border-color:var(--green);}
   .challenge-day.done .cd-mark{color:var(--green);}
   .challenge-day.missed{background:rgba(255,90,103,.10); border-color:var(--red);}
@@ -1059,11 +1064,11 @@
   @media (max-width:360px){
     .wish-grid{grid-template-columns:1fr;}
     .wish-grid[data-cols="3"], .wish-grid[data-cols="4"]{grid-template-columns:repeat(2,1fr);}
-    /* Календарь челленджа: на узком экране 7 клеток в ряд не помещаются с комфортной
-       зоной тапа — сжимаем отступы, но клетка остаётся квадратной (min-height:44px). */
+    /* Календарь челленджа: на узком экране 7 клеток по 32px + зазоры = 242px —
+       влезает в любой телефон, поэтому клетку дальше ужимать НЕ нужно, только
+       плотнее зазоры. Клетка остаётся квадратной (width/height:32px). */
     .challenge-weekdays, .challenge-grid{gap:3px;}
-    .challenge-day{border-radius:8px;}
-    .challenge-day .cd-num{left:3px;}
+    .challenge-day .cd-num{left:2px;}
   }
   /* Обёртка кнопки плотности — тот же приём, что у .filter-dropdown у целей: чтобы всплывающее
      меню прижалось к своей кнопке, а не к блоку. */
@@ -1471,7 +1476,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.2.62';
+const APP_VERSION = '1.2.63';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the

@@ -756,3 +756,36 @@ test('CSS guard: exactly one max-width:360px block, after the wish-grid data-col
     'the 360px block must come AFTER the data-cols rules (same specificity — order decides)');
 });
 
+/* v1.2.63: календарь челленджа стал компактнее — клетка 32px вместо 44px.
+   Сторож фиксирует новую геометрию и то, что её НЕ сломали:
+   - клетка ровно 32×32 (width+height, без aspect-ratio/min-height:44px);
+   - колонки сетки фиксированной ширины (repeat(7,32px)) — 1fr растянул бы клетку
+     обратно на всю карточку;
+   - число дня и метка ✓/✗ стоят в разных углах (absolute), иначе в 32px они
+     наезжают друг на друга;
+   - кегль номера и метки ≥ 12px (общий сторож «no font-size below 12px»
+     ловит кегль, но не ловит НАЛОЖЕНИЕ — это ловит здесь). */
+test('CSS guard: the challenge calendar cells are 32px and their marks fit', () => {
+  const css = rawCss(HTML);
+  const rules = splitCss(cssNoComments(HTML));
+  const find = (sel) => rules.find(r => r.selectors.includes(sel));
+  const grid = rules.find(r => r.selectors.includes('.challenge-weekdays')
+    && r.selectors.includes('.challenge-grid'));
+  assert.ok(grid, 'the calendar grid rule must exist');
+  assert.match(grid.body, /grid-template-columns\s*:\s*repeat\(\s*7\s*,\s*32px\s*\)/,
+    'the grid must use FIXED 32px columns — 1fr would stretch the cells back to the card width');
+  const day = find('.challenge-day');
+  assert.ok(day, 'the .challenge-day rule must exist');
+  assert.match(day.body, /width\s*:\s*32px/, '.challenge-day must be 32px wide');
+  assert.match(day.body, /height\s*:\s*32px/, '.challenge-day must be 32px tall');
+  assert.ok(!/min-height\s*:\s*44px/.test(day.body),
+    '.challenge-day must not keep the old 44px min-height');
+  const num = find('.challenge-day .cd-num');
+  const mark = find('.challenge-day .cd-mark');
+  assert.ok(num && mark, 'the day number and the ✓/✗ mark rules must exist');
+  assert.match(num.body, /position\s*:\s*absolute/, 'the day number is pinned to the corner');
+  assert.match(mark.body, /position\s*:\s*absolute/, 'the mark is pinned too — otherwise it overlaps the number');
+  assert.match(num.body, /top\s*:/, 'the day number is pinned to the TOP edge');
+  assert.match(mark.body, /bottom\s*:/, 'the mark is pinned to the BOTTOM edge — they must not share one edge');
+});
+
