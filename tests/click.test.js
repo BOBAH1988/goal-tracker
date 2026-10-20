@@ -3145,21 +3145,43 @@ test('challenge: rename via «✎» keeps marks; «⟲» resets only after an in
   assert.ok(t.document.getElementById('challengeTitleInput'), 'the create form is back');
 });
 
-test('challenge: month arrows are clamped to the challenge range', () => {
+/* v1.2.65: the browsable range is the challenge's own months PLUS one context month on each
+   side. Before the fix the range was exactly the challenge's months, so a challenge fitting
+   into ONE month (7-/14-day term, «без срока» started today) collapsed it to minM === maxM —
+   BOTH arrows got `disabled` and a tap did nothing. The guard: both arrows are always
+   clickable, and the user can browse exactly one month past each edge of the challenge. */
+test('challenge: month arrows always work — one context month past each edge', () => {
   const t = bootDom();
   const today = t.app.isoToday();
+  // A challenge that fits inside a single month — the exact case that killed the arrows.
   t.app.setState(Object.assign(t.app.getState(), {
-    challenge: { title: '21 день', startedAt: today, duration: 21, days: {} }
+    challenge: { title: '7 дней', startedAt: today, duration: 7, days: {} }
   }));
   t.click('#challengeToggle');
   const prev = t.document.getElementById('btnChallengePrevMonth');
-  assert.ok(prev && prev.disabled, 'no browsing before the challenge start month');
+  const next = t.document.getElementById('btnChallengeNextMonth');
+  assert.ok(prev && next, 'both arrows are rendered');
+  assert.equal(prev.disabled, false, 'the «←» arrow must not be disabled');
+  assert.equal(next.disabled, false, 'the «→» arrow must not be disabled');
   const before = t.app.challengeVisibleMonth();
+  assert.ok(before.minM < before.startM, 'one context month before the challenge is browsable');
+  assert.ok(before.maxM > before.endM, 'one context month after the challenge is browsable');
+  // «←» really moves the calendar one month back.
+  const titleOf = () => t.document.querySelector('.challenge-cal-title').textContent;
+  const titleBefore = titleOf();
   t.click('#btnChallengePrevMonth');
-  const after = t.app.challengeVisibleMonth();
-  assert.equal(after.cur, before.cur, 'the clamp keeps the month at the start even on a forced click');
-  assert.ok(t.document.querySelector('.challenge-cal-title').textContent.length > 0,
-    'the month header always renders');
+  assert.equal(t.app.challengeVisibleMonth().cur, before.cur - 1, '«←» steps one month back');
+  assert.notEqual(titleOf(), titleBefore, 'and the header follows the calendar');
+  t.click('#btnChallengeNextMonth');
+  assert.equal(t.app.challengeVisibleMonth().cur, before.cur, '«→» steps one month forward again');
+  // The far edge is still guarded: no browsing into unrelated years.
+  const v = t.app.challengeVisibleMonth();
+  t.app.setChallengeMonth({ y: Math.floor(v.maxM / 12), m: v.maxM % 12 });
+  t.window.render();
+  assert.equal(t.document.getElementById('btnChallengeNextMonth').disabled, true,
+    'the last browsable month disables «→»');
+  assert.equal(t.document.getElementById('btnChallengePrevMonth').disabled, false,
+    '«←» stays alive there');
 });
 
 test('challenge: a state swap without a challenge never breaks the render', () => {

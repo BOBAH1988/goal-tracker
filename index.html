@@ -751,6 +751,8 @@
     :where(html:not(.touch-mode)) .challenge-day:not(:disabled):hover{border-color:var(--accent);}
   }
   .challenge-cal-hint{color:var(--muted); font-size:12px; margin-top:8px; line-height:1.45;}
+  /* A disabled month arrow must look switched off (like the other disabled buttons). */
+  #btnChallengePrevMonth:disabled, #btnChallengeNextMonth:disabled{opacity:.4; cursor:not-allowed;}
   /* Inline «start a new challenge?» confirmation — no modal, the current calendar stays visible. */
   .challenge-reset-row{
     display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
@@ -1476,7 +1478,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.2.64';
+const APP_VERSION = '1.2.65';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -5889,21 +5891,30 @@ function challengeMonthCells(y, m){
   return cells;
 }
 // Which month the calendar shows: the user-picked one (challengeMonth), otherwise today's,
-// clamped into [challenge start month, max(end month, today's month)] — arrows disable at
-// both edges so the user can never browse outside the challenge's own dates.
+// clamped into the browsable range — the challenge's own months PLUS one context month on
+// each side.
+// v1.2.65: the range used to be EXACTLY the challenge's months (start month … end month).
+// A challenge that fits inside one month (7- or 14-day term, «без срока» started today)
+// collapsed that range to a single month — minM === maxM — so BOTH arrows got the `disabled`
+// attribute and a tap did nothing at all. The one-month context on each side keeps the
+// arrows alive in every case while still stopping the user from wandering off into
+// unrelated years. Day cells outside the challenge's own term stay non-interactive
+// (see the `disabled` flag on the day buttons below).
 function challengeVisibleMonth(){
   const ch = state.challenge;
   const todayD = challengeParseISO(isoToday());
   const startD = ch.startedAt ? challengeParseISO(ch.startedAt) : todayD;
-  const minM = startD.getFullYear() * 12 + startD.getMonth();
   const stats = challengeStats(ch);
   const endD = stats.lastDay ? challengeParseISO(stats.lastDay) : todayD;
-  const maxM = Math.max(minM, endD.getFullYear() * 12 + endD.getMonth(),
+  const startM = startD.getFullYear() * 12 + startD.getMonth();
+  const endM = Math.max(startM, endD.getFullYear() * 12 + endD.getMonth(),
                         todayD.getFullYear() * 12 + todayD.getMonth());
+  const minM = startM - 1;      // one context month before the challenge
+  const maxM = endM + 1;        // one context month after the challenge
   const picked = challengeMonth ? challengeMonth.y * 12 + challengeMonth.m
                                 : todayD.getFullYear() * 12 + todayD.getMonth();
   const cur = Math.max(minM, Math.min(maxM, picked));
-  return { y: Math.floor(cur / 12), m: cur % 12, cur, minM, maxM };
+  return { y: Math.floor(cur / 12), m: cur % 12, cur, minM, maxM, startM, endM };
 }
 // «←» / «→»: move one month within the same clamped range, then repaint. View-only —
 // nothing is saved (like the other transient panel flags).
