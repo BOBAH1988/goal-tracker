@@ -169,7 +169,6 @@
   @media (hover: hover) and (pointer: fine){
     :where(html:not(.touch-mode)) .topbar button:hover{color:var(--text); border-color:var(--accent);}
     :where(html:not(.touch-mode)) .lang-menu .lang-option:hover{background:var(--card); border-color:var(--border);}
-    :where(html:not(.touch-mode)) .lang-menu .menu-item:hover{background:var(--card);}
     :where(html:not(.touch-mode)) .lang-menu .theme-option:hover{background:var(--card); border-color:var(--border);}
     :where(html:not(.touch-mode)) #btnFilter:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistory:hover,:where(html:not(.touch-mode)) #btnGoodTodayWeekHistory:hover,:where(html:not(.touch-mode)) #btnGoodTodayWeekEdit:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPagePrev:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPageNext:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPagePrevBottom:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPageNextBottom:hover{color:var(--text); border-color:var(--accent);}
     :where(html:not(.touch-mode)) #btnEdit:hover{color:var(--text); border-color:var(--accent);}
@@ -193,14 +192,14 @@
     display:flex; align-items:center; justify-content:center; padding:20px;}
   .lang-menu{
     position:relative; background:var(--card); border:1px solid var(--border);
-    border-radius:14px; padding:24px 20px 18px; display:flex; flex-direction:column; gap:2px; z-index:10;
+    border-radius:16px; padding:46px 16px 16px; display:flex; flex-direction:column; gap:8px; z-index:10;
     width:100%; max-width:340px; max-height:calc(100vh - 40px); max-height:calc(100dvh - 40px);
     overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,.45);
   }
   /* Крестик — как .auth-panel button.auth-close у остальных модалок сайта. */
   .lang-menu button.menu-close{
-    position:absolute; top:8px; right:8px; background:none; border:none; color:var(--muted);
-    font-size:18px; cursor:pointer; line-height:1; padding:6px; flex:none;
+    position:absolute; top:10px; right:10px; background:none; border:none; color:var(--muted);
+    font-size:18px; cursor:pointer; line-height:1; padding:8px; flex:none; border-radius:8px;
   }
   @media (hover: hover) and (pointer: fine){
     :where(html:not(.touch-mode)) .lang-menu button.menu-close:hover{color:var(--text);}
@@ -213,17 +212,39 @@
     :where(html:not(.touch-mode)) .lang-menu .lang-option:hover{background:var(--card); border-color:var(--border);}
   }
   .lang-menu .lang-option.active{border-color:var(--accent); box-shadow:0 0 0 1px var(--accent);}
+  /* Пункты главного меню — настоящие кнопки-плитки (иконка + подпись), а не строки текста.
+     Каждая плитка: своя подложка, рамка, скругление; при наведении подсветка акцентом и
+     сдвиг вправо — так список читается как меню, а не как таблица. */
   .lang-menu .menu-item{
-    background:none; border:none; color:var(--text); border-radius:8px; padding:8px; font-size:13px;
-    cursor:pointer; text-align:left; white-space:normal; word-break:break-word;
+    display:flex; align-items:center; gap:12px; width:100%; text-align:left;
+    background:var(--card2); border:1px solid var(--border); color:var(--text);
+    border-radius:10px; padding:11px 14px; font-size:14px; font-weight:500; line-height:1.3;
+    cursor:pointer; white-space:normal; word-break:break-word;
+    transition:background .15s ease, border-color .15s ease, transform .12s ease;
   }
+  .lang-menu .menu-item > i{
+    flex:none; width:22px; text-align:center; font-size:19px; line-height:1;
+    color:var(--muted); transition:color .15s ease;
+  }
+  .lang-menu .menu-item > span{flex:1 1 auto; min-width:0;}
   @media (hover: hover) and (pointer: fine){
-    :where(html:not(.touch-mode)) .lang-menu .menu-item:hover{background:var(--card);}
+    :where(html:not(.touch-mode)) .lang-menu .menu-item:hover{
+      background:var(--card); border-color:var(--accent); transform:translateX(2px);
+    }
+    :where(html:not(.touch-mode)) .lang-menu .menu-item:hover > i{color:var(--accent);}
   }
-  /* Same horizontal padding (8px) as .menu-item above, so the flag/theme rows line up flush with
-     the text items instead of sitting slightly indented relative to them. */
-  .menu-lang-row{display:flex; gap:4px; justify-content:flex-start; padding:8px 8px 0; margin-top:4px; border-top:1px solid var(--border);}
-  .menu-theme-row{display:flex; gap:4px; justify-content:flex-start; padding:8px 8px 4px; margin-top:4px; border-top:1px solid var(--border);}
+  /* Опасный пункт («Сбросить всё») — красным, чтобы его не нажали случайно. */
+  .lang-menu .menu-item.danger{color:var(--red);}
+  .lang-menu .menu-item.danger > i{color:var(--red);}
+  @media (hover: hover) and (pointer: fine){
+    :where(html:not(.touch-mode)) .lang-menu .menu-item.danger:hover{border-color:var(--red);}
+    :where(html:not(.touch-mode)) .lang-menu .menu-item.danger:hover > i{color:var(--red);}
+  }
+  /* Фокус с клавиатуры — тот же акцент, что и при наведении. */
+  .lang-menu .menu-item:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+  /* Ряды флагов и тем отделены линией и выровнены по левому краю плиток (14px). */
+  .menu-lang-row{display:flex; gap:4px; justify-content:flex-start; padding:12px 14px 0; margin-top:8px; border-top:1px solid var(--border);}
+  .menu-theme-row{display:flex; gap:4px; justify-content:flex-start; padding:8px 14px 4px; margin-top:4px; border-top:1px solid var(--border);}
   .lang-menu .theme-option{
     background:none; border:1px solid transparent; border-radius:8px; padding:4px; font-size:18px;
     line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center;
@@ -1491,7 +1512,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.2.74';
+const APP_VERSION = '1.2.75';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -7125,17 +7146,17 @@ function topbarHTML(){
     </div>
   </div>${topMenuOpen ? `<div class="menu-backdrop"><div class="lang-menu">
         <button class="menu-close" id="btnTopMenuClose" aria-label="close" title="${t('done')}">✕</button>
-        <button id="btnHomeMenuItem" class="menu-item">${t('home')}</button>
-        <button id="btnAboutMenuItem" class="menu-item">${t('aboutTitle')}</button>
-        <button id="btnInstructionsMenuItem" class="menu-item">${t('instructionsTitle')}</button>
-        <button id="btnResetPwaCacheMenuItem" class="menu-item">${t('resetPwaCache')}</button>
-        <button id="btnExportData" class="menu-item">${t('exportData')}</button>
-        <button id="btnImportData" class="menu-item">${t('importData')}</button>
-        <button id="btnBlockSettingsMenuItem" class="menu-item">${t('blockSettings')}</button>
-        ${!authUser ? `<button id="btnResetData" class="menu-item">${t('tipReset')}</button>` : ''}
-        ${(cloudEnabled && authUser) ? `<button id="btnEditAccount" class="menu-item">${t('editAccount')}</button>` : ''}
-        <button id="btnShareMenuItem" class="menu-item">${t('share')}</button>
-        ${!isStandalonePwa() ? `<button id="btnInstallAppMenuItem" class="menu-item">${t('installAppTitle')}</button>` : ''}
+        <button id="btnHomeMenuItem" class="menu-item"><i class="ti ti-home" aria-hidden="true"></i><span>${t('home')}</span></button>
+        <button id="btnAboutMenuItem" class="menu-item"><i class="ti ti-info-circle" aria-hidden="true"></i><span>${t('aboutTitle')}</span></button>
+        <button id="btnInstructionsMenuItem" class="menu-item"><i class="ti ti-book" aria-hidden="true"></i><span>${t('instructionsTitle')}</span></button>
+        <button id="btnResetPwaCacheMenuItem" class="menu-item"><i class="ti ti-refresh" aria-hidden="true"></i><span>${t('resetPwaCache')}</span></button>
+        <button id="btnExportData" class="menu-item"><i class="ti ti-download" aria-hidden="true"></i><span>${t('exportData')}</span></button>
+        <button id="btnImportData" class="menu-item"><i class="ti ti-upload" aria-hidden="true"></i><span>${t('importData')}</span></button>
+        <button id="btnBlockSettingsMenuItem" class="menu-item"><i class="ti ti-layout-dashboard" aria-hidden="true"></i><span>${t('blockSettings')}</span></button>
+        ${!authUser ? `<button id="btnResetData" class="menu-item danger"><i class="ti ti-trash" aria-hidden="true"></i><span>${t('tipReset')}</span></button>` : ''}
+        ${(cloudEnabled && authUser) ? `<button id="btnEditAccount" class="menu-item"><i class="ti ti-user-cog" aria-hidden="true"></i><span>${t('editAccount')}</span></button>` : ''}
+        <button id="btnShareMenuItem" class="menu-item"><i class="ti ti-share-2" aria-hidden="true"></i><span>${t('share')}</span></button>
+        ${!isStandalonePwa() ? `<button id="btnInstallAppMenuItem" class="menu-item"><i class="ti ti-device-mobile" aria-hidden="true"></i><span>${t('installAppTitle')}</span></button>` : ''}
          <input type="file" id="importFileInput" accept="application/json,.json" style="display:none">
          <div class="menu-lang-row">
           ${Object.keys(LANG_FLAGS).map(code => `<button class="lang-option ${lang===code?'active':''}" aria-pressed="${lang===code}" data-lang="${code}" title="${code==='ru'?'Русский':'English'}">${LANG_FLAGS[code]}</button>`).join('')}

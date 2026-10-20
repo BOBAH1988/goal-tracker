@@ -2445,6 +2445,24 @@ test('sphere reminder: interaction dates persist to localStorage and ride the cl
 });
 
 // ===== «Поделиться» (меню ☰): системное окно Web Share API с запасным копированием =====
+test('top menu: every item is a real button — icon + label, not a bare text row', () => {
+  const t = bootDom();
+  t.click('#btnTopMenu');
+  const items = Array.from(t.document.querySelectorAll('.lang-menu .menu-item'));
+  assert.ok(items.length >= 8, 'the menu has the expected number of items');
+  for (const el of items) {
+    const icon = el.querySelector('i.ti');
+    const label = el.querySelector('span');
+    assert.ok(icon, `${el.id}: a menu item must carry an icon (it must not look like a text row)`);
+    assert.ok(label, `${el.id}: a menu item must wrap its label in a span`);
+    assert.ok(label.textContent.trim().length > 0, `${el.id}: the label must not be empty`);
+    assert.ok(icon.getAttribute('aria-hidden') === 'true', `${el.id}: the icon is decorative`);
+  }
+  // The label stays the accessible name — the icon adds no noise for a screen reader.
+  const share = t.document.getElementById('btnShareMenuItem');
+  assert.equal(share.textContent.trim(), 'Поделиться приложением', 'the Russian label');
+});
+
 test('share: the menu item sits with the other items and reuses .menu-item', () => {
   const t = bootDom();
   t.click('#btnTopMenu');

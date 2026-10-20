@@ -194,6 +194,24 @@ test('CSS guard: the standalone PWA has no accidental text-copy callout', () => 
     'and the callout must come back for them, or pasting into a field is impossible');
 });
 
+test('CSS guard: the main menu items are button tiles — own background, border, padding and font', () => {
+  const rules = splitCss(HTML);
+  const item = rules.find(r => r.selectors.some(s => /\.lang-menu \.menu-item\s*$/.test(s)));
+  assert.ok(item, 'the .lang-menu .menu-item rule must exist');
+  const body = item.body.replace(/\s+/g, ' ');
+  // A menu that reads as a plain text table is what the owner complained about (2026-10-20):
+  // every item must look like a BUTTON — own background, own border, comfortable padding.
+  assert.match(body, /background:var\(--card2\)/, 'the tile needs its own background');
+  assert.match(body, /border:1px solid var\(--border\)/, 'the tile needs its own border');
+  assert.match(body, /padding:11px 14px/, 'the tile needs comfortable padding');
+  assert.match(body, /font-size:14px/, 'the tile needs its own font size');
+  assert.match(body, /display:flex/, 'icon + label must sit in a row');
+  // The icon column is fixed-width so the labels line up.
+  const iconRule = rules.find(r => r.selectors.some(s => /\.lang-menu \.menu-item > i\s*$/.test(s)));
+  assert.ok(iconRule, 'the icon column rule must exist');
+  assert.match(iconRule.body.replace(/\s+/g, ' '), /width:22px/, 'the icon column is fixed-width');
+});
+
 test('CSS guard: the narrow/PWA topbar moves the whole title wrap and puts ☰ last on its row', () => {
   const rules = splitCss(HTML);
   const narrow = rules.find(r => /@media \(max-width:480px\)/.test(r.selectors.join(' ')));
