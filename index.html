@@ -1393,7 +1393,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.2.58';
+const APP_VERSION = '1.2.59';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -8248,6 +8248,19 @@ function attachMainViewHandlers(){
       btn.setAttribute('aria-label', t('todayClear'));
     }
   }
+  // v1.2.59: капсула настроения («Начнём?» … «Отличный день!») показывает счётчик done-дел.
+  // Обычно её пересобирает render(); ветка корзины в блоке «Три важных дела» обновляет DOM
+  // на месте (фокус на поле ввода нужен для повторного ввода), поэтому здесь — тот же пересчёт.
+  function syncTodayMood(){
+    const mood = document.querySelector('.today-badges .good-today:not(.today-date)');
+    if(!mood) return;
+    const n = (Array.isArray(state.today) ? state.today : []).filter(it => it.done).length;
+    const cls = n === 0 ? 'good-today-start' : n === 1 ? 'good-today-begin' : n === 2 ? 'good-today-almost' : 'good-today-perfect';
+    const txt = n === 0 ? t('goodTodayMoodStart') : n === 1 ? t('goodTodayMoodBegin') : n === 2 ? t('goodTodayMoodAlmost') : t('goodTodayMoodPerfect');
+    mood.className = 'good-today ' + cls;   // у бейджа других классов нет (дата — отдельный бокс)
+    const label = mood.querySelector('.good-today-text');
+    if(label) label.textContent = txt;
+  }
   document.querySelectorAll('[data-today-edit]').forEach(el=>{
     el.addEventListener('click', (e)=> e.stopPropagation());
     el.addEventListener('input', ()=>{
@@ -8291,9 +8304,22 @@ function attachMainViewHandlers(){
         saveState();
         render();
       }else{
-        // Trash → clear text and focus for re-entry.
-        if(Array.isArray(state.today) && idx < state.today.length){ state.today[idx].text = ''; state.todayDate = isoToday(); }
+        // Trash → clear text and focus for re-entry. v1.2.59: вместе с текстом гасим и
+        // «выполнено» — иначе строка стиралась, а зелёная заливка/зачёркивание оставались.
+        if(Array.isArray(state.today) && idx < state.today.length){
+          state.today[idx].text = '';
+          state.today[idx].done = false;
+          state.todayDate = isoToday();
+          state.goodToday = state.today.some(item => item.done);  // legacy-флаг, как в обработчике галочки
+        }
         input.value = '';
+        input.classList.remove('done');
+        // Галочку на чекбоксе гасим на месте: полный render() пересобрал бы DOM и потерял
+        // фокус на поле ввода (для повторного ввода), а на таче закрылась бы клавиатура.
+        const chk = el.parentNode.querySelector('[data-today-toggle]');
+        if(chk){ chk.classList.remove('done'); chk.textContent = ''; }
+        syncTodayMood();
+        saveState();
         input.focus();
         syncTodayAction(input);
       }

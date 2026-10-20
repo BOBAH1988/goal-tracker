@@ -853,6 +853,47 @@ test('today block: action button is trash by default, checkmark only during acti
   assert.ok(t.document.querySelector('[data-today-edit="2"]').classList.contains('done'), 'done input must get .done class after toggle');
 });
 
+// ===== v1.2.59: корзина в блоке «Три важных дела» снимает галочку «выполнено» =====
+test('today block: the trash button clears the done flag along with the text', () => {
+  const t = bootDom();
+  t.app.setState({
+    name: 'root', children: [leaf(false, { name: 'Цель' })],
+    today: [{ text: 'Сделано', done: true }, { text: 'второе', done: false }, { text: '', done: false }],
+  });
+  t.window.render();
+
+  // Precondition: item 0 is done → strike-through + checkmark + «Хорошее начало» (1/3).
+  const input0 = t.document.querySelector('[data-today-edit="0"]');
+  const chk0 = t.document.querySelector('[data-today-toggle="0"]');
+  assert.ok(input0.classList.contains('done'), 'precondition: done input carries .done');
+  assert.ok(chk0.classList.contains('done') && chk0.textContent === '✓', 'precondition: done checkbox shows the tick');
+
+  // Press the trash (the handler listens to mousedown).
+  const btn0 = t.document.querySelector('[data-today-action="0"]');
+  assert.match(btn0.innerHTML, /ti-trash/, 'precondition: unfocused row shows the trash icon');
+  btn0.dispatchEvent(new t.window.Event('mousedown', { bubbles: true }));
+
+  // Text AND done flag are gone — no ghost strikethrough on an empty row.
+  assert.equal(t.app.getState().today[0].text, '', 'trash must clear the text');
+  assert.equal(t.app.getState().today[0].done, false, 'trash must also drop the done flag');
+  assert.equal(t.app.getState().goodToday, false, 'the legacy goodToday flag must follow the done count');
+  assert.ok(!input0.classList.contains('done'), 'the input must lose its strikethrough class in place');
+  assert.ok(!chk0.classList.contains('done'), 'the checkbox must lose its .done class in place');
+  assert.equal(chk0.textContent, '', 'the checkbox must lose its tick');
+
+  // The mood badge counts done items — it must fall back to 0/3 without a re-render.
+  const mood = t.document.querySelector('.today-badges .good-today:not(.today-date)');
+  assert.ok(mood.classList.contains('good-today-start'), 'mood badge must show the 0-done state after the trash');
+  assert.equal(mood.textContent.trim(), t.app.STRINGS.ru.goodTodayMoodStart, 'and its text must follow');
+
+  // Focus stays on the cleared input so the user can type a replacement right away.
+  assert.equal(t.document.activeElement, input0, 'the cleared input must keep focus for re-entry');
+
+  // The reset is persisted (reload must not resurrect the tick).
+  const t2 = bootDom({ [t.app.STORAGE_KEY]: t.window.localStorage.getItem(t.app.STORAGE_KEY) });
+  assert.equal(t2.app.getState().today[0].done, false, 'after reload the row must stay undone');
+});
+
 test('overall progress block: «Путь к балансу» title carries the percentage colour band', () => {
   const t = bootDom();
   // 0% (every goal open) → soft light red band.
