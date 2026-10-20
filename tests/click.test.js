@@ -3026,3 +3026,180 @@ test('share: successful share shows nothing', async () => {
   await new Promise(r => setTimeout(r, 10));
   assert.ok(!t.document.querySelector('.undo-toast'), 'no toast on success');
 });
+
+/* ===== v1.2.62: «Челленж» — сворачиваемый блок привычки/челленжа под колесом ===== */
+
+test('challenge section: collapsed by default, click expands and persists across reload', () => {
+  const t = bootDom();
+  assert.ok(t.document.getElementById('challengeToggle'), 'the section header exists on home');
+  assert.ok(!t.document.getElementById('challengeTitleInput'), 'fresh install: the block starts COLLAPSED');
+  assert.equal(t.app.getState().challengeOpen, undefined, 'no saved flag yet — default is closed');
+  t.click('#challengeToggle');
+  assert.equal(t.app.getState().challengeOpen, true, 'expanding persists challengeOpen=true');
+  assert.ok(t.document.getElementById('challengeTitleInput'), 'the create form appears on expand');
+  assert.equal(t.document.querySelector('#challengeToggle .wheel-arrow').textContent, '▾', 'arrow points down');
+  t.click('#challengeToggle');
+  assert.equal(t.app.getState().challengeOpen, false, 'collapsing persists challengeOpen=false');
+  assert.ok(!t.document.getElementById('challengeTitleInput'), 'the form collapses with the section');
+  const raw = t.window.localStorage.getItem(t.app.STORAGE_KEY);
+  assert.ok(raw && raw.includes('"challengeOpen":false'), 'the flag is serialized to localStorage');
+  const t2 = bootDom({ [t.app.STORAGE_KEY]: raw });
+  assert.equal(t2.app.getChallengeOpen(), false, 'reloaded block stays collapsed');
+  assert.ok(!t2.document.getElementById('challengeTitleInput'), 'and shows no form');
+});
+
+test('challenge: empty title is refused, then create → mark today → unmark', () => {
+  const t = bootDom();
+  t.click('#challengeToggle');
+  // «Передумал»-путь: пустое название не сохраняется, показывается ошибка.
+  t.click('#btnChallengeSave');
+  assert.ok(t.document.querySelector('.auth-error'), 'an empty title shows a validation error');
+  assert.ok(!t.app.getState().challenge.title, 'nothing is saved without a title');
+  // Pick a duration chip and start.
+  t.click('[data-challenge-days="14"]');
+  assert.ok(t.document.querySelector('[data-challenge-days="14"]').classList.contains('active'),
+    'the picked chip highlights');
+  t.document.getElementById('challengeTitleInput').value = 'Пить воду 2 л';
+  t.click('#btnChallengeSave');
+  const ch = t.app.getState().challenge;
+  assert.equal(ch.title, 'Пить воду 2 л', 'the title is saved');
+  assert.equal(ch.duration, 14, 'the picked chip is the saved duration');
+  assert.equal(ch.startedAt, t.app.isoToday(), 'a brand-new challenge starts today');
+  assert.ok(t.document.querySelector('.challenge-grid'), 'the month grid replaces the form');
+  const today = t.app.isoToday();
+  const todayBtn = t.document.querySelector(`[data-challenge-day="${today}"]`);
+  assert.ok(todayBtn && !todayBtn.disabled, 'today is on the grid and markable');
+  t.click(`[data-challenge-day="${today}"]`);
+  assert.equal(t.app.getState().challenge.days[today], true, 'today is checked off');
+  t.click(`[data-challenge-day="${today}"]`);
+  assert.ok(!t.app.getState().challenge.days[today], 'tapping ✓ again unmarks the day');
+});
+
+test('challenge: a missed day is a red ✗ a click fixes to ✓; past/future range is guarded', () => {
+  const t = bootDom();
+  const today = t.app.isoToday();
+  const start = t.app.challengeAddDays(today, -3);
+  t.app.setState(Object.assign(t.app.getState(), {
+    challenge: { title: 'Зарядка', startedAt: start, duration: 7, days: {} }
+  }));
+  t.click('#challengeToggle');   // expand (the state flag was not set)
+  const yesterday = t.app.challengeAddDays(today, -1);
+  const cell = t.document.querySelector(`[data-challenge-day="${yesterday}"]`);
+  assert.ok(cell, 'yesterday is on the grid');
+  assert.ok(cell.classList.contains('missed'), 'a passed unmarked day renders as missed (red)');
+  assert.ok(cell.textContent.includes('✗'), 'and carries the red cross glyph');
+  t.click(`[data-challenge-day="${yesterday}"]`);
+  assert.equal(t.app.getState().challenge.days[yesterday], true, 'one tap fixes it to ✓');
+  const fixed = t.document.querySelector(`[data-challenge-day="${yesterday}"]`);
+  assert.ok(fixed.classList.contains('done'), 'the cell repaints green');
+  assert.ok(!fixed.classList.contains('missed'), 'the red cross is gone');
+  // Будущее неприкосновенно: обработчик сам режет диапазон, даже если событие придёт.
+  const tomorrow = t.app.challengeAddDays(today, 1);
+  const future = t.document.querySelector(`[data-challenge-day="${tomorrow}"]`);
+  if(future){
+    t.click(`[data-challenge-day="${tomorrow}"]`);
+    assert.ok(!t.app.getState().challenge.days[tomorrow], 'a future day cannot be marked');
+  }
+  // Дни до старта — неактивны.
+  const before = t.document.querySelector(`[data-challenge-day="${t.app.challengeAddDays(start, -1)}"]`);
+  assert.ok(before && before.disabled, 'days before the challenge start are disabled');
+  // Обратный отсчёт на экране.
+  assert.match(t.document.getElementById('app').innerHTML, /Осталось\s*\d+/,
+    'the countdown line is rendered');
+});
+
+test('challenge: rename via «✎» keeps marks; «⟲» resets only after an inline «Да»', () => {
+  const t = bootDom();
+  const today = t.app.isoToday();
+  t.app.setState(Object.assign(t.app.getState(), {
+    challenge: { title: 'Старое имя', startedAt: today, duration: 21, days: { [today]: true } }
+  }));
+  t.click('#challengeToggle');
+  const edit = t.document.getElementById('btnChallengeEdit');
+  const reset = t.document.getElementById('btnChallengeReset');
+  assert.ok(edit && reset, 'the header buttons exist on the OPEN block with a saved title');
+  assert.ok(edit.getAttribute('data-tip') && !edit.getAttribute('title'), '✎ uses the custom tooltip');
+  assert.ok(reset.getAttribute('data-tip') && !reset.getAttribute('title'), '⟲ uses the custom tooltip');
+  // Правка названия.
+  t.click('#btnChallengeEdit');
+  const inp = t.document.getElementById('challengeTitleInput');
+  assert.ok(inp, 'the edit form replaces the calendar');
+  assert.equal(inp.value, 'Старое имя', 'the draft seeds from the saved title');
+  inp.value = 'Новое имя';
+  t.click('#btnChallengeSave');
+  assert.equal(t.app.getState().challenge.title, 'Новое имя', 'the new title is saved');
+  assert.equal(t.app.getState().challenge.startedAt, today, 'renaming keeps the start date');
+  assert.equal(t.app.getState().challenge.days[today], true, 'and the check-offs');
+  assert.ok(t.document.querySelector('.challenge-grid'), 'back to the calendar');
+  // Сброс — только через подтверждение.
+  t.click('#btnChallengeReset');
+  assert.ok(t.document.getElementById('btnChallengeResetYes'), 'the confirmation row appears');
+  assert.equal(t.app.getState().challenge.title, 'Новое имя', 'nothing is wiped before «Да»');
+  t.click('#btnChallengeResetNo');
+  assert.ok(!t.document.getElementById('btnChallengeResetYes'), '«Нет» closes the confirmation');
+  assert.equal(t.app.getState().challenge.title, 'Новое имя', '«Нет» keeps everything');
+  t.click('#btnChallengeReset');
+  t.click('#btnChallengeResetYes');
+  assert.equal(t.app.getState().challenge.title, '', '«Да» clears the challenge');
+  assert.equal(Object.keys(t.app.getState().challenge.days).length, 0, 'and its marks');
+  assert.ok(t.document.getElementById('challengeTitleInput'), 'the create form is back');
+});
+
+test('challenge: month arrows are clamped to the challenge range', () => {
+  const t = bootDom();
+  const today = t.app.isoToday();
+  t.app.setState(Object.assign(t.app.getState(), {
+    challenge: { title: '21 день', startedAt: today, duration: 21, days: {} }
+  }));
+  t.click('#challengeToggle');
+  const prev = t.document.getElementById('btnChallengePrevMonth');
+  assert.ok(prev && prev.disabled, 'no browsing before the challenge start month');
+  const before = t.app.challengeVisibleMonth();
+  t.click('#btnChallengePrevMonth');
+  const after = t.app.challengeVisibleMonth();
+  assert.equal(after.cur, before.cur, 'the clamp keeps the month at the start even on a forced click');
+  assert.ok(t.document.querySelector('.challenge-cal-title').textContent.length > 0,
+    'the month header always renders');
+});
+
+test('challenge: a state swap without a challenge never breaks the render', () => {
+  // A cloud snapshot / old backup / fresh template carries no `challenge` field at all.
+  // Every state-swap path goes through render(), so homeViewHTML must survive it.
+  const t = bootDom();
+  const swapped = { name: 'Главная', children: [], today: [], todayOpen: false };
+  t.app.setState(swapped);
+  t.window.render();
+  assert.ok(t.document.getElementById('app').innerHTML.length > 0, 'the home screen still renders');
+  assert.ok(t.document.getElementById('challengeToggle'), 'the section header is still there');
+  const ch = t.app.getState().challenge;
+  assert.ok(ch && typeof ch === 'object', 'the missing challenge is backfilled');
+  assert.equal(ch.duration, 21, 'with the default duration');
+  assert.deepEqual(Array.from(Object.keys(ch.days)), [], 'and no marks');
+  assert.ok(!t.document.getElementById('challengeTitleInput'), 'and the block stays collapsed');
+  // A swapped state that DOES carry the flag keeps the block open.
+  t.app.setState(Object.assign({ name: 'Главная', children: [], today: [] },
+    { challengeOpen: true, challenge: { title: 'Из облака', startedAt: t.app.isoToday(),
+      duration: 14, days: {} } }));
+  t.window.render();
+  assert.equal(t.app.getChallengeOpen(), true, 'the collapsed flag travels with the state');
+  assert.ok(t.document.querySelector('.challenge-grid'), 'the open block shows its calendar');
+  assert.ok(t.document.getElementById('btnChallengeEdit'), 'with the edit button');
+});
+
+test('challenge: the challenge never leaks into the wheel, priorities or totals', () => {
+  const t = bootDom();
+  const before = t.app.computePercent(t.app.getState());
+  const goalsBefore = t.app.getState().children.length;
+  const totalsBefore = t.app.getState().children.map(c => c.totalGoalsAdded);
+  t.app.setState(Object.assign(t.app.getState(), {
+    challenge: { title: '30 дней', startedAt: t.app.isoToday(), duration: 30,
+      days: { [t.app.isoToday()]: true } }
+  }));
+  t.window.render();
+  assert.equal(t.app.computePercent(t.app.getState()), before,
+    'the overall percent is untouched by the challenge');
+  assert.equal(t.app.getState().children.length, goalsBefore, 'no extra goals appeared');
+  assert.deepEqual(Array.from(t.app.getState().children.map(c => c.totalGoalsAdded)),
+    Array.from(totalsBefore), 'the wheel counters are not touched either');
+  assert.equal(t.app.getState().priority, undefined, 'and the priority block stays empty');
+});

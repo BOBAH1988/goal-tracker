@@ -292,7 +292,8 @@
       #btnRelocate:hover:not(.active), #btnFilter:hover, #btnAddGoal:hover:not(.active),
       #btnTemplates:hover:not(.active), #btnAddChild:hover:not(.active), #btnChecklistAdd:hover, #btnWishAdd:hover, #btnWishManage:hover,
      #btnWishGrid:hover, #btnWishPrint:hover, #btnWishShare:hover, #btnWheelPrint:hover, #btnWheelShare:hover,
-      #btnGoodTodayAdd:hover, .add-child-row #btnArchive:hover:not(.active),
+      #btnGoodTodayAdd:hover, #btnChallengeEdit:hover, #btnChallengeReset:hover,
+      #btnChallengePrevMonth:hover, #btnChallengeNextMonth:hover, .add-child-row #btnArchive:hover:not(.active),
       .add-goal-wrap #btnArchive:hover:not(.active){color:var(--muted); border-color:var(--border);}
     }
 
@@ -312,6 +313,8 @@
     .touch-mode #btnWishAdd:hover, .touch-mode #btnWishManage:hover,
     .touch-mode #btnWishGrid:hover, .touch-mode #btnWishPrint:hover, .touch-mode #btnWishShare:hover, .touch-mode .wish-manage-btn:hover:not(.active), .touch-mode #btnWheelPrint:hover, .touch-mode #btnWheelShare:hover,
     .touch-mode #btnGoodTodayAdd:hover,
+    .touch-mode #btnChallengeEdit:hover, .touch-mode #btnChallengeReset:hover,
+    .touch-mode #btnChallengePrevMonth:hover, .touch-mode #btnChallengeNextMonth:hover,
     .touch-mode #btnGoodTodayHistory:hover, .touch-mode #btnGoodTodayWeekHistory:hover,
     .touch-mode #btnGoodTodayWeekEdit:hover,
     .touch-mode #btnGoodTodayHistoryPagePrev:hover, .touch-mode #btnGoodTodayHistoryPageNext:hover,
@@ -687,7 +690,70 @@
   @media (hover: hover) and (pointer: fine){
      :where(html:not(.touch-mode)) .good-today-history-nav .icon-btn:hover{color:var(--text); border-color:var(--accent);}
   }
-     /* Мягкое напоминание о сфере («К сфере … давно не возвращались»). Ненавязчивая карточка
+  /* ===== «Челленж» (challenge / habit streak) block under the wheel =====
+     Same collapsible language as «Колесо»/«Карта желаний»: .section-title-row + .wheel-arrow,
+     content renders straight under the header (no card wrapper). Everything reads from
+     state.challenge = {title, startedAt, duration, days{ISO:true}} — an independent module:
+     it never feeds the wheel, priorities or any totals. */
+  .challenge-hint{color:var(--muted); font-size:13px; margin:0 0 10px;}
+  /* 16px, not 14 — Safari zoom-on-focus widens the viewport below 16px (same rule as
+     .good-today-textarea, owner report v1.2.61). */
+  .challenge-title-input{
+    width:100%; background:var(--card2); border:1px solid var(--border); border-radius:10px;
+    padding:10px 12px; font-size:16px; line-height:1.4; color:var(--text);
+    font-family:inherit; box-sizing:border-box;
+  }
+  .challenge-title-input:focus{outline:2px solid var(--accent); outline-offset:1px; border-color:var(--accent);}
+  .challenge-dur-label{color:var(--muted); font-size:12px; margin:10px 0 6px;}
+  .challenge-dur-row{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:4px;}
+  .challenge-dur{
+    background:var(--card2); border:1px solid var(--border); color:var(--muted);
+    border-radius:999px; padding:7px 15px; font-size:13px; cursor:pointer; min-height:44px;
+    white-space:nowrap;
+  }
+  .challenge-dur.active{background:var(--accent); border-color:var(--accent); color:#fff; font-weight:600;}
+  @media (hover: hover) and (pointer: fine){
+    :where(html:not(.touch-mode)) .challenge-dur:hover{border-color:var(--accent); color:var(--text);}
+  }
+  .challenge-name{font-size:15px; font-weight:600; color:var(--text); overflow-wrap:break-word; word-break:break-word; min-width:0; margin-bottom:6px;}
+  .challenge-meta{display:flex; gap:12px; flex-wrap:wrap; color:var(--muted); font-size:13px; margin-bottom:8px;}
+  .challenge-meta b{color:var(--text); font-weight:600;}
+  .challenge-progress{
+    height:8px; background:var(--card2); border:1px solid var(--border); border-radius:999px;
+    overflow:hidden; margin-bottom:14px;
+  }
+  .challenge-progress i{display:block; height:100%; background:var(--green); border-radius:inherit;}
+  .challenge-cal-head{display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px;}
+  .challenge-cal-title{font-size:14px; font-weight:600; color:var(--text);}
+  .challenge-weekdays, .challenge-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:6px;}
+  .challenge-weekdays{margin-bottom:2px;}
+  .challenge-weekdays span{text-align:center; font-size:12px; color:var(--muted);}
+  .challenge-day{
+    position:relative; aspect-ratio:1/1; min-height:44px;
+    background:var(--card2); border:1px solid var(--border); border-radius:10px;
+    color:var(--text); font-size:13px; cursor:pointer; padding:2px;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .challenge-day .cd-num{position:absolute; top:2px; left:5px; font-size:12px; color:var(--muted); line-height:1;}
+  .challenge-day .cd-mark{font-size:15px; font-weight:700; line-height:1;}
+  .challenge-day.done{background:rgba(46,204,113,.16); border-color:var(--green);}
+  .challenge-day.done .cd-mark{color:var(--green);}
+  .challenge-day.missed{background:rgba(255,90,103,.10); border-color:var(--red);}
+  .challenge-day.missed .cd-mark{color:var(--red);}
+  .challenge-day.today{border-color:var(--accent); box-shadow:0 0 0 1px var(--accent);}
+  .challenge-day.out, .challenge-day.off, .challenge-day:disabled{opacity:.4; cursor:default;}
+  @media (hover: hover) and (pointer: fine){
+    :where(html:not(.touch-mode)) .challenge-day:not(:disabled):hover{border-color:var(--accent);}
+  }
+  .challenge-cal-hint{color:var(--muted); font-size:12px; margin-top:8px; line-height:1.45;}
+  /* Inline «start a new challenge?» confirmation — no modal, the current calendar stays visible. */
+  .challenge-reset-row{
+    display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
+    background:var(--card2); border:1px solid var(--border); border-radius:10px;
+    padding:10px 12px; margin-bottom:10px; font-size:13px; color:var(--text);
+  }
+  .challenge-reset-row .good-today-btn-row{margin-top:0; flex:none;}
+  /* Мягкое напоминание о сфере («К сфере … давно не возвращались»). Ненавязчивая карточка
         над «Важными сферами жизни»: тёмная тема, светлая и розовая — всё на переменных, без
         предупреждающих красных и оценок. Кнопки — как у «Хорошего сегодня»: тач-цели 44px. */
      .sphere-reminder{
@@ -993,6 +1059,11 @@
   @media (max-width:360px){
     .wish-grid{grid-template-columns:1fr;}
     .wish-grid[data-cols="3"], .wish-grid[data-cols="4"]{grid-template-columns:repeat(2,1fr);}
+    /* Календарь челленджа: на узком экране 7 клеток в ряд не помещаются с комфортной
+       зоной тапа — сжимаем отступы, но клетка остаётся квадратной (min-height:44px). */
+    .challenge-weekdays, .challenge-grid{gap:3px;}
+    .challenge-day{border-radius:8px;}
+    .challenge-day .cd-num{left:3px;}
   }
   /* Обёртка кнопки плотности — тот же приём, что у .filter-dropdown у целей: чтобы всплывающее
      меню прижалось к своей кнопке, а не к блоку. */
@@ -1241,14 +1312,14 @@
   /* Collapsing "Важные сферы жизни" / "Important Life Areas" — the arrow toggles the grid below. */
   #mainGoalsToggle{cursor:pointer; user-select:none;}
   #mainGoalsToggle .main-goals-arrow{color:var(--muted); font-size:13px; margin-right:6px;}
-  #wheelToggle,#wishToggle,#goodTodayEntriesToggle,#goodTodayWeekToggle{cursor:pointer; user-select:none;}
-  #wheelToggle .wheel-arrow,#wishToggle .wheel-arrow,#goodTodayEntriesToggle .wheel-arrow,#goodTodayWeekToggle .wheel-arrow{color:var(--muted); font-size:13px; margin-right:6px;}
+  #wheelToggle,#wishToggle,#challengeToggle,#goodTodayEntriesToggle,#goodTodayWeekToggle{cursor:pointer; user-select:none;}
+  #wheelToggle .wheel-arrow,#wishToggle .wheel-arrow,#challengeToggle .wheel-arrow,#goodTodayEntriesToggle .wheel-arrow,#goodTodayWeekToggle .wheel-arrow{color:var(--muted); font-size:13px; margin-right:6px;}
   /* Header action group for the wish map — same right-aligned button group pattern as
      .add-goal-wrap in «Важные сферы жизни», so «+» and the manager never drift apart. */
   .wish-header-actions{display:flex; align-items:center; gap:10px;}
   .wheel-header-actions{display:flex; align-items:center; gap:10px;}
   .add-goal-wrap{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
-  #btnAddGoal, #btnTemplates, #btnWishAdd, #btnGoodTodayAdd{
+  #btnAddGoal, #btnTemplates, #btnWishAdd, #btnGoodTodayAdd, #btnChallengeEdit, #btnChallengeReset, #btnChallengePrevMonth, #btnChallengeNextMonth{
     background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:8px;
     padding:6px 12px; font-size:12px; cursor:pointer; white-space:nowrap;
   }
@@ -1272,7 +1343,7 @@
   #btnAddChild:disabled{opacity:.5; cursor:not-allowed;}
   /* Compact "+"/"−" icon style for Add/Delete, used instead of full text labels to save room on
      narrow (phone) screens. */
-    #btnAddGoal.icon-btn, #btnTemplates.icon-btn, #btnWishAdd.icon-btn, #btnWishManage.icon-btn, #btnWishGrid.icon-btn, #btnWishPrint.icon-btn, #btnWishShare.icon-btn, #btnWheelPrint.icon-btn, #btnWheelShare.icon-btn, #btnAddChild.icon-btn, #btnDelete.icon-btn, #btnEdit.icon-btn, #btnAddSubgoal.icon-btn, #btnDeleteChecklist.icon-btn, #btnMove.icon-btn, #btnMoveChecklist.icon-btn, #btnRelocate.icon-btn, #btnChecklistAdd.icon-btn, #btnFilter.icon-btn, .add-child-row #btnArchive.icon-btn, .add-goal-wrap #btnArchive.icon-btn, #btnSearch.icon-btn, #btnGoodTodayHistory.icon-btn, #btnGoodTodayWeekHistory.icon-btn, #btnGoodTodayWeekEdit.icon-btn, #btnGoodTodayAdd.icon-btn, #btnGoodTodayHistoryPagePrevBottom.icon-btn, #btnGoodTodayHistoryPageNextBottom.icon-btn{
+    #btnAddGoal.icon-btn, #btnTemplates.icon-btn, #btnWishAdd.icon-btn, #btnWishManage.icon-btn, #btnWishGrid.icon-btn, #btnWishPrint.icon-btn, #btnWishShare.icon-btn, #btnWheelPrint.icon-btn, #btnWheelShare.icon-btn, #btnAddChild.icon-btn, #btnDelete.icon-btn, #btnEdit.icon-btn, #btnAddSubgoal.icon-btn, #btnDeleteChecklist.icon-btn, #btnMove.icon-btn, #btnMoveChecklist.icon-btn, #btnRelocate.icon-btn, #btnChecklistAdd.icon-btn, #btnFilter.icon-btn, .add-child-row #btnArchive.icon-btn, .add-goal-wrap #btnArchive.icon-btn, #btnSearch.icon-btn, #btnGoodTodayHistory.icon-btn, #btnGoodTodayWeekHistory.icon-btn, #btnGoodTodayWeekEdit.icon-btn, #btnGoodTodayAdd.icon-btn, #btnGoodTodayHistoryPagePrevBottom.icon-btn, #btnGoodTodayHistoryPageNextBottom.icon-btn, #btnChallengeEdit.icon-btn, #btnChallengeReset.icon-btn, #btnChallengePrevMonth.icon-btn, #btnChallengeNextMonth.icon-btn{
     font-size:16px; font-weight:700; line-height:1; padding:5px 13px;
     min-width:32px; display:inline-flex; align-items:center; justify-content:center;
   }
@@ -1281,7 +1352,7 @@
      glyph and the same 24px/2px box, so the two sections read alike. No colour override here:
      the base action-button rule's --muted is what #btnEdit uses, and overriding it to --text made
      the glyph near-white (#eef2f8) on the dark button — a white icon with nothing to read it. */
-   #btnEdit.icon-btn, #btnWishManage.icon-btn, #btnWishGrid.icon-btn, #btnWishPrint.icon-btn, #btnWishShare.icon-btn, #btnWheelPrint.icon-btn, #btnWheelShare.icon-btn{ font-size:24px; padding:2px; }
+   #btnEdit.icon-btn, #btnWishManage.icon-btn, #btnWishGrid.icon-btn, #btnWishPrint.icon-btn, #btnWishShare.icon-btn, #btnWheelPrint.icon-btn, #btnWheelShare.icon-btn, #btnChallengeEdit.icon-btn, #btnChallengeReset.icon-btn{ font-size:24px; padding:2px; }
   /* The wish header pair («+» and the pencil): one shared 42px box so the text glyph and
      the icon font line up exactly, like the «Хорошее сегодня» header pair. */
    #btnWishAdd.icon-btn{ min-width:42px; padding:5px 0; justify-content:center; }
@@ -1400,7 +1471,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.2.61';
+const APP_VERSION = '1.2.62';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -1941,6 +2012,32 @@ const STRINGS = {
     templatesResultAdded: 'Сфер добавлено: {spheres}. Целей добавлено: {goals}.',
     templatesResultSkipped: 'Пропущено: {skipped}.',
     templatesResultNone: 'Новый ничего не добавлено — всё уже есть.',
+    /* ===== «Челленж» (v1.2.62) — привычка/челленж с ежедневными отметками ===== */
+    challengeTitle: 'Челленж',
+    challengeHint: 'Закрепите привычку или цель на каждый день — и отмечайте выполненное в календаре.',
+    challengePlaceholder: 'Например: 21 день без сахара',
+    challengeDurationLabel: 'Продолжительность:',
+    challengeNoTerm: 'Без срока',
+    challengeStart: 'Начать',
+    challengeSave: 'Сохранить',
+    challengeCancel: 'Отмена',
+    challengeEdit: 'Изменить название',
+    challengeNew: 'Новый челлендж',
+    challengeResetConfirm: 'Начать новый челлендж? Текущие отметки будут удалены.',
+    challengeEmptyTitle: 'Введите название челленджа.',
+    challengeDayN: 'День {n}',
+    challengeFinished: 'Срок вышел — челленж завершён!',
+    challengeProgress1: 'Выполнено {done} из {total} день',
+    challengeProgressFew: 'Выполнено {done} из {total} дня',
+    challengeProgressMany: 'Выполнено {done} из {total} дней',
+    challengeRemain1: 'Осталось {n} день',
+    challengeRemainFew: 'Осталось {n} дня',
+    challengeRemainMany: 'Осталось {n} дней',
+    challengeWeekdays: 'Пн,Вт,Ср,Чт,Пт,Сб,Вс',
+    challengeMonths: 'Январь,Февраль,Март,Апрель,Май,Июнь,Июль,Август,Сентябрь,Октябрь,Ноябрь,Декабрь',
+    challengeDayHint: 'Нажмите на день — отметите его выполнение. Прошедший день без отметки показан красным ✗ — нажмите его, чтобы поставить ✓, если задание всё-таки было выполнено.',
+    challengePrevMonth: 'Предыдущий месяц',
+    challengeNextMonth: 'Следующий месяц',
   },
   en: {
     appTitle: 'Only What Matters',
@@ -2264,6 +2361,32 @@ const STRINGS = {
     templatesResultAdded: 'Spheres added: {spheres}. Goals added: {goals}.',
     templatesResultSkipped: 'Skipped: {skipped}.',
     templatesResultNone: 'Nothing new was added — it all already exists.',
+    /* ===== «Челленж» (v1.2.62) — habit/challenge with daily check-offs ===== */
+    challengeTitle: 'Challenge',
+    challengeHint: 'Lock in a habit or a daily goal — then check it off in the calendar.',
+    challengePlaceholder: 'e.g. 21 days without sugar',
+    challengeDurationLabel: 'Duration:',
+    challengeNoTerm: 'No limit',
+    challengeStart: 'Start',
+    challengeSave: 'Save',
+    challengeCancel: 'Cancel',
+    challengeEdit: 'Edit title',
+    challengeNew: 'New challenge',
+    challengeResetConfirm: 'Start a new challenge? Current check-offs will be removed.',
+    challengeEmptyTitle: 'Enter a challenge title.',
+    challengeDayN: 'Day {n}',
+    challengeFinished: 'Time is up — challenge complete!',
+    challengeProgress1: '{done} of {total} day done',
+    challengeProgressFew: '{done} of {total} days done',
+    challengeProgressMany: '{done} of {total} days done',
+    challengeRemain1: '{n} day left',
+    challengeRemainFew: '{n} days left',
+    challengeRemainMany: '{n} days left',
+    challengeWeekdays: 'Mon,Tue,Wed,Thu,Fri,Sat,Sun',
+    challengeMonths: 'January,February,March,April,May,June,July,August,September,October,November,December',
+    challengeDayHint: 'Tap a day to check it off. A red ✗ means the day passed without a mark — tap it to set ✓ if the task was actually done.',
+    challengePrevMonth: 'Previous month',
+    challengeNextMonth: 'Next month',
   }
 };
 function loadLang(){
@@ -2541,6 +2664,18 @@ let goodTodayWeekHistoryOpen = false;   // weekly reflection history view is ope
 let goodTodayWeekHistoryWeek = null;    // ISO week (Monday) shown in the weekly history
 let goodTodayWeekHistoryEditing = false; // edit form for the week shown in the weekly history
 let goodTodayWeekDrafts = { q1: '', q2: '', q3: '' };  // weekly reflection draft (survives re-renders)
+// «Челленж» (v1.2.62) — habit/challenge module under the wheel. Fully independent:
+// state.challenge = {title, startedAt:'YYYY-MM-DD', duration, days{ISO:true}} never feeds
+// the wheel / priorities / totals. challengeOpen is persisted like the other section flags
+// (default: CLOSED on first run); everything else here is a transient render flag that
+// resets on reload, exactly like the panel flags above.
+let challengeOpen = state.challengeOpen === true;
+let challengeEditing = false;        // title/duration edit form is open (vs the calendar view)
+let challengeDraft = '';             // text typed into the title input (survives re-renders)
+let challengeDurationDraft = 21;     // duration picked in the form (7|14|21|30|0 = no limit)
+let challengeError = '';             // form error (empty title) — transient
+let challengeResetConfirm = false;   // inline «start a new challenge?» confirmation is open
+let challengeMonth = null;           // {y, m} month shown in the calendar (null = derive from today)
 // Global search panel (opened from the top menu). Results are recomputed on each keystroke and
 // injected straight into the results container (no full render — that would drop the input focus).
 // Each result is { kind:'goal'|'checklist', name, path, archived } — path is the nav target.
@@ -2612,6 +2747,7 @@ function loadState(){
           if (parsed.goodToday === undefined) parsed.goodToday = parsed.today.some(item => item.done);
          ensureWishMap(parsed);
          ensureSphereActivity(parsed);
+         ensureChallenge(parsed);
          return parsed;
        }
     }
@@ -2624,6 +2760,7 @@ function loadState(){
    ensurePriorityDefaults(fresh);
    ensureGoodToday(fresh);
    ensureSphereActivity(fresh);
+   ensureChallenge(fresh);
    return fresh;
 }
 function structuredCloneFallback(obj){
@@ -2974,8 +3111,8 @@ function startCloudSync(uid){
         sanitizeGoalTree(state); sanitizeEmptyChecklists(state); ensureWheelTotals(state); ensureToday(state); ensureGoodToday(state);
         ensurePriorityDefaults(state);
         ensureSphereActivity(state);
+        ensureChallenge(state);   // a cloud snapshot from an older build has no «Челлендж» yet
         // The cloud board carries metadata only; keep local cached images for cards we
-        // already have and queue downloads for the rest (syncWishBoard below).
         // The third argument is the document's own updatedAt: a local card whose file is
         // already uploaded but which this older write does not contain yet is kept instead of
         // dropped (that is the "card appears, then vanishes a second later" race).
@@ -3004,6 +3141,7 @@ function startCloudSync(uid){
       applyingRemoteUpdate = true;
       state = initial;
       ensureSphereActivity(state);
+      ensureChallenge(state);   // a fresh template has no «Челлендж» yet
       path = [];
       saveState();
       applyingRemoteUpdate = false;
@@ -3598,6 +3736,28 @@ function ensurePriorityDefaults(node){
 // Backfill for the «Хорошее сегодня» journal entries array — guarantees a well-formed array of
 // entry objects ({id, date, text}) for older saves, imports and cloud docs. Corrupted entries are
 // dropped, not patched. The entriesOpen collapse flag is backfilled to default-open when missing.
+/* ===== «Челленж» sanitizer (v1.2.62) =====
+   Normalizes state.challenge on load / import / cloud-apply: wrong types are replaced with
+   defaults, day keys that are not YYYY-MM-DD (or falsy values) are dropped. Never throws —
+   a corrupted challenge must not take the whole state down with it. */
+function ensureChallenge(node){
+  if(!node) return;
+  const ch = node.challenge;
+  if(!ch || typeof ch !== 'object' || Array.isArray(ch)){
+    node.challenge = { title:'', startedAt:'', duration:21, days:{} };
+    return;
+  }
+  ch.title = (typeof ch.title === 'string') ? ch.title.slice(0, 120) : '';
+  ch.startedAt = /^\d{4}-\d{2}-\d{2}$/.test(String(ch.startedAt || '')) ? ch.startedAt : '';
+  ch.duration = (Number.isInteger(ch.duration) && ch.duration >= 0) ? ch.duration : 21;
+  const days = {};
+  if(ch.days && typeof ch.days === 'object'){
+    Object.keys(ch.days).forEach(k=>{
+      if(/^\d{4}-\d{2}-\d{2}$/.test(k) && ch.days[k]) days[k] = true;
+    });
+  }
+  ch.days = days;
+}
 function ensureGoodToday(node){
   if(!node) return;
   if(!Array.isArray(node.goodTodayEntries)){
@@ -5092,6 +5252,7 @@ function doImportData(file){
      ensureGoodToday(state);
      ensureWishMap(state);
      ensureSphereActivity(state);
+     ensureChallenge(state);   // an old backup has no «Челлендж» yet — backfill an empty one
     path = [];
     // Restore «Карта желаний» photos (v2 backups carry them as base64). They go straight into the
     // IndexedDB cache — never into state — so the board renders them from blob URLs like any local
@@ -5274,6 +5435,13 @@ function render(){
    ensureWishMap(state);
    // And for the «Хорошее сегодня» journal — a journal-less state must never break the render.
    ensureGoodToday(state);
+   // Same for «Челленж»: EVERY state-swap path (import, cloud snapshot, conflict resolution,
+   // fresh signup, undo) goes through render(), so a challenge-less state must never break
+   // homeViewHTML — an old cloud snapshot or a fresh template has no `challenge` field at all.
+   ensureChallenge(state);
+   // The collapsed/expanded flag lives in the state, so a swapped state must carry it over
+   // (otherwise an imported or synced «open» block would silently stay closed).
+   if(typeof state.challengeOpen === 'boolean') challengeOpen = state.challengeOpen;
    const app = document.getElementById('app');
   const node = resolve(path);
   const overallPct = computePercent(state);
@@ -5613,6 +5781,10 @@ function homeViewHTML(overallPct, hintHTML, mode, protectedCount){
       state.children.forEach((c, i) => { if(!c.archived) targets.push(i); });
       html += `<div class="wheel-wrap" id="wheelWrap">${wheelHTML(activeChildren(state), { targets, activeIdx: expandedSphereIdx, interactive: !!targets.length })}<div class="wheel-hint">${t('wheelSectorHint')}</div></div>`;
     }
+    // «Челленж» (v1.2.62) — сворачиваемый блок привычки/челленжа прямо под колесом:
+    // ежедневные отметки в календаре + обратный отсчёт. Живёт в state.challenge и
+    // ни на что другое (колесо, приоритеты, итоги) не влияет.
+    html += challengeSectionHTML();
     // «Карта желаний» — optional vision board directly under the wheel. Fully independent:
     // cards live in state.wishMap only and never feed the wheel, ratings or any totals.
       html += `<div class="section-title-row" style="margin-top:24px;">
@@ -5643,6 +5815,181 @@ function homeViewHTML(overallPct, hintHTML, mode, protectedCount){
      // state.goodTodayWeekReflections. Never feeds the wheel / priorities / any totals.
      html += goodTodaySectionHTML();
    return html;
+}
+
+/* ===== «Челленж» section (v1.2.62): utilities =====
+   Tiny ISO-date helpers for the module (YYYY-MM-DD, LOCAL timezone — the same convention
+   as isoToday()). String ISO dates compare lexicographically = chronologically, so day
+   ranges are plain string comparisons everywhere below. */
+function challengeISO(d){
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function challengeParseISO(iso){
+  const p = String(iso).split('-');
+  return new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]));
+}
+function challengeAddDays(iso, n){
+  const d = challengeParseISO(iso);
+  d.setDate(d.getDate() + n);
+  return challengeISO(d);
+}
+function challengeDaysBetween(fromISO, toISO){   // (to − from) in whole days, can be negative
+  return Math.round((challengeParseISO(toISO) - challengeParseISO(fromISO)) / DAY_MS);
+}
+// Russian-style plural selector for a numeric key suffix: 1 день / 2 дня / 5 дней.
+// English carries three IDENTICAL strings for these keys, so both locales always keep the
+// same key set (guard: «locales: ru and en carry the same key set»).
+function challengePlural(n, one, few, many){
+  const a = Math.abs(Math.trunc(n)), n10 = a % 10, n100 = a % 100;
+  if(n10 === 1 && n100 !== 11) return one;
+  if(n10 >= 2 && n10 <= 4 && (n100 < 12 || n100 > 14)) return few;
+  return many;
+}
+/* Progress facts for the block header:
+     done      — number of check-off days,
+     total     — the chosen duration (or, in no-limit mode, the days elapsed since the start,
+                 so «X of Y days» still makes sense against days that COULD be marked),
+     remaining — days left before the last challenge day (0 when the term is over),
+     dayNum    — which day the challenge is on (1 on the start day),
+     finished  — the term has passed,
+     lastDay   — last ISO day of the term (null when duration = 0),
+     pct       — progress bar width, clamped 0..100. */
+function challengeStats(ch){
+  const done = Object.keys(ch.days || {}).filter(k => ch.days[k]).length;
+  if(!ch.startedAt) return { done, total: 0, remaining: 0, dayNum: 0, finished: false, pct: 0, lastDay: null, elapsed: 0 };
+  const today = isoToday();
+  const elapsed = challengeDaysBetween(ch.startedAt, today) + 1;
+  const lastDay = ch.duration > 0 ? challengeAddDays(ch.startedAt, ch.duration - 1) : null;
+  const finished = !!lastDay && today > lastDay;
+  const total = ch.duration > 0 ? ch.duration : Math.max(elapsed, 1);
+  const remaining = lastDay ? Math.max(challengeDaysBetween(today, lastDay) + 1, 0) : 0;
+  const pct = Math.max(0, Math.min(100, Math.round(100 * done / Math.max(total, 1))));
+  return { done, total, remaining, dayNum: Math.max(elapsed, 1), finished, pct, lastDay, elapsed };
+}
+// 42 cells (6 weeks × 7 days) for one month, Monday-first — the same order as the
+// challengeWeekdays locale string (пн…вс / Mon…Sun).
+function challengeMonthCells(y, m){
+  const offset = (new Date(y, m, 1).getDay() + 6) % 7;   // Monday = 0
+  const cells = [];
+  for(let i = 0; i < 42; i++){
+    const d = new Date(y, m, 1 - offset + i);
+    cells.push({ iso: challengeISO(d), day: d.getDate(), inMonth: d.getMonth() === m });
+  }
+  return cells;
+}
+// Which month the calendar shows: the user-picked one (challengeMonth), otherwise today's,
+// clamped into [challenge start month, max(end month, today's month)] — arrows disable at
+// both edges so the user can never browse outside the challenge's own dates.
+function challengeVisibleMonth(){
+  const ch = state.challenge;
+  const todayD = challengeParseISO(isoToday());
+  const startD = ch.startedAt ? challengeParseISO(ch.startedAt) : todayD;
+  const minM = startD.getFullYear() * 12 + startD.getMonth();
+  const stats = challengeStats(ch);
+  const endD = stats.lastDay ? challengeParseISO(stats.lastDay) : todayD;
+  const maxM = Math.max(minM, endD.getFullYear() * 12 + endD.getMonth(),
+                        todayD.getFullYear() * 12 + todayD.getMonth());
+  const picked = challengeMonth ? challengeMonth.y * 12 + challengeMonth.m
+                                : todayD.getFullYear() * 12 + todayD.getMonth();
+  const cur = Math.max(minM, Math.min(maxM, picked));
+  return { y: Math.floor(cur / 12), m: cur % 12, cur, minM, maxM };
+}
+// «←» / «→»: move one month within the same clamped range, then repaint. View-only —
+// nothing is saved (like the other transient panel flags).
+function shiftChallengeMonth(delta){
+  const v = challengeVisibleMonth();
+  const cur = Math.max(v.minM, Math.min(v.maxM, v.cur + delta));
+  challengeMonth = { y: Math.floor(cur / 12), m: cur % 12 };
+  render();
+}
+
+// ===== «Челленж» section HTML (v1.2.62) =====
+// Renders one of three views under a shared collapsible header:
+//   1. create form — no title saved yet (input + duration chips + «Начать»),
+//   2. edit form — «✎» pressed (same fields, «Сохранить»/«Отмена»),
+//   3. calendar — title saved: stats row, progress bar, month grid with ✓/✗ marks.
+// Reads ONLY state.challenge; state.challengeOpen is the collapse flag (default: collapsed).
+function challengeSectionHTML(){
+  const ch = state.challenge;
+  let html = `<div class="section-title-row" style="margin-top:24px;">
+    <div class="section-title" id="challengeToggle">
+      <span class="wheel-arrow">${challengeOpen ? '▾' : '▸'}</span>${t('challengeTitle')}
+    </div>
+    ${/* Header buttons belong to the OPEN block with a saved title — the same rule as
+         «Важные сферы жизни»/«Карта желаний»: a collapsed or empty challenge has nothing
+         to edit or reset. */ ''}
+    ${(challengeOpen && ch.title) ? `<div class="wheel-header-actions">
+      <button id="btnChallengeEdit" class="icon-btn" data-tip="${t('challengeEdit')}" aria-label="${t('challengeEdit')}"><i class="ti ti-edit" aria-hidden="true"></i></button>
+      <button id="btnChallengeReset" class="icon-btn" data-tip="${t('challengeNew')}" aria-label="${t('challengeNew')}"><i class="ti ti-refresh" aria-hidden="true"></i></button>
+    </div>` : ''}
+  </div>`;
+  if(!challengeOpen) return html;
+  // A title WITHOUT a start date can only come from a hand-edited save — treat it as
+  // «not created yet» so the create form repairs it instead of a broken calendar.
+  const showForm = !ch.title || !ch.startedAt || challengeEditing;
+  if(showForm){
+    html += `<p class="challenge-hint">${t('challengeHint')}</p>`;
+    html += `<input id="challengeTitleInput" class="challenge-title-input" type="text" maxlength="120" placeholder="${t('challengePlaceholder')}" value="${esc(challengeDraft)}">`;
+    if(challengeError) html += `<div class="auth-error">${esc(challengeError)}</div>`;
+    html += `<div class="challenge-dur-label">${t('challengeDurationLabel')}</div>`;
+    html += `<div class="challenge-dur-row">` + [7, 14, 21, 30, 0].map(n =>
+      `<button type="button" class="challenge-dur${challengeDurationDraft === n ? ' active' : ''}" data-challenge-days="${n}" aria-pressed="${challengeDurationDraft === n}">${n === 0 ? `∞ — ${t('challengeNoTerm')}` : n}</button>`
+    ).join('') + `</div>`;
+    html += `<div class="good-today-btn-row">
+      <button id="btnChallengeSave" type="button" class="good-today-primary">${ch.title ? t('challengeSave') : t('challengeStart')}</button>
+      ${ch.title ? `<button id="btnChallengeCancel" type="button">${t('challengeCancel')}</button>` : ''}
+    </div>`;
+    return html;
+  }
+  // --- Calendar view: stats → progress bar → optional reset confirmation → month grid ---
+  const stats = challengeStats(ch);
+  const mv = challengeVisibleMonth();
+  const todayISO = isoToday();
+  const progressKey = 'challengeProgress' + challengePlural(stats.total, '1', 'Few', 'Many');
+  const remainKey = 'challengeRemain' + challengePlural(stats.remaining, '1', 'Few', 'Many');
+  const meta = [];
+  if(ch.duration > 0){
+    meta.push(stats.finished ? `<b>${t('challengeFinished')}</b>`
+                             : `<span>${t(remainKey).replace('{n}', String(stats.remaining))}</span>`);
+  }else{
+    meta.push(`<span>${t('challengeDayN').replace('{n}', String(stats.dayNum))}</span>`);
+  }
+  meta.push(`<span>${t(progressKey).replace('{done}', String(stats.done)).replace('{total}', String(stats.total))}</span>`);
+  html += `<div class="challenge-name">${esc(ch.title)}</div>`;
+  html += `<div class="challenge-meta">${meta.join('')}</div>`;
+  html += `<div class="challenge-progress"><i style="width:${stats.pct}%"></i></div>`;
+  // Inline reset confirmation — no modal: the calendar stays visible while deciding.
+  if(challengeResetConfirm){
+    html += `<div class="challenge-reset-row"><span>${t('challengeResetConfirm')}</span>
+      <div class="good-today-btn-row">
+        <button id="btnChallengeResetYes" type="button" class="good-today-primary">${t('yes')}</button>
+        <button id="btnChallengeResetNo" type="button">${t('no')}</button>
+      </div></div>`;
+  }
+  const months = t('challengeMonths').split(',').map(s => s.trim());
+  html += `<div class="challenge-cal-head">
+    <button id="btnChallengePrevMonth" class="icon-btn" data-tip="${t('challengePrevMonth')}" aria-label="${t('challengePrevMonth')}"${mv.cur <= mv.minM ? ' disabled' : ''}>←</button>
+    <div class="challenge-cal-title">${months[mv.m]} ${mv.y}</div>
+    <button id="btnChallengeNextMonth" class="icon-btn" data-tip="${t('challengeNextMonth')}" aria-label="${t('challengeNextMonth')}"${mv.cur >= mv.maxM ? ' disabled' : ''}>→</button>
+  </div>`;
+  html += `<div class="challenge-weekdays">` + t('challengeWeekdays').split(',').map(w => `<span>${w.trim()}</span>`).join('') + `</div>`;
+  html += `<div class="challenge-grid">` + challengeMonthCells(mv.y, mv.m).map(c => {
+    const cls = ['challenge-day'];
+    if(!c.inMonth) cls.push('out');
+    const inRange = !!ch.startedAt && c.iso >= ch.startedAt && (!stats.lastDay || c.iso <= stats.lastDay);
+    let mark = '';
+    // The future cannot be marked yet; anything in range up to today can (this is the
+    // red-✗ → green-✓ fix for «did the task but forgot to open the app»), a ✓ toggles off.
+    const disabled = !inRange || c.iso > todayISO;
+    if(inRange && c.iso <= todayISO){
+      if(ch.days && ch.days[c.iso]){ cls.push('done'); mark = '✓'; }
+      else if(c.iso < todayISO){ cls.push('missed'); mark = '✗'; }
+    }
+    if(c.iso === todayISO) cls.push('today');
+    return `<button type="button" class="${cls.join(' ')}" data-challenge-day="${c.iso}"${disabled ? ' disabled' : ''}><span class="cd-num">${+c.iso.slice(8)}</span>${mark ? `<span class="cd-mark">${mark}</span>` : ''}</button>`;
+  }).join('') + `</div>`;
+  html += `<div class="challenge-cal-hint">${t('challengeDayHint')}</div>`;
+  return html;
 }
 
 // ===== «Хорошее сегодня» journal section HTML =====
@@ -7754,6 +8101,127 @@ function attachWishMapHandlers(){
     render();
   });
 }
+/* ===== «Челленж» handlers (v1.2.62) =====
+   Same contract as #wheelToggle / #wishToggle: the section flag persists to state, every
+   data change goes saveState() → render(). Day marks live ONLY in state.challenge.days. */
+function attachChallengeHandlers(){
+  // Section toggle — collapse drops every transient form flag (like the other sections).
+  on('challengeToggle', 'click', ()=>{
+    challengeOpen = !challengeOpen;
+    state.challengeOpen = challengeOpen;
+    if(!challengeOpen){
+      challengeEditing = false;
+      challengeDraft = '';
+      challengeError = '';
+      challengeResetConfirm = false;
+    }
+    saveState();
+    render();
+  });
+  // «✎» — edit the saved title/duration; the draft seeds from the current values.
+  on('btnChallengeEdit', 'click', ()=>{
+    const ch = state.challenge;
+    challengeDraft = ch.title;
+    challengeDurationDraft = ch.duration;
+    challengeEditing = true;
+    challengeError = '';
+    render();
+    const inp = document.getElementById('challengeTitleInput');
+    if(inp){
+      inp.focus();
+      if(inp.setSelectionRange) inp.setSelectionRange(inp.value.length, inp.value.length);
+    }
+  });
+  // Create / save — the only validation is an empty title.
+  on('btnChallengeSave', 'click', ()=>{
+    const inp = document.getElementById('challengeTitleInput');
+    const title = String(inp ? inp.value : challengeDraft).trim();
+    if(!title){
+      challengeError = t('challengeEmptyTitle');
+      render();
+      return;
+    }
+    const ch = state.challenge;
+    ch.title = title;
+    ch.duration = challengeDurationDraft;
+    if(!ch.startedAt){
+      // A brand-new challenge starts today; existing marks are never touched on rename.
+      ch.startedAt = isoToday();
+      ch.days = {};
+      challengeMonth = null;
+    }
+    challengeEditing = false;
+    challengeDraft = '';
+    challengeError = '';
+    saveState();
+    render();
+  });
+  // Back out of the edit form. There is no «Cancel» on the CREATE form (nothing to go
+  // back to) — the section toggle above is the way to leave it without saving.
+  on('btnChallengeCancel', 'click', ()=>{
+    challengeEditing = false;
+    challengeDraft = '';
+    challengeError = '';
+    render();
+  });
+  // Duration chips: picking one repaints to move the .active highlight — so first push
+  // whatever is typed into the input into the draft (a render would otherwise drop it).
+  document.querySelectorAll('[data-challenge-days]').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      const n = parseInt(el.dataset.challengeDays, 10);
+      const inp = document.getElementById('challengeTitleInput');
+      if(inp) challengeDraft = inp.value;
+      if(Number.isInteger(n) && n >= 0) challengeDurationDraft = n;
+      render();
+    });
+  });
+  // Title input: keep the draft WITHOUT re-rendering (a render would drop the focus).
+  // Enter submits, same as the primary button.
+  const titleInput = document.getElementById('challengeTitleInput');
+  if(titleInput){
+    titleInput.addEventListener('input', ()=>{ challengeDraft = titleInput.value; });
+    titleInput.addEventListener('keydown', (e)=>{
+      if(e.key === 'Enter'){
+        e.preventDefault();
+        const btn = document.getElementById('btnChallengeSave');
+        if(btn) btn.click();
+      }
+    });
+  }
+  // Calendar days: toggle the check-off. ANY in-range day up to today flips — this is
+  // exactly the «forgot to open the app but DID the task» fix (red ✗ → green ✓), and
+  // tapping a ✓ again unmarks it (mistaken or changed mind). The future stays untouchable.
+  document.querySelectorAll('[data-challenge-day]').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      const iso = el.dataset.challengeDay;
+      const ch = state.challenge;
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return;
+      if(!ch.startedAt || iso < ch.startedAt || iso > isoToday()) return;
+      if(ch.duration > 0 && iso > challengeAddDays(ch.startedAt, ch.duration - 1)) return;
+      ch.days = ch.days || {};
+      if(ch.days[iso]) delete ch.days[iso];
+      else ch.days[iso] = true;
+      saveState();
+      render();
+    });
+  });
+  // Month arrows — view-only, nothing is saved (shiftChallengeMonth repaints itself).
+  on('btnChallengePrevMonth', 'click', ()=> shiftChallengeMonth(-1));
+  on('btnChallengeNextMonth', 'click', ()=> shiftChallengeMonth(1));
+  // «⟲» never resets in one tap: the check-off history IS the value of the block.
+  on('btnChallengeReset', 'click', ()=>{ challengeResetConfirm = true; render(); });
+  on('btnChallengeResetNo', 'click', ()=>{ challengeResetConfirm = false; render(); });
+  on('btnChallengeResetYes', 'click', ()=>{
+    state.challenge = { title:'', startedAt:'', duration: challengeDurationDraft, days:{} };
+    challengeResetConfirm = false;
+    challengeEditing = false;
+    challengeDraft = '';
+    challengeError = '';
+    challengeMonth = null;
+    saveState();
+    render();
+  });
+}
 function attachGoodTodayHandlers(){
   // Main section toggle.
   const entriesToggle = document.getElementById('goodTodayEntriesToggle');
@@ -8209,6 +8677,7 @@ function attachHandlers(){
   attachModalHandlers();
   attachWishMapHandlers();
   attachGoodTodayHandlers();
+  attachChallengeHandlers();
 }
 // Аудит: режимы (edit/delete/move/addsub/relocate) переживали навигацию — ушёл по крошке или
 // «Назад» в другую сферу, а тап по карточке там удалял её вместо открытия (в режиме у карточки
@@ -9180,6 +9649,7 @@ function attachSyncConflictHandlers(){
       sanitizeGoalTree(state); sanitizeEmptyChecklists(state); ensureWheelTotals(state); ensureToday(state); ensureGoodToday(state);
       ensurePriorityDefaults(state);
       ensureSphereActivity(state);
+      ensureChallenge(state);   // a cloud snapshot from an older build has no «Челлендж» yet
       // The account document holds the wish board as METADATA ONLY: no uploadState flags and no
       // bytes. Without this merge the cards keep no state at all and nothing ever downloads
       // them — the board stays blank on this device until a reload. mergeWishMapCloud() restores

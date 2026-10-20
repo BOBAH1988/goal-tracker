@@ -77,6 +77,15 @@ const EXPORT_SRC = `
     goodTodayLastEntry, goodTodayHistoryGroups, goodTodayEntryById,
      goodTodayWeekReflectionsFor, weekStartISO, formatDateISO, formatWeekLabel, weekShiftISO,
      goodTodaySectionHTML, goodTodayHistoryHTML, goodTodayWeekHistoryHTML,
+     // «Челленж» (v1.2.62)
+     ensureChallenge, challengeSectionHTML, challengeStats, challengeMonthCells,
+     challengeAddDays, challengeDaysBetween, challengeISO, challengeParseISO, challengePlural,
+     challengeVisibleMonth, shiftChallengeMonth,
+     getChallengeOpen: () => challengeOpen,
+     setChallengeOpen: (v) => { challengeOpen = !!v; },
+    setChallengeMonth: (v) => { challengeMonth = v; },
+    setChallengeEditing: (v) => { challengeEditing = !!v; },
+    setChallengeDraft: (v) => { challengeDraft = String(v || ''); },
      // Мягкое напоминание о сферах
      SPHERE_REMINDER_DAYS, DAY_MS,
      ensureSphereActivity, touchSphere, touchSphereAtPath, sphereHasOpenGoals,
