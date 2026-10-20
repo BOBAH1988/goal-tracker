@@ -2457,8 +2457,9 @@ test('top menu: the «Меню» caption sits in the same row as the ✕', () =>
   assert.ok(title, 'the head row must carry the caption');
   assert.ok(close, 'the head row must carry the ✕');
   assert.equal(title.textContent.trim(), 'Меню', 'the caption must read «Меню»');
-  // Same row, caption on the left of the ✕.
-  assert.equal(title.nextElementSibling, close, 'the caption must sit directly left of the ✕');
+  // Same row: the caption is the middle column, the ✕ the right one.
+  assert.equal(title.nextElementSibling, close, 'the caption and the ✕ must share one row');
+  assert.equal(title.previousElementSibling, null, 'the caption must be the first thing in the head row');
   // The caption is a plain label, not a button — it must not be focusable.
   assert.equal(title.tagName, 'SPAN', 'the caption must be a label, not a button');
 });

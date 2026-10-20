@@ -218,21 +218,27 @@ test('CSS guard: the main menu has a «Меню» caption right next to the ✕,
     sel: m[1].trim().replace(/\s+/g, ' '), body: m[2],
   }));
   const find = (sel) => rules.find(r => r.sel.split(',').some(x => x.trim().replace(/\s+/g, ' ').endsWith(sel)));
-  // The head row: caption + close button, side by side, vertically centred.
+  // The head row: the caption is CENTRED in the panel, the ✕ stays in the right corner.
+  // Grid 1fr auto 1fr — the middle (auto) column is exactly in the middle of the panel,
+  // the two side columns split the rest evenly.
   const head = find('.lang-menu .menu-head');
   assert.ok(head, 'the .menu-head rule must exist');
-  assert.match(head.body, /display:flex/, 'the menu head must be a flex row');
+  assert.match(head.body, /display:grid/, 'the menu head must be a grid');
+  assert.match(head.body, /grid-template-columns:1fr auto 1fr/, 'the caption column must sit exactly in the middle');
   assert.match(head.body, /align-items:center/, 'the caption and the ✕ must be centred on one line');
-  assert.match(head.body, /justify-content:flex-end/, 'the caption must sit directly left of the ✕');
   // The caption itself.
   const title = find('.lang-menu .menu-title');
   assert.ok(title, 'the .menu-title rule must exist');
+  assert.match(title.body, /grid-column:2/, 'the caption must live in the middle column');
+  assert.match(title.body, /text-align:center/, 'the caption must be centred');
   assert.match(title.body, /font-size:15px/, 'the caption needs its own font size');
   assert.match(title.body, /white-space:nowrap/, 'the caption must stay on one line');
   // The ✕ is no longer absolutely positioned — it shares the row with the caption.
   const close = find('.lang-menu button.menu-close');
   assert.ok(close, 'the .menu-close rule must exist');
   assert.match(close.body, /position:static/, 'the ✕ must share the row with the caption, not float over it');
+  assert.match(close.body, /grid-column:3/, 'the ✕ must live in the right column');
+  assert.match(close.body, /justify-self:end/, 'the ✕ must stay in the right corner');
   assert.match(close.body, /background:none/, 'the ✕ keeps its own background');
   assert.match(close.body, /padding:6px/, 'the ✕ keeps its own padding');
   // The panel no longer reserves 40px of empty space at the top for the floating ✕.
