@@ -82,6 +82,17 @@ test('top menu opens; picking English re-renders the UI in English', () => {
   assert.ok(!t.document.querySelector('.lang-menu'), 'menu must close after picking');
 });
 
+test('top menu: the ✕ button closes the menu without picking anything', () => {
+  const t = bootDom();
+  t.click('#btnTopMenu');
+  assert.ok(t.document.querySelector('.lang-menu'), 'menu must open');
+  const x = t.document.querySelector('#btnTopMenuClose');
+  assert.ok(x, 'the close button must be rendered');
+  t.click('#btnTopMenuClose');
+  assert.ok(!t.document.querySelector('.lang-menu'), 'menu must close after ✕');
+  assert.equal(t.document.documentElement.lang, 'ru', 'no language switch happened');
+});
+
 test('add-sphere button appends a child through the real handler', () => {
   const t = bootDom();
   t.app.setState({ name: 'root', children: [container([]), container([])] });
