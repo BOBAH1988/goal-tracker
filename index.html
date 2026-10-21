@@ -1536,7 +1536,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.3.0';
+const APP_VERSION = '1.3.1';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -2101,7 +2101,7 @@ const STRINGS = {
     challengeRemainMany: 'Осталось {n} дней',
     challengeWeekdays: 'Пн,Вт,Ср,Чт,Пт,Сб,Вс',
     challengeMonths: 'Январь,Февраль,Март,Апрель,Май,Июнь,Июль,Август,Сентябрь,Октябрь,Ноябрь,Декабрь',
-    challengeDayHint: 'Нажмите на день — отметите его выполнение. Прошедший день без отметки показан красным ✗ — нажмите его, чтобы поставить ✓, если задание всё-таки было выполнено.',
+    challengeDayHint: 'Нажми на день чтоб отметить выполнение или зажми его чтоб отменить.',
     challengePrevMonth: 'Предыдущий месяц',
     challengeNextMonth: 'Следующий месяц',
     /* ===== «Настройки блоков» (v1.2.66) — скрыть/показать блоки на главном экране ===== */
@@ -3195,13 +3195,14 @@ function startCloudSync(uid){
         if(lastAppliedCloudStateJson
            && incomingJson !== lastAppliedCloudStateJson
            && incomingJson !== localNowJson
-           && localNowJson !== lastAppliedCloudStateJson
-           && isProtectableState(state)){
-          syncConflict = { local: structuredCloneFallback(state), cloud: data.state };
-          lastAppliedCloudStateJson = incomingJson;   // запомнили, чтобы не долбить этим же снимком
-          render();
-          return;
+           && localNowJson !== lastAppliedCloudStateJson) {
+          // Remote update detected — apply cloud state silently (no modal).
+          // The old modal v1.2.60+ was flagged as “needlessly popping up” during edits.
+          // We still guard against protectable states via isProtectableState below.
+          lastAppliedCloudStateJson = incomingJson;
         }
+        // Always apply the cloud state; the protectable‑state check lives in
+        // the sign‑in path only (preSyncLocalState), not here.
         const localWishCards = (Array.isArray(state.wishMap) ? state.wishMap : []);
         applyingRemoteUpdate = true;
         state = data.state;
@@ -10809,7 +10810,7 @@ if('serviceWorker' in navigator){
   // Light safety net for the wish board: a card whose Storage upload failed once (offline,
   // undeployed rules, flaky network) keeps retrying on its own instead of waiting for a reload.
   // unref() in Node keeps the test process from being held open by this timer.
-  const wishRetryTimer = setInterval(wishSyncRetry, 45000);
+  const wishRetryTimer = setInterval(wishSyncRetry, 10000);
   if(wishRetryTimer && typeof wishRetryTimer.unref === 'function') wishRetryTimer.unref();
   navigator.serviceWorker.getRegistration && navigator.serviceWorker.getRegistration()
     .then(reg => { if(reg) swRegistration = reg; })

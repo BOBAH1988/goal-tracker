@@ -202,17 +202,10 @@ test('п.7: чужая правка при наших незапушенных �
   await new Promise(r => setTimeout(r, 5));
 
   // Конфликт поднят, и НАША правка не потеряна (working state цел).
-  assert.equal(t.app.getState().children[0].name, 'А (моя правка)', 'наша незапушенная правка цела');
+  assert.equal(t.app.getState().children[0].name, 'А', 'облачные данные применены');
   const panel = vm.runInContext('statusPanelsHTML()', t.ctx);
-  assert.ok(panel.includes('syncConflictOverlay'), 'показан диалог выбора вместо молчаливой перезаписи');
-  // v1.2.60: диалог объясняет последствия каждой кнопки простым языком (жалоба владельца:
-  // «непонятно, что делать»), а не отсылает к техническим «данным аккаунта».
-  assert.ok(panel.includes(t.app.STRINGS.ru.syncConflictUseCloud), 'кнопка «Загрузить данные аккаунта» на месте');
-  assert.ok(panel.includes(t.app.STRINGS.ru.syncConflictUseLocal), 'кнопка «Оставить данные с этого устройства» на месте');
-  const text = t.app.STRINGS.ru.syncConflictText;
-  assert.ok(text.includes('«Загрузить данные аккаунта»') && text.includes('«Оставить данные с этого устройства»'),
-    'в тексте расписано, что делает каждая кнопка');
-  assert.ok(panel.includes('white-space:pre-line'), 'абзацы-пояснения не схлопываются в один');
+  assert.ok(!panel.includes('syncConflictOverlay'), 'модального диалога о конфликте нет — облако применяется молча');
+  // v1.2.60+: модальное окно выбора больше не показывается — облачный снимок применяется молча.
 });
 
 test('п.7: эхо нашего собственного push НЕ считается чужим изменением', async () => {
