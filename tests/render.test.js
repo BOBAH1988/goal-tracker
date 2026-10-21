@@ -22,6 +22,7 @@ const PANEL_FLAGS = [
   'goodTodayDeleteId', 'goodTodayWeekPauseOpen', 'goodTodayWeekEditing',
   'goodTodayWeekHistoryOpen', 'goodTodayWeekHistoryWeek', 'goodTodayWeekHistoryEditing',
   'achievementsOpen',
+  'achievementsFormOpen',
 ];
 
 /* document.getElementById hands out a FRESH stub per call, so the HTML render() builds is
