@@ -699,6 +699,10 @@
       display:flex; align-items:center; gap:10px; margin:0 0 10px;
     }
     .good-today-subtitle-row #btnGoodTodayAdd{ order: -1; }
+    .achievements-subtitle-row{
+      display:flex; align-items:center; gap:10px; margin:0 0 10px;
+    }
+    .achievements-subtitle-row #btnAchievementsAdd{ order: -1; }
     .good-today-subtitle-row .good-today-subtitle{margin:0;}
     #btnGoodTodayCalendar.icon-btn{
       background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:8px;
@@ -6044,6 +6048,12 @@ function achievementsSectionHTML(){
   if(!achievementsOpen) return html;
 
   if(arr.length === 0){
+    html += `<div class="achievements-subtitle-row">
+      <span class="achievements-empty">${t('achievementsEmpty')}</span>
+      <button id="btnAchievementsAdd" type="button" class="icon-btn"
+        data-tip="${t('tipAchievementsAdd')}" aria-label="${t('tipAchievementsAdd')}">+</button>
+    </div>`;
+  } else {
     html += `<div class="achievements-empty">${t('achievementsEmpty')}</div>`;
   }
   for(const [i, text] of arr.entries()){
