@@ -100,6 +100,10 @@ const EXPORT_SRC = `
     setChallengeMonth: (v) => { challengeMonth = v; },
     setChallengeEditing: (v) => { challengeEditing = !!v; },
     setChallengeDraft: (v) => { challengeDraft = String(v || ''); },
+     // «Мои достижения»
+     achievementsSectionHTML,
+     getAchievementsOpen: () => achievementsOpen,
+     setAchievementsOpen: (v) => { achievementsOpen = !!v; },
      // Мягкое напоминание о сферах
      SPHERE_REMINDER_DAYS, DAY_MS,
      ensureSphereActivity, touchSphere, touchSphereAtPath, sphereHasOpenGoals,
