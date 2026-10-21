@@ -1559,7 +1559,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.3.3';
+const APP_VERSION = '1.3.4';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -2148,7 +2148,7 @@ const STRINGS = {
     achievementsEdit: 'Изменить',
     achievementsDelete: 'Удалить',
     achievementsDeleteConfirm: 'Точно удалить достижение?',
-    achievementsEmpty: '- Добавьте первое свое достижение.',
+    achievementsEmpty: 'Добавьте первое свое достижение.',
     achievementsMax: 'Достижений можно не более 10',
     achievementsCharCount: '{n} из 100 символов',
     tipAchievementsAdd: 'Добавить достижение в список',
@@ -6063,10 +6063,12 @@ function achievementsSectionHTML(){
       <button class="achievement-delete" data-achievements-delete="${i}" data-tip="${t('tipAchievementsDelete')}" aria-label="${t('tipAchievementsDelete')}">✕</button>
     </div>`;
   }
-  if(canAdd){
+  if(canAdd && arr.length > 0){
     html += `<button id="btnAchievementsAdd" class="icon-btn" data-tip="${t('tipAchievementsAdd')}" aria-label="${t('tipAchievementsAdd')}">+</button>`;
-  } else {
+  } else if(arr.length >= 10) {
     html += `<div class="achievements-max">${t('achievementsMax')}</div>`;
+  } else {
+    html += ``;
   }
   if(achievementsFormOpen || achievementsEditId !== null){
     const editing = achievementsEditId !== null;
