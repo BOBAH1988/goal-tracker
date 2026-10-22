@@ -31,5 +31,15 @@ service cloud.firestore {
       allow delete: if request.auth != null && request.auth.uid == resource.data.uid;
       allow update: if false;
     }
+    // «Аналитика» (v1.4.0): админ-панель.
+    match /admins/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow write: if false;
+    }
+    match /userStats/{uid} {
+      allow read: if request.auth != null && (request.auth.uid == uid || exists(/databases/$(database)/documents/admins/$(request.auth.uid)));
+      allow create, update: if request.auth != null && request.auth.uid == uid;
+      allow delete: if false;
+    }
   }
 }
