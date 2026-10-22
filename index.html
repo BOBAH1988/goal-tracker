@@ -7352,7 +7352,7 @@ function topbarHTML(){
         ? `<div class="account-dropdown">
             <button id="btnAccount" ${accAsIcon ? `data-tip="${esc(authUser.name || authUser.email)}" aria-label="${esc(authUser.name || authUser.email)}"` : `title="${esc(authUser.email)}"`}>${accAsIcon ? '<i class="ti ti-user" aria-hidden="true"></i>' : esc(authUser.name || authUser.email)}</button>
             ${accountMenuOpen ? `<div class="account-menu">
-              ${isAdminUser ? `<button id="btnAnalyticsMenu">📊 ${t('analytics')}</button>` : ''}
+              <button id="btnAnalyticsMenu">📊 ${t('analytics')}</button>
               <button id="btnSignOutMenu" class="danger">${t('accountSignOut')}</button>
             </div>` : ''}
           </div>`
