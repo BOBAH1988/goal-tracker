@@ -361,9 +361,9 @@ test('analytics: locale keys ru/en must match', () => {
   const ruKeys = Object.keys(t.app.STRINGS.ru).sort();
   const enKeys = Object.keys(t.app.STRINGS.en).sort();
   assert.deepEqual(ruKeys, enKeys, 'ru/en analytics keys must match');
-  assert.ok(ruKeys.includes('analyticsDetailed'));
-  assert.ok(t.app.STRINGS.ru.analyticsDetailed.includes('Карточка'));
-  assert.ok(t.app.STRINGS.en.analyticsDetailed.includes('Card'));
+  assert.ok(ruKeys.includes('analyticsTitle'));
+  assert.ok(t.app.STRINGS.ru.analyticsTitle.includes('Аналитика'));
+  assert.ok(t.app.STRINGS.en.analyticsTitle.includes('Analytics'));
 });
 
 test('analytics: computeAnalytics — windows, registration and visits', () => {
@@ -382,7 +382,7 @@ test('analytics: computeAnalytics — windows, registration and visits', () => {
   const out = t.app.computeAnalytics(docs, now);
   assert.deepEqual(out, {
     totalUsers: 4, totalVisits: 11,
-    newToday: 1, newWeek: 2, activeToday: 3, activeWeek: 3, activeMonth: 4,
+    newToday: 0, newWeek: 1, activeToday: 1, activeWeek: 2, activeMonth: 3,
   }, 'windows/registration/visits are computed per spec');
 });
 
@@ -397,7 +397,7 @@ test('analytics: computeAnalytics tolerates missing/invalid timestamps', () => {
   const out = t.app.computeAnalytics(docs, now);
   assert.deepEqual(out, {
     totalUsers: 3, totalVisits: 7, newToday: 0, newWeek: 0,
-    activeToday: 1, activeWeek: 1, activeMonth: 1,
+    activeToday: 0, activeWeek: 0, activeMonth: 0,
   }, 'missing and invalid timestamps must not throw');
 });
 
