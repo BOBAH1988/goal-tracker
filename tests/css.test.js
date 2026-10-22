@@ -334,6 +334,26 @@ test('CSS guard: the tip bubble wraps instead of running off the screen', () => 
   assert.ok(hasRight, 'a bubble at the right edge must be able to hug it');
 });
 
+/* Репорт владельца: в PWA всплывающие подсказки вылазывают за экран устройства — пузырь
+   рисуется над кнопкой, а у кнопок в верхней части экрана (шапка) над ней места нет.
+   Добавлено третье положение: пузырь ПОД кнопкой (класс .tip-below), стрелка перевёрнута и
+   смотрит вверх на кнопку. Положение вычисляет JS (positionTip); здесь сторож на CSS. */
+test('CSS guard: the tip-below bubble lives under the button instead of above it', () => {
+  const rules = splitCssNested(cssNoComments(HTML));
+  const belowAfter = rules.find(r => r.selectors.some(s => /\[data-tip\]\.tip-below::after/.test(s)));
+  assert.ok(belowAfter, 'a tip-below ::after rule must exist');
+  const belowBody = belowAfter.body.replace(/\s+/g, ' ');
+  assert.match(belowBody, /top:calc\(100%\s*\+\s*8px\)/, 'the bubble is placed under the button');
+  assert.match(belowBody, /bottom:\s*auto/, 'the vertical overflow no longer forces a flip');
+  // Стрелка под пузырём смотрит вверх на кнопку.
+  const belowBefore = rules.find(r => r.selectors.some(s => /\[data-tip\]\.tip-below::before/.test(s)));
+  assert.ok(belowBefore, 'a tip-below ::before arrow rule must exist');
+  const arrowBody = belowBefore.body.replace(/\s+/g, ' ');
+  assert.match(arrowBody, /border-bottom-color:\s*var\(--border\)/, 'the arrow flips up at the button');
+  assert.match(arrowBody, /top:calc\(100%\s*\+\s*2px\)/, 'the flipped arrow sits between the button and the bubble');
+  assert.match(arrowBody, /bottom:\s*auto/, 'and it is not anchored to the old (top) side');
+});
+
 /* Репорт владельца: тап «Печать» в PWA убирал всё приложение с экрана и оставлял пустой экран,
    который нельзя ни закрыть, ни отправить на печать. Причина: правило, скрывающее приложение ради
    печати, висело ВНЕ @media print, поэтому срабатывало сразу на экране, а печатный узел оставался

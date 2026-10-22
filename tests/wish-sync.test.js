@@ -387,6 +387,38 @@ test('tooltips: a bubble near the screen edge is pulled back inside (positionTip
   assert.ok(true, 'garbage in does not throw');
 });
 
+/* Репорт владельца: в PWA подсказки вылазывают за экран устройства. Горизонталь починен раньше
+   (tip-left/tip-right), а вот вертикаль: пузырь всегда рисовался НАД кнопкой, и у кнопок в
+   верхней части экрана (шапка приложения) он уезжал за верхний край, а в standalone-PWA ещё и
+   под статус-бар. Теперь positionTip() оценивает высоту пузыря и, если над кнопкой места нет,
+   переворачивает пузырь ПОД неё (класс tip-below). */
+test('tooltips: a bubble near the top edge is flipped under the button (positionTip)', () => {
+  const t = boot();
+  vm.runInContext('window.innerWidth = 390; window.innerHeight = 700;', t.ctx);
+  const mk = (top, height) => vm.runInContext(
+    '({ classList:{ _s:new Set(), add(c){ this._s.add(c); }, remove(c){ this._s.delete(c); }, contains(c){ return this._s.has(c); } },'
+    + ' getAttribute(){ return \'Добавить подзадачу\'; },'
+    + ' getBoundingClientRect(){ return { left:150, right:190, width:40, top:' + top + ', bottom:' + (top + height) + ' }; } })', t.ctx);
+  const pos = vm.runInContext('positionTip', t.ctx);
+
+  // Кнопка у самого верха экрана: над ней пузырь не помещается → показываем под ней.
+  const top = mk(6, 40);
+  pos(top);
+  assert.equal(top.classList.contains('tip-below'), true, 'a button at the very top shows the bubble below');
+  assert.equal(top.classList.contains('tip-left'), false);
+  assert.equal(top.classList.contains('tip-right'), false);
+
+  // Кнопка в середине экрана: места над ней хватает → пузырь остаётся сверху.
+  const mid = mk(300, 40);
+  pos(mid);
+  assert.equal(mid.classList.contains('tip-below'), false, 'a button in the middle keeps the bubble above');
+
+  // Повторный вызов не копит классы.
+  pos(top);
+  assert.equal(top.classList.contains('tip-below'), true);
+  assert.equal(top.classList.contains('tip-left'), false);
+});
+
 test('manual move: the card takes the target slot, order is renumbered, the mark still leads', () => {
   const t = boot();
   t.app.setState(Object.assign(t.app.getState(), { wishMap: [

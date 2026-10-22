@@ -1358,15 +1358,23 @@
   }
    /* Прижатие пузыря к краю экрана: слева — к левому краю кнопки, справа — к правому. Стрелка
       едет за пузырём, чтобы она по-прежнему смотрела в кнопку. */
-   [data-tip].tip-left::after{ left:0; transform:none; }
-   [data-tip].tip-right::after{ left:auto; right:0; transform:none; }
-   [data-tip].tip-left::before{ left:12px; transform:none; }
-   [data-tip].tip-right::before{ left:auto; right:12px; transform:none; }
    :where(html:not(.touch-mode)) [data-tip]:hover::before, [data-tip]:focus-visible::before, [data-tip].tip-live::before{
     content:''; position:absolute; left:50%; bottom:calc(100% + 2px); transform:translateX(-50%);
     border:6px solid transparent; border-top-color:var(--border);
     pointer-events:none; z-index:1000;
   }
+   /* Положение пузыря и стрелки. Эти правила идут ПОСЛЕ базовых: специфичность одинаковая,
+      решает порядок в файле.
+      - tip-left / tip-right: пузырь прижат к краю экрана (кнопка у самого края viewport),
+        стрелка едет за пузырём и по-прежнему смотрит в кнопку.
+      - tip-below: пузырь ПОД кнопкой - когда над кнопкой для него не хватает места (верхний
+        край экрана, статус-бар в standalone-PWA). Стрелка переворачивается и смотрит вверх. */
+   [data-tip].tip-left::after{ left:0; transform:none; }
+   [data-tip].tip-right::after{ left:auto; right:0; transform:none; }
+   [data-tip].tip-left::before{ left:12px; transform:none; }
+   [data-tip].tip-right::before{ left:auto; right:12px; transform:none; }
+   [data-tip].tip-below::after{ top:calc(100% + 8px); bottom:auto; }
+   [data-tip].tip-below::before{ top:calc(100% + 2px); bottom:auto; border-top-color:transparent; border-bottom-color:var(--border); }
    /* Installed PWA on a touch screen: after a tap the element stays in :hover indefinitely, so
       the hover bubble would never go away. Only the timed .tip-live bubble (JS, 1s) shows.
       :not(.tip-live) обязателен: без него этот подавитель перебивал и .tip-live-пузырь
@@ -1559,7 +1567,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.3.7';
+const APP_VERSION = '1.3.8';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -10882,17 +10890,55 @@ render();
    класс выравнивания (tip-left/tip-right), который CSS использует вместо translateX(-50%).
    Ширину пузыря берём с потолком (max-width в CSS), поэтому оценка консервативная: если текст
    короче, пузырь просто прижимается к краю кнопки. */
+/* Подсказка у края экрана (две оси).
+   Горизонталь: пузырь центрируется над кнопкой, но у кнопки у левого/правого края он вылезал
+   за границу viewport — вешаем класс выравнивания (tip-left/tip-right), который CSS использует
+   вместо translateX(-50%).
+   Вертикаль: пузырь по умолчанию показывается НАД кнопкой. Если кнопка у верхнего края экрана
+   (шапка приложения — самое частое место), пузырь уезжал за верхнюю границу; в PWA это особенно
+   заметно. Теперь оцениваем высоту пузыря по длине подсказки и, если над кнопкой он не влезает,
+   показываем его ПОД кнопкой (класс tip-below). Если места нет и снизу (крошечный экран) — берём
+   ту сторону, где больше свободного места. */
+/* Высота верхнего «безопасного» отступа экрана. В standalone-PWA сверху нависает статус-бар
+   (body получает padding-top: env(safe-area-inset-top)), и пузырь подсказки над кнопкой в шапке
+   залезал под него — то есть за пределы видимой области приложения. В обычной вкладке браузера
+   отступ равен нулю, поэтому ничего не меняется. */
+function safeAreaTop(){
+  try{
+    if(typeof window.getComputedStyle !== 'function' || !document.body) return 0;
+    const v = parseFloat(window.getComputedStyle(document.body).paddingTop || '0');
+    return Number.isFinite(v) ? v : 0;
+  }catch(e){ return 0; }
+}
 function positionTip(el){
   if(!el || !el.classList) return;
-  el.classList.remove('tip-left', 'tip-right');
+  el.classList.remove('tip-left');
+  el.classList.remove('tip-right');
+  el.classList.remove('tip-below');
   const r = el.getBoundingClientRect ? el.getBoundingClientRect() : null;
   const vw = window.innerWidth || (document.documentElement && document.documentElement.clientWidth) || 0;
+  const vh = window.innerHeight || (document.documentElement && document.documentElement.clientHeight) || 0;
   if(!r || !r.width || !vw) return;
   const maxTip = Math.min(240, Math.round(vw * 0.64));
   const margin = 8;
   const mid = r.left + r.width / 2;
   if(mid - maxTip / 2 < margin) el.classList.add('tip-left');
   else if(mid + maxTip / 2 > vw - margin) el.classList.add('tip-right');
+  // Высота пузыря: шрифт 12px/1.3 → 15.6px на строку, + отступы и рамка, + хвостик-стрелка.
+  const tipText = el.getAttribute ? (el.getAttribute('data-tip') || '') : '';
+  const textWidth = Math.max(1, maxTip - 20);
+  const tipLines = Math.max(1, Math.ceil(tipText.length * 6.5 / textWidth));
+  const tipH = tipLines * 15.6 + 20;
+  // Вертикаль: пузырь по умолчанию НАД кнопкой. Если там не хватает места (кнопка у верхнего
+  // края экрана, а в standalone-PWA ещё и статус-бар) — показываем пузырь ПОД кнопкой.
+  // Считаем и нижнюю границу: если и снизу не влезает, оставляем как есть (пузырь обрежется
+  // по краю, но не наезжая на кнопку).
+  const safeTop = vh ? safeAreaTop() : 0;
+  const hasTop = typeof r.top === 'number';
+  const hasBottom = typeof r.bottom === 'number';
+  const roomAbove = hasTop ? r.top - safeTop : Infinity;
+  const roomBelow = hasBottom ? vh - r.bottom : Infinity;
+  if(roomAbove < tipH + margin && roomBelow >= tipH + margin){ el.classList.add('tip-below'); }
 }
 document.addEventListener('pointerdown', (e)=>{
   // Тач-устройство (любое) ИЛИ установленная PWA: пузырь показываем через .tip-live.
