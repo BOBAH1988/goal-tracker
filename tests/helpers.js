@@ -88,6 +88,7 @@ const EXPORT_SRC = `
     getLastAppliedCloudStateJson: () => lastAppliedCloudStateJson,
     getWishLastUploadError: () => wishLastUploadError,
     ensureGoodToday, goodTodayAllEntries, goodTodayEntriesFor, goodTodayTodayEntries,
+   computeAnalytics, checkAdminStatus, trackUserActivity, loadAnalytics, analyticsPanelHTML,
     goodTodayLastEntry, goodTodayHistoryGroups, goodTodayEntryById,
      goodTodayWeekReflectionsFor, weekStartISO, formatDateISO, formatWeekLabel, weekShiftISO,
      goodTodaySectionHTML, goodTodayHistoryHTML, goodTodayWeekHistoryHTML,

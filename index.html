@@ -7348,11 +7348,11 @@ function topbarHTML(){
     <div class="app-subtitle">${esc(t('appSubtitle'))}</div></div>
     <div class="actions">
       <button id="btnSearch" class="icon-btn" data-tip="${t('search')}" aria-label="${t('search')}"><i class="ti ti-search" aria-hidden="true"></i></button>
+      ${isAdminUser && cloudEnabled ? `<button id="btnAnalytics" class="icon-btn" data-tip="${t('analytics')}" aria-label="${t('analytics')}"><i class="ti ti-chart-bar" aria-hidden="true"></i></button>` : ''}
       ${cloudEnabled ? (authUser
         ? `<div class="account-dropdown">
             <button id="btnAccount" ${accAsIcon ? `data-tip="${esc(authUser.name || authUser.email)}" aria-label="${esc(authUser.name || authUser.email)}"` : `title="${esc(authUser.email)}"`}>${accAsIcon ? '<i class="ti ti-user" aria-hidden="true"></i>' : esc(authUser.name || authUser.email)}</button>
             ${accountMenuOpen ? `<div class="account-menu">
-              <button id="btnAnalyticsMenu">📊 ${t('analytics')}</button>
               <button id="btnSignOutMenu" class="danger">${t('accountSignOut')}</button>
             </div>` : ''}
           </div>`
@@ -9248,6 +9248,8 @@ function computeAnalytics(docs, nowMs){
 async function checkAdminStatus(){
   isAdminUser = false;
   if(!cloudEnabled || !authUser || typeof firebase === 'undefined') return;
+  // Хардкод-админ (владелец проекта)
+  if(authUser.uid === '01l3xcqUPBZpOu67qNkj0uYJoqh1'){ isAdminUser = true; render(); return; }
   try{
     const snap = await firebase.firestore().collection(ADMINS_COLLECTION).doc(authUser.uid).get();
     if(snap && snap.exists) isAdminUser = true;
@@ -10494,15 +10496,6 @@ function attachAccountHandlers(){
       else render();
     });
   }
-  const btnAnalyticsMenu = document.getElementById('btnAnalyticsMenu');
-  if(btnAnalyticsMenu){
-    btnAnalyticsMenu.addEventListener('click', (e)=>{
-      e.stopPropagation();
-      accountMenuOpen = false;
-      analyticsOpen = true;
-      loadAnalytics();
-    });
-  }
   const btnResendVerify = document.getElementById('btnResendVerify');
   if(btnResendVerify){
     btnResendVerify.addEventListener('click', doResendVerification);
@@ -10851,6 +10844,14 @@ function attachTopMenuHandlers(){
       setTheme(el.dataset.themeChoice);
     });
   });
+  const btnAnalytics = document.getElementById('btnAnalytics');
+  if(btnAnalytics){
+    btnAnalytics.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      analyticsOpen = true;
+      loadAnalytics();
+    });
+  }
   const btnInstallAppMenuItem = document.getElementById('btnInstallAppMenuItem');
   if(btnInstallAppMenuItem){
     btnInstallAppMenuItem.addEventListener('click', async (e)=>{
