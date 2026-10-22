@@ -356,6 +356,60 @@ test('wishMapDisplayOrder: the personal photo leads the board (first slot)', () 
   assert.deepEqual(Array.from(t.app.wishMapDisplayOrder(plain)), [0, 1, 2], 'no mark → stored order');
 });
 
+test('analytics: locale keys ru/en must match', () => {
+  const t = boot();
+  const ruKeys = Object.keys(t.app.STRINGS.ru).sort();
+  const enKeys = Object.keys(t.app.STRINGS.en).sort();
+  assert.deepEqual(ruKeys, enKeys, 'ru/en analytics keys must match');
+  assert.ok(ruKeys.includes('analyticsDetailed'));
+  assert.ok(t.app.STRINGS.ru.analyticsDetailed.includes('Карточка'));
+  assert.ok(t.app.STRINGS.en.analyticsDetailed.includes('Card'));
+});
+
+test('analytics: computeAnalytics — windows, registration and visits', () => {
+  const t = boot();
+  const now = new Date('2026-06-15T12:00:00').getTime();
+  const fromYesterday = t.app.analyticsTsMs(new Date('2026-06-14T23:00:00').getTime());
+  const fromToday = t.app.analyticsTsMs(new Date('2026-06-15T09:00:00').getTime());
+  const fromLastWeek = t.app.analyticsTsMs(new Date('2026-06-08T08:00:00').getTime());
+  const fromLastMonth = t.app.analyticsTsMs(new Date('2026-05-15T07:00:00').getTime());
+  const docs = [
+    { uid: 'u1', registeredAt: t.app.analyticsTsMs(new Date('2026-06-10').getTime()), lastVisitAt: fromToday,   visits: 2 }, // fresh reg today + active today
+    { uid: 'u2', registeredAt: t.app.analyticsTsMs(new Date('2026-06-01').getTime()), lastVisitAt: fromYesterday, visits: 1 }, // active today+week+month
+    { uid: 'u3', registeredAt: t.app.analyticsTsMs(new Date('2026-06-08').getTime()), lastVisitAt: fromLastWeek,  visits: 3 }, // new this week, active this week+month
+    { uid: 'u4', registeredAt: t.app.analyticsTsMs(new Date('2026-03-01').getTime()), lastVisitAt: fromLastMonth, visits: 5 }, // active only this month, registered > 1 month
+  ];
+  const out = t.app.computeAnalytics(docs, now);
+  assert.deepEqual(out, {
+    totalUsers: 4, totalVisits: 11,
+    newToday: 1, newWeek: 2, activeToday: 3, activeWeek: 3, activeMonth: 4,
+  }, 'windows/registration/visits are computed per spec');
+});
+
+test('analytics: computeAnalytics tolerates missing/invalid timestamps', () => {
+  const t = boot();
+  const now = Date.now();
+  const docs = [
+    { uid: 'a' },                                   // nothing at all
+    { uid: 'b', registeredAt: 'not-a-date', lastVisitAt: null, visits: 0 },
+    { uid: 'c', registeredAt: new Date('2020-01-01').getTime(), lastVisitAt: 1234567890, visits: 7 },
+  ];
+  const out = t.app.computeAnalytics(docs, now);
+  assert.deepEqual(out, {
+    totalUsers: 3, totalVisits: 7, newToday: 0, newWeek: 0,
+    activeToday: 1, activeWeek: 1, activeMonth: 1,
+  }, 'missing and invalid timestamps must not throw');
+});
+
+test('analytics: computeAnalytics counts each document once', () => {
+  const t = boot();
+  const docs = Array.from({ length: 5 }, (_, i) => ({ uid: 'u' + i, registeredAt: Date.now(), lastVisitAt: Date.now(), visits: 1 }));
+  const out = t.app.computeAnalytics(docs, Date.now());
+  assert.equal(out.totalUsers, 5);
+  assert.equal(out.totalVisits, 5);
+});
+
+
 test('locales: ru and en carry the same key set', () => {
   const t = boot();
   const ru = Object.keys(t.app.STRINGS.ru).sort();

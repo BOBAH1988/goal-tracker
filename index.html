@@ -546,6 +546,14 @@
     :where(html:not(.touch-mode)) .account-menu button:hover{background:var(--card);}
   }
   .account-menu button.danger{color:var(--red);}
+  /* «Аналитика» (v1.4.0): сетка метрик в модалке админа. Кнопка #btnAnalyticsRefresh
+     наследует базовые стили .auth-panel button (background/border/padding/font-size
+     уже заданы — страж css.test.js проходит). Никаких новых hover-правил. */
+  .analytics-grid{display:grid; grid-template-columns:140px 1fr; gap:4px 12px; font-size:13px;}
+  .analytics-row{display:grid; grid-column:1/-1; grid-template-columns:subgrid; align-items:center;}
+  .analytics-label{color:var(--muted);}
+  .analytics-value{font-weight:600; justify-self:start;}
+  .analytics-body .auth-btn-row{justify-content:flex-end;}
   /* Home goals sort dropdown — opened by the #btnFilter button next to reorder. Mirrors
      .account-menu styling; options get a check mark when active. */
   .filter-dropdown{position:relative; display:inline-flex; z-index:11;}
@@ -1949,6 +1957,20 @@ const STRINGS = {
     genderMale: 'Мужской',
     genderFemale: 'Женский',
     occupationPlaceholder: 'Род деятельности (необязательно)',
+    analytics: 'Аналитика',
+    analyticsTitle: 'Аналитика по пользователям',
+    analyticsTotal: 'Всего пользователей',
+    analyticsToday: 'Были сегодня',
+    analyticsWeek: 'Были за 7 дней',
+    analyticsMonth: 'Были за 30 дней',
+    analyticsNewToday: 'Новых сегодня',
+    analyticsNewWeek: 'Новых за 7 дней',
+    analyticsLoad: 'Загрузить статистику',
+    analyticsEmpty: 'Пока нет данных. Статистика появится, как только пользователи откроют приложение.',
+    analyticsDenied: 'Раздел доступен только администратору',
+    analyticsError: 'Не удалось загрузить статистику',
+    analyticsUpdated: 'Обновлено',
+    analyticsTotalVisits: 'Всего визитов',
     saveChanges: 'Сохранить',
     tipAdd: 'Добавить цель',
     tipDelete: 'Удалить цель',
@@ -2330,6 +2352,20 @@ const STRINGS = {
     genderMale: 'Male',
     genderFemale: 'Female',
     occupationPlaceholder: 'Occupation (optional)',
+    analytics: 'Analytics',
+    analyticsTitle: 'Analytics by users',
+    analyticsTotal: 'Total users',
+    analyticsToday: 'Active today',
+    analyticsWeek: 'Active in last 7 days',
+    analyticsMonth: 'Active in last 30 days',
+    analyticsNewToday: 'New today',
+    analyticsNewWeek: 'New in last 7 days',
+    analyticsLoad: 'Load statistics',
+    analyticsEmpty: 'No data yet — stats will appear once users open the app.',
+    analyticsDenied: 'This section is admin-only',
+    analyticsError: 'Could not load statistics',
+    analyticsUpdated: 'Updated',
+    analyticsTotalVisits: 'Total visits',
     saveChanges: 'Save',
     tipAdd: 'Add goal',
     tipDelete: 'Delete goal',
@@ -3060,6 +3096,15 @@ let syncConflict = null;
 // состояние нетронуто, в облако ничего не отправлено, пользователь
 // видит понятное сообщение до тех пор, пока не придёт корректный снимок.
 let cloudStateError = false;
+// «Аналитика» (v1.4.0): admin-only. Админ — владелец, чей uid есть в документе /admins/{uid}.
+let isAdminUser = false;
+// UI: развёрнут ли модал аналитики и статус загрузки данных.
+let analyticsOpen = false;
+let analyticsData = null;       // { totalUsers,… } после loadAnalytics()
+let analyticsLoading = false;
+let analyticsError = '';
+// Дата/время последнего успешного получения админом (подпись «Обновлено в HH:MM»).
+let analyticsLastFetch = 0;
 // A state is worth protecting (i.e. worth interrupting sign-in for) only if it's neither the
 // untouched demo tree nor the blank per-account starting template — those have nothing a user
 // would miss. Comparing against the CURRENT language's emptyTemplate() is a best-effort match
@@ -7287,6 +7332,7 @@ function systemPanelsHTML(){
       </div>
     </div>`;
   }
+  html += analyticsPanelHTML();
   return html;
 }
 
@@ -7306,6 +7352,7 @@ function topbarHTML(){
         ? `<div class="account-dropdown">
             <button id="btnAccount" ${accAsIcon ? `data-tip="${esc(authUser.name || authUser.email)}" aria-label="${esc(authUser.name || authUser.email)}"` : `title="${esc(authUser.email)}"`}>${accAsIcon ? '<i class="ti ti-user" aria-hidden="true"></i>' : esc(authUser.name || authUser.email)}</button>
             ${accountMenuOpen ? `<div class="account-menu">
+              ${isAdminUser ? `<button id="btnAnalyticsMenu">📊 ${t('analytics')}</button>` : ''}
               <button id="btnSignOutMenu" class="danger">${t('accountSignOut')}</button>
             </div>` : ''}
           </div>`
@@ -9131,10 +9178,167 @@ function attachHandlers(){
   attachChallengeHandlers();
   attachAchievementsHandlers();
 }
+/* ===== «Аналитика» (v1.4.0, admin-only) =====
+   Счётчики активности — для админа, чтобы видеть живые цифры по приложению.
+   Админ — владелец: документ /admins/{uid} существует ТОЛЬКО для его uid
+   (создаётся владельцем вручную в консоли/CLI; писать нельзя никому).
+   Пользователи сами пишут свой документ /userStats/{uid} при каждом запуске:
+     { uid, email, name, registeredAt, lastVisitAt, visits }
+   registeredAt берётся из Firebase Auth metadata.creationTime (фиксировано
+   при регистрации, потом merge не трогает — исключаем перезапись даты).
+   Метрики строятся ТОЛЬКО из lastVisitAt: пользователь «был в окне», если его
+   последний визит попадает в окно. Никаких растущих массивов дней.
+   Firestore rules (firestore.rules + inline copy в index.html):
+     match /admins/{uid}:   читать only ownUid, писать запрещено
+     match /userStats/{uid}: читать — собственный uid ИЛИ isAdmin();
+       писать — ТОЛЬКО собственный uid; удалять — никому. */
+const ADMINS_COLLECTION = 'admins';
+const USERSTATS_COLLECTION = 'userStats';
+const ANALYTICS_LOCAL_KEY = 'analyticsCached';
+const USERSTATS_LIMIT = 100000;
+// «Аналитика» (v1.4.0): чистые функции — тестируются в tests/analytics.test.js без firebase.
+
+// 'YYYY-MM-DD' в локальном часовом поясе админа — для подписи.
+function analyticsISOKey(ms){
+  const d = new Date(ms);
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+// 00:00 сегодня (локально) — начало «сегодняшнего» окна.
+function analyticsStartOfDay(ms){
+  const d = new Date(ms);
+  d.setHours(0, 0, 0, 0);
+  return d.getTime();
+}
+// Firestore Timestamp / ISO / ms / Date → число.
+function analyticsTsMs(v){
+  if(v == null) return 0;
+  if(typeof v === 'number') return v;
+  if(typeof v === 'string') return Date.parse(v) || 0;
+  if(typeof v.getTime === 'function') return v.getTime();
+  if(typeof v.toMillis === 'function') return v.toMillis();
+  if(v.seconds != null) return (v.seconds * 1000) + ((v.nanoseconds || 0) / 1000000);
+  return 0;
+}
+// Считает метрики из массива пользовательских документов и «сейчас» в мс.
+// active* = последнее посещение попало в окно; new* = регистрация попала в окно.
+function computeAnalytics(docs, nowMs){
+  const now = (typeof nowMs === 'number' && nowMs > 0) ? nowMs : Date.now();
+  const dayStart   = analyticsStartOfDay(now);
+  const weekStart  = dayStart - 6  * 86400000;
+  const monthStart = dayStart - 29 * 86400000;
+  let totalUsers = 0, totalVisits = 0;
+  let newToday = 0, newWeek = 0;
+  let activeToday = 0, activeWeek = 0, activeMonth = 0;
+  for(let i = 0; i < docs.length; i++){
+    const d = docs[i] || {};
+    totalUsers++;
+    if(d.visits) totalVisits += d.visits;
+    const reg = analyticsTsMs(d.registeredAt);
+    const vis = analyticsTsMs(d.lastVisitAt);
+    if(reg >= weekStart)   newWeek++;
+    if(reg >= dayStart)    newToday++;
+    if(vis >= monthStart)  activeMonth++;
+    if(vis >= weekStart)   activeWeek++;
+    if(vis >= dayStart)    activeToday++;
+  }
+  return { totalUsers, totalVisits, newToday, newWeek, activeToday, activeWeek, activeMonth };
+}
+
+// Админ определяется наличием документа admins/{uid}. called on auth state change.
+async function checkAdminStatus(){
+  isAdminUser = false;
+  if(!cloudEnabled || !authUser || typeof firebase === 'undefined') return;
+  try{
+    const snap = await firebase.firestore().collection(ADMINS_COLLECTION).doc(authUser.uid).get();
+    if(snap && snap.exists) isAdminUser = true;
+  }catch(e){ isAdminUser = false; }
+  render();
+}
+// Каждый пользователь пишет свой lastVisitAt + прибавляет visits. registeredAt
+// фиксировано из creationTime при регистрации (выставляется в onAuthStateChanged).
+async function trackUserActivity(){
+  if(!cloudEnabled || !authUser || typeof firebase === 'undefined') return;
+  try{
+    const db = firebase.firestore();
+    const ref = db.collection(USERSTATS_COLLECTION).doc(authUser.uid);
+    await ref.set({
+      uid: authUser.uid,
+      email: authUser.email || '',
+      name: authUser.name || '',
+      registeredAt: authUser.registeredAt || Date.now(),
+      lastVisitAt: Date.now(),
+    }, { merge: true });
+    await ref.update({ visits: firebase.firestore.FieldValue.increment(1) });
+  }catch(e){ /* офлайн/правила — аналитика опциональна, тихо */ }
+}
+async function loadAnalytics(){
+  if(!isAdminUser || typeof firebase === 'undefined') return;
+  analyticsLoading = true;
+  analyticsError = '';
+  analyticsData = null;
+  render();
+  try{
+    const snap = await firebase.firestore().collection(USERSTATS_COLLECTION).limit(USERSTATS_LIMIT).get();
+    const docs = snap && snap.docs ? snap.docs.map(d => d.data()) : [];
+    analyticsData = computeAnalytics(docs, Date.now());
+    analyticsLastFetch = Date.now();
+    try{ localStorage.setItem(ANALYTICS_LOCAL_KEY, JSON.stringify(analyticsData)); }catch(e){}
+  }catch(e){
+    analyticsError = t('analyticsError');
+  }
+  analyticsLoading = false;
+  render();
+}
+function analyticsPanelHTML(){
+  if(!analyticsOpen) return '';
+  const updated = analyticsLastFetch
+    ? ' ' + t('analyticsUpdated') + ' ' + new Date(analyticsLastFetch).toLocaleTimeString(lang, {hour:'2-digit', minute:'2-digit'})
+    : '';
+  if(!isAdminUser){
+    return `<div class="auth-modal-overlay" id="analyticsOverlay">
+      <div class="auth-panel">
+        <button class="auth-close" id="btnAnalyticsClose" aria-label="close" title="${t('done')}">✕</button>
+        <h2 style="margin:0 0 4px; font-size:16px;">${t('analyticsTitle')}</h2>
+        <p style="margin:0; font-size:14px; color:var(--muted);">${t('analyticsDenied')}</p>
+      </div>
+    </div>`;
+  }
+  let body = '';
+  if(analyticsError){
+    body = `<p style="margin:0; font-size:14px; color:var(--red);">${t('analyticsError')}</p>`;
+  }else if(analyticsLoading){
+    body = `<p style="margin:0; font-size:14px; color:var(--muted);">${t('analyticsLoad')}</p>`;
+  }else if(!analyticsData){
+    body = `<p style="margin:0; font-size:14px; color:var(--muted);">${t('analyticsEmpty')}</p>`;
+  }else{
+    const rows = [
+      [t('analyticsTotal'), analyticsData.totalUsers],
+      [t('analyticsToday'), analyticsData.activeToday],
+      [t('analyticsWeek'), analyticsData.activeWeek],
+      [t('analyticsMonth'), analyticsData.activeMonth],
+      [t('analyticsNewToday'), analyticsData.newToday],
+      [t('analyticsNewWeek'), analyticsData.newWeek],
+    ];
+    body = `<div class="analytics-grid">` + rows.map(r =>
+      `<div class="analytics-row"><span class="analytics-label">${r[0]}</span><span class="analytics-value">${r[1]}</span></div>`
+    ).join('') + `</div>`;
+  }
+  const visitsLine = analyticsData ? esc(t('analyticsTotalVisits')) + ' ' + analyticsData.totalVisits : '';
+  const sub = analyticsData
+    ? `<div style="font-size:11px; color:var(--muted);">${updated}</div>
+      <div class="auth-btn-row"><button id="btnAnalyticsRefresh">${t('analyticsLoad')}</button></div>`
+    : '';
+  return `<div class="auth-modal-overlay" id="analyticsOverlay">
+      <div class="auth-panel scrollable wide">
+        <button class="auth-close" id="btnAnalyticsClose" aria-label="close" title="${t('done')}">✕</button>
+        <h2 style="margin:0 0 4px; font-size:16px;">${t('analyticsTitle')}</h2>
+        <div style="margin:6px 0 8px; font-size:13px; color:var(--muted);">${visitsLine}</div>
+        <div class="analytics-body" style="margin:8px 0;">${body}</div>
+        ${sub}
+      </div>
+    </div>`;
+}
 // Аудит: режимы (edit/delete/move/addsub/relocate) переживали навигацию — ушёл по крошке или
-// «Назад» в другую сферу, а тап по карточке там удалял её вместо открытия (в режиме у карточки
-// data-delete-idx вместо data-nav). Любой уход со страницы гасит все пять флагов: режим —
-// свойство страницы, на которой его включили.
 function exitAllModes(){
   editMode = false;
   deleteMode = false;
@@ -10290,6 +10494,15 @@ function attachAccountHandlers(){
       else render();
     });
   }
+  const btnAnalyticsMenu = document.getElementById('btnAnalyticsMenu');
+  if(btnAnalyticsMenu){
+    btnAnalyticsMenu.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      accountMenuOpen = false;
+      analyticsOpen = true;
+      loadAnalytics();
+    });
+  }
   const btnResendVerify = document.getElementById('btnResendVerify');
   if(btnResendVerify){
     btnResendVerify.addEventListener('click', doResendVerification);
@@ -10733,6 +10946,20 @@ function attachModalHandlers(){
       try{ if(pendingUpdateWorker) pendingUpdateWorker.postMessage({type:'SKIP_WAITING'}); }catch(e){}
     });
   }
+  const analyticsOverlay = document.getElementById('analyticsOverlay');
+  if(analyticsOverlay){
+    analyticsOverlay.addEventListener('click', (e)=>{
+      if(e.target === analyticsOverlay){ analyticsOpen = false; render(); }
+    });
+  }
+  const btnAnalyticsClose = document.getElementById('btnAnalyticsClose');
+  if(btnAnalyticsClose){
+    btnAnalyticsClose.addEventListener('click', ()=>{ analyticsOpen = false; render(); });
+  }
+  const btnAnalyticsRefresh = document.getElementById('btnAnalyticsRefresh');
+  if(btnAnalyticsRefresh){
+    btnAnalyticsRefresh.addEventListener('click', loadAnalytics);
+  }
   if(topMenuOpen){
     document.addEventListener('click', function closeTopMenu(){
       topMenuOpen = false;
@@ -10994,7 +11221,7 @@ if(cloudEnabled){
         preSyncLocalState = state;
         justSignedIn = false;
       }
-      authUser = { email: user.email, uid: user.uid, name: user.displayName || '', emailVerified: user.emailVerified };
+      authUser = { email: user.email, uid: user.uid, name: user.displayName || '', emailVerified: user.emailVerified, registeredAt: user.metadata && user.metadata.creationTime ? new Date(user.metadata.creationTime).getTime() : Date.now() };
       authPanelOpen = false;
       signupPanelOpen = false;
       authError = '';
@@ -11003,6 +11230,9 @@ if(cloudEnabled){
       // Push any cards saved while signed out to Storage and pull the ones this device is
       // missing — the vision board follows the account across devices (when online).
       wishBoardReady();
+      // «Аналитика»: проверить право админа (admins/{uid}) и записать посещение.
+      checkAdminStatus();
+      trackUserActivity();
     } else {
       authUser = null;
       verifyMsg = '';

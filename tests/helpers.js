@@ -128,7 +128,7 @@ const EXPORT_SRC = `
   setAccountIconOnly: (v) => { accountIconOnly = !!v; },
   setLastInteractionWasTouch: (v) => { lastInteractionWasTouch = !!v; },
   setCloudEnabled: (v) => { cloudEnabled = !!v; },
-  setAuthUser: (u) => { authUser = u; },
+  setAuthUser: (u={}) => { authUser = u; },
   // «Настройки блоков» (v1.2.66): hide/show home-screen blocks
   BLOCK_IDS, ensureHiddenBlocks, blockSettingsModalHTML,
   getBlockSettingsOpen: () => blockSettingsOpen,
