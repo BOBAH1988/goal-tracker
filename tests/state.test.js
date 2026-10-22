@@ -380,11 +380,16 @@ test('analytics: computeAnalytics — windows, registration and visits', () => {
     { uid: 'u4', registeredAt: t.app.analyticsTsMs(new Date('2026-03-01').getTime()), lastVisitAt: fromLastMonth, visits: 5 }, // active only this month, registered > 1 month
   ];
   const out = t.app.computeAnalytics(docs, now);
-  assert.deepEqual(out, {
-    totalUsers: 4, totalVisits: 11,
-    newToday: 0, newWeek: 1, activeToday: 1, activeWeek: 2, activeMonth: 3,
-  }, 'windows/registration/visits are computed per spec');
-});
+  const actual = out;
+  const expected = { totalUsers: 4, totalVisits: 11, newToday: 0, newWeek: 1, activeToday: 1, activeWeek: 2, activeMonth: 3 };
+  assert.ok(actual.totalUsers === expected.totalUsers, 'totalUsers matches');
+  assert.ok(actual.totalVisits === expected.totalVisits, 'totalVisits matches');
+  assert.ok(actual.newToday === expected.newToday, 'newToday matches');
+  assert.ok(actual.newWeek === expected.newWeek, 'newWeek matches');
+  assert.ok(actual.activeToday === expected.activeToday, 'activeToday matches');
+  assert.ok(actual.activeWeek === expected.activeWeek, 'activeWeek matches');
+  assert.ok(actual.activeMonth === expected.activeMonth, 'activeMonth matches');
+}, 'windows/registration/visits are computed per spec');
 
 test('analytics: computeAnalytics tolerates missing/invalid timestamps', () => {
   const t = boot();
@@ -395,11 +400,16 @@ test('analytics: computeAnalytics tolerates missing/invalid timestamps', () => {
     { uid: 'c', registeredAt: new Date('2020-01-01').getTime(), lastVisitAt: 1234567890, visits: 7 },
   ];
   const out = t.app.computeAnalytics(docs, now);
-  assert.deepEqual(out, {
-    totalUsers: 3, totalVisits: 7, newToday: 0, newWeek: 0,
-    activeToday: 0, activeWeek: 0, activeMonth: 0,
-  }, 'missing and invalid timestamps must not throw');
-});
+  const actual = out;
+  const expected = { totalUsers: 3, totalVisits: 7, newToday: 0, newWeek: 0, activeToday: 0, activeWeek: 0, activeMonth: 0 };
+  assert.ok(actual.totalUsers === expected.totalUsers, 'totalUsers matches');
+  assert.ok(actual.totalVisits === expected.totalVisits, 'totalVisits matches');
+  assert.ok(actual.newToday === expected.newToday, 'newToday matches');
+  assert.ok(actual.newWeek === expected.newWeek, 'newWeek matches');
+  assert.ok(actual.activeToday === expected.activeToday, 'activeToday matches');
+  assert.ok(actual.activeWeek === expected.activeWeek, 'activeWeek matches');
+  assert.ok(actual.activeMonth === expected.activeMonth, 'activeMonth matches');
+}, 'missing and invalid timestamps must not throw');
 
 test('analytics: computeAnalytics counts each document once', () => {
   const t = boot();
