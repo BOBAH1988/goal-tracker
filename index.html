@@ -1559,7 +1559,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.3.4';
+const APP_VERSION = '1.3.7';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -2783,7 +2783,10 @@ let lastAppliedCloudStateJson = '';
 const CLOUD_PUSH_MAX_RETRIES = 5;
 // Допуск на расхождение серверного и локального времени (мс). Пока облачный updatedAt не
 // «опередил» наш последний применённый снимок больше чем на эту величину, запись безопасна.
-const CLOUD_TS_TOLERANCE = 2000;
+// Увеличено с 2с до 60с — частые фоновые синхронизации не должны триггерить модалку при
+// обычном использовании (пользователь вносит данные → сохраняет → следующий снапшот приходит
+// через NetworkState обновится через приличное время).
+const CLOUD_TS_TOLERANCE = 60000;
 // Мягкое напоминание о сферах ждёт, пока данные пользователя догрузятся: со входом в аккаунт
 // первый облачный снапшот решает, какое состояние настоящее, а напоминание, посчитанное по
 // местному дереву, могло бы назвать сферу, которую пользователь уже открыл на другом устройстве.
@@ -6053,8 +6056,6 @@ function achievementsSectionHTML(){
       <button id="btnAchievementsAdd" type="button" class="icon-btn"
         data-tip="${t('tipAchievementsAdd')}" aria-label="${t('tipAchievementsAdd')}">+</button>
     </div>`;
-  } else {
-    html += `<div class="achievements-empty">${t('achievementsEmpty')}</div>`;
   }
   for(const [i, text] of arr.entries()){
     html += `<div class="achievement-row">
@@ -6072,7 +6073,12 @@ function achievementsSectionHTML(){
   }
   if(achievementsFormOpen || achievementsEditId !== null){
     const editing = achievementsEditId !== null;
-    const currentText = editing ? (arr[achievementsEditId] || '') : achievementsDraft;
+    // currentText always takes the live draft: when editing, achievementsDraft is seeded
+    // from arr[achievementsEditId] on entering edit mode and kept in sync by the input
+    // listener below. If we used arr[achievementsEditId] here instead, every keystroke
+    // (which triggers render() via the input handler) would reset the textarea to the
+    // old value — the cursor would move but the typed character would vanish.
+    const currentText = achievementsDraft;
     html += `<div class="achievements-form">
       <textarea id="achievementsTextarea" class="achievements-textarea" maxlength="100" placeholder="${t('achievementsPlaceholder')}">${esc(currentText)}</textarea>
       <div class="achievements-char-count">${t('achievementsCharCount').replace('{n}', String(currentText.length))}</div>
@@ -8590,6 +8596,9 @@ function attachAchievementsHandlers(){
       achievementsDraft = arr[i] || '';
       achievementsCharError = '';
       render();
+      // Фокус + курсор в конец после перерисовки формы редактирования.
+      const ta = document.getElementById('achievementsTextarea');
+      if(ta && ta.setSelectionRange){ ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }
     });
   });
   // Удаление строки с подтверждением.
@@ -8616,6 +8625,12 @@ function attachAchievementsHandlers(){
       achievementsDraft = ta.value.slice(0, 100);
       achievementsCharError = '';
       render();
+    });
+    ta.addEventListener('keydown', (e)=>{
+      if(e.key === 'Enter'){
+        e.preventDefault();
+        document.getElementById('btnAchievementsSave').click();
+      }
     });
   }
   // Сохранить — создать новую или обновить существующую.
