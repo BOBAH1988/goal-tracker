@@ -546,6 +546,8 @@
     :where(html:not(.touch-mode)) .account-menu button:hover{background:var(--card);}
   }
   .account-menu button.danger{color:var(--red);}
+  /* Аналитика в меню аккаунта: для админа */
+  .account-menu button.analytics-menu{background:var(--accent); color:#fff; border:none; font-size:13px; padding:9px 12px;}
   /* «Аналитика» (v1.4.0): сетка метрик в модалке админа. Кнопка #btnAnalyticsRefresh
      наследует базовые стили .auth-panel button (background/border/padding/font-size
      уже заданы — страж css.test.js проходит). Никаких новых hover-правил. */
@@ -1575,7 +1577,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.3.9';
+const APP_VERSION = '1.3.10';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -7348,12 +7350,13 @@ function topbarHTML(){
     <div class="app-subtitle">${esc(t('appSubtitle'))}</div></div>
     <div class="actions">
       <button id="btnSearch" class="icon-btn" data-tip="${t('search')}" aria-label="${t('search')}"><i class="ti ti-search" aria-hidden="true"></i></button>
-      ${isAdminUser && cloudEnabled ? `<button id="btnAnalytics" class="icon-btn" data-tip="${t('analytics')}" aria-label="${t('analytics')}"><i class="ti ti-chart-bar" aria-hidden="true"></i></button>` : ''}
+      ${isAdminUser ? `<button id="btnAnalytics" class="icon-btn" data-tip="${t('analytics')}" aria-label="${t('analytics')}"><i class="ti ti-chart-bar" aria-hidden="true"></i></button>` : ''}
       ${cloudEnabled ? (authUser
         ? `<div class="account-dropdown">
             <button id="btnAccount" ${accAsIcon ? `data-tip="${esc(authUser.name || authUser.email)}" aria-label="${esc(authUser.name || authUser.email)}"` : `title="${esc(authUser.email)}"`}>${accAsIcon ? '<i class="ti ti-user" aria-hidden="true"></i>' : esc(authUser.name || authUser.email)}</button>
             ${accountMenuOpen ? `<div class="account-menu">
               <button id="btnSignOutMenu" class="danger">${t('accountSignOut')}</button>
+              ${isAdminUser ? `<button id="btnAnalyticsMenu" class="analytics-menu" data-tip="${t('analytics')}" aria-label="${t('analytics')}">${t('analytics')}</button>` : ''}
             </div>` : ''}
           </div>`
         : `<button id="btnAccount">🔐 ${t('account')}</button>`) : ''}
@@ -9247,9 +9250,10 @@ function computeAnalytics(docs, nowMs){
 // Админ определяется наличием документа admins/{uid}. called on auth state change.
 async function checkAdminStatus(){
   isAdminUser = false;
-  if(!cloudEnabled || !authUser || typeof firebase === 'undefined') return;
+  if(!authUser) return;
   // Хардкод-админ (владелец проекта)
   if(authUser.uid === '01l3xcqUPBZpOu67qNkj0uYJoqh1'){ isAdminUser = true; render(); return; }
+  if(!cloudEnabled || typeof firebase === 'undefined') return;
   try{
     const snap = await firebase.firestore().collection(ADMINS_COLLECTION).doc(authUser.uid).get();
     if(snap && snap.exists) isAdminUser = true;
@@ -10847,6 +10851,14 @@ function attachTopMenuHandlers(){
   const btnAnalytics = document.getElementById('btnAnalytics');
   if(btnAnalytics){
     btnAnalytics.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      analyticsOpen = true;
+      loadAnalytics();
+    });
+  }
+  const btnAnalyticsMenu = document.getElementById('btnAnalyticsMenu');
+  if(btnAnalyticsMenu){
+    btnAnalyticsMenu.addEventListener('click', (e)=>{
       e.stopPropagation();
       analyticsOpen = true;
       loadAnalytics();
