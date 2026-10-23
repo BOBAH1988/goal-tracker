@@ -31,13 +31,13 @@ service cloud.firestore {
       allow delete: if request.auth != null && request.auth.uid == resource.data.uid;
       allow update: if false;
     }
-    // «Аналитика» (v1.4.0): админ-панель.
+    // «Аналитика» (v1.4.0): админ-панель. Хардкод-админ (владелец проекта) тоже считается админом.
     match /admins/{uid} {
-      allow read: if request.auth != null && request.auth.uid == uid;
+      allow read: if request.auth != null && (request.auth.uid == uid || request.auth.uid == '01l3xcqUPBZpOu67qNkj0uYJoqh1');
       allow write: if false;
     }
     match /userStats/{uid} {
-      allow read: if request.auth != null && (request.auth.uid == uid || exists(/databases/$(database)/documents/admins/$(request.auth.uid)));
+      allow read: if request.auth != null && (request.auth.uid == uid || request.auth.uid == '01l3xcqUPBZpOu67qNkj0uYJoqh1' || exists(/databases/$(database)/documents/admins/$(request.auth.uid)));
       allow create, update: if request.auth != null && request.auth.uid == uid;
       allow delete: if false;
     }
