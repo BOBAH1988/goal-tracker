@@ -1577,7 +1577,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.3.16';
+const APP_VERSION = '1.3.17';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -1973,6 +1973,7 @@ const STRINGS = {
     analyticsError: 'Не удалось загрузить статистику',
     analyticsUpdated: 'Обновлено',
     analyticsTotalVisits: 'Всего визитов',
+    analyticsRegistered: 'Зарегистрировано пользователей',
     saveChanges: 'Сохранить',
     tipAdd: 'Добавить цель',
     tipDelete: 'Удалить цель',
@@ -2368,6 +2369,7 @@ const STRINGS = {
     analyticsError: 'Could not load statistics',
     analyticsUpdated: 'Updated',
     analyticsTotalVisits: 'Total visits',
+    analyticsRegistered: 'Registered users',
     saveChanges: 'Save',
     tipAdd: 'Add goal',
     tipDelete: 'Delete goal',
@@ -3472,6 +3474,8 @@ async function doAuthSignUp(email, password, name){
       // Send the verification link right after the account is fully set up (name reserved),
       // so we don't waste a send on an account we're about to roll back below.
       try{ await user.sendEmailVerification(); }catch(e){}
+      // Инкремент счётчика зарегистрированных пользователей (для аналитики админа).
+      try{ await firebase.firestore().doc(REGISTRATIONS_COUNTER_DOC).set({ count: firebase.firestore.FieldValue.increment(1) }, { merge: true }); }catch(e){}
     }catch(reserveErr){
       // Someone else grabbed the name in the meantime — undo the just-created account so the
       // email stays free to retry with a different name, instead of leaving an orphaned account.
@@ -9197,6 +9201,7 @@ function attachHandlers(){
        писать — ТОЛЬКО собственный uid; удалять — никому. */
 const ADMINS_COLLECTION = 'admins';
 const USERSTATS_COLLECTION = 'userStats';
+const REGISTRATIONS_COUNTER_DOC = 'counters/registrations';
 const ANALYTICS_LOCAL_KEY = 'analyticsCached';
 const USERSTATS_LIMIT = 1000;
 // «Аналитика» (v1.4.0): чистые функции — тестируются в tests/analytics.test.js без firebase.
@@ -9304,6 +9309,11 @@ async function loadAnalytics(){
     const snap = await firebase.firestore().collection(USERSTATS_COLLECTION).limit(USERSTATS_LIMIT).get();
     const docs = snap && snap.docs ? snap.docs.map(d => d.data()) : [];
     analyticsData = computeAnalytics(docs, Date.now());
+    analyticsData.totalRegistered = 0;
+    try{
+      const regSnap = await firebase.firestore().doc(REGISTRATIONS_COUNTER_DOC).get();
+      if(regSnap.exists && typeof regSnap.data()?.count === 'number') analyticsData.totalRegistered = regSnap.data().count;
+    }catch(e){ /* счётчик опционален */ }
     analyticsLastFetch = Date.now();
     try{ localStorage.setItem(ANALYTICS_LOCAL_KEY, JSON.stringify(analyticsData)); }catch(e){}
   }catch(e){
@@ -9345,6 +9355,7 @@ function analyticsPanelHTML(){
     body = `<p style="margin:0; font-size:14px; color:var(--muted);">${t('analyticsEmpty')}</p>`;
   }else{
     const rows = [
+      [t('analyticsRegistered'), analyticsData.totalRegistered],
       [t('analyticsTotal'), analyticsData.totalUsers],
       [t('analyticsToday'), analyticsData.activeToday],
       [t('analyticsWeek'), analyticsData.activeWeek],

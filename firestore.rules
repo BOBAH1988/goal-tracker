@@ -41,5 +41,11 @@ service cloud.firestore {
       allow create, update: if request.auth != null && request.auth.uid == uid;
       allow delete: if false;
     }
+    // «Аналитика»: счётчик зарегистрированных пользователей. Админ читает, любой авторизованный инкрементирует.
+    match /counters/{doc} {
+      allow read: if request.auth != null && (request.auth.uid == '01l3xcqUPBZpOu67qNkj0uYJoqh1' || exists(/databases/$(database)/documents/admins/$(request.auth.uid)));
+      allow create, update: if request.auth != null && request.resource.data.count != null;
+      allow delete: if false;
+    }
   }
 }
