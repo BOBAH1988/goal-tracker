@@ -1577,7 +1577,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.3.11';
+const APP_VERSION = '1.3.12';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -7350,7 +7350,7 @@ function topbarHTML(){
     <div class="app-subtitle">${esc(t('appSubtitle'))}</div></div>
     <div class="actions">
       <button id="btnSearch" class="icon-btn" data-tip="${t('search')}" aria-label="${t('search')}"><i class="ti ti-search" aria-hidden="true"></i></button>
-      ${isAdminUser ? `<button id="btnAnalytics" class="icon-btn" data-tip="${t('analytics')}" aria-label="${t('analytics')}"><i class="ti ti-chart-bar" aria-hidden="true"></i></button>` : ''}
+      
       ${cloudEnabled ? (authUser
         ? `<div class="account-dropdown">
             <button id="btnAccount" ${accAsIcon ? `data-tip="${esc(authUser.name || authUser.email)}" aria-label="${esc(authUser.name || authUser.email)}"` : `title="${esc(authUser.email)}"`}>${accAsIcon ? '<i class="ti ti-user" aria-hidden="true"></i>' : esc(authUser.name || authUser.email)}</button>
@@ -10848,15 +10848,8 @@ function attachTopMenuHandlers(){
       setTheme(el.dataset.themeChoice);
     });
   });
-  const btnAnalytics = document.getElementById('btnAnalytics');
-  if(btnAnalytics){
-    btnAnalytics.addEventListener('click', (e)=>{
-      e.stopPropagation();
-      analyticsOpen = true;
-      loadAnalytics();
-    });
-  }
-  const btnAnalyticsMenu = document.getElementById('btnAnalyticsMenu');
+
+   const btnAnalyticsMenu = document.getElementById('btnAnalyticsMenu');
   if(btnAnalyticsMenu){
     btnAnalyticsMenu.addEventListener('click', (e)=>{
       e.stopPropagation();
