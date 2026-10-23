@@ -888,7 +888,7 @@
    .good-today-last-entry{
      margin-top:12px; padding-top:10px; border-top:1px solid var(--border); font-size:13px; color:var(--muted);
    }
-    .good-today-last-entry .good-today-last-text{color:var(--text); display:inline;}
+    .good-today-last-entry .good-today-last-text{color:var(--text);}
     .good-today-week-saved .good-today-week-label{margin-bottom:8px;}
   /* Weekly Q&A: the question is the prominent line (full text colour, semibold), the answer is
      dimmer underneath — the reverse of the original pairing, as asked. */
@@ -1592,7 +1592,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.3.22';
+const APP_VERSION = '1.3.23';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -6531,9 +6531,8 @@ function goodTodaySectionHTML(){
     // Last entry preview (if different from today's)
     if(last && last.date !== todayStr){
       html += `<div class="good-today-last-entry">
-        <span class="good-today-week-label">${t('goodTodayEntriesLastEntry')}</span>
-        <span class="good-today-last-text">${esc(last.text || '')}</span>
-        <span class="good-today-entry-date">${formatDateISO(last.date)}</span>
+        <div class="good-today-week-label">${t('goodTodayEntriesLastEntry')} ${formatDateISO(last.date)}</div>
+        <div class="good-today-last-text">${esc(last.text || '')}</div>
       </div>`;
     }
   }
