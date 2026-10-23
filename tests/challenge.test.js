@@ -139,7 +139,11 @@ test('challenge: plural key selection + every renderer key exists in ru AND en',
      'challengeNew','challengeResetConfirm','challengeEmptyTitle','challengeDayN',
      'challengeFinished','challengeProgress1','challengeProgressFew','challengeProgressMany',
      'challengeRemain1','challengeRemainFew','challengeRemainMany','challengeWeekdays',
-     'challengeMonths','challengeDayHint','challengePrevMonth','challengeNextMonth']
+     'challengeMonths','challengeDayHint','challengePrevMonth','challengeNextMonth',
+     'challengeHistory','challengeHistoryTitle','challengeHistoryEmpty','challengeHistoryDelete',
+     'challengeHistoryDeleteConfirm','challengeHistoryStarted','challengeHistoryFinished',
+     'challengeHistoryPageNewer','challengeHistoryPageOlder','challengeHistoryPageNext',
+     'challengeHistoryPagePrev','challengePct1','challengePctFew','challengePctMany']
       .forEach(k => assert.ok(typeof s[k] === 'string' && s[k].length,
         `${lang}.${k} must be a non-empty string`));
   }

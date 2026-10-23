@@ -93,7 +93,7 @@ const EXPORT_SRC = `
      goodTodayWeekReflectionsFor, weekStartISO, formatDateISO, formatWeekLabel, weekShiftISO,
      goodTodaySectionHTML, goodTodayHistoryHTML, goodTodayWeekHistoryHTML,
      // «Челленж» (v1.2.62)
-     ensureChallenge, challengeSectionHTML, challengeStats, challengeMonthCells,
+     ensureChallenge, challengeSectionHTML, challengeStats, challengeHistoryHTML, challengeMonthCells,
      challengeAddDays, challengeDaysBetween, challengeISO, challengeParseISO, challengePlural,
      challengeVisibleMonth, shiftChallengeMonth,
      getChallengeOpen: () => challengeOpen,

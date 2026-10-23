@@ -168,7 +168,7 @@
      all, so there is nothing left to stick. A mouse-driven desktop keeps the feedback. */
   @media (hover: hover) and (pointer: fine){
     :where(html:not(.touch-mode)) .topbar button:hover{color:var(--text); border-color:var(--accent);}
-    :where(html:not(.touch-mode)) #btnFilter:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistory:hover,:where(html:not(.touch-mode)) #btnGoodTodayWeekHistory:hover,:where(html:not(.touch-mode)) #btnGoodTodayWeekEdit:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPagePrev:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPageNext:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPagePrevBottom:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPageNextBottom:hover{color:var(--text); border-color:var(--accent);}
+    :where(html:not(.touch-mode)) #btnFilter:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistory:hover,:where(html:not(.touch-mode)) #btnGoodTodayWeekHistory:hover,:where(html:not(.touch-mode)) #btnGoodTodayWeekEdit:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPagePrev:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPageNext:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPagePrevBottom:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPageNextBottom:hover,:where(html:not(.touch-mode)) #btnChallengeHistory:hover{color:var(--text); border-color:var(--accent);}
     :where(html:not(.touch-mode)) #btnEdit:hover{color:var(--text); border-color:var(--accent);}
     :where(html:not(.touch-mode)) #btnDelete:hover{border-color:var(--red); color:var(--red);}
     :where(html:not(.touch-mode)) #btnDeleteChecklist:hover{border-color:var(--red); color:var(--red);}
@@ -303,7 +303,7 @@
       never paints these, so nothing can stick; a mouse keeps the feedback. The REAL mode colours
       (.active rules) are deliberately OUTSIDE this gate: they signal a working mode. */
    @media (hover: hover) and (pointer: fine){
-     :where(html:not(.touch-mode)) #btnFilter:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistory:hover,:where(html:not(.touch-mode)) #btnGoodTodayWeekHistory:hover,:where(html:not(.touch-mode)) #btnGoodTodayWeekEdit:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPagePrev:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPageNext:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPagePrevBottom:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPageNextBottom:hover{color:var(--text); border-color:var(--accent);}
+     :where(html:not(.touch-mode)) #btnFilter:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistory:hover,:where(html:not(.touch-mode)) #btnGoodTodayWeekHistory:hover,:where(html:not(.touch-mode)) #btnGoodTodayWeekEdit:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPagePrev:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPageNext:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPagePrevBottom:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPageNextBottom:hover,:where(html:not(.touch-mode)) #btnChallengeHistory:hover{color:var(--text); border-color:var(--accent);}
      :where(html:not(.touch-mode)) #btnEdit:hover{color:var(--text); border-color:var(--accent);}
      :where(html:not(.touch-mode)) #btnDelete:hover{border-color:var(--red); color:var(--red);}
      :where(html:not(.touch-mode)) #btnDeleteChecklist:hover{border-color:var(--red); color:var(--red);}
@@ -834,6 +834,16 @@
     padding:10px 12px; margin-bottom:10px; font-size:13px; color:var(--text);
   }
   .challenge-reset-row .good-today-btn-row{margin-top:0; flex:none;}
+  /* «История челленджей» modal rows. */
+  .challenge-history-row{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    background:var(--card2); border:1px solid var(--border); border-radius:10px;
+    padding:10px 12px; margin-bottom:8px; font-size:13px; color:var(--text);
+  }
+  .challenge-history-info .challenge-history-title{font-weight:600; margin-bottom:2px;}
+  .challenge-history-info .challenge-history-meta{display:flex; gap:10px; flex-wrap:wrap; font-size:12px; color:var(--muted);}
+  .challenge-history-info .challenge-history-meta span{white-space:nowrap;}
+  .challenge-history-page-info{font-size:12px; color:var(--muted); white-space:nowrap;}
   /* Мягкое напоминание о сфере («К сфере … давно не возвращались»). Ненавязчивая карточка
         над «Важными сферами жизни»: тёмная тема, светлая и розовая — всё на переменных, без
         предупреждающих красных и оценок. Кнопки — как у «Хорошего сегодня»: тач-цели 44px. */
@@ -918,8 +928,13 @@
       flex:none; background:none; border:none; color:var(--muted);
       font-size:14px; line-height:1; cursor:pointer; padding:4px;
     }
+    .challenge-history-delete{
+      flex:none; background:none; border:none; color:var(--muted);
+      font-size:14px; line-height:1; cursor:pointer; padding:4px;
+    }
     @media (hover: hover) and (pointer: fine){
       :where(html:not(.touch-mode)) .good-today-history-delete:hover{color:var(--red);}
+      :where(html:not(.touch-mode)) .challenge-history-delete:hover{color:var(--red);}
     }
     /* «Хорошее сегодня» mood badge in the today block — progressive text based on done count.
        0 → «Начнём?» (red), 1 → «Хорошее начало» (dark yellow), 2 → «Осталось чуть-чуть» (lighter yellow),
@@ -1407,7 +1422,7 @@
   .wish-header-actions{display:flex; align-items:center; gap:10px;}
   .wheel-header-actions{display:flex; align-items:center; gap:10px;}
   .add-goal-wrap{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
-  #btnAddGoal, #btnTemplates, #btnWishAdd, #btnGoodTodayAdd, #btnAchievementsAdd, #btnChallengeEdit, #btnChallengeReset, #btnChallengePrevMonth, #btnChallengeNextMonth{
+  #btnAddGoal, #btnTemplates, #btnWishAdd, #btnGoodTodayAdd, #btnAchievementsAdd, #btnChallengeEdit, #btnChallengeReset, #btnChallengeHistory, #btnChallengePrevMonth, #btnChallengeNextMonth{
     background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:8px;
     padding:6px 12px; font-size:12px; cursor:pointer; white-space:nowrap;
   }
@@ -1577,7 +1592,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.3.19';
+const APP_VERSION = '1.3.20';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -2160,6 +2175,21 @@ const STRINGS = {
     challengeDayHint: 'Нажми на день чтоб отметить выполнение или зажми его чтоб отменить.',
     challengePrevMonth: 'Предыдущий месяц',
     challengeNextMonth: 'Следующий месяц',
+    /* ===== «Челлендж»: история завершённых ===== */
+    challengeHistory: 'История',
+    challengeHistoryTitle: 'История челленджей',
+    challengeHistoryEmpty: 'Завершённых челленджей пока нет.',
+    challengeHistoryDelete: 'Удалить',
+    challengeHistoryDeleteConfirm: 'Удалить запись из истории?',
+    challengeHistoryStarted: 'Начато',
+    challengeHistoryFinished: 'Завершено',
+    challengeHistoryPageNewer: 'Новейшие',
+    challengeHistoryPageOlder: 'Старые',
+    challengeHistoryPageNext: 'Вперёд',
+    challengeHistoryPagePrev: 'Назад',
+    challengePct1: 'процент',
+    challengePctFew: 'процента',
+    challengePctMany: 'процентов',
     /* ===== «Настройки блоков» (v1.2.66) — скрыть/показать блоки на главном экране ===== */
     blockSettings: 'Настройки блоков',
     blockSettingsDesc: 'Скрыть или показать блоки на главном экране — содержимое не удаляется.',
@@ -2551,6 +2581,21 @@ const STRINGS = {
     challengeDayHint: 'Tap a day to check it off. A red ✗ means the day passed without a mark — tap it to set ✓ if the task was actually done.',
     challengePrevMonth: 'Previous month',
     challengeNextMonth: 'Next month',
+    /* ===== «Challenge»: history of completed ===== */
+    challengeHistory: 'History',
+    challengeHistoryTitle: 'Challenge history',
+    challengeHistoryEmpty: 'No completed challenges yet.',
+    challengeHistoryDelete: 'Delete',
+    challengeHistoryDeleteConfirm: 'Delete this record from history?',
+    challengeHistoryStarted: 'Started',
+    challengeHistoryFinished: 'Finished',
+    challengeHistoryPageNewer: 'Newer',
+    challengeHistoryPageOlder: 'Older',
+    challengeHistoryPageNext: 'Next',
+    challengeHistoryPagePrev: 'Prev',
+    challengePct1: 'percent',
+    challengePctFew: 'percent',
+    challengePctMany: 'percent',
     /* ===== «Block settings» (v1.2.66) — show/hide home-screen blocks ===== */
     blockSettings: 'Block settings',
     blockSettingsDesc: 'Show or hide home-screen blocks — nothing is deleted.',
@@ -2892,6 +2937,8 @@ let challengeDurationDraft = 21;     // duration picked in the form (7|14|21|30|
 let challengeError = '';             // form error (empty title) — transient
 let challengeResetConfirm = false;   // inline «start a new challenge?» confirmation is open
 let challengeMonth = null;           // {y, m} month shown in the calendar (null = derive from today)
+let challengeHistoryOpen = false;    // «История челленджей» modal is open
+let challengeHistoryPage = 0;        // 0 = newest page of 5 entries
 // Global search panel (opened from the top menu). Results are recomputed on each keystroke and
 // injected straight into the results container (no full render — that would drop the input focus).
 // Each result is { kind:'goal'|'checklist', name, path, archived } — path is the nav target.
@@ -3989,6 +4036,8 @@ function ensureChallenge(node){
     });
   }
   ch.days = days;
+  // История завершённых челленджей — массив записей {id, title, startedAt, finishedAt, done, total, pct}
+  if(!Array.isArray(node.challengeHistory)) node.challengeHistory = [];
 }
 /* «Настройки блоков»: hiddenBlocks — множество id блоков, которые пользователь
    спрятал с главного экрана. Содержимое блоков не удаляется, они просто не рдерятся.
@@ -6260,6 +6309,9 @@ function shiftChallengeMonth(delta){
 // Reads ONLY state.challenge; state.challengeOpen is the collapse flag (default: collapsed).
 function challengeSectionHTML(){
   const ch = state.challenge;
+  // The history modal replaces the whole block while it is open (same pattern as
+  // goodTodayHistoryOpen / analyticsOpen — a transient overlay on top of the section).
+  if(challengeHistoryOpen) return challengeHistoryHTML();
   let html = `<div class="section-title-row" style="margin-top:24px;">
     <div class="section-title" id="challengeToggle">
       <span class="wheel-arrow">${challengeOpen ? '▾' : '▸'}</span>${t('challengeTitle')}
@@ -6270,6 +6322,7 @@ function challengeSectionHTML(){
     ${(challengeOpen && ch.title) ? `<div class="wheel-header-actions">
       <button id="btnChallengeEdit" class="icon-btn" data-tip="${t('challengeEdit')}" aria-label="${t('challengeEdit')}"><i class="ti ti-edit" aria-hidden="true"></i></button>
       <button id="btnChallengeReset" class="icon-btn" data-tip="${t('challengeNew')}" aria-label="${t('challengeNew')}"><i class="ti ti-refresh" aria-hidden="true"></i></button>
+      ${(state.challengeHistory && state.challengeHistory.length) ? `<button id="btnChallengeHistory" class="icon-btn" data-tip="${t('challengeHistory')}" aria-label="${t('challengeHistory')}"><i class="ti ti-history" aria-hidden="true"></i></button>` : ''}
     </div>` : ''}
   </div>`;
   if(!challengeOpen) return html;
@@ -6292,6 +6345,24 @@ function challengeSectionHTML(){
   }
   // --- Calendar view: stats → progress bar → optional reset confirmation → month grid ---
   const stats = challengeStats(ch);
+  // Auto-archive a finished challenge into the history (once), so the user can see
+  // what they ran and how it ended. The record survives resets/new challenges.
+  if(stats.finished && ch.title && ch.startedAt){
+    const already = (state.challengeHistory || []).some(h => h.title === ch.title && h.startedAt === ch.startedAt);
+    if(!already){
+      state.challengeHistory = state.challengeHistory || [];
+      state.challengeHistory.push({
+        id: 'ch' + Date.now(),
+        title: ch.title,
+        startedAt: ch.startedAt,
+        finishedAt: isoToday(),
+        done: stats.done,
+        total: stats.total,
+        pct: stats.pct
+      });
+      saveState();
+    }
+  }
   const mv = challengeVisibleMonth();
   const todayISO = isoToday();
   const progressKey = 'challengeProgress' + challengePlural(stats.total, '1', 'Few', 'Many');
@@ -6340,7 +6411,58 @@ function challengeSectionHTML(){
   html += `<div class="challenge-cal-hint">${t('challengeDayHint')}</div>`;
   return html;
 }
-
+// ===== «Челлендж»: модалка «История» (завершённые челленджи с результатом) ====
+// Renders an auth-modal-overlay (same pattern as analyticsPanelHTML): up to 5
+// records per page, prev/next arrows, per-record delete (✕), close button (✕).
+function challengeHistoryHTML(){
+  const all = (state.challengeHistory || []).slice().sort((a,b)=>(b.finishedAt||'').localeCompare(a.finishedAt||''));
+  const PAGE_SIZE = 5;
+  const totalPages = Math.ceil(all.length / PAGE_SIZE) || 1;
+  // page 0 = newest; higher index = older
+  if(challengeHistoryPage < 0) challengeHistoryPage = 0;
+  if(challengeHistoryPage > totalPages - 1) challengeHistoryPage = totalPages - 1;
+  const canPageNext = challengeHistoryPage > 0;        // back toward newer
+  const canPagePrev = challengeHistoryPage < totalPages - 1; // toward older
+  const startIdx = challengeHistoryPage * PAGE_SIZE;
+  const pageEntries = all.slice(startIdx, startIdx + PAGE_SIZE);
+  const pctLabel = (n) => n === 1 ? t('challengePct1') : (n === 2 || n === 3 || n === 4 ? t('challengePctFew') : t('challengePctMany'));
+  let html = `<div class="auth-modal-overlay" id="challengeHistoryOverlay">
+    <div class="auth-panel scrollable wide">
+      <button class="auth-close" id="btnChallengeHistoryClose" aria-label="close" title="${t('done')}">✕</button>
+      <h2 style="margin:0 0 4px; font-size:16px;">${t('challengeHistoryTitle')}</h2>`;
+  if(!pageEntries.length){
+    html += `<p style="margin:0; font-size:14px; color:var(--muted);">${t('challengeHistoryEmpty')}</p>`;
+  }else{
+    html += `<div class="challenge-history-list">`;
+    pageEntries.forEach(rec=>{
+      const donePlural = t('challengeProgress' + challengePlural(rec.total, '1', 'Few', 'Many'))
+        .replace('{done}', String(rec.done)).replace('{total}', String(rec.total));
+      html += `<div class="challenge-history-row">
+        <div class="challenge-history-info">
+          <div class="challenge-history-title">${esc(rec.title)}</div>
+          <div class="challenge-history-meta">
+            <span>${t('challengeHistoryStarted')}: ${rec.startedAt}</span>
+            <span>${t('challengeHistoryFinished')}: ${rec.finishedAt}</span>
+            <span>${donePlural}</span>
+            <span>${Math.round(rec.pct)} %</span>
+          </div>
+        </div>
+        <button type="button" class="challenge-history-delete" data-challenge-history-delete="${rec.id}" data-tip="${t('challengeHistoryDelete')}" aria-label="${t('challengeHistoryDelete')}">✕</button>
+      </div>`;
+    });
+    html += `</div>`;
+    // Page navigation
+    if(totalPages > 1){
+      html += `<div class="challenge-history-pages" style="display:flex; gap:8px; justify-content:center; align-items:center; margin:12px 0 4px;">
+        ${canPageNext ? `<button id="btnChallengeHistoryPageNext" type="button" class="icon-btn" data-tip="${t('challengeHistoryPageNext')}" aria-label="${t('challengeHistoryPageNext')}"><i class="ti ti-chevron-right" aria-hidden="true"></i> ${t('challengeHistoryPageNewer')}</button>` : '<div style="width:110px;"></div>'}
+        <span class="challenge-history-page-info">${challengeHistoryPage + 1} / ${totalPages}</span>
+        ${canPagePrev ? `<button id="btnChallengeHistoryPagePrev" type="button" class="icon-btn" data-tip="${t('challengeHistoryPagePrev')}" aria-label="${t('challengeHistoryPagePrev')}">${t('challengeHistoryPageOlder')} <i class="ti ti-chevron-left" aria-hidden="true"></i></button>` : '<div style="width:110px;"></div>'}
+      </div>`;
+    }
+  }
+  html += `</div></div>`;
+  return html;
+}
 // ===== «Хорошее сегодня» journal section HTML =====
 // Renders two independent collapsible sections (like «Колесо» + «Карта желаний»):
 //   1. Daily entries form + today's entries + last-entry preview
@@ -8613,6 +8735,24 @@ function attachChallengeHandlers(){
     challengeMonth = null;
     saveState();
     render();
+  });
+  // «История» modal — open / close / page / delete.
+  on('btnChallengeHistory', 'click', ()=>{ challengeHistoryOpen = true; challengeHistoryPage = 0; render(); });
+  on('btnChallengeHistoryClose', 'click', ()=>{ challengeHistoryOpen = false; render(); });
+  on('btnChallengeHistoryPageNext', 'click', ()=>{ if(challengeHistoryPage > 0){ challengeHistoryPage--; render(); } });
+  on('btnChallengeHistoryPagePrev', 'click', ()=>{
+    const total = Math.ceil((state.challengeHistory || []).length / 5) || 1;
+    if(challengeHistoryPage < total - 1){ challengeHistoryPage++; render(); }
+  });
+  document.querySelectorAll('[data-challenge-history-delete]').forEach(el=>{
+    el.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      const id = el.dataset.challengeHistoryDelete;
+      if(!confirm(t('challengeHistoryDeleteConfirm'))) return;
+      state.challengeHistory = (state.challengeHistory || []).filter(h => h.id !== id);
+      saveState();
+      render();
+    });
   });
 }
 /* «Мои достижения»: хендлеры — тумблер развёртки, добавление/редактирование/удаление строк. */
