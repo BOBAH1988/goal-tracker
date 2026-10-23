@@ -1577,7 +1577,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.3.17';
+const APP_VERSION = '1.3.18';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -9312,7 +9312,20 @@ async function loadAnalytics(){
     analyticsData.totalRegistered = 0;
     try{
       const regSnap = await firebase.firestore().doc(REGISTRATIONS_COUNTER_DOC).get();
-      if(regSnap.exists && typeof regSnap.data()?.count === 'number') analyticsData.totalRegistered = regSnap.data().count;
+      let regCount = regSnap.exists && typeof regSnap.data()?.count === 'number' ? regSnap.data().count : 0;
+      if(regCount === 0){
+        // Счётчик только что появился (v1.3.17) — старые регистрации в нём не учтены.
+        // Имя резервируется в usernames при каждой успешной регистрации, поэтому это
+        // актуальное число всех зарегистрированных пользователей.
+        try{
+          const nameSnap = await firebase.firestore().collection('usernames').get();
+          regCount = nameSnap && nameSnap.docs ? nameSnap.docs.length : 0;
+          if(regCount > 0){
+            await firebase.firestore().doc(REGISTRATIONS_COUNTER_DOC).set({ count: regCount }, { merge: true });
+          }
+        }catch(e){ /* usernames недоступен — оставляем 0 */ }
+      }
+      analyticsData.totalRegistered = regCount;
     }catch(e){ /* счётчик опционален */ }
     analyticsLastFetch = Date.now();
     try{ localStorage.setItem(ANALYTICS_LOCAL_KEY, JSON.stringify(analyticsData)); }catch(e){}
