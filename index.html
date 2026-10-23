@@ -1592,7 +1592,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.3.20';
+const APP_VERSION = '1.3.21';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -6322,7 +6322,7 @@ function challengeSectionHTML(){
     ${(challengeOpen && ch.title) ? `<div class="wheel-header-actions">
       <button id="btnChallengeEdit" class="icon-btn" data-tip="${t('challengeEdit')}" aria-label="${t('challengeEdit')}"><i class="ti ti-edit" aria-hidden="true"></i></button>
       <button id="btnChallengeReset" class="icon-btn" data-tip="${t('challengeNew')}" aria-label="${t('challengeNew')}"><i class="ti ti-refresh" aria-hidden="true"></i></button>
-      ${(state.challengeHistory && state.challengeHistory.length) ? `<button id="btnChallengeHistory" class="icon-btn" data-tip="${t('challengeHistory')}" aria-label="${t('challengeHistory')}"><i class="ti ti-history" aria-hidden="true"></i></button>` : ''}
+      <button id="btnChallengeHistory" class="icon-btn" data-tip="${t('challengeHistory')}" aria-label="${t('challengeHistory')}"><i class="ti ti-history" aria-hidden="true"></i></button>
     </div>` : ''}
   </div>`;
   if(!challengeOpen) return html;
