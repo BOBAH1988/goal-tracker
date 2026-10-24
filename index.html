@@ -1592,7 +1592,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.4.2';
+const APP_VERSION = '1.4.3';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -1927,7 +1927,7 @@ const STRINGS = {
     rename: 'Переименовать',
     renamePrompt: 'Новое название шага:',
     footer: 'Войдите в аккаунт, чтобы данные сохранились.',
-    footerLoggedIn: 'Автор проекта Владимир Соколов · <a href="mailto:79042044926@ya.ru">Обратная связь</a>',
+    footerLoggedIn: 'Project by Vladimir Sokolov {years} · <a href="mailto:79042044926@ya.ru">Обратная связь</a>',
     addSubgoal: 'Развернуть',
     addSubHint: '— нажмите на цель без подцелей, чтобы добавить к ней 2 подцели-чекбокса',
     tipMove: 'Изменить порядок',
@@ -2338,7 +2338,7 @@ const STRINGS = {
     rename: 'Rename',
     renamePrompt: 'New step name:',
     footer: 'Sign in to sync it across devices.',
-    footerLoggedIn: 'Project author Vladimir Sokolov · <a href="mailto:79042044926@ya.ru">Feedback</a>',
+    footerLoggedIn: 'Project by Vladimir Sokolov {years} · <a href="mailto:79042044926@ya.ru">Feedback</a>',
     addSubgoal: 'Expand',
     addSubHint: '— click a goal with no subgoals yet to add 2 checkbox subgoals to it',
     tipMove: 'Reorder',
@@ -7312,7 +7312,9 @@ function attachTemplatesModalHandlers(){
 }
 
 function footerHTML(){
-  return `<footer>${authUser ? t('footerLoggedIn') : t('footer')} · v${APP_VERSION}</footer>`;
+  const _fy = new Date().getFullYear();
+  const _years = _fy > 2026 ? `2026-${_fy}` : '2026';
+  return `<footer>${(authUser ? t('footerLoggedIn') : t('footer')).replace('{years}', _years)} · v${APP_VERSION}</footer>`;
 }
 
 function statusPanelsHTML(){
