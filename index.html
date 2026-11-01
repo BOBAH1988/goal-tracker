@@ -827,6 +827,57 @@
   .challenge-cal-hint{color:var(--muted); font-size:13px; margin-top:8px; line-height:1.45;}
   /* A disabled month arrow must look switched off (like the other disabled buttons). */
   #btnChallengePrevMonth:disabled, #btnChallengeNextMonth:disabled{opacity:.4; cursor:not-allowed;}
+  /* ===== История «Три важных дела» — календарь и модалка, по стилю как у челленджа. ===== */
+  .today-history-grid{
+    display:grid; grid-template-columns:repeat(7,1fr); gap:4px;
+  }
+  .today-history-day{
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    min-width:0; min-height:38px; padding:2px; border-radius:8px;
+    background:var(--card2); border:1px solid var(--border); color:var(--text);
+    font-size:13px; cursor:pointer; font-family:inherit; line-height:1.1;
+  }
+  .today-history-day .thd-num{font-weight:600;}
+  .today-history-day .thd-mark{font-size:12px; line-height:1;}
+  .today-history-day.out, .today-history-day:disabled{opacity:.4; cursor:default;}
+  .today-history-day.all-done{background:rgba(76,175,125,.16); border-color:var(--green);}
+  .today-history-day.all-done .thd-mark{color:var(--green);}
+  .today-history-day.one-done{background:rgba(255,170,60,.16); border-color:var(--orange);}
+  .today-history-day.one-done .thd-mark{color:var(--orange);}
+  .today-history-day.two-done{background:rgba(235,200,40,.18); border-color:var(--yellow);}
+  .today-history-day.two-done .thd-mark{color:var(--yellow);}
+  .today-history-day.none-done{background:rgba(255,90,103,.12); border-color:var(--red);}
+  .today-history-day.none-done .thd-mark{color:var(--red);}
+  .today-history-day.today{border-color:var(--accent); box-shadow:0 0 0 1px var(--accent);}
+  @media (hover: hover) and (pointer: fine){
+    :where(html:not(.touch-mode)) .today-history-day:not(:disabled):hover{border-color:var(--accent);}
+  }
+  .today-history-cal-hint{color:var(--muted); font-size:13px; margin-top:8px; line-height:1.45;}
+  .today-history-day-list{display:flex; flex-direction:column; gap:6px;}
+  .today-history-day-item{
+    display:flex; align-items:center; gap:10px; padding:8px 10px;
+    border:1px solid var(--border); border-radius:8px; background:var(--card2); font-size:14px;
+  }
+  .today-history-day-item .thdi-chk{
+    width:22px; height:22px; border-radius:6px; border:1px solid var(--border);
+    display:flex; align-items:center; justify-content:center; flex:none; font-size:14px;
+  }
+  .today-history-day-item.done .thdi-chk{background:var(--green); border-color:var(--green); color:#fff;}
+  .today-history-day-item .thdi-text{flex:1; min-width:0; word-break:break-word;}
+  .today-history-day-item.done .thdi-text{text-decoration:line-through; color:var(--muted);}
+  .today-history-empty{text-align:center; color:var(--muted); font-size:14px; padding:24px 0;}
+  .today-history-day-head{
+    display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px;
+  }
+  .today-history-day-title{font-size:16px; font-weight:600;}
+  .today-history-day-pill{
+    font-size:12px; font-weight:600; padding:3px 10px; border-radius:20px;
+    background:var(--card2); border:1px solid var(--border);
+  }
+  .today-history-day-pill.all-done{background:rgba(76,175,125,.18); border-color:var(--green); color:var(--green);}
+  .today-history-day-pill.one-done{background:rgba(255,170,60,.18); border-color:var(--orange); color:var(--orange);}
+  .today-history-day-pill.two-done{background:rgba(235,200,40,.18); border-color:var(--yellow); color:var(--yellow);}
+  .today-history-day-pill.none-done{background:rgba(255,90,103,.18); border-color:var(--red); color:var(--red);}
   /* Inline «start a new challenge?» confirmation — no modal, the current calendar stays visible. */
   .challenge-reset-row{
     display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
@@ -1595,7 +1646,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.4.7';
+const APP_VERSION = '1.4.8';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -1854,6 +1905,18 @@ const STRINGS = {
     todayClear: 'Очистить',
     todayDone: 'Готово',
     todayDateTip: 'Дата последней правки записей',
+    todayHistory: 'История',
+    todayHistoryTitle: 'История «Три важных дела»',
+    todayHistoryEmpty: 'Записей пока нет',
+    todayHistoryHint: 'Нажми на день — откроется список дел этого дня. Цвет показывает продуктивность: зелёно — все дела выполнены, оранжево — одно, жёлто — два, красным — ни одного или день без плана.',
+    todayHistoryMonthPrev: 'Предыдущий месяц',
+    todayHistoryMonthNext: 'Следующий месяц',
+    todayHistoryAllDone: 'Все дела выполнены',
+    todayHistoryNoneDone: 'Ни одно дело не выполнено',
+    todayHistoryOneDone: 'Выполнено одно дело',
+    todayHistoryTwoDone: 'Выполнено два дела',
+    todayHistoryNoPlan: 'Нет запланированных дел',
+    todayHistoryClose: 'Закрыть',
     goodTodayGood: "Сегодня хорошее",
     goodTodayBad: "День хороший",
     goodTodayMoodStart: 'Начнём?',
@@ -2274,6 +2337,18 @@ const STRINGS = {
     todayClear: 'Clear',
     todayDone: 'Done',
     todayDateTip: 'Last entry update date',
+    todayHistory: 'History',
+    todayHistoryTitle: 'Three Important Things — History',
+    todayHistoryEmpty: 'No entries yet',
+    todayHistoryHint: 'Tap a day to open its list of tasks. The colour shows productivity: green — all done, orange — one done, yellow — two done, red — none done or a day with no plan.',
+    todayHistoryMonthPrev: 'Previous month',
+    todayHistoryMonthNext: 'Next month',
+    todayHistoryAllDone: 'All tasks completed',
+    todayHistoryNoneDone: 'No task completed',
+    todayHistoryOneDone: 'One task completed',
+    todayHistoryTwoDone: 'Two tasks completed',
+    todayHistoryNoPlan: 'No planned tasks',
+    todayHistoryClose: 'Close',
     goodTodayGood: "Today is good",
     goodTodayBad: "Make today good",
     goodTodayMoodStart: 'Let\'s start?',
@@ -2872,6 +2947,13 @@ let wishCloudPushPending = false;
 // not data) and rendered as an actionable note under the board.
 let wishLastUploadError = null;
 let wishIsUserPhotoDraft = false; // «Это моё фото» checkbox state in the add form
+  /* ===== История «Три важных дела» (v1.4.8) =====
+     state.todayHistory — массив записей { date: 'YYYY-MM-DD', items: [{text,done}] }.
+     Фиксируется при каждой правке блока через todayHistoryPush. Активный день рендерится
+     из state.today, прошлые — из todayHistory. Не влияет на колесо/приоритеты/итоги. */
+  let todayHistoryOpen = false;
+  let todayHistoryMonth = null;
+  let todayHistorySelectedDay = null;
 /* ===== Статусы сохранения (v1.1.99) =====
    Данные важны, поэтому приложение честно говорит, что с ними происходит, и НИКОГДА не
    называет их «сохранёнными в аккаунт» до подтверждённой записи. Раньше ошибка облачной
@@ -4015,6 +4097,125 @@ function ensureToday(node){
     node.todayDate = isoToday();
   }
   if(node.goodToday === undefined) node.goodToday = node.today.some(item => item.done);
+}
+// v1.4.8: «История» блока «Три важных дела» — отдельный кусок состояния, не влияющий на
+// колесо/приоритеты/итоги. Подмена state ОБЯЗАНА вызывать ensureTodayHistory(state).
+function ensureTodayHistory(node){
+  if(!node) return;
+  if(!Array.isArray(node.todayHistory)) node.todayHistory = [];
+}
+// ===== «Три важных дела»: история по дням (календарь, как у Челленджа) =====
+function todayHistoryPush(){
+  const iso = (typeof state.todayDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(state.todayDate))
+    ? state.todayDate : isoToday();
+  if(!iso || !Array.isArray(state.today)) return;
+  if(!Array.isArray(state.todayHistory)) state.todayHistory = [];
+  const items = state.today.map(it => ({ text: String(it.text || ''), done: !!it.done }));
+  const idx = state.todayHistory.findIndex(e => e.date === iso);
+  if(idx >= 0) state.todayHistory[idx].items = items;
+  else {
+    state.todayHistory.push({ date: iso, items });
+    state.todayHistory.sort((a,b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
+  }
+}
+function todayHistoryGet(iso){
+  const e = (Array.isArray(state.todayHistory) ? state.todayHistory : []).find(x => x.date === iso);
+  return e ? e.items : [];
+}
+function todayHistoryMonthCells(y, m){
+  const first = new Date(y, m, 1);
+  const startWd = (first.getDay() + 6) % 7;
+  const daysInMonth = new Date(y, m + 1, 0).getDate();
+  const daysInPrev = new Date(y, m, 0).getDate();
+  const cells = [];
+  for(let i = 0; i < 42; i++){
+    const dn = i - startWd + 1; let iso, inMonth;
+    if(dn >= 1 && dn <= daysInMonth){ iso = `${y}-${String(m+1).padStart(2,'0')}-${String(dn).padStart(2,'0')}`; inMonth = true; }
+    else if(dn < 1){ iso = `${y}-${String(m).padStart(2,'0')}-${String(dn + daysInPrev).padStart(2,'0')}`; inMonth = false; }
+    else { iso = `${y+1}-${String(m+1).padStart(2,'0')}-${String(dn - daysInMonth).padStart(2,'0')}`; inMonth = false; }
+    cells.push({ iso, inMonth });
+  }
+  return cells;
+}
+function todayHistoryVisibleMonth(){
+  const todayD = new Date();
+  const todayM = todayD.getFullYear()*12 + todayD.getMonth();
+  const hist = Array.isArray(state.todayHistory) ? state.todayHistory : [];
+  let minM = todayM, maxM = todayM;
+  if(hist.length){
+    const p = hist[0].date.split('-');
+    minM = Math.min(parseInt(p[0],10)*12 + parseInt(p[1],10) - 1, todayM) - 1;
+  }
+  const picked = todayHistoryMonth ? todayHistoryMonth.y*12 + todayHistoryMonth.m : todayM;
+  const cur = Math.max(minM, Math.min(maxM, picked));
+  return { y: Math.floor(cur/12), m: cur%12, cur, minM, maxM };
+}
+function todayHistoryDayColor(doneCount, hasItems){
+  if(!hasItems || doneCount === 0) return 'none-done';
+  if(doneCount === 1) return 'one-done';
+  if(doneCount === 2) return 'two-done';
+  return 'all-done';
+}
+function todayHistoryDayLabel(doneCount, hasItems){
+  if(!hasItems) return t('todayHistoryNoPlan');
+  if(doneCount === 0) return t('todayHistoryNoneDone');
+  if(doneCount === 1) return t('todayHistoryOneDone');
+  if(doneCount === 2) return t('todayHistoryTwoDone');
+  return t('todayHistoryAllDone');
+}
+function todayHistoryHTML(){
+  const mv = todayHistoryVisibleMonth();
+  const months = t('challengeMonths').split(',').map(s => s.trim());
+  const todayISO = isoToday();
+  const selISO = todayHistorySelectedDay || todayISO;
+  const items = todayHistoryGet(selISO);
+  const doneCount = items.filter(it => it.done).length;
+  const color = todayHistoryDayColor(doneCount, items.length > 0);
+  const label = selISO.split('-');
+  const monthName = selISO === todayISO ? 'Сегодня' : `${+label[2]} ${months[parseInt(label[1],10)-1]} ${label[0]}`;
+  let html = `<div class="auth-modal-overlay" id="todayHistoryOverlay">
+    <div class="auth-panel scrollable wide">
+      <button class="auth-close" id="btnTodayHistoryClose" aria-label="close" title="${t('todayHistoryClose')}">✕</button>
+      <h2 style="margin:0 0 4px; font-size:14px;">${t('todayHistoryTitle')}</h2>
+      <p style="margin:0 0 12px; font-size:13px; color:var(--muted);">${t('todayHistoryHint')}</p>
+      <div class="today-history-cal-head">
+        <button id="btnTodayHistoryPrevMonth" class="icon-btn" data-tip="${t('todayHistoryMonthPrev')}" aria-label="${t('todayHistoryMonthPrev')}"${mv.cur <= mv.minM ? ' disabled' : ''}>←</button>
+        <div class="challenge-cal-title">${months[mv.m]} ${mv.y}</div>
+        <button id="btnTodayHistoryNextMonth" class="icon-btn" data-tip="${t('todayHistoryMonthNext')}" aria-label="${t('todayHistoryMonthNext')}"${mv.cur >= mv.maxM ? ' disabled' : ''}>→</button>
+      </div>
+      <div class="challenge-weekdays">` + t('challengeWeekdays').split(',').map(w => `<span>${w.trim()}</span>`).join('') + `</div>
+      <div class="today-history-grid">`;
+  todayHistoryMonthCells(mv.y, mv.m).forEach(c => {
+    const dayItems = todayHistoryGet(c.iso);
+    const dc = dayItems.filter(it => it.done).length;
+    const cls = ['today-history-day'];
+    if(!c.inMonth) cls.push('out');
+    if(todayHistorySelectedDay === c.iso) cls.push('selected');
+    if(dayItems.length === 0) cls.push('none-done');
+    else cls.push(todayHistoryDayColor(dc, true));
+    if(c.iso === todayISO) cls.push('today');
+    const mark = dayItems.length > 0 ? `<span class="thd-mark">${todayHistoryDayLabel(dc, true)}</span>` : '';
+    html += `<button type="button" class="${cls.join(' ')}" data-today-history-day="${c.iso}"${!dayItems.length || c.iso > todayISO ? ' disabled' : ''}><span class="thd-num">${+c.iso.slice(8)}</span>${mark}</button>`;
+  });
+  html += `</div>`;
+  html += `<div class="today-history-day-head">
+    <div class="today-history-day-title">${esc(monthName)}</div>
+    <div class="today-history-day-pill ${color}">${esc(todayHistoryDayLabel(doneCount, items.length > 0))}</div>
+  </div>`;
+  if(!items.length){
+    html += `<div class="today-history-empty">${t('todayHistoryNoPlan')}</div>`;
+  }else{
+    html += `<div class="today-history-day-list">`;
+    items.forEach(it => {
+      html += `<div class="today-history-day-item ${it.done ? 'done' : ''}">
+        <div class="thdi-chk">${it.done ? '✓' : ''}</div>
+        <div class="thdi-text">${esc(it.text || '')}</div>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+  html += `</div></div>`;
+  return html;
 }
 // v1.2.8: два стартовых примера для блока «Главные цели» (☆-приоритеты) — закладываются
 // ОДИН раз: SEED/emptyTemplate несут их и флаг priorityDefaultsSeeded прямо в константах,
@@ -5803,6 +6004,7 @@ function render(){
    // fresh signup, undo) goes through render(), so a challenge-less state must never break
    // homeViewHTML — an old cloud snapshot or a fresh template has no `challenge` field at all.
    ensureChallenge(state);
+   ensureTodayHistory(state);
    ensureAchievements(state);
    ensureHiddenBlocks(state);
    // The collapsed/expanded flag lives in the state, so a swapped state must carry it over
@@ -5990,6 +6192,8 @@ function nodeViewHTML(node, mode, protectedCount, hintHTML){
 }
 
 function homeViewHTML(overallPct, hintHTML, mode, protectedCount){
+  // «История «Три важных дела»» — модалка поверх всего, как «История челленджей».
+  if(todayHistoryOpen) return todayHistoryHTML();
   let html = '';
   // «Настройки блоков»: набор id спрятанных блоков — они не рендерятся, но их содержимое
   // в state не удаляется. «Путь к балансу» (overall) и напоминание о сфере — всегда видны.
@@ -6028,6 +6232,7 @@ function homeViewHTML(overallPct, hintHTML, mode, protectedCount){
       <div class="priority-header" id="todayToggle">
         <span class="priority-arrow">${todayOpen ? '▾' : '▸'}</span>
         <span class="section-title">${t('todayTitle')}</span>
+        <button id="btnTodayHistory" class="icon-btn" data-tip="${t('todayHistory')}" aria-label="${t('todayHistory')}"><i class="ti ti-history" aria-hidden="true"></i></button>
        </div>
        ${todayOpen ? `<div class="today-badges">
          <div class="good-today ${moodClass}">
@@ -9738,6 +9943,7 @@ function attachMainViewHandlers(){
       if(!Array.isArray(state.today) || idx >= state.today.length) return;
       state.today[idx].text = el.value.slice(0, TODAY_TEXT_MAX);
       state.todayDate = isoToday();  // правка текста = корректировка записи (капсула даты)
+      todayHistoryPush();
       syncTodayAction(el);
     });
      el.addEventListener('focus', ()=>{ el.classList.add('editing'); syncTodayAction(el); });
@@ -9780,6 +9986,7 @@ function attachMainViewHandlers(){
           state.today[idx].text = '';
           state.today[idx].done = false;
           state.todayDate = isoToday();
+          todayHistoryPush();
           state.goodToday = state.today.some(item => item.done);  // legacy-флаг, как в обработчике галочки
         }
         input.value = '';
@@ -9916,6 +10123,7 @@ function attachMainViewHandlers(){
       if(!Array.isArray(state.today) || idx >= state.today.length) return;
       state.today[idx].done = !state.today[idx].done;
       state.todayDate = isoToday();  // отметка галочкой = корректировка записи (капсула даты)
+      todayHistoryPush();
       state.goodToday = state.today.some(item => item.done);
       saveState();
       render();
@@ -9929,7 +10137,53 @@ function attachMainViewHandlers(){
       saveState();
       render();
     });
-   }
+  }
+  const btnTodayHistory = document.getElementById('btnTodayHistory');
+  if(btnTodayHistory){
+    btnTodayHistory.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      todayHistoryOpen = true;
+      todayHistorySelectedDay = isoToday();
+      todayHistoryMonth = null;
+      render();
+    });
+  }
+  const btnTodayHistoryClose = document.getElementById('btnTodayHistoryClose');
+  if(btnTodayHistoryClose){
+    btnTodayHistoryClose.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      todayHistoryOpen = false;
+      todayHistorySelectedDay = null;
+      render();
+    });
+  }
+  const btnTodayHistoryPrevMonth = document.getElementById('btnTodayHistoryPrevMonth');
+  if(btnTodayHistoryPrevMonth){
+    btnTodayHistoryPrevMonth.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      const mv = todayHistoryVisibleMonth();
+      if(mv.cur <= mv.minM) return;
+      todayHistoryMonth = { y: Math.floor((mv.cur - 1)/12), m: (mv.cur - 1)%12 };
+      render();
+    });
+  }
+  const btnTodayHistoryNextMonth = document.getElementById('btnTodayHistoryNextMonth');
+  if(btnTodayHistoryNextMonth){
+    btnTodayHistoryNextMonth.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      const mv = todayHistoryVisibleMonth();
+      if(mv.cur >= mv.maxM) return;
+      todayHistoryMonth = { y: Math.floor((mv.cur + 1)/12), m: (mv.cur + 1)%12 };
+      render();
+    });
+  }
+  document.querySelectorAll('[data-today-history-day]').forEach(el=>{
+    el.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      todayHistorySelectedDay = el.dataset.todayHistoryDay;
+      render();
+    });
+  });
    const quoteRefreshBtn = document.querySelector('[data-quote-refresh]');
    if(quoteRefreshBtn){
      quoteRefreshBtn.addEventListener('click', (e)=>{
