@@ -1640,7 +1640,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.4.31';
+const APP_VERSION = '1.4.32';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -5098,18 +5098,6 @@ function printWheel(){
       + (date ? '<span style="font-family:' + fontTitle + '; font-size:28pt; font-weight:700; color:' + textC + '; vertical-align:middle;"> — ' + esc(date) + '</span>' : '');
     return h;
   };
-  // Подгоняет шрифт заголовка под ширину листа, чтобы длинное название не обрывалось посередине слова.
-  const fitTitle = (el) => {
-    if(!root.clientWidth || root.clientWidth < 100) return;   // нет надёжной раскладки — не трогаем
-    const spans = el.querySelectorAll('span');
-    if(!spans.length) return;
-    let size = 28;
-    spans.forEach(s => s.style.fontSize = size + 'pt');
-    while(size > 12 && el.scrollWidth > root.clientWidth - 6){
-      size -= 0.5;
-      spans.forEach(s => s.style.fontSize = size + 'pt');
-    }
-  };
   root.appendChild(sectionTitle(t('mainGoals'), printDateDMY()));
   // Список сфер — РОВНАЯ сетка: имя (режется по длине) | процент | шкала. Треки фиксированной
   // ширины, поэтому все шкалы одной длины и выровнены по правому краю независимо от названия.
@@ -5164,12 +5152,6 @@ function printWheel(){
   }
   root.appendChild(wheelBox);
   document.body.appendChild(root);
-  // временно показываем корень, чтобы измерить и подогнать шрифт заголовков под ширину листа
-  const rootCss = root.style.cssText;
-  root.style.cssText = rootCss + '; display:block; visibility:hidden; position:absolute; left:-9999px; top:0;';
-  fitTitle(root.children[0]);   // «Важные сферы жизни»
-  fitTitle(root.children[2]);   // «Колесо баланса»
-  root.style.cssText = rootCss; // вернуть — на экране display:none, в печати flex
   document.body.classList.add('wheel-printing');
   // Имя файла при печати в PDF берётся из document.title. Временно подменяем его на название
   // печати и возвращаем исходный в cleanup (после печати / по таймауту).
