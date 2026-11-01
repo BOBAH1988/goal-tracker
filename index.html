@@ -1647,7 +1647,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.4.10';
+const APP_VERSION = '1.4.11';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -4195,8 +4195,9 @@ function todayHistoryHTML(){
     if(dayItems.length === 0) cls.push('none-done');
     else cls.push(todayHistoryDayColor(dc, true));
     if(c.iso === todayISO) cls.push('today');
-    const mark = dayItems.length > 0 ? `<span class="thd-mark">${todayHistoryDayLabel(dc, true)}</span>` : '';
-    html += `<button type="button" class="${cls.join(' ')}" data-today-history-day="${c.iso}"${!dayItems.length || c.iso > todayISO ? ' disabled' : ''}><span class="thd-num">${+c.iso.slice(8)}</span>${mark}</button>`;
+    const total = dayItems.length;
+    const mark = total === 0 ? '' : (dc === total ? '✓' : dc > 0 ? '✓' : '✗');
+    html += `<button type="button" class="${cls.join(' ')}" data-today-history-day="${c.iso}"${!dayItems.length || c.iso > todayISO ? ' disabled' : ''}><span class="thd-num">${+c.iso.slice(8)}</span>${mark ? `<span class="thd-mark">${mark}</span>` : ''}</button>`;
   });
   html += `</div>`;
   html += `<div class="today-history-day-head">
