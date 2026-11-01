@@ -168,7 +168,7 @@
      all, so there is nothing left to stick. A mouse-driven desktop keeps the feedback. */
   @media (hover: hover) and (pointer: fine){
     :where(html:not(.touch-mode)) .topbar button:hover{color:var(--text); border-color:var(--accent);}
-    :where(html:not(.touch-mode)) #btnFilter:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistory:hover,:where(html:not(.touch-mode)) #btnGoodTodayWeekHistory:hover,:where(html:not(.touch-mode)) #btnGoodTodayWeekEdit:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPagePrev:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPageNext:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPagePrevBottom:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPageNextBottom:hover,:where(html:not(.touch-mode)) #btnChallengeHistory:hover,:where(html:not(.touch-mode)) #btnAchievementsGroupPrev:hover,:where(html:not(.touch-mode)) #btnAchievementsGroupNext:hover{color:var(--text); border-color:var(--accent);}
+    :where(html:not(.touch-mode)) #btnFilter:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistory:hover,:where(html:not(.touch-mode)) #btnGoodTodayWeekHistory:hover,:where(html:not(.touch-mode)) #btnGoodTodayWeekEdit:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPagePrev:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPageNext:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPagePrevBottom:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPageNextBottom:hover,:where(html:not(.touch-mode)) #btnChallengeHistory:hover,:where(html:not(.touch-mode)) #btnTodayHistory:hover,:where(html:not(.touch-mode)) #btnAchievementsGroupPrev:hover,:where(html:not(.touch-mode)) #btnAchievementsGroupNext:hover{color:var(--text); border-color:var(--accent);}
     :where(html:not(.touch-mode)) #btnEdit:hover{color:var(--text); border-color:var(--accent);}
     :where(html:not(.touch-mode)) #btnDelete:hover{border-color:var(--red); color:var(--red);}
     :where(html:not(.touch-mode)) #btnDeleteChecklist:hover{border-color:var(--red); color:var(--red);}
@@ -303,7 +303,7 @@
       never paints these, so nothing can stick; a mouse keeps the feedback. The REAL mode colours
       (.active rules) are deliberately OUTSIDE this gate: they signal a working mode. */
    @media (hover: hover) and (pointer: fine){
-     :where(html:not(.touch-mode)) #btnFilter:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistory:hover,:where(html:not(.touch-mode)) #btnGoodTodayWeekHistory:hover,:where(html:not(.touch-mode)) #btnGoodTodayWeekEdit:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPagePrev:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPageNext:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPagePrevBottom:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPageNextBottom:hover,:where(html:not(.touch-mode)) #btnChallengeHistory:hover,:where(html:not(.touch-mode)) #btnAchievementsGroupPrev:hover,:where(html:not(.touch-mode)) #btnAchievementsGroupNext:hover{color:var(--text); border-color:var(--accent);}
+     :where(html:not(.touch-mode)) #btnFilter:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistory:hover,:where(html:not(.touch-mode)) #btnGoodTodayWeekHistory:hover,:where(html:not(.touch-mode)) #btnGoodTodayWeekEdit:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPagePrev:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPageNext:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPagePrevBottom:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPageNextBottom:hover,:where(html:not(.touch-mode)) #btnChallengeHistory:hover,:where(html:not(.touch-mode)) #btnTodayHistory:hover,:where(html:not(.touch-mode)) #btnAchievementsGroupPrev:hover,:where(html:not(.touch-mode)) #btnAchievementsGroupNext:hover{color:var(--text); border-color:var(--accent);}
      :where(html:not(.touch-mode)) #btnEdit:hover{color:var(--text); border-color:var(--accent);}
      :where(html:not(.touch-mode)) #btnDelete:hover{border-color:var(--red); color:var(--red);}
      :where(html:not(.touch-mode)) #btnDeleteChecklist:hover{border-color:var(--red); color:var(--red);}
@@ -1472,7 +1472,7 @@
   .wish-header-actions{display:flex; align-items:center; gap:10px;}
   .wheel-header-actions{display:flex; align-items:center; gap:10px;}
   .add-goal-wrap{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
-  #btnAddGoal, #btnTemplates, #btnWishAdd, #btnGoodTodayAdd, #btnAchievementsAdd, #btnChallengeEdit, #btnChallengeReset, #btnChallengeHistory, #btnChallengePrevMonth, #btnChallengeNextMonth, #btnAchievementsGroupPrev, #btnAchievementsGroupNext{
+  #btnAddGoal, #btnTemplates, #btnWishAdd, #btnGoodTodayAdd, #btnAchievementsAdd, #btnChallengeEdit, #btnChallengeReset, #btnChallengeHistory, #btnTodayHistory, #btnChallengePrevMonth, #btnChallengeNextMonth, #btnAchievementsGroupPrev, #btnAchievementsGroupNext{
     background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:8px;
     padding:6px 12px; font-size:13px; cursor:pointer; white-space:nowrap;
   }
@@ -1505,7 +1505,7 @@
      glyph and the same 24px/2px box, so the two sections read alike. No colour override here:
      the base action-button rule's --muted is what #btnEdit uses, and overriding it to --text made
      the glyph near-white (#eef2f8) on the dark button — a white icon with nothing to read it. */
-   #btnEdit.icon-btn, #btnWishManage.icon-btn, #btnWishGrid.icon-btn, #btnWishPrint.icon-btn, #btnWishShare.icon-btn, #btnWheelPrint.icon-btn, #btnWheelShare.icon-btn, #btnChallengeEdit.icon-btn, #btnChallengeReset.icon-btn, #btnChallengeHistory.icon-btn{ font-size:24px; padding:2px; }
+   #btnEdit.icon-btn, #btnWishManage.icon-btn, #btnWishGrid.icon-btn, #btnWishPrint.icon-btn, #btnWishShare.icon-btn, #btnWheelPrint.icon-btn, #btnWheelShare.icon-btn, #btnChallengeEdit.icon-btn, #btnChallengeReset.icon-btn, #btnChallengeHistory.icon-btn, #btnTodayHistory.icon-btn{ font-size:24px; padding:2px; }
   /* The wish header pair («+» and the pencil): one shared 42px box so the text glyph and
      the icon font line up exactly, like the «Хорошее сегодня» header pair. */
    #btnWishAdd.icon-btn{ min-width:42px; padding:5px 0; justify-content:center; }
@@ -1646,7 +1646,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.4.8';
+const APP_VERSION = '1.4.9';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -6232,6 +6232,7 @@ function homeViewHTML(overallPct, hintHTML, mode, protectedCount){
       <div class="priority-header" id="todayToggle">
         <span class="priority-arrow">${todayOpen ? '▾' : '▸'}</span>
         <span class="section-title">${t('todayTitle')}</span>
+        <div style="flex:1"></div>
         <button id="btnTodayHistory" class="icon-btn" data-tip="${t('todayHistory')}" aria-label="${t('todayHistory')}"><i class="ti ti-history" aria-hidden="true"></i></button>
        </div>
        ${todayOpen ? `<div class="today-badges">
