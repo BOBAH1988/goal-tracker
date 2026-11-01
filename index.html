@@ -832,13 +832,14 @@
     display:grid; grid-template-columns:repeat(7,1fr); gap:4px;
   }
   .today-history-day{
-    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    position:relative;
+    display:flex; align-items:center; justify-content:center;
     min-width:0; min-height:38px; padding:2px; border-radius:8px;
     background:var(--card2); border:1px solid var(--border); color:var(--text);
     font-size:13px; cursor:pointer; font-family:inherit; line-height:1.1;
   }
-  .today-history-day .thd-num{font-weight:600;}
-  .today-history-day .thd-mark{font-size:12px; line-height:1;}
+  .today-history-day .thd-num{position:absolute; top:2px; left:3px; font-size:13px; color:var(--muted); line-height:1;}
+  .today-history-day .thd-mark{position:absolute; bottom:1px; left:0; right:0; text-align:center; font-size:13px; font-weight:700; line-height:1;}
   .today-history-day.out, .today-history-day:disabled{opacity:.4; cursor:default;}
   .today-history-day.all-done{background:rgba(76,175,125,.16); border-color:var(--green);}
   .today-history-day.all-done .thd-mark{color:var(--green);}
@@ -1646,7 +1647,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.4.9';
+const APP_VERSION = '1.4.10';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
