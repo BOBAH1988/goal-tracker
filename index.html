@@ -219,7 +219,7 @@
   .lang-menu .lang-option{
     display:flex; align-items:center; justify-content:center; flex:none;
     background:var(--card2); border:1px solid var(--border); color:var(--muted);
-    border-radius:9px; padding:5px 12px; font-size:14px; line-height:1; cursor:pointer;
+    border-radius:9px; padding:5px 12px; font-size:16px; line-height:1; cursor:pointer;
     transition:background .15s ease, color .15s ease, border-color .15s ease;
   }
   @media (hover: hover) and (pointer: fine){
@@ -267,7 +267,7 @@
   .lang-menu .theme-option{
     display:flex; align-items:center; justify-content:center; flex:none;
     background:var(--card2); border:1px solid var(--border); color:var(--muted);
-    border-radius:9px; padding:5px 10px; font-size:14px; line-height:1; cursor:pointer;
+    border-radius:9px; padding:5px 10px; font-size:16px; line-height:1; cursor:pointer;
     transition:background .15s ease, color .15s ease, border-color .15s ease;
   }
   @media (hover: hover) and (pointer: fine){
@@ -470,7 +470,7 @@
   .auth-panel .block-setting-item input{width:18px; height:18px; flex:none; margin:0; padding:0; background:none; border:none; accent-color:var(--accent);}
   .auth-panel input{
     background:var(--card2); border:1px solid var(--border); color:var(--text); border-radius:8px;
-    padding:9px 10px; font-size:14px; outline:none; width:100%;
+    padding:9px 10px; font-size:16px; outline:none; width:100%;
   }
   .auth-panel input:focus{border-color:var(--accent);}
   .auth-panel input.input-error{border-color:var(--red); box-shadow:0 0 0 1px var(--red);}
@@ -622,7 +622,7 @@
      v1.2.61: 16px, не 14px — редактируемое поле мельче 16px триггерит zoom-on-focus
      вьюпорта PWA на iOS («экран расширяется», репорт владельца). */
   .relocate-search{width:100%; box-sizing:border-box; background:var(--card2); color:var(--text);
-    border:1px solid var(--border); border-radius:8px; padding:9px 12px; font-size:14px;
+    border:1px solid var(--border); border-radius:8px; padding:9px 12px; font-size:16px;
     font-family:inherit; margin-top:8px;}
   .relocate-search:focus{outline:2px solid var(--accent); outline-offset:1px;}
   /* Scoped to .auth-panel (raising specificity above the plain ".auth-panel button" rule, which
@@ -735,7 +735,7 @@
     .good-today-textarea{
       width:100%; min-height:72px; resize:vertical;
       background:var(--card2); border:1px solid var(--border); border-radius:10px;
-      padding:10px 12px; font-size:14px; line-height:1.4; color:var(--text);
+      padding:10px 12px; font-size:16px; line-height:1.4; color:var(--text);
      font-family:inherit; box-sizing:border-box;
    }
    .good-today-textarea:focus{outline:2px solid var(--accent); outline-offset:1px; border-color:var(--accent);}
@@ -774,7 +774,7 @@
      .good-today-textarea, owner report v1.2.61). */
   .challenge-title-input{
     width:100%; background:var(--card2); border:1px solid var(--border); border-radius:10px;
-    padding:10px 12px; font-size:14px; line-height:1.4; color:var(--text);
+    padding:10px 12px; font-size:16px; line-height:1.4; color:var(--text);
     font-family:inherit; box-sizing:border-box;
   }
   .challenge-title-input:focus{outline:2px solid var(--accent); outline-offset:1px; border-color:var(--accent);}
@@ -1038,7 +1038,7 @@
   /* ===== Leaf rows: inline edit, checkbox, due dates ===== */
   .goal-input{
     background:transparent; border:none; border-bottom:1px dashed var(--red); color:var(--text);
-    font-size:14px; font-weight:600; font-family:inherit; padding:0 0 2px; width:100%; min-width:0; outline:none;
+    font-size:16px; font-weight:600; font-family:inherit; padding:0 0 2px; width:100%; min-width:0; outline:none;
   }
   .goal-input:focus{border-bottom-style:solid; border-bottom-color:var(--red);}
   /* Inline text input for the "Three important things" editable checklist — looks like plain text
@@ -1047,7 +1047,7 @@
      field renders below 16px («экран расширяется, контент вылезает», репорт владельца;
      двойной тап возвращал зум). 16px — порог iOS, ниже него зум-при-фокусе срабатывает. */
   .today-input{
-    flex:1; font-size:14px; line-height:1.4; border:none; outline:none;
+    flex:1; font-size:16px; line-height:1.4; border:none; outline:none;
     background:transparent; color:var(--text); min-width:0; word-break:break-word; font-family:inherit;
   }
   /* Аудит: раньше фокус гасился полностью (outline:none) и поле не отличить от обычного —
@@ -1256,7 +1256,7 @@
   }
   .wish-form input[type=text]{
     background:var(--card2); border:1px solid var(--border); color:var(--text);
-    border-radius:8px; padding:10px; font-size:14px; outline:none; width:100%;
+    border-radius:8px; padding:10px; font-size:16px; outline:none; width:100%;
   }
   .wish-form input[type=text]:focus{border-color:var(--accent);}
   .wish-btn-row{display:flex; gap:8px;}
@@ -1494,7 +1494,7 @@
   .checklist-text.done{color:var(--muted); text-decoration:line-through;}
   .checklist-edit-input{
     flex:1; background:var(--card2); border:1px solid var(--accent); color:var(--text); border-radius:6px;
-    padding:5px 8px; font-size:14px; outline:none;
+    padding:5px 8px; font-size:16px; outline:none;
   }
   .checklist-edit{
     background:none; border:none; color:var(--muted); cursor:pointer; font-size:13px; padding:1px 4px; flex:none;
@@ -1509,7 +1509,7 @@
   .checklist-add-row{display:flex; gap:8px; margin-top:4px;}
   .checklist-add-row input{
     flex:1; background:var(--card2); border:1px solid var(--border); color:var(--text); border-radius:8px;
-    padding:8px 10px; font-size:14px; outline:none;
+    padding:8px 10px; font-size:16px; outline:none;
   }
   .checklist-add-row input:focus{border-color:var(--accent);}
   /* «Мои достижения» — строки + кнопки действий. */
@@ -1595,7 +1595,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.4.6';
+const APP_VERSION = '1.4.7';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -7548,7 +7548,7 @@ function systemPanelsHTML(){
       <div class="auth-panel">
         <button class="auth-close" id="btnSearchClose" aria-label="close" title="${t('done')}">✕</button>
         <h2 style="margin:0 0 4px; font-size:14px;">${t('searchTitle')}</h2>
-        <input type="text" id="searchInput" autocomplete="off" placeholder="${t('searchPlaceholder')}" style="width:100%; padding:10px 12px; border-radius:8px; border:1px solid var(--border); background:var(--card2); color:var(--text); font-size:14px; box-sizing:border-box;">
+        <input type="text" id="searchInput" autocomplete="off" placeholder="${t('searchPlaceholder')}" style="width:100%; padding:10px 12px; border-radius:8px; border:1px solid var(--border); background:var(--card2); color:var(--text); font-size:16px; box-sizing:border-box;">
         <div style="color:var(--muted); font-size:13px; margin:6px 0 8px;">${t('searchHint')}</div>
         <div class="search-results" id="searchResults"></div>
       </div>

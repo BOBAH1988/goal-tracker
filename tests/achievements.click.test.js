@@ -113,6 +113,11 @@ test('achievements: save appends a goal to the list', function () {
   t.click('#btnAchievementsSave');
   var state = t.app.getState();
   console.error('state.achievements after save:', JSON.stringify(state.achievements));
-  var list = state.achievements || [];
-  assert.ok(list.includes('Потренироваться в Python'), 'saved goal appears in state.achievements');
+  // v1.4.5+: state.achievements is an object with groups (3 groups, up to 10 lines each),
+  // not a flat array. The saved line lands in the active group's items.
+  var groups = (state.achievements && state.achievements.groups) || [];
+  var activeId = state.achievements && state.achievements.activeGroupId;
+  var activeGroup = groups.find(function (g) { return g.id === activeId; }) || groups[0] || { items: [] };
+  var list = Array.isArray(activeGroup.items) ? activeGroup.items : [];
+  assert.ok(list.includes('Потренироваться в Python'), 'saved goal appears in the active group items');
 });
