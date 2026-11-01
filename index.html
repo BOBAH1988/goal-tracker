@@ -168,7 +168,7 @@
      all, so there is nothing left to stick. A mouse-driven desktop keeps the feedback. */
   @media (hover: hover) and (pointer: fine){
     :where(html:not(.touch-mode)) .topbar button:hover{color:var(--text); border-color:var(--accent);}
-    :where(html:not(.touch-mode)) #btnFilter:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistory:hover,:where(html:not(.touch-mode)) #btnGoodTodayWeekHistory:hover,:where(html:not(.touch-mode)) #btnGoodTodayWeekEdit:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPagePrev:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPageNext:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPagePrevBottom:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPageNextBottom:hover,:where(html:not(.touch-mode)) #btnChallengeHistory:hover{color:var(--text); border-color:var(--accent);}
+    :where(html:not(.touch-mode)) #btnFilter:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistory:hover,:where(html:not(.touch-mode)) #btnGoodTodayWeekHistory:hover,:where(html:not(.touch-mode)) #btnGoodTodayWeekEdit:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPagePrev:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPageNext:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPagePrevBottom:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPageNextBottom:hover,:where(html:not(.touch-mode)) #btnChallengeHistory:hover,:where(html:not(.touch-mode)) #btnAchievementsGroupPrev:hover,:where(html:not(.touch-mode)) #btnAchievementsGroupNext:hover{color:var(--text); border-color:var(--accent);}
     :where(html:not(.touch-mode)) #btnEdit:hover{color:var(--text); border-color:var(--accent);}
     :where(html:not(.touch-mode)) #btnDelete:hover{border-color:var(--red); color:var(--red);}
     :where(html:not(.touch-mode)) #btnDeleteChecklist:hover{border-color:var(--red); color:var(--red);}
@@ -303,7 +303,7 @@
       never paints these, so nothing can stick; a mouse keeps the feedback. The REAL mode colours
       (.active rules) are deliberately OUTSIDE this gate: they signal a working mode. */
    @media (hover: hover) and (pointer: fine){
-     :where(html:not(.touch-mode)) #btnFilter:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistory:hover,:where(html:not(.touch-mode)) #btnGoodTodayWeekHistory:hover,:where(html:not(.touch-mode)) #btnGoodTodayWeekEdit:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPagePrev:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPageNext:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPagePrevBottom:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPageNextBottom:hover,:where(html:not(.touch-mode)) #btnChallengeHistory:hover{color:var(--text); border-color:var(--accent);}
+     :where(html:not(.touch-mode)) #btnFilter:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistory:hover,:where(html:not(.touch-mode)) #btnGoodTodayWeekHistory:hover,:where(html:not(.touch-mode)) #btnGoodTodayWeekEdit:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPagePrev:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPageNext:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPagePrevBottom:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPageNextBottom:hover,:where(html:not(.touch-mode)) #btnChallengeHistory:hover,:where(html:not(.touch-mode)) #btnAchievementsGroupPrev:hover,:where(html:not(.touch-mode)) #btnAchievementsGroupNext:hover{color:var(--text); border-color:var(--accent);}
      :where(html:not(.touch-mode)) #btnEdit:hover{color:var(--text); border-color:var(--accent);}
      :where(html:not(.touch-mode)) #btnDelete:hover{border-color:var(--red); color:var(--red);}
      :where(html:not(.touch-mode)) #btnDeleteChecklist:hover{border-color:var(--red); color:var(--red);}
@@ -1421,7 +1421,7 @@
   .wish-header-actions{display:flex; align-items:center; gap:10px;}
   .wheel-header-actions{display:flex; align-items:center; gap:10px;}
   .add-goal-wrap{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
-  #btnAddGoal, #btnTemplates, #btnWishAdd, #btnGoodTodayAdd, #btnAchievementsAdd, #btnChallengeEdit, #btnChallengeReset, #btnChallengeHistory, #btnChallengePrevMonth, #btnChallengeNextMonth{
+  #btnAddGoal, #btnTemplates, #btnWishAdd, #btnGoodTodayAdd, #btnAchievementsAdd, #btnChallengeEdit, #btnChallengeReset, #btnChallengeHistory, #btnChallengePrevMonth, #btnChallengeNextMonth, #btnAchievementsGroupPrev, #btnAchievementsGroupNext{
     background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:8px;
     padding:6px 12px; font-size:12px; cursor:pointer; white-space:nowrap;
   }
@@ -1445,7 +1445,7 @@
   #btnAddChild:disabled{opacity:.5; cursor:not-allowed;}
   /* Compact "+"/"−" icon style for Add/Delete, used instead of full text labels to save room on
      narrow (phone) screens. */
-    #btnAddGoal.icon-btn, #btnTemplates.icon-btn, #btnWishAdd.icon-btn, #btnWishManage.icon-btn, #btnWishGrid.icon-btn, #btnWishPrint.icon-btn, #btnWishShare.icon-btn, #btnWheelPrint.icon-btn, #btnWheelShare.icon-btn, #btnAddChild.icon-btn, #btnDelete.icon-btn, #btnEdit.icon-btn, #btnAddSubgoal.icon-btn, #btnDeleteChecklist.icon-btn, #btnMove.icon-btn, #btnMoveChecklist.icon-btn, #btnRelocate.icon-btn, #btnChecklistAdd.icon-btn, #btnFilter.icon-btn, .add-child-row #btnArchive.icon-btn, .add-goal-wrap #btnArchive.icon-btn, #btnSearch.icon-btn, #btnGoodTodayHistory.icon-btn, #btnGoodTodayWeekHistory.icon-btn, #btnGoodTodayWeekEdit.icon-btn, #btnGoodTodayAdd.icon-btn, #btnAchievementsAdd.icon-btn, #btnGoodTodayHistoryPagePrevBottom.icon-btn, #btnGoodTodayHistoryPageNextBottom.icon-btn, #btnChallengeEdit.icon-btn, #btnChallengeReset.icon-btn, #btnChallengePrevMonth.icon-btn, #btnChallengeNextMonth.icon-btn{
+    #btnAddGoal.icon-btn, #btnTemplates.icon-btn, #btnWishAdd.icon-btn, #btnWishManage.icon-btn, #btnWishGrid.icon-btn, #btnWishPrint.icon-btn, #btnWishShare.icon-btn, #btnWheelPrint.icon-btn, #btnWheelShare.icon-btn, #btnAddChild.icon-btn, #btnDelete.icon-btn, #btnEdit.icon-btn, #btnAddSubgoal.icon-btn, #btnDeleteChecklist.icon-btn, #btnMove.icon-btn, #btnMoveChecklist.icon-btn, #btnRelocate.icon-btn, #btnChecklistAdd.icon-btn, #btnFilter.icon-btn, .add-child-row #btnArchive.icon-btn, .add-goal-wrap #btnArchive.icon-btn, #btnSearch.icon-btn, #btnGoodTodayHistory.icon-btn, #btnGoodTodayWeekHistory.icon-btn, #btnGoodTodayWeekEdit.icon-btn, #btnGoodTodayAdd.icon-btn, #btnAchievementsAdd.icon-btn, #btnGoodTodayHistoryPagePrevBottom.icon-btn, #btnGoodTodayHistoryPageNextBottom.icon-btn, #btnChallengeEdit.icon-btn, #btnChallengeReset.icon-btn, #btnChallengePrevMonth.icon-btn, #btnChallengeNextMonth.icon-btn, #btnAchievementsGroupPrev.icon-btn, #btnAchievementsGroupNext.icon-btn{
     font-size:16px; font-weight:700; line-height:1; padding:5px 13px;
     min-width:32px; display:inline-flex; align-items:center; justify-content:center;
   }
@@ -2220,6 +2220,8 @@ const STRINGS = {
     achievementsDelete: 'Удалить',
     achievementsDeleteConfirm: 'Точно удалить достижение?',
     achievementsEmpty: 'Добавьте первое свое достижение.',
+    achievementsEmptyRejoice: 'Добавьте что вам приносит радость',
+    achievementsEmptyInspire: 'Добавьте человека который вас вдохновляет',
     achievementsMax: 'Достижений можно не более 10',
     achievementsCharCount: '{n} из 100 символов',
     tipAchievementsAdd: 'Добавить достижение в список',
@@ -2633,6 +2635,8 @@ const STRINGS = {
     achievementsDelete: 'Delete',
     achievementsDeleteConfirm: 'Delete this achievement?',
     achievementsEmpty: 'No achievements yet — add your first one to come back to for motivation.',
+    achievementsEmptyRejoice: 'Add what brings you joy',
+    achievementsEmptyInspire: 'Add a person who inspires you',
     achievementsMax: 'Maximum 10 achievements',
     achievementsCharCount: '{n} of 100 characters',
     tipAchievementsAdd: 'Add an achievement to the list',
@@ -6240,14 +6244,17 @@ function achievementsSectionHTML(){
   const prevId = st.groups[(st.groups.findIndex(g => g.id === st.activeGroupId) + st.groups.length - 1) % st.groups.length].id;
   const nextId = st.groups[(st.groups.findIndex(g => g.id === st.activeGroupId) + 1) % st.groups.length].id;
   html += `<div class="achievements-nav-row">
-    <button id="btnAchievementsGroupPrev" class="icon-btn" data-achievements-group="${prevId}" data-tip="${t('tipAchievementsGroupPrev')}" aria-label="${t('tipAchievementsGroupPrev')}">‹</button>
+    <button id="btnAchievementsGroupPrev" class="icon-btn" data-achievements-group="${prevId}" data-tip="${t('tipAchievementsGroupPrev')}" aria-label="${t('tipAchievementsGroupPrev')}"><i class="ti ti-chevron-left" aria-hidden="true"></i></button>
     <span class="achievements-group-title">${esc(curTitle)}</span>
-    <button id="btnAchievementsGroupNext" class="icon-btn" data-achievements-group="${nextId}" data-tip="${t('tipAchievementsGroupNext')}" aria-label="${t('tipAchievementsGroupNext')}">›</button>
+    <button id="btnAchievementsGroupNext" class="icon-btn" data-achievements-group="${nextId}" data-tip="${t('tipAchievementsGroupNext')}" aria-label="${t('tipAchievementsGroupNext')}"><i class="ti ti-chevron-right" aria-hidden="true"></i></button>
   </div>`;
 
   if(arr.length === 0){
+    const emptyText = st.activeGroupId === 'rejoice' ? t('achievementsEmptyRejoice')
+      : st.activeGroupId === 'inspire' ? t('achievementsEmptyInspire')
+      : t('achievementsEmpty');
     html += `<div class="achievements-subtitle-row">
-      <span class="achievements-empty">${t('achievementsEmpty')}</span>
+      <span class="achievements-empty">${esc(emptyText)}</span>
       <button id="btnAchievementsAdd" type="button" class="icon-btn"
         data-tip="${t('tipAchievementsAdd')}" aria-label="${t('tipAchievementsAdd')}">+</button>
     </div>`;
