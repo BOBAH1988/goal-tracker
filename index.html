@@ -841,7 +841,7 @@
   .challenge-day.one-done .cd-mark{color:var(--orange);}
   .challenge-day.two-done{background:rgba(235,200,40,.18); border-color:var(--yellow);}
   .challenge-day.two-done .cd-mark{color:var(--yellow);}
-  .challenge-day.none-done{background:rgba(255,90,103,.12); border-color:var(--red);}
+  .challenge-day.none-done{background:rgba(255,90,103,.06); border-color:var(--border);}
   .challenge-day.none-done .cd-mark{color:var(--red);}
   @media (hover: hover) and (pointer: fine){
     :where(html:not(.touch-mode)) .challenge-day:not(:disabled):hover{border-color:var(--accent);}
@@ -1639,7 +1639,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.4.17';
+const APP_VERSION = '1.4.18';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
