@@ -803,7 +803,7 @@
   .today-history-cal-head{display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:8px;}
   /* Стрелки календаря истории — минимальная ширина (как у Челленджа). */
   #btnTodayHistoryPrevMonth, #btnTodayHistoryNextMonth{
-    width:28px; height:28px; padding:0; min-width:0; line-height:1;
+    padding:0 2px; min-width:0; width:auto; height:28px; line-height:1;
   }
   .challenge-cal-title{font-size:14px; font-weight:600; color:var(--text);}
   /* Календарь: клетка 32px (было 44px) — колонки фиксированной ширины, иначе 1fr
@@ -1639,7 +1639,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.4.14';
+const APP_VERSION = '1.4.17';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -4169,8 +4169,7 @@ function todayHistoryHTML(){
   let html = `<div class="auth-modal-overlay" id="todayHistoryOverlay">
     <div class="auth-panel scrollable wide">
       <button class="auth-close" id="btnTodayHistoryClose" aria-label="close" title="${t('todayHistoryClose')}">✕</button>
-      <h2 style="margin:0 0 4px; font-size:14px;">${t('todayHistoryTitle')}</h2>
-      <p style="margin:0 0 12px; font-size:13px; color:var(--muted);">${t('todayHistoryHint')}</p>
+      <h2 style="margin:0 0 8px; font-size:14px;">${t('todayHistoryTitle')}</h2>
       <div class="today-history-cal-head">
         <button id="btnTodayHistoryPrevMonth" class="icon-btn" data-tip="${t('todayHistoryMonthPrev')}" aria-label="${t('todayHistoryMonthPrev')}"${mv.cur <= mv.minM ? ' disabled' : ''}>←</button>
         <div class="challenge-cal-title">${months[mv.m]} ${mv.y}</div>
