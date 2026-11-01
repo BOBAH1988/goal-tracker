@@ -1640,7 +1640,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.4.19';
+const APP_VERSION = '1.4.29';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -5042,6 +5042,11 @@ function printWishBoard(){
   try{ window.print(); }catch(e){ cleanup(); }
 }
 // ===== Печать «Важные сферы жизни» + колесо баланса одной страницей A4 =====
+// Дата печати в формате 1.11.2026 (день.месяц.год без ведущих нулей).
+function printDateDMY(){
+  const d = new Date();
+  return d.getDate() + '.' + (d.getMonth() + 1) + '.' + d.getFullYear();
+}
 // Тот же приём, что у доски «У меня будет»: временный узел #wheelPrintRoot вне #app (рендер его
 // не пересоздаёт), window.print(), уборка по afterprint + фокусу + таймеру. На печать выходит
 // ровно два блока главной: список сфер («Важные сферы жизни») и колесо баланса.
@@ -5085,14 +5090,30 @@ function printWheel(){
   // Заголовок раздела на печати — крупный, полужирный, тёмный. Общий хелпер для обоих блоков
   // («Важные сферы жизни» и «Колесо баланса»), чтобы они были симметричны и читались как на экране.
   // Явные font-size/font-weight (не шорткат font:) — иначе печать их отбрасывает (баг v1.2.20).
-  const sectionTitle = (text) => {
+  const sectionTitle = (text, date, topMargin) => {
     const h = document.createElement('div');
-    h.style.cssText = 'flex:none; text-align:center; margin:2mm 0 4mm;';
-    h.innerHTML = '<div style="font-family:' + fontTitle + '; font-size:24mm; font-weight:700;'
-      + ' line-height:1.1; letter-spacing:0.4mm; color:' + textC + ';">' + esc(text) + '</div>';
+    h.style.cssText = 'flex:none; text-align:center; margin:' + (topMargin || 2) + 'mm 0 4mm; font-size:28pt; white-space:nowrap;';
+    h.innerHTML = '<span style="font-family:' + fontTitle + '; font-size:28pt; font-weight:700;'
+      + ' line-height:1.1; letter-spacing:0.4mm; color:' + textC + ';">' + esc(text) + '</span>'
+      + (date ? '<span style="font-family:' + fontTitle + '; font-size:20pt; font-weight:700; color:' + textC + '; vertical-align:middle;"> — ' + esc(date) + '</span>' : '');
     return h;
   };
-  root.appendChild(sectionTitle(t('mainGoals')));
+  // Подгоняет шрифт заголовка под ширину листа, чтобы длинное название не обрывалось посередине слова.
+  const fitTitle = (el) => {
+    if(!root.clientWidth || root.clientWidth < 100) return;   // нет надёжной раскладки — не трогаем
+    const span = el.querySelector('span');
+    const dateSpan = el.querySelectorAll('span')[1];
+    if(!span) return;
+    let size = 28;
+    span.style.fontSize = size + 'pt';
+    if(dateSpan) dateSpan.style.fontSize = Math.round(size * 0.72) + 'pt';
+    while(size > 12 && el.scrollWidth > root.clientWidth - 6){
+      size -= 0.5;
+      span.style.fontSize = size + 'pt';
+      if(dateSpan) dateSpan.style.fontSize = Math.round(size * 0.72) + 'pt';
+    }
+  };
+  root.appendChild(sectionTitle(t('mainGoals'), printDateDMY()));
   // Список сфер — РОВНАЯ сетка: имя (режется по длине) | процент | шкала. Треки фиксированной
   // ширины, поэтому все шкалы одной длины и выровнены по правому краю независимо от названия.
   // max-height + overflow не дают длинному списку вытолкнуть колесо за нижний край листа A4.
@@ -5118,7 +5139,7 @@ function printWheel(){
   });
   root.appendChild(list);
   // Заголовок раздела «Колесо баланса» — над колесом (его раньше не было вовсе).
-  root.appendChild(sectionTitle(t('balanceWheel')));
+  root.appendChild(sectionTitle(t('balanceWheel'), '', 12));
   // Колесо — остаток страницы. Подписи секторов центрируем сразу (centerLabels), т.к. экранный
   // adjustWheelLabels() для этого узла не работает. Вместо ненадёжного transform:scale (его печать
   // в PDF игнорирует/обрезает) реально увеличиваем колесо кропом viewBox: родной "0 0 572 320"
@@ -5146,6 +5167,12 @@ function printWheel(){
   }
   root.appendChild(wheelBox);
   document.body.appendChild(root);
+  // временно показываем корень, чтобы измерить и подогнать шрифт заголовков под ширину листа
+  const rootCss = root.style.cssText;
+  root.style.cssText = rootCss + '; display:block; visibility:hidden; position:absolute; left:-9999px; top:0;';
+  fitTitle(root.children[0]);   // «Важные сферы жизни»
+  fitTitle(root.children[2]);   // «Колесо баланса»
+  root.style.cssText = rootCss; // вернуть — на экране display:none, в печати flex
   document.body.classList.add('wheel-printing');
   // Имя файла при печати в PDF берётся из document.title. Временно подменяем его на название
   // печати и возвращаем исходный в cleanup (после печати / по таймауту).

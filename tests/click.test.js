@@ -1589,7 +1589,7 @@ test('wheel: Print builds one A4 page with the spheres list + the wheel', () => 
   const headSpheres = root.children[0];
   assert.match(headSpheres.innerHTML, /Georgia/, 'the title uses the serif display face');
   assert.match(headSpheres.textContent, /Важные сферы жизни/, 'first section title is the spheres block');
-  assert.match(headSpheres.innerHTML, /font-size:\s*24mm/, 'section titles are large (24mm)');
+  assert.match(headSpheres.innerHTML, /font-size:\s*28pt/, 'section titles are large (28pt)');
   assert.match(headSpheres.innerHTML, /font-weight:\s*700/, 'and bold (700)');
   // Список сфер — второй ребёнок корня (между двумя заголовками).
   const list = root.children[1];
@@ -1600,7 +1600,7 @@ test('wheel: Print builds one A4 page with the spheres list + the wheel', () => 
   const headWheel = root.children[2];
   assert.ok(headWheel, 'the wheel section title is present');
   assert.match(headWheel.textContent, /Колесо баланса/, 'second section title names the wheel');
-  assert.match(headWheel.innerHTML, /font-size:\s*24mm/, 'both section titles share the same size');
+  assert.match(headWheel.innerHTML, /font-size:\s*28pt/, 'both section titles share the same size');
   // Ровная сетка: имя | % | шкала. Трек шкалы фиксированной ширины (66mm) — длина не зависит от
   // названия сферы, все шкалы выровнены по правому краю.
   const firstRow = list.children[0];
