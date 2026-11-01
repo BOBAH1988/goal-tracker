@@ -828,32 +828,17 @@
   /* A disabled month arrow must look switched off (like the other disabled buttons). */
   #btnChallengePrevMonth:disabled, #btnChallengeNextMonth:disabled{opacity:.4; cursor:not-allowed;}
   /* ===== История «Три важных дела» — календарь и модалка, по стилю как у челленджа. ===== */
-  .today-history-grid{
-    display:grid; grid-template-columns:repeat(7,1fr); gap:4px;
-  }
-  .today-history-day{
-    position:relative;
-    display:flex; align-items:center; justify-content:center;
-    min-width:0; min-height:38px; padding:2px; border-radius:8px;
-    background:var(--card2); border:1px solid var(--border); color:var(--text);
-    font-size:13px; cursor:pointer; font-family:inherit; line-height:1.1;
-  }
-  .today-history-day .thd-num{position:absolute; top:2px; left:3px; font-size:13px; color:var(--muted); line-height:1;}
-  .today-history-day .thd-mark{position:absolute; bottom:1px; left:0; right:0; text-align:center; font-size:13px; font-weight:700; line-height:1;}
-  .today-history-day.out, .today-history-day:disabled{opacity:.4; cursor:default;}
-  .today-history-day.all-done{background:rgba(76,175,125,.16); border-color:var(--green);}
-  .today-history-day.all-done .thd-mark{color:var(--green);}
-  .today-history-day.one-done{background:rgba(255,170,60,.16); border-color:var(--orange);}
-  .today-history-day.one-done .thd-mark{color:var(--orange);}
-  .today-history-day.two-done{background:rgba(235,200,40,.18); border-color:var(--yellow);}
-  .today-history-day.two-done .thd-mark{color:var(--yellow);}
-  .today-history-day.none-done{background:rgba(255,90,103,.12); border-color:var(--red);}
-  .today-history-day.none-done .thd-mark{color:var(--red);}
-  .today-history-day.today{border-color:var(--accent); box-shadow:0 0 0 1px var(--accent);}
+  .challenge-day.all-done{background:rgba(76,175,125,.16); border-color:var(--green);}
+  .challenge-day.all-done .cd-mark{color:var(--green);}
+  .challenge-day.one-done{background:rgba(255,170,60,.16); border-color:var(--orange);}
+  .challenge-day.one-done .cd-mark{color:var(--orange);}
+  .challenge-day.two-done{background:rgba(235,200,40,.18); border-color:var(--yellow);}
+  .challenge-day.two-done .cd-mark{color:var(--yellow);}
+  .challenge-day.none-done{background:rgba(255,90,103,.12); border-color:var(--red);}
+  .challenge-day.none-done .cd-mark{color:var(--red);}
   @media (hover: hover) and (pointer: fine){
-    :where(html:not(.touch-mode)) .today-history-day:not(:disabled):hover{border-color:var(--accent);}
+    :where(html:not(.touch-mode)) .challenge-day:not(:disabled):hover{border-color:var(--accent);}
   }
-  .today-history-cal-hint{color:var(--muted); font-size:13px; margin-top:8px; line-height:1.45;}
   .today-history-day-list{display:flex; flex-direction:column; gap:6px;}
   .today-history-day-item{
     display:flex; align-items:center; gap:10px; padding:8px 10px;
@@ -1647,7 +1632,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.4.11';
+const APP_VERSION = '1.4.13';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -4185,11 +4170,11 @@ function todayHistoryHTML(){
         <button id="btnTodayHistoryNextMonth" class="icon-btn" data-tip="${t('todayHistoryMonthNext')}" aria-label="${t('todayHistoryMonthNext')}"${mv.cur >= mv.maxM ? ' disabled' : ''}>→</button>
       </div>
       <div class="challenge-weekdays">` + t('challengeWeekdays').split(',').map(w => `<span>${w.trim()}</span>`).join('') + `</div>
-      <div class="today-history-grid">`;
+      <div class="challenge-grid">`;
   todayHistoryMonthCells(mv.y, mv.m).forEach(c => {
     const dayItems = todayHistoryGet(c.iso);
     const dc = dayItems.filter(it => it.done).length;
-    const cls = ['today-history-day'];
+    const cls = ['challenge-day'];
     if(!c.inMonth) cls.push('out');
     if(todayHistorySelectedDay === c.iso) cls.push('selected');
     if(dayItems.length === 0) cls.push('none-done');
@@ -4197,7 +4182,7 @@ function todayHistoryHTML(){
     if(c.iso === todayISO) cls.push('today');
     const total = dayItems.length;
     const mark = total === 0 ? '' : (dc === total ? '✓' : dc > 0 ? '✓' : '✗');
-    html += `<button type="button" class="${cls.join(' ')}" data-today-history-day="${c.iso}"${!dayItems.length || c.iso > todayISO ? ' disabled' : ''}><span class="thd-num">${+c.iso.slice(8)}</span>${mark ? `<span class="thd-mark">${mark}</span>` : ''}</button>`;
+    html += `<button type="button" class="${cls.join(' ')}" data-today-history-day="${c.iso}"${!dayItems.length || c.iso > todayISO ? ' disabled' : ''}><span class="cd-num">${+c.iso.slice(8)}</span>${mark ? `<span class="cd-mark">${mark}</span>` : ''}</button>`;
   });
   html += `</div>`;
   html += `<div class="today-history-day-head">
