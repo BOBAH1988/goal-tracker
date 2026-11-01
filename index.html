@@ -148,7 +148,7 @@
   .app-title-wrap{display:flex; flex-direction:column; gap:0; line-height:1.2;}
   .topbar h1{font-size:20px; margin:0; font-weight:600; display:flex; align-items:center; gap:8px;}
   .app-logo{width:26px; height:26px; border-radius:50%; flex:none; display:block;}
-  .app-subtitle{font-size:12px; color:var(--muted); font-weight:400;}
+  .app-subtitle{font-size:13px; color:var(--muted); font-weight:400;}
   /* margin-left:auto (rather than justify-content:space-between on .topbar) so this stays pinned
      to the right edge even after it wraps onto its own line below a long title on narrow screens —
      with space-between, a lone wrapped item sits at the START of its line (the left edge) instead. */
@@ -158,7 +158,7 @@
      the nearest ancestor shared by both, so this still styles the account button AND the ☰ button. */
   .topbar button{
     background:var(--card2); color:var(--muted); border:1px solid var(--border); border-radius:8px;
-    padding:6px 12px; font-size:12px; cursor:pointer;
+    padding:6px 12px; font-size:13px; cursor:pointer;
   }
   /* Hover feedback is for REAL pointers only. On touch, WebKit deliberately keeps :hover sticky
      after a tap (the note at [data-tip] below explains why), so the last-tapped control keeps its
@@ -219,7 +219,7 @@
   .lang-menu .lang-option{
     display:flex; align-items:center; justify-content:center; flex:none;
     background:var(--card2); border:1px solid var(--border); color:var(--muted);
-    border-radius:9px; padding:5px 12px; font-size:16px; line-height:1; cursor:pointer;
+    border-radius:9px; padding:5px 12px; font-size:14px; line-height:1; cursor:pointer;
     transition:background .15s ease, color .15s ease, border-color .15s ease;
   }
   @media (hover: hover) and (pointer: fine){
@@ -267,7 +267,7 @@
   .lang-menu .theme-option{
     display:flex; align-items:center; justify-content:center; flex:none;
     background:var(--card2); border:1px solid var(--border); color:var(--muted);
-    border-radius:9px; padding:5px 10px; font-size:16px; line-height:1; cursor:pointer;
+    border-radius:9px; padding:5px 10px; font-size:14px; line-height:1; cursor:pointer;
     transition:background .15s ease, color .15s ease, border-color .15s ease;
   }
   @media (hover: hover) and (pointer: fine){
@@ -294,7 +294,7 @@
   /* ===== Action buttons (edit/delete/move/relocate/archive) ===== */
    #btnEdit, #btnDelete, #btnAddSubgoal, #btnDeleteChecklist, #btnMove, #btnMoveChecklist, #btnRelocate, #btnChecklistAdd, #btnFilter, .add-child-row #btnArchive, .add-goal-wrap #btnArchive, #btnGoodTodayHistory, #btnGoodTodayWeekHistory, #btnGoodTodayWeekEdit, #btnWishManage, #btnWishGrid, #btnWishPrint, #btnWishShare, #btnWheelPrint, #btnWheelShare, #btnGoodTodayHistoryPagePrev, #btnGoodTodayHistoryPageNext, #btnGoodTodayHistoryPagePrevBottom, #btnGoodTodayHistoryPageNextBottom, #btnAchievementsSave, #btnAchievementsCancel{
     background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:8px;
-    padding:6px 12px; font-size:12px; cursor:pointer; white-space:nowrap;
+    padding:6px 12px; font-size:13px; cursor:pointer; white-space:nowrap;
   }
    /* Hover feedback is for REAL pointers only — same rule and the same reason as the .topbar one
       above: on touch the hover look sticks after a tap, which is what made «↕» (and every other
@@ -411,7 +411,7 @@
      не годится — он взял бы фон родителя, а не свой). */
   .touch-mode .wish-print-btn:active{ background:var(--card2); color:var(--muted); }
   .touch-mode footer a:active{ color:inherit; }
-  .edit-hint{color:var(--muted); font-weight:400; font-size:12px;}
+  .edit-hint{color:var(--muted); font-weight:400; font-size:13px;}
   .edit-hint.delete-hint{color:var(--red);}
   /* ===== Modal overlays & panels (auth, install, about, confirm) ===== */
   .auth-modal-overlay{
@@ -453,13 +453,13 @@
   .template-item input[type="checkbox"]{flex:none; margin-top:2px; width:18px; height:18px; accent-color:var(--accent);}
   .template-info{flex:1; min-width:0;}
   .template-info strong{display:block; font-size:14px; color:var(--text); margin-bottom:2px;}
-  .template-desc{font-size:12px; color:var(--muted);}
+  .template-desc{font-size:13px; color:var(--muted);}
   .templates-preview{margin-top:12px; padding-top:10px; border-top:1px solid var(--border);}
   .templates-preview strong{display:block; font-size:13px; color:var(--muted); margin-bottom:6px;}
   .templates-preview ul{margin:0; padding-left:16px;}
   .templates-preview li{font-size:13px; color:var(--text); margin:2px 0;}
-  .templates-preview li > li{margin:2px 0 0 16px; font-size:12px; color:var(--muted);}
-  .template-merge-note{font-size:12px; color:var(--muted);}
+  .templates-preview li > li{margin:2px 0 0 16px; font-size:13px; color:var(--muted);}
+  .template-merge-note{font-size:13px; color:var(--muted);}
   .templates-panel .auth-btn-row{margin-top:8px;}
   /* «Настройки блоков»: список чекбоксов show/hide на главном экране. */
   .block-settings-list{display:flex; flex-direction:column; gap:4px; margin:0 0 8px;}
@@ -470,7 +470,7 @@
   .auth-panel .block-setting-item input{width:18px; height:18px; flex:none; margin:0; padding:0; background:none; border:none; accent-color:var(--accent);}
   .auth-panel input{
     background:var(--card2); border:1px solid var(--border); color:var(--text); border-radius:8px;
-    padding:9px 10px; font-size:16px; outline:none; width:100%;
+    padding:9px 10px; font-size:14px; outline:none; width:100%;
   }
   .auth-panel input:focus{border-color:var(--accent);}
   .auth-panel input.input-error{border-color:var(--red); box-shadow:0 0 0 1px var(--red);}
@@ -485,7 +485,7 @@
   .auth-signup-row button{flex:none; min-width:160px;}
   .auth-panel button{
     background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:8px;
-    padding:9px 14px; font-size:12px; cursor:pointer; white-space:nowrap; flex:1;
+    padding:9px 14px; font-size:13px; cursor:pointer; white-space:nowrap; flex:1;
   }
   .auth-panel button.btn-danger{color:var(--red); border-color:var(--red); background:rgba(229,100,90,0.14);}
   @media (hover: hover) and (pointer: fine){
@@ -493,8 +493,8 @@
     :where(html:not(.touch-mode)) .auth-panel button.btn-danger:hover{background:rgba(229,100,90,0.24); border-color:var(--red);}
   }
   .auth-panel button:disabled{opacity:.5; cursor:not-allowed;}
-  .auth-error{color:var(--red); font-size:12px;}
-  .auth-hint{color:var(--muted); font-size:12px; text-align:center;}
+  .auth-error{color:var(--red); font-size:13px;}
+  .auth-hint{color:var(--muted); font-size:13px; text-align:center;}
   .auth-hint.valid{color:var(--green);}
   .install-steps{color:var(--text); font-size:13px; line-height:1.6;}
   .install-steps ol{margin:0; padding-left:20px;}
@@ -515,7 +515,7 @@
   .auth-panel .search-result.archived{opacity:.5;}
   .search-kind{color:var(--muted); margin-right:6px;}
   .auth-link{
-    background:none; border:none; color:var(--accent); font-size:12px; padding:0;
+    background:none; border:none; color:var(--accent); font-size:13px; padding:0;
     cursor:pointer; text-align:right; align-self:auto;
   }
   /* Scoped to .auth-panel (raising specificity above the plain ".auth-panel button" rule, which
@@ -523,11 +523,11 @@
      like "Скачать резервную копию сначала" refuses to wrap and its last word spills off the edge
      of a narrow (PWA) screen instead of wrapping onto a second line. */
   .auth-panel .auth-link-center{
-    background:none; border:none; color:var(--accent); font-size:12px; padding:4px 0;
+    background:none; border:none; color:var(--accent); font-size:13px; padding:4px 0;
     cursor:pointer; text-align:center; width:100%; flex:none; white-space:normal; line-height:1.4;
   }
   .auth-link:disabled{opacity:.5; cursor:not-allowed;}
-  .auth-consent{display:flex; align-items:flex-start; gap:8px; font-size:12px; color:var(--muted); cursor:pointer; line-height:1.4;}
+  .auth-consent{display:flex; align-items:flex-start; gap:8px; font-size:13px; color:var(--muted); cursor:pointer; line-height:1.4;}
   .auth-consent input[type=checkbox]{width:16px; height:16px; flex:none; margin-top:1px; accent-color:var(--accent); cursor:pointer;}
   .auth-consent-details{margin-top:4px;}
   .auth-consent-details summary{color:var(--accent); cursor:pointer; display:inline;}
@@ -576,11 +576,11 @@
   .verify-banner{
     display:flex; align-items:center; flex-wrap:wrap; gap:8px; background:rgba(230,180,60,.12);
     border:1px solid var(--yellow); color:var(--text); border-radius:10px; padding:8px 12px;
-    font-size:12px; margin:0 0 12px;
+    font-size:13px; margin:0 0 12px;
   }
   .verify-banner button{
     background:var(--card2); border:1px solid var(--border); color:var(--text); border-radius:8px;
-    padding:5px 10px; font-size:12px; cursor:pointer; white-space:nowrap;
+    padding:5px 10px; font-size:13px; cursor:pointer; white-space:nowrap;
   }
   @media (hover: hover) and (pointer: fine){
     :where(html:not(.touch-mode)) .verify-banner button:hover{background:var(--card);}
@@ -588,10 +588,10 @@
   .verify-banner button:disabled{opacity:.5; cursor:not-allowed;}
   .verify-msg{color:var(--muted);}
   .edit-account-panel{max-width:380px;}
-  .field-label{color:var(--muted); font-size:12px; margin-bottom:-4px;}
+  .field-label{color:var(--muted); font-size:13px; margin-bottom:-4px;}
   .auth-panel select{
     background:var(--card2); border:1px solid var(--border); color:var(--text); border-radius:8px;
-    padding:9px 10px; font-size:16px; outline:none; width:100%;
+    padding:9px 10px; font-size:14px; outline:none; width:100%;
   }
   /* ===== Breadcrumb & relocate picker ===== */
   .breadcrumb-row{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:16px;}
@@ -622,7 +622,7 @@
      v1.2.61: 16px, не 14px — редактируемое поле мельче 16px триггерит zoom-on-focus
      вьюпорта PWA на iOS («экран расширяется», репорт владельца). */
   .relocate-search{width:100%; box-sizing:border-box; background:var(--card2); color:var(--text);
-    border:1px solid var(--border); border-radius:8px; padding:9px 12px; font-size:16px;
+    border:1px solid var(--border); border-radius:8px; padding:9px 12px; font-size:14px;
     font-family:inherit; margin-top:8px;}
   .relocate-search:focus{outline:2px solid var(--accent); outline-offset:1px;}
   /* Scoped to .auth-panel (raising specificity above the plain ".auth-panel button" rule, which
@@ -670,7 +670,7 @@
     :where(html:not(.touch-mode)) .priority-name:hover{color:var(--accent);}
   }
   .priority-name.done{color:var(--muted); text-decoration:line-through;}
-  .priority-date{font-size:12px; color:var(--muted); white-space:nowrap; flex-shrink:0;}
+  .priority-date{font-size:13px; color:var(--muted); white-space:nowrap; flex-shrink:0;}
   .priority-remove{
     background:none; border:none; color:var(--muted); font-size:14px; line-height:1; cursor:pointer;
     padding:2px; flex-shrink:0; position:relative;
@@ -735,11 +735,11 @@
     .good-today-textarea{
       width:100%; min-height:72px; resize:vertical;
       background:var(--card2); border:1px solid var(--border); border-radius:10px;
-      padding:10px 12px; font-size:16px; line-height:1.4; color:var(--text);
+      padding:10px 12px; font-size:14px; line-height:1.4; color:var(--text);
      font-family:inherit; box-sizing:border-box;
    }
    .good-today-textarea:focus{outline:2px solid var(--accent); outline-offset:1px; border-color:var(--accent);}
-   .good-today-char-count{color:var(--muted); font-size:12px; text-align:right; margin-top:6px;}
+   .good-today-char-count{color:var(--muted); font-size:13px; text-align:right; margin-top:6px;}
    .good-today-char-count.error{color:var(--red);}
     .good-today-btn-row{
       display:flex; gap:10px; margin-top:10px;
@@ -774,11 +774,11 @@
      .good-today-textarea, owner report v1.2.61). */
   .challenge-title-input{
     width:100%; background:var(--card2); border:1px solid var(--border); border-radius:10px;
-    padding:10px 12px; font-size:16px; line-height:1.4; color:var(--text);
+    padding:10px 12px; font-size:14px; line-height:1.4; color:var(--text);
     font-family:inherit; box-sizing:border-box;
   }
   .challenge-title-input:focus{outline:2px solid var(--accent); outline-offset:1px; border-color:var(--accent);}
-  .challenge-dur-label{color:var(--muted); font-size:12px; margin:10px 0 6px;}
+  .challenge-dur-label{color:var(--muted); font-size:13px; margin:10px 0 6px;}
   .challenge-dur-row{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:4px;}
   .challenge-dur{
     background:var(--card2); border:1px solid var(--border); color:var(--muted);
@@ -804,7 +804,7 @@
      justify-content:center держит сетку по центру, когда она уже карточки. */
   .challenge-weekdays, .challenge-grid{display:grid; grid-template-columns:repeat(7,32px); gap:4px; justify-content:center;}
   .challenge-weekdays{margin-bottom:2px;}
-  .challenge-weekdays span{text-align:center; font-size:12px; color:var(--muted);}
+  .challenge-weekdays span{text-align:center; font-size:13px; color:var(--muted);}
   .challenge-day{
     position:relative; width:32px; height:32px;
     background:var(--card2); border:1px solid var(--border); border-radius:8px;
@@ -813,8 +813,8 @@
   }
   /* Число дня — сверху слева; метка ✓/✗ — снизу по центру. В клетке 32px они
      больше не наезжают друг на друга (раньше стояли рядом в центре). */
-  .challenge-day .cd-num{position:absolute; top:2px; left:3px; font-size:12px; color:var(--muted); line-height:1;}
-  .challenge-day .cd-mark{position:absolute; bottom:1px; left:0; right:0; text-align:center; font-size:12px; font-weight:700; line-height:1;}
+  .challenge-day .cd-num{position:absolute; top:2px; left:3px; font-size:13px; color:var(--muted); line-height:1;}
+  .challenge-day .cd-mark{position:absolute; bottom:1px; left:0; right:0; text-align:center; font-size:13px; font-weight:700; line-height:1;}
   .challenge-day.done{background:rgba(46,204,113,.16); border-color:var(--green);}
   .challenge-day.done .cd-mark{color:var(--green);}
   .challenge-day.missed{background:rgba(255,90,103,.10); border-color:var(--red);}
@@ -824,7 +824,7 @@
   @media (hover: hover) and (pointer: fine){
     :where(html:not(.touch-mode)) .challenge-day:not(:disabled):hover{border-color:var(--accent);}
   }
-  .challenge-cal-hint{color:var(--muted); font-size:12px; margin-top:8px; line-height:1.45;}
+  .challenge-cal-hint{color:var(--muted); font-size:13px; margin-top:8px; line-height:1.45;}
   /* A disabled month arrow must look switched off (like the other disabled buttons). */
   #btnChallengePrevMonth:disabled, #btnChallengeNextMonth:disabled{opacity:.4; cursor:not-allowed;}
   /* Inline «start a new challenge?» confirmation — no modal, the current calendar stays visible. */
@@ -841,8 +841,8 @@
     padding:10px 12px; margin-bottom:8px; font-size:13px; color:var(--text);
   }
   .challenge-history-info .challenge-history-line1{font-weight:600; font-size:13px; color:var(--text);}
-  .challenge-history-info .challenge-history-line2{font-size:12px; color:var(--muted);}
-  .challenge-history-page-info{font-size:12px; color:var(--muted); white-space:nowrap;}
+  .challenge-history-info .challenge-history-line2{font-size:13px; color:var(--muted);}
+  .challenge-history-page-info{font-size:13px; color:var(--muted); white-space:nowrap;}
   /* Мягкое напоминание о сфере («К сфере … давно не возвращались»). Ненавязчивая карточка
         над «Важными сферами жизни»: тёмная тема, светлая и розовая — всё на переменных, без
         предупреждающих красных и оценок. Кнопки — как у «Хорошего сегодня»: тач-цели 44px. */
@@ -867,7 +867,7 @@
      border:1px solid var(--border); border-radius:8px; padding:8px 10px; margin-bottom:8px;
      background:var(--card2);
    }
-   .good-today-entry-date{color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.04em; margin-bottom:4px;}
+   .good-today-entry-date{color:var(--muted); font-size:13px; text-transform:uppercase; letter-spacing:.04em; margin-bottom:4px;}
    .good-today-entry-text{font-size:14px; line-height:1.4; word-break:break-word;}
     .good-today-entry-actions{
       display:flex; gap:6px; margin-top:6px;
@@ -895,7 +895,7 @@
     margin:6px 0; font-size:14px; line-height:1.5;
   }
   .good-today-week-q strong{
-    display:block; color:var(--text); font-size:12px; font-weight:700;
+    display:block; color:var(--text); font-size:13px; font-weight:700;
     margin-bottom:3px;
   }
   .good-today-week-q > div{color:var(--muted);}
@@ -904,14 +904,14 @@
      colour (--text) instead of the generic muted label. Only inside the weekly form — the
      journal's own «Сегодня» / «Последняя запись» labels keep the muted style. */
    .good-today-week-form .good-today-week-label{color:var(--text);}
-   .good-today-week-label{color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.04em;}
+   .good-today-week-label{color:var(--muted); font-size:13px; text-transform:uppercase; letter-spacing:.04em;}
    /* History view */
    .good-today-history-view{margin-top:12px;}
    .good-today-history-group{
      border-bottom:1px solid var(--border); padding-bottom:10px; margin-bottom:10px;
    }
    .good-today-history-group:last-child{border-bottom:none; padding-bottom:0; margin-bottom:0;}
-   .good-today-history-week{font-size:12px; font-weight:600; color:var(--muted); margin-bottom:6px;}
+   .good-today-history-week{font-size:13px; font-weight:600; color:var(--muted); margin-bottom:6px;}
    .good-today-history-items{display:flex; flex-direction:column; gap:6px;}
    .good-today-history-item{
      font-size:13px; line-height:1.4; color:var(--text);
@@ -938,7 +938,7 @@
     /* «Хорошее сегодня» mood badge in the today block — progressive text based on done count.
        0 → «Начнём?» (red), 1 → «Хорошее начало» (dark yellow), 2 → «Осталось чуть-чуть» (lighter yellow),
        3 → «Отличный день!» (soft green). No icons — text only. */
-    .good-today{display:inline-flex; align-items:center; padding:4px 10px; border-radius:8px; font-size:12px; font-weight:500; margin-top:8px;}
+    .good-today{display:inline-flex; align-items:center; padding:4px 10px; border-radius:8px; font-size:13px; font-weight:500; margin-top:8px;}
     .good-today-start{background:rgba(255,86,92,.12); color:var(--red);}
     .good-today-begin{background:rgba(217,186,31,.15); color:#b8860b;}
     .good-today-almost{background:rgba(217,186,31,.10); color:#d4b04a;}
@@ -1018,7 +1018,7 @@
      and the whole layout overflows the screen. min-width:0 lets it shrink and wrap instead. */
   .card .title > span:first-child{min-width:0; overflow-wrap:break-word; word-break:break-word;}
   .card .title .arrow{color:var(--muted); font-weight:400; flex-shrink:0;}
-  .card .sub{font-size:12px; color:var(--muted); margin-bottom:10px; display:flex; justify-content:space-between;}
+  .card .sub{font-size:13px; color:var(--muted); margin-bottom:10px; display:flex; justify-content:space-between;}
   .card .bar{margin-top:2px;}
   .card[data-nav], .card[data-drag-idx]{touch-action:pan-y;}
   /* Archived goals stay visible (dimmed, not hidden) — computePercent/doneCount already leave them
@@ -1038,7 +1038,7 @@
   /* ===== Leaf rows: inline edit, checkbox, due dates ===== */
   .goal-input{
     background:transparent; border:none; border-bottom:1px dashed var(--red); color:var(--text);
-    font-size:16px; font-weight:600; font-family:inherit; padding:0 0 2px; width:100%; min-width:0; outline:none;
+    font-size:14px; font-weight:600; font-family:inherit; padding:0 0 2px; width:100%; min-width:0; outline:none;
   }
   .goal-input:focus{border-bottom-style:solid; border-bottom-color:var(--red);}
   /* Inline text input for the "Three important things" editable checklist — looks like plain text
@@ -1047,7 +1047,7 @@
      field renders below 16px («экран расширяется, контент вылезает», репорт владельца;
      двойной тап возвращал зум). 16px — порог iOS, ниже него зум-при-фокусе срабатывает. */
   .today-input{
-    flex:1; font-size:16px; line-height:1.4; border:none; outline:none;
+    flex:1; font-size:14px; line-height:1.4; border:none; outline:none;
     background:transparent; color:var(--text); min-width:0; word-break:break-word; font-family:inherit;
   }
   /* Аудит: раньше фокус гасился полностью (outline:none) и поле не отличить от обычного —
@@ -1055,7 +1055,7 @@
   .today-input:focus{border:none; outline:none; background:var(--card2); box-shadow:0 0 0 2px var(--accent); border-radius:6px;}
   .today-input.done{color:var(--muted); text-decoration:line-through;}
   .today-action{
-    background:none; border:none; color:var(--muted); font-size:16px; cursor:pointer;
+    background:none; border:none; color:var(--muted); font-size:14px; cursor:pointer;
     flex:none; display:inline-flex; align-items:center; justify-content:center; padding:2px;
     width:24px; height:24px;
   }
@@ -1069,7 +1069,7 @@
       font-family:inherit; line-height:1.3; padding:0; overflow:hidden;
    }
    .quote-btn{
-     background:none; border:none; color:var(--muted); font-size:16px; cursor:pointer;
+     background:none; border:none; color:var(--muted); font-size:14px; cursor:pointer;
      flex:none; display:inline-flex; align-items:center; justify-content:center; padding:2px;
      width:24px; height:24px;
    }
@@ -1080,7 +1080,7 @@
   .leaf-row.done{border-color:rgba(62,207,142,.4);}
   .chk{
     width:20px; height:20px; border-radius:5px; border:2px solid var(--muted); flex:none; cursor:pointer;
-    display:flex; align-items:center; justify-content:center; font-size:12px; margin-top:2px; user-select:none;
+    display:flex; align-items:center; justify-content:center; font-size:13px; margin-top:2px; user-select:none;
     position:relative;
   }
   /* Аудит: чекбокс 20×20 промахивается пальцем. Прозрачная область ±12px доводит
@@ -1094,17 +1094,17 @@
   }
   .leaf-body{flex:1;}
   .leaf-title{font-size:14px; line-height:1.4;}
-  .leaf-meta{display:flex; gap:14px; margin-top:6px; font-size:12px; color:var(--muted); align-items:center; flex-wrap:wrap;}
+  .leaf-meta{display:flex; gap:14px; margin-top:6px; font-size:13px; color:var(--muted); align-items:center; flex-wrap:wrap;}
   .date-fields{display:flex; align-items:center; gap:3px;}
   .date-field{
     background:var(--card2); border:1px solid var(--border); color:var(--text); border-radius:6px;
-    padding:4px; font-size:16px; font-family:inherit; text-align:center;
+    padding:4px; font-size:14px; font-family:inherit; text-align:center;
   }
   .date-field-day, .date-field-month{width:38px;}
   .date-field-year{width:58px;}
   .date-sep{color:var(--muted);}
   .leaf-meta button, .nav-arrow{
-    background:none; border:1px solid var(--border); color:var(--muted); border-radius:6px; padding:2px 8px; font-size:12px; cursor:pointer;
+    background:none; border:1px solid var(--border); color:var(--muted); border-radius:6px; padding:2px 8px; font-size:13px; cursor:pointer;
   }
   @media (hover: hover) and (pointer: fine){
     :where(html:not(.touch-mode)) .leaf-meta button:hover{color:var(--text); border-color:var(--accent);}
@@ -1132,7 +1132,7 @@
   @media (hover: hover) and (pointer: fine){
     :where(html:not(.touch-mode)) .wish-add-btn:hover{opacity:.9;}
   }
-  .wish-print-btn{background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:8px; padding:5px 9px; font-size:12px; cursor:pointer; display:inline-flex; align-items:center; gap:5px; margin-top:8px; white-space:nowrap;}
+  .wish-print-btn{background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:8px; padding:5px 9px; font-size:13px; cursor:pointer; display:inline-flex; align-items:center; gap:5px; margin-top:8px; white-space:nowrap;}
   @media (hover: hover) and (pointer: fine){
     :where(html:not(.touch-mode)) .wish-print-btn:hover{color:var(--text); border-color:var(--accent);}
   }
@@ -1222,11 +1222,11 @@
   /* Manual reorder (manager): the row picked up for a move gets the accent ring; the hint says
      plainly that the next tap decides where it lands. */
   .wish-manage-row.is-moving{border-color:var(--accent); box-shadow:0 0 0 1px var(--accent);}
-  .wish-move-hint{font-size:12px; color:var(--accent); white-space:nowrap;}
+  .wish-move-hint{font-size:13px; color:var(--accent); white-space:nowrap;}
   /* While a move is in progress every other row says so in words AND is the drop target as a
      whole (a corner icon alone was too small a target on a phone). */
   .wish-manage-row[data-wish-place]{cursor:pointer;}
-  .wish-place-hint{flex:1; min-width:0; font-size:12px; color:var(--muted); text-align:right; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .wish-place-hint{flex:1; min-width:0; font-size:13px; color:var(--muted); text-align:right; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
   .wish-place-glyph{flex:none; color:var(--accent); font-size:20px; line-height:1;}
   .wish-form{
     background:var(--card); border:1px solid var(--border); border-radius:12px;
@@ -1238,7 +1238,7 @@
     color:var(--muted); font-size:13px; overflow:hidden; text-align:center; padding:8px;
   }
   .wish-preview img{width:100%; height:100%; object-fit:contain;}
-  .wish-file-label{display:flex; flex-direction:column; gap:6px; color:var(--muted); font-size:12px;}
+  .wish-file-label{display:flex; flex-direction:column; gap:6px; color:var(--muted); font-size:13px;}
   .wish-file-label input[type=file]{color:var(--muted); font-size:13px;}
   /* Native «Browse» button + «No file chosen» text both follow the site palette instead of
      the browser-default white button that stood out of the dark card. */
@@ -1256,7 +1256,7 @@
   }
   .wish-form input[type=text]{
     background:var(--card2); border:1px solid var(--border); color:var(--text);
-    border-radius:8px; padding:10px; font-size:16px; outline:none; width:100%;
+    border-radius:8px; padding:10px; font-size:14px; outline:none; width:100%;
   }
   .wish-form input[type=text]:focus{border-color:var(--accent);}
   .wish-btn-row{display:flex; gap:8px;}
@@ -1291,16 +1291,16 @@
   /* Card whose image is in the cloud but isn't downloaded yet (other device / offline). */
    .wish-img-pending{
      display:flex; align-items:center; justify-content:center; text-align:center;
-     color:var(--muted); font-size:12px; padding:12px; background:var(--card2);
+     color:var(--muted); font-size:13px; padding:12px; background:var(--card2);
    }
    /* Failed upload: a visible, honest state — never a silently blank card. */
    .wish-img-pending.wish-img-error{color:var(--red); background:rgba(229,100,90,.10);}
    .wish-card-error{border-color:var(--red);}
-   .wish-state-tag{color:var(--muted); font-size:12px; white-space:nowrap;}
+   .wish-state-tag{color:var(--muted); font-size:13px; white-space:nowrap;}
    .wish-state-tag.wish-state-err{color:var(--red);}
    .wish-retry-btn{
      background:var(--card2); border:1px solid var(--border); color:var(--text);
-     border-radius:8px; padding:4px 10px; font-size:12px; cursor:pointer; white-space:nowrap;
+     border-radius:8px; padding:4px 10px; font-size:13px; cursor:pointer; white-space:nowrap;
    }
   @media (hover: hover) and (pointer: fine){
     :where(html:not(.touch-mode)) .wish-retry-btn:hover{color:var(--text); border-color:var(--accent);}
@@ -1327,7 +1327,7 @@
   /* Locked while another card already holds the personal-photo mark. */
   .wish-check.is-off{opacity:.6; cursor:not-allowed;}
   .wish-check input[type=checkbox]:disabled{cursor:not-allowed;}
-  .wish-check-hint{color:var(--muted); font-size:12px;}
+  .wish-check-hint{color:var(--muted); font-size:13px;}
   /* Crop dialog: square frame with the card's 1:1 ratio (rectangular, never round). The image
      can be dragged and zoomed inside the frame; only the framed area is encoded afterwards. */
   .wish-crop{display:flex; flex-direction:column; gap:12px; width:min(88vw,400px);}
@@ -1352,13 +1352,13 @@
   @media (hover: hover) and (pointer: fine){
     :where(html:not(.touch-mode)) .add-sub button:hover{color:var(--text); border-color:var(--accent);}
   }
-  footer{color:var(--muted); font-size:12px; text-align:center; margin-top:24px; padding-top:4px; opacity:.7;}
+  footer{color:var(--muted); font-size:13px; text-align:center; margin-top:24px; padding-top:4px; opacity:.7;}
   /* The feedback link is part of the footer text, not a button: it inherits the muted 11px look in
      both themes, adds only a thin underline as an affordance, and turns accent on tap — no padding,
      no border, no background, so it can never read as a separate control on a phone. */
   footer a{color:inherit; font-size:inherit; line-height:inherit; text-decoration:underline; text-decoration-thickness:1px; text-underline-offset:2px;}
   footer a:active{color:var(--accent);}
-  .cat-label{font-size:12px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin:2px 0 10px;}
+  .cat-label{font-size:13px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin:2px 0 10px;}
   .section-title{font-size:15px; font-weight:600; color:var(--text); margin:4px 0 12px;}
   /* Custom tooltip bubble for [data-tip] elements (the "Важные сферы жизни" action buttons).
       Replaces the browser's native title tooltip, which is slow, plain-styled and never shows on
@@ -1371,7 +1371,7 @@
     content:attr(data-tip);
     position:absolute; left:50%; bottom:calc(100% + 8px); transform:translateX(-50%);
     background:var(--card2); color:var(--text); border:1px solid var(--border);
-    font-size:12px; font-weight:500; line-height:1.3; padding:5px 10px; border-radius:8px;
+    font-size:13px; font-weight:500; line-height:1.3; padding:5px 10px; border-radius:8px;
     /* Длинная подсказка у кнопки у самого краю вылезала за границу экрана: теперь текст
        переносится по строкам с потолком ширины, а положение пузыря у краёв двигает JS
        (positionTip → классы tip-left/tip-right), потому что центрирование над кнопкой о край
@@ -1423,10 +1423,10 @@
   .add-goal-wrap{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
   #btnAddGoal, #btnTemplates, #btnWishAdd, #btnGoodTodayAdd, #btnAchievementsAdd, #btnChallengeEdit, #btnChallengeReset, #btnChallengeHistory, #btnChallengePrevMonth, #btnChallengeNextMonth, #btnAchievementsGroupPrev, #btnAchievementsGroupNext{
     background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:8px;
-    padding:6px 12px; font-size:12px; cursor:pointer; white-space:nowrap;
+    padding:6px 12px; font-size:13px; cursor:pointer; white-space:nowrap;
   }
   #btnAddGoal:disabled{opacity:.5; cursor:not-allowed;}
-  .add-goal-msg{color:var(--red); font-size:12px; white-space:nowrap;}
+  .add-goal-msg{color:var(--red); font-size:13px; white-space:nowrap;}
   /* Undo-delete toast. Lives in document.body (outside #app), centered at the bottom, so
      render()'s innerHTML rebuild never destroys it mid-flight. */
   .undo-toast{
@@ -1440,13 +1440,13 @@
   .add-child-row{display:flex; justify-content:flex-end; align-items:center; gap:10px; margin:-8px 0 8px; flex-wrap:wrap;}
   #btnAddChild{
     background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:8px;
-    padding:6px 12px; font-size:12px; cursor:pointer; white-space:nowrap;
+    padding:6px 12px; font-size:13px; cursor:pointer; white-space:nowrap;
   }
   #btnAddChild:disabled{opacity:.5; cursor:not-allowed;}
   /* Compact "+"/"−" icon style for Add/Delete, used instead of full text labels to save room on
      narrow (phone) screens. */
     #btnAddGoal.icon-btn, #btnTemplates.icon-btn, #btnWishAdd.icon-btn, #btnWishManage.icon-btn, #btnWishGrid.icon-btn, #btnWishPrint.icon-btn, #btnWishShare.icon-btn, #btnWheelPrint.icon-btn, #btnWheelShare.icon-btn, #btnAddChild.icon-btn, #btnDelete.icon-btn, #btnEdit.icon-btn, #btnAddSubgoal.icon-btn, #btnDeleteChecklist.icon-btn, #btnMove.icon-btn, #btnMoveChecklist.icon-btn, #btnRelocate.icon-btn, #btnChecklistAdd.icon-btn, #btnFilter.icon-btn, .add-child-row #btnArchive.icon-btn, .add-goal-wrap #btnArchive.icon-btn, #btnSearch.icon-btn, #btnGoodTodayHistory.icon-btn, #btnGoodTodayWeekHistory.icon-btn, #btnGoodTodayWeekEdit.icon-btn, #btnGoodTodayAdd.icon-btn, #btnAchievementsAdd.icon-btn, #btnGoodTodayHistoryPagePrevBottom.icon-btn, #btnGoodTodayHistoryPageNextBottom.icon-btn, #btnChallengeEdit.icon-btn, #btnChallengeReset.icon-btn, #btnChallengePrevMonth.icon-btn, #btnChallengeNextMonth.icon-btn, #btnAchievementsGroupPrev.icon-btn, #btnAchievementsGroupNext.icon-btn{
-    font-size:16px; font-weight:700; line-height:1; padding:5px 13px;
+    font-size:14px; font-weight:700; line-height:1; padding:5px 13px;
     min-width:32px; display:inline-flex; align-items:center; justify-content:center;
   }
    #btnAddGoal.icon-btn, #btnWishAdd.icon-btn, #btnGoodTodayAdd.icon-btn, #btnAddChild.icon-btn, #btnDelete.icon-btn, #btnChecklistAdd.icon-btn{ font-size:18px; }
@@ -1480,51 +1480,51 @@
   @media (hover: hover) and (pointer: fine){
     :where(html:not(.touch-mode)) .checklist-row.movable:hover{border-color:var(--accent);}
   }
-  .move-handle{color:var(--muted); font-size:16px; flex-shrink:0;}
+  .move-handle{color:var(--muted); font-size:14px; flex-shrink:0;}
   .checklist-row{
     display:flex; align-items:center; gap:10px; background:var(--card); border:1px solid var(--border);
     border-radius:10px; padding:9px 12px; margin-bottom:8px; touch-action:pan-y;
   }
   .checklist-circle{
     width:20px; height:20px; border-radius:50%; border:2px solid var(--border); flex:none; cursor:pointer;
-    display:flex; align-items:center; justify-content:center; font-size:12px; user-select:none;
+    display:flex; align-items:center; justify-content:center; font-size:13px; user-select:none;
   }
   .checklist-circle.done{background:var(--green); border-color:var(--green); color:#0b0e17; font-weight:700;}
   .checklist-text{flex:1; font-size:14px;}
   .checklist-text.done{color:var(--muted); text-decoration:line-through;}
   .checklist-edit-input{
     flex:1; background:var(--card2); border:1px solid var(--accent); color:var(--text); border-radius:6px;
-    padding:5px 8px; font-size:16px; outline:none;
+    padding:5px 8px; font-size:14px; outline:none;
   }
   .checklist-edit{
-    background:none; border:none; color:var(--muted); cursor:pointer; font-size:13px; padding:2px 6px; flex:none;
+    background:none; border:none; color:var(--muted); cursor:pointer; font-size:13px; padding:1px 4px; flex:none;
   }
   @media (hover: hover) and (pointer: fine){
     :where(html:not(.touch-mode)) .checklist-edit:hover{color:var(--accent);}
     :where(html:not(.touch-mode)) .checklist-remove:hover{color:var(--red);}
   }
   .checklist-remove{
-    background:none; border:none; color:var(--muted); cursor:pointer; font-size:13px; padding:2px 6px; flex:none;
+    background:none; border:none; color:var(--muted); cursor:pointer; font-size:13px; padding:1px 4px; flex:none;
   }
   .checklist-add-row{display:flex; gap:8px; margin-top:4px;}
   .checklist-add-row input{
     flex:1; background:var(--card2); border:1px solid var(--border); color:var(--text); border-radius:8px;
-    padding:8px 10px; font-size:16px; outline:none;
+    padding:8px 10px; font-size:14px; outline:none;
   }
   .checklist-add-row input:focus{border-color:var(--accent);}
   /* «Мои достижения» — строки + кнопки действий. */
   .achievement-row{display:flex; align-items:center; gap:8px; padding:6px 10px; border:1px solid var(--border); border-radius:10px; margin:4px 0; background:var(--card2);}
   .achievement-text{flex:1; min-width:0; color:var(--text); font-size:15px; white-space:pre-wrap; word-break:break-word;}
-  .achievement-edit, .achievement-delete{background:none; border:none; color:var(--muted); cursor:pointer; font-size:13px; padding:2px 6px; flex:none;}
+  .achievement-edit, .achievement-delete{background:none; border:none; color:var(--muted); cursor:pointer; font-size:13px; padding:1px 4px; flex:none;}
   @media (hover: hover) and (pointer: fine){
     :where(html:not(.touch-mode)) .achievement-edit:hover{color:var(--accent);}
     :where(html:not(.touch-mode)) .achievement-delete:hover{color:var(--red);}
   }
   .achievements-empty{color:var(--muted); font-size:14px; margin:6px 0;}
-  .achievements-max{color:var(--muted); font-size:12px; margin:4px 0;}
+  .achievements-max{color:var(--muted); font-size:13px; margin:4px 0;}
   .achievements-textarea{width:100%; min-height:70px; background:var(--card2); border:1px solid var(--border); color:var(--text); border-radius:10px; padding:10px 12px; font-size:15px; outline:none; resize:vertical;}
   .achievements-textarea:focus{border-color:var(--accent);}
-  .achievements-char-count{color:var(--muted); font-size:12px; text-align:right; margin-top:6px;}
+  .achievements-char-count{color:var(--muted); font-size:13px; text-align:right; margin-top:6px;}
   .achievements-char-count.error{color:var(--red);}
   .achievements-form{margin:10px 0;}
   .achievements-btn-row{display:flex; gap:10px; margin-top:10px;}
@@ -1541,7 +1541,7 @@
    .wheel-sector-hit{fill:transparent; cursor:pointer; transition:fill-opacity .15s ease, stroke .15s ease; stroke:transparent; pointer-events:all; outline:none;}
    .wheel-sector-hit:focus-visible{outline:2px solid var(--accent); outline-offset:1px;}
    .wheel-sector-hit.is-active{fill:var(--accent); fill-opacity:.14; stroke:var(--accent); stroke-width:2;}
-    .wheel-hint{font-size:12px; color:var(--muted); text-align:center; margin:-16px 0 0; padding:0 8px 2px;}
+    .wheel-hint{font-size:13px; color:var(--muted); text-align:center; margin:-16px 0 0; padding:0 8px 2px;}
    /* Карточка сферы с раскрытым деревом — акцентная рамка, связь «сектор ↔ карточка». */
    .grid-goals .card.is-open{border-color:var(--accent); box-shadow:0 0 0 1px var(--accent);}
    /* Дерево сферы: аккордеон между сеткой сфер и колесом. Цвета — только переменные тем.
@@ -1552,14 +1552,14 @@
    .sphere-tree-head{display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:10px;}
    .sphere-tree-arrow{color:var(--muted); font-size:13px;}
    .sphere-tree-name{font-size:15px; font-weight:700; min-width:0; overflow-wrap:break-word;}
-   .sphere-tree-pct{font-size:12px; color:var(--muted); margin-left:auto;}
-   .sphere-tree-close{background:var(--card2); border:1px solid var(--border); color:var(--text); border-radius:8px; padding:6px 12px; font-size:12px; cursor:pointer; min-height:32px;}
+   .sphere-tree-pct{font-size:13px; color:var(--muted); margin-left:auto;}
+   .sphere-tree-close{background:var(--card2); border:1px solid var(--border); color:var(--text); border-radius:8px; padding:6px 12px; font-size:13px; cursor:pointer; min-height:32px;}
    .sphere-tree-list{display:flex; flex-direction:column; gap:6px;}
    .sphere-tree-item{display:grid; grid-template-columns:auto 1fr auto; align-items:center; gap:4px 8px; background:var(--card2); border:1px solid var(--border); border-radius:10px; padding:9px 12px; cursor:pointer; text-align:left; color:var(--text); font-size:14px; width:100%; min-height:44px;}
    .sphere-tree-item.archived{opacity:.55;}
    .sphere-tree-item-mark{color:var(--muted); flex:none;}
    .sphere-tree-item-name{min-width:0; overflow-wrap:break-word;}
-   .sphere-tree-item-pct{font-size:12px; color:var(--muted);}
+   .sphere-tree-item-pct{font-size:13px; color:var(--muted);}
    .sphere-tree-item-bar{grid-column:1 / -1; height:4px; border-radius:2px; background:var(--border); overflow:hidden; margin-top:2px;}
    .sphere-tree-item-bar > span{display:block; height:100%;}
    .sphere-tree-empty{font-size:13px; color:var(--muted); padding:2px 0 8px;}
@@ -2049,7 +2049,7 @@ const STRINGS = {
     aboutTitle: 'О проекте',
     aboutText: 'Только важное помогает двигаться к важному без дедлайнов, давления и лишней сложности.\n\nВыберите цель, разделите её на подцели и маленькие шаги. Делайте главное в своём темпе — каждый завершённый шаг приближает к результату.\n\nЕсли сил или ресурсов стало меньше, цель можно архивировать: она не будет давить и влиять на прогресс. Вернитесь к ней позже, измените или отпустите.\n\nНе нужно успевать всё. Главное — бережно двигаться вперёд.\n\n— Владимир Соколов',
     instructionsTitle: 'Инструкция',
-    instructionsText: 'Цели и подцели\nВ блоке «Важные сферы жизни» нажмите «+», чтобы создать цель. Большую цель делите на подцели — столько раз, сколько нужно, пока шаг не станет простым.\n\nЧек-лист\nК цели можно добавить список пунктов. Прогресс считается по отмеченным пунктам.\n\nСрок\nК цели можно добавить дату. Давление она не создаёт — это просто подсказка для вас.\n\nГлавные цели\nЗвёздочка ☆ выносит цель или пункт в блок «Главные цели». Одновременно можно выбрать до 5.\n\nАрхив\nАрхив прячет цель из расчёта прогресса. Вернуться к ней можно в любой момент.\n\nПорядок и перенос\nКарандаш — переименовать, «−» — удалить, «↕» — изменить порядок перетаскиванием, кнопка переноса — переместить цель в другую сферу или подцель.\n\nСортировка\nВоронка меняет порядок: сначала выполненные, сначала невыполненные или ваш собственный порядок.\n\nРазвернуть и разбить\n«Развернуть» добавляет две подцели, «Разбить на 6 подшагов» — сразу шесть шагов.\n\nШаблоны\nКнопка «Шаблоны» предлагает готовые наборы: здоровье, работа, обучение, финансы, отношения, отдых. Выберите нужные и добавьте — или закройте без изменений.\n\nПоиск\nЛупа в шапке найдёт цель или пункт чек-листа и покажет путь к нему.\n\nКолесо баланса\nКолесо показывает состояние сфер. Нажмите на сектор, чтобы открыть его цели. Пустая сфера — это не ошибка: в ней просто нет незавершённых дел.\n\nХорошее сегодня\nЗапишите одну хорошую вещь дня. Здесь нет обязательств — только возможность заметить хорошее.\n\nПобеды за неделю\nРаз в неделю можно ответить на три коротких вопроса. Пропущенную неделю можно заполнить позже.\n\nУ меня будет\nКарта желаний — место для фотографий и подписей к ним. Фото можно смотреть, редактировать, менять порядок и печатать.\n\nЧеллендж\nЗакреплённая привычка или цель на каждый день («21 день без сахара») с календарём отметок. Задаётся название и срок — 7, 14, 21, 30 дней или «без срока». Прошедший день без отметки показывается красным ✗ — один тап исправляет его на ✓. Кнопка «История» открывает завершённые челленджи с результатом.\n\nМои достижения\nБлок мотивации с 3 группами по до 10 строк: «Мои достижения», «Меня радует», «Меня вдохновляет». Переключайтесь стрелками ← → под заголовком. Каждую строку можно переписать (✎) или удалить (✕), новые добавляйте кнопкой «+».\n\nНапоминание о сферах\nЕсли к сфере давно не возвращались, приложение мягко предложит заглянуть. «Скрыть» убирает напоминание на две недели.\n\nАккаунт и синхронизация\nБез аккаунта данные остаются в браузере. С аккаунтом они синхронизируются между устройствами.\n\nРезервная копия\nВ меню можно скачать и восстановить копию данных.\n\nУстановка и обновление\nПриложение можно добавить на главный экран. Если после обновления что-то выглядит по-старому, откройте меню и нажмите «Сбросить кэш».\n\nТемы и язык\nВ меню доступны тёмная, светлая и розовая темы, а также русский и английский языки.',
+    instructionsText: 'Цели и подцели\nВ блоке «Важные сферы жизни» нажмите «+», чтобы создать цель. Большую цель делите на подцели — столько раз, сколько нужно, пока шаг не станет простым.\n\nЧек-лист\nК цели можно добавить список пунктов. Прогресс считается по отмеченным пунктам.\n\nСрок\nК цели можно добавить дату. Давление она не создаёт — это просто подсказка для вас.\n\nГлавные цели\nЗвёздочка ☆ выносит цель или пункт в блок «Главные цели». Одновременно можно выбрать до 5.\n\nАрхив\nАрхив прячет цель из расчёта прогресса. Вернуться к ней можно в любой момент.\n\nПорядок и перенос\nКарандаш — переименовать, «−» — удалить, «↕» — изменить порядок перетаскиванием, кнопка переноса — переместить цель в другую сферу или подцель.\n\nСортировка\nВоронка меняет порядок: сначала выполненные, сначала невыполненные или ваш собственный порядок.\n\nРазвернуть и разбить\n«Развернуть» добавляет две подцели, «Разбить на 6 подшагов» — сразу шесть шагов.\n\nШаблоны\nКнопка «Шаблоны» предлагает готовые наборы: здоровье, работа, обучение, финансы, отношения, отдых. Выберите нужные и добавьте — или закройте без изменений.\n\nПоиск\nЛупа в шапке найдёт цель или пункт чек-листа и покажет путь к нему.\n\nКолесо баланса\nКолесо показывает состояние сфер. Нажмите на сектор, чтобы открыть его цели. Пустая сфера — это не ошибка: в ней просто нет незавершённых дел.\n\nХорошее сегодня\nЗапишите одну хорошую вещь дня. Здесь нет обязательств — только возможность заметить хорошее.\n\nПобеды за неделю\nРаз в неделю можно ответить на три коротких вопроса. Пропущенную неделю можно заполнить позже.\n\nУ меня будет\nКарта желаний — место для фотографий и подписей к ним. Фото можно смотреть, редактировать, менять порядок и печатать.\n\nЧеллендж\nЗакреплённая привычка или цель на каждый день («21 день без сахара») с календарём отметок. Задаётся название и срок — 7, 14, 21, 30 дней или «без срока». Прошедший день без отметки показывается красным ✗ — один тап исправляет его на ✓. Кнопка «История» открывает завершённые челленджи с результатом.\n\nМои достижения\nБлок мотивации с 3 группами по до 10 строк: «Мои достижения», «Меня радует», «Моя мотивация». Переключайтесь стрелками ← → под заголовком. Каждую строку можно переписать (✎) или удалить (✕), новые добавляйте кнопкой «+».\n\nНапоминание о сферах\nЕсли к сфере давно не возвращались, приложение мягко предложит заглянуть. «Скрыть» убирает напоминание на две недели.\n\nАккаунт и синхронизация\nБез аккаунта данные остаются в браузере. С аккаунтом они синхронизируются между устройствами.\n\nРезервная копия\nВ меню можно скачать и восстановить копию данных.\n\nУстановка и обновление\nПриложение можно добавить на главный экран. Если после обновления что-то выглядит по-старому, откройте меню и нажмите «Сбросить кэш».\n\nТемы и язык\nВ меню доступны тёмная, светлая и розовая темы, а также русский и английский языки.',
     menuTitle: 'Меню',
     share: 'Поделиться приложением',
     shareCopied: 'Ссылка скопирована',
@@ -2208,10 +2208,10 @@ const STRINGS = {
     blockAchievements: 'Мои достижения',
     blockSettingsSave: 'Готово',
     blockSettingsCancel: 'Отмена',
-    achievementsTitle: 'Меня вдохновляет',
+    achievementsTitle: 'Моя мотивация',
     achievementsGroup1: 'Мои достижения',
     achievementsGroup2: 'Меня радует',
-    achievementsGroup3: 'Меня вдохновляет',
+    achievementsGroup3: 'Моя мотивация',
     achievementsAdd: '+ Добавить достижение',
     achievementsPlaceholder: 'Ваше достижение…',
     achievementsSave: 'Сохранить',
@@ -2623,10 +2623,10 @@ const STRINGS = {
     blockAchievements: 'My Achievements',
     blockSettingsSave: 'Done',
     blockSettingsCancel: 'Cancel',
-    achievementsTitle: 'Inspires Me',
+    achievementsTitle: 'My Motivation',
     achievementsGroup1: 'My Achievements',
     achievementsGroup2: 'Brings Me Joy',
-    achievementsGroup3: 'Inspires Me',
+    achievementsGroup3: 'My Motivation',
     achievementsAdd: '+ Add achievement',
     achievementsPlaceholder: 'Your achievement…',
     achievementsSave: 'Save',
@@ -5710,7 +5710,7 @@ function relocatePickerHTML(){
   return `<div class="auth-modal-overlay" id="relocateOverlay">
     <div class="auth-panel scrollable wide">
       <button class="auth-close" id="btnRelocateClose" aria-label="close" title="${t('done')}">✕</button>
-      <h2 style="margin:0 0 4px; font-size:16px;">${t('relocateTitle')}</h2>
+      <h2 style="margin:0 0 4px; font-size:14px;">${t('relocateTitle')}</h2>
       <div class="relocate-source-name">${t('relocateMoving')} «${esc(sourceNode.name)}»</div>
       <div class="relocate-breadcrumb">${crumbs.join('')}</div>
       <input type="search" class="relocate-search" id="relocateSearchInput" autocomplete="off"
@@ -6518,7 +6518,7 @@ function challengeHistoryHTML(){
   let html = `<div class="auth-modal-overlay" id="challengeHistoryOverlay">
     <div class="auth-panel scrollable wide">
       <button class="auth-close" id="btnChallengeHistoryClose" aria-label="close" title="${t('done')}">✕</button>
-      <h2 style="margin:0 0 4px; font-size:16px;">${t('challengeHistoryTitle')}</h2>`;
+      <h2 style="margin:0 0 4px; font-size:14px;">${t('challengeHistoryTitle')}</h2>`;
   if(!pageEntries.length){
     html += `<p style="margin:0; font-size:14px; color:var(--muted);">${t('challengeHistoryEmpty')}</p>`;
   }else{
@@ -7133,7 +7133,7 @@ function templatesModalHTML(){
   let html = `<div class="auth-modal-overlay" id="templatesOverlay">
     <div class="auth-panel templates-panel">
       <button class="auth-close" id="btnTemplatesClose" aria-label="close" title="${t('done')}">✕</button>
-      <h2 style="margin:0 0 4px; font-size:16px;">${t('templatesTitle')}</h2>
+      <h2 style="margin:0 0 4px; font-size:14px;">${t('templatesTitle')}</h2>
       <p style="margin:0 0 16px; font-size:14px; color:var(--muted);">${t('templatesDesc')}</p>
       <div class="templates-list">`;
   for(const [id, tmpl] of Object.entries(TEMPLATES)){
@@ -7169,7 +7169,7 @@ function blockSettingsModalHTML(){
   let html = `<div class="auth-modal-overlay" id="blockSettingsOverlay">
     <div class="auth-panel">
       <button class="auth-close" id="btnBlockSettingsClose" aria-label="close" title="${t('done')}">✕</button>
-      <h2 style="margin:0 0 4px; font-size:16px;">${t('blockSettings')}</h2>
+      <h2 style="margin:0 0 4px; font-size:14px;">${t('blockSettings')}</h2>
       <p style="margin:0 0 16px; font-size:14px; color:var(--muted);">${t('blockSettingsDesc')}</p>
       <div class="block-settings-list">`;
   const labels = [
@@ -7415,7 +7415,7 @@ function statusPanelsHTML(){
   if(syncConflict){
     html += `<div class="auth-modal-overlay" id="syncConflictOverlay">
       <div class="auth-panel">
-        <h2 style="margin:0 0 4px; font-size:16px;">${t('syncConflictTitle')}</h2>
+        <h2 style="margin:0 0 4px; font-size:14px;">${t('syncConflictTitle')}</h2>
         <p style="margin:0; font-size:14px; white-space:pre-line;">${esc(t('syncConflictText'))}</p>
         <div class="auth-btn-col">
           <button id="btnSyncConflictUseCloud">${t('syncConflictUseCloud')}</button>
@@ -7428,7 +7428,7 @@ function statusPanelsHTML(){
   if(goodTodayDeleteId){
     html += `<div class="auth-modal-overlay" id="goodTodayDeleteOverlay">
       <div class="auth-panel">
-        <h2 style="margin:0 0 4px; font-size:16px;">${t('goodTodayDeleteConfirmText')}</h2>
+        <h2 style="margin:0 0 4px; font-size:14px;">${t('goodTodayDeleteConfirmText')}</h2>
         <div class="auth-btn-row">
           <button id="btnGoodTodayDeleteYes">${t('yes')}</button>
           <button id="btnGoodTodayDeleteNo">${t('no')}</button>
@@ -7442,7 +7442,7 @@ function statusPanelsHTML(){
   if(cloudStateError){
     html += `<div class="auth-modal-overlay" id="cloudStateErrorOverlay">
       <div class="auth-panel">
-        <h2 style="margin:0 0 4px; font-size:16px;">${t('cloudStateErrorTitle')}</h2>
+        <h2 style="margin:0 0 4px; font-size:14px;">${t('cloudStateErrorTitle')}</h2>
         <p style="margin:0; font-size:14px;">${esc(t('cloudStateErrorText'))}</p>
         <div class="auth-btn-col">
           <button id="btnCloudStateErrorDismiss">${t('cloudStateErrorDismiss')}</button>
@@ -7455,7 +7455,7 @@ function statusPanelsHTML(){
   if(cloudPushStatus === 'conflict'){
     html += `<div class="auth-modal-overlay" id="cloudPushConflictOverlay">
       <div class="auth-panel">
-        <h2 style="margin:0 0 4px; font-size:16px;">${t('cloudPushConflictTitle')}</h2>
+        <h2 style="margin:0 0 4px; font-size:14px;">${t('cloudPushConflictTitle')}</h2>
         <p style="margin:0 0 12px; font-size:14px;">${esc(t('cloudPushConflictText'))}</p>
         <div class="auth-btn-col">
           <button id="btnCloudPushKeepCloud">${t('cloudPushKeepCloud')}</button>
@@ -7492,7 +7492,7 @@ function systemPanelsHTML(){
     html += `<div class="auth-modal-overlay" id="installOverlay">
       <div class="auth-panel">
         <button class="auth-close" id="btnInstallClose" aria-label="close" title="${t('done')}">✕</button>
-        <h2 style="margin:0 0 4px; font-size:16px;">${t('installAppTitle')}</h2>
+        <h2 style="margin:0 0 4px; font-size:14px;">${t('installAppTitle')}</h2>
         <div class="install-steps">${isIOSDevice() ? t('installStepsIOS') : (isMobileDevice() ? t('installStepsAndroid') : t('installStepsDesktop'))}</div>
         ${(deferredInstallPrompt && !isIOSDevice()) ? `<button id="btnInstallNow">${t('installNowBtn')}</button>` : ''}
       </div>
@@ -7505,9 +7505,9 @@ function systemPanelsHTML(){
     html += `<div class="auth-modal-overlay" id="updateOverlay">
       <div class="auth-panel">
         <button class="auth-close" id="btnUpdateClose" aria-label="close" title="${t('done')}">✕</button>
-        <h2 style="margin:0 0 4px; font-size:16px;">${esc(t('updateReadyTitle'))}</h2>
+        <h2 style="margin:0 0 4px; font-size:14px;">${esc(t('updateReadyTitle'))}</h2>
         <p style="margin:0 0 12px; font-size:14px; color:var(--muted);">${esc(t('updateReadyText'))}</p>
-        <p style="margin:0 0 12px; font-size:12px; color:var(--muted);">${esc(t('updateCurrentVersion'))}: v${APP_VERSION}</p>
+        <p style="margin:0 0 12px; font-size:13px; color:var(--muted);">${esc(t('updateCurrentVersion'))}: v${APP_VERSION}</p>
         <div class="auth-btn-row">
           <button id="btnUpdateApply">${t('updateReadyApply')}</button>
         </div>
@@ -7518,7 +7518,7 @@ function systemPanelsHTML(){
     html += `<div class="auth-modal-overlay" id="aboutOverlay">
       <div class="auth-panel">
         <button class="auth-close" id="btnAboutClose" aria-label="close" title="${t('done')}">✕</button>
-        <h2 style="margin:0 0 4px; font-size:16px;">${t('aboutTitle')}</h2>
+        <h2 style="margin:0 0 4px; font-size:14px;">${t('aboutTitle')}</h2>
         <div class="about-text">${esc(t('aboutText'))}</div>
       </div>
     </div>`;
@@ -7527,7 +7527,7 @@ function systemPanelsHTML(){
     html += `<div class="auth-modal-overlay" id="instructionsOverlay">
       <div class="auth-panel scrollable wide">
         <button class="auth-close" id="btnInstructionsClose" aria-label="close" title="${t('done')}">✕</button>
-        <h2 style="margin:0 0 4px; font-size:16px;">${t('instructionsTitle')}</h2>
+        <h2 style="margin:0 0 4px; font-size:14px;">${t('instructionsTitle')}</h2>
         <div class="about-text">${esc(t('instructionsText'))}</div>
       </div>
     </div>`;
@@ -7547,9 +7547,9 @@ function systemPanelsHTML(){
     html += `<div class="auth-modal-overlay" id="searchOverlay">
       <div class="auth-panel">
         <button class="auth-close" id="btnSearchClose" aria-label="close" title="${t('done')}">✕</button>
-        <h2 style="margin:0 0 4px; font-size:16px;">${t('searchTitle')}</h2>
-        <input type="text" id="searchInput" autocomplete="off" placeholder="${t('searchPlaceholder')}" style="width:100%; padding:10px 12px; border-radius:8px; border:1px solid var(--border); background:var(--card2); color:var(--text); font-size:16px; box-sizing:border-box;">
-        <div style="color:var(--muted); font-size:12px; margin:6px 0 8px;">${t('searchHint')}</div>
+        <h2 style="margin:0 0 4px; font-size:14px;">${t('searchTitle')}</h2>
+        <input type="text" id="searchInput" autocomplete="off" placeholder="${t('searchPlaceholder')}" style="width:100%; padding:10px 12px; border-radius:8px; border:1px solid var(--border); background:var(--card2); color:var(--text); font-size:14px; box-sizing:border-box;">
+        <div style="color:var(--muted); font-size:13px; margin:6px 0 8px;">${t('searchHint')}</div>
         <div class="search-results" id="searchResults"></div>
       </div>
     </div>`;
@@ -9631,7 +9631,7 @@ function analyticsPanelHTML(){
     return `<div class="auth-modal-overlay" id="analyticsOverlay">
       <div class="auth-panel">
         <button class="auth-close" id="btnAnalyticsClose" aria-label="close" title="${t('done')}">✕</button>
-        <h2 style="margin:0 0 4px; font-size:16px;">${t('analyticsTitle')}</h2>
+        <h2 style="margin:0 0 4px; font-size:14px;">${t('analyticsTitle')}</h2>
         <p style="margin:0; font-size:14px; color:var(--muted);">${t('analyticsDenied')}</p>
       </div>
     </div>`;
@@ -9664,7 +9664,7 @@ function analyticsPanelHTML(){
   return `<div class="auth-modal-overlay" id="analyticsOverlay">
       <div class="auth-panel scrollable wide">
         <button class="auth-close" id="btnAnalyticsClose" aria-label="close" title="${t('done')}">✕</button>
-        <h2 style="margin:0 0 4px; font-size:16px;">${t('analyticsTitle')}</h2>
+        <h2 style="margin:0 0 4px; font-size:14px;">${t('analyticsTitle')}</h2>
         <div style="margin:6px 0 8px; font-size:13px; color:var(--muted);">${visitsLine}</div>
         <div class="analytics-body" style="margin:8px 0;">${body}</div>
         ${sub}
