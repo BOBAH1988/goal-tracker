@@ -840,9 +840,8 @@
     background:var(--card2); border:1px solid var(--border); border-radius:10px;
     padding:10px 12px; margin-bottom:8px; font-size:13px; color:var(--text);
   }
-  .challenge-history-info .challenge-history-title{font-weight:600; margin-bottom:2px;}
-  .challenge-history-info .challenge-history-meta{display:flex; gap:10px; flex-wrap:wrap; font-size:12px; color:var(--muted);}
-  .challenge-history-info .challenge-history-meta span{white-space:nowrap;}
+  .challenge-history-info .challenge-history-line1{font-weight:600; font-size:13px; color:var(--text);}
+  .challenge-history-info .challenge-history-line2{font-size:12px; color:var(--muted);}
   .challenge-history-page-info{font-size:12px; color:var(--muted); white-space:nowrap;}
   /* Мягкое напоминание о сфере («К сфере … давно не возвращались»). Ненавязчивая карточка
         над «Важными сферами жизни»: тёмная тема, светлая и розовая — всё на переменных, без
@@ -1531,6 +1530,10 @@
   .achievements-btn-row{display:flex; gap:10px; margin-top:10px;}
   .achievements-btn-row button{flex:1; min-height:44px; padding:10px 12px; border-radius:10px; cursor:pointer; font-size:14px; font-weight:600; border:1px solid var(--border); background:var(--card2); color:var(--text);}
   .achievements-btn-row button.good-today-primary{background:var(--accent); border-color:var(--accent); color:#fff;}
+  /* Групповая навигация «Мои достижения». */
+  .achievements-nav-row{display:flex; align-items:center; gap:8px; margin:6px 0 10px; font-size:13px; color:var(--muted);}
+  .achievements-nav-row .icon-btn{flex:none; padding:2px 6px; font-size:16px; line-height:1;}
+  .achievements-nav-row .achievements-group-title{font-weight:600; color:var(--text);}
    /* ===== Balance wheel ===== */
    .wheel-wrap{background:var(--card); border:1px solid var(--border); border-radius:16px; padding:7px 22px; text-align:center;}
    /* Сектора колеса — кнопки. Прозрачная область на весь сектор ловит клик/касание и при
@@ -1592,7 +1595,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.4.3';
+const APP_VERSION = '1.4.5';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -2046,7 +2049,7 @@ const STRINGS = {
     aboutTitle: 'О проекте',
     aboutText: 'Только важное помогает двигаться к важному без дедлайнов, давления и лишней сложности.\n\nВыберите цель, разделите её на подцели и маленькие шаги. Делайте главное в своём темпе — каждый завершённый шаг приближает к результату.\n\nЕсли сил или ресурсов стало меньше, цель можно архивировать: она не будет давить и влиять на прогресс. Вернитесь к ней позже, измените или отпустите.\n\nНе нужно успевать всё. Главное — бережно двигаться вперёд.\n\n— Владимир Соколов',
     instructionsTitle: 'Инструкция',
-    instructionsText: 'Цели и подцели\nВ блоке «Важные сферы жизни» нажмите «+», чтобы создать цель. Большую цель делите на подцели — столько раз, сколько нужно, пока шаг не станет простым.\n\nЧек-лист\nК цели можно добавить список пунктов. Прогресс считается по отмеченным пунктам.\n\nСрок\nК цели можно добавить дату. Давление она не создаёт — это просто подсказка для вас.\n\nГлавные цели\nЗвёздочка ☆ выносит цель или пункт в блок «Главные цели». Одновременно можно выбрать до 5.\n\nАрхив\nАрхив прячет цель из расчёта прогресса. Вернуться к ней можно в любой момент.\n\nПорядок и перенос\nКарандаш — переименовать, «−» — удалить, «↕» — изменить порядок перетаскиванием, кнопка переноса — переместить цель в другую сферу или подцель.\n\nСортировка\nВоронка меняет порядок: сначала выполненные, сначала невыполненные или ваш собственный порядок.\n\nРазвернуть и разбить\n«Развернуть» добавляет две подцели, «Разбить на 6 подшагов» — сразу шесть шагов.\n\nШаблоны\nКнопка «Шаблоны» предлагает готовые наборы: здоровье, работа, обучение, финансы, отношения, отдых. Выберите нужные и добавьте — или закройте без изменений.\n\nПоиск\nЛупа в шапке найдёт цель или пункт чек-листа и покажет путь к нему.\n\nКолесо баланса\nКолесо показывает состояние сфер. Нажмите на сектор, чтобы открыть его цели. Пустая сфера — это не ошибка: в ней просто нет незавершённых дел.\n\nХорошее сегодня\nЗапишите одну хорошую вещь дня. Здесь нет обязательств — только возможность заметить хорошее.\n\nПобеды за неделю\nРаз в неделю можно ответить на три коротких вопроса. Пропущенную неделю можно заполнить позже.\n\nУ меня будет\nКарта желаний — место для фотографий и подписей к ним. Фото можно смотреть, редактировать, менять порядок и печатать.\n\nЧеллендж\nЗакреплённая привычка или цель на каждый день («21 день без сахара») с календарём отметок. Задаётся название и срок — 7, 14, 21, 30 дней или «без срока». Прошедший день без отметки показывается красным ✗ — один тап исправляет его на ✓. Кнопка «История» открывает завершённые челленджи с результатом.\n\nМои достижения\nСписок из 10 строк для мотивации: что уже удалось сделать. Каждую строку можно переписать или удалить.\n\nНапоминание о сферах\nЕсли к сфере давно не возвращались, приложение мягко предложит заглянуть. «Скрыть» убирает напоминание на две недели.\n\nАккаунт и синхронизация\nБез аккаунта данные остаются в браузере. С аккаунтом они синхронизируются между устройствами.\n\nРезервная копия\nВ меню можно скачать и восстановить копию данных.\n\nУстановка и обновление\nПриложение можно добавить на главный экран. Если после обновления что-то выглядит по-старому, откройте меню и нажмите «Сбросить кэш».\n\nТемы и язык\nВ меню доступны тёмная, светлая и розовая темы, а также русский и английский языки.',
+    instructionsText: 'Цели и подцели\nВ блоке «Важные сферы жизни» нажмите «+», чтобы создать цель. Большую цель делите на подцели — столько раз, сколько нужно, пока шаг не станет простым.\n\nЧек-лист\nК цели можно добавить список пунктов. Прогресс считается по отмеченным пунктам.\n\nСрок\nК цели можно добавить дату. Давление она не создаёт — это просто подсказка для вас.\n\nГлавные цели\nЗвёздочка ☆ выносит цель или пункт в блок «Главные цели». Одновременно можно выбрать до 5.\n\nАрхив\nАрхив прячет цель из расчёта прогресса. Вернуться к ней можно в любой момент.\n\nПорядок и перенос\nКарандаш — переименовать, «−» — удалить, «↕» — изменить порядок перетаскиванием, кнопка переноса — переместить цель в другую сферу или подцель.\n\nСортировка\nВоронка меняет порядок: сначала выполненные, сначала невыполненные или ваш собственный порядок.\n\nРазвернуть и разбить\n«Развернуть» добавляет две подцели, «Разбить на 6 подшагов» — сразу шесть шагов.\n\nШаблоны\nКнопка «Шаблоны» предлагает готовые наборы: здоровье, работа, обучение, финансы, отношения, отдых. Выберите нужные и добавьте — или закройте без изменений.\n\nПоиск\nЛупа в шапке найдёт цель или пункт чек-листа и покажет путь к нему.\n\nКолесо баланса\nКолесо показывает состояние сфер. Нажмите на сектор, чтобы открыть его цели. Пустая сфера — это не ошибка: в ней просто нет незавершённых дел.\n\nХорошее сегодня\nЗапишите одну хорошую вещь дня. Здесь нет обязательств — только возможность заметить хорошее.\n\nПобеды за неделю\nРаз в неделю можно ответить на три коротких вопроса. Пропущенную неделю можно заполнить позже.\n\nУ меня будет\nКарта желаний — место для фотографий и подписей к ним. Фото можно смотреть, редактировать, менять порядок и печатать.\n\nЧеллендж\nЗакреплённая привычка или цель на каждый день («21 день без сахара») с календарём отметок. Задаётся название и срок — 7, 14, 21, 30 дней или «без срока». Прошедший день без отметки показывается красным ✗ — один тап исправляет его на ✓. Кнопка «История» открывает завершённые челленджи с результатом.\n\nМои достижения\nБлок мотивации с 3 группами по до 10 строк: «Мои достижения», «Меня радует», «Меня вдохновляет». Переключайтесь стрелками ← → под заголовком. Каждую строку можно переписать (✎) или удалить (✕), новые добавляйте кнопкой «+».\n\nНапоминание о сферах\nЕсли к сфере давно не возвращались, приложение мягко предложит заглянуть. «Скрыть» убирает напоминание на две недели.\n\nАккаунт и синхронизация\nБез аккаунта данные остаются в браузере. С аккаунтом они синхронизируются между устройствами.\n\nРезервная копия\nВ меню можно скачать и восстановить копию данных.\n\nУстановка и обновление\nПриложение можно добавить на главный экран. Если после обновления что-то выглядит по-старому, откройте меню и нажмите «Сбросить кэш».\n\nТемы и язык\nВ меню доступны тёмная, светлая и розовая темы, а также русский и английский языки.',
     menuTitle: 'Меню',
     share: 'Поделиться приложением',
     shareCopied: 'Ссылка скопирована',
@@ -2187,6 +2190,8 @@ const STRINGS = {
     challengeHistoryPageOlder: 'Старые',
     challengeHistoryPageNext: 'Вперёд',
     challengeHistoryPagePrev: 'Назад',
+    challengeHistoryProgress: '{done} из {total} дн.',
+    challengeHistoryDateRange: 'С {start} по {end}',
     challengePct1: 'процент',
     challengePctFew: 'процента',
     challengePctMany: 'процентов',
@@ -2203,7 +2208,10 @@ const STRINGS = {
     blockAchievements: 'Мои достижения',
     blockSettingsSave: 'Готово',
     blockSettingsCancel: 'Отмена',
-    achievementsTitle: 'Мои достижения',
+    achievementsTitle: 'Меня вдохновляет',
+    achievementsGroup1: 'Мои достижения',
+    achievementsGroup2: 'Меня радует',
+    achievementsGroup3: 'Меня вдохновляет',
     achievementsAdd: '+ Добавить достижение',
     achievementsPlaceholder: 'Ваше достижение…',
     achievementsSave: 'Сохранить',
@@ -2217,6 +2225,8 @@ const STRINGS = {
     tipAchievementsAdd: 'Добавить достижение в список',
     tipAchievementsEdit: 'Редактировать достижение',
     tipAchievementsDelete: 'Удалить достижение',
+    tipAchievementsGroupPrev: 'Предыдущая группа',
+    tipAchievementsGroupNext: 'Следующая группа',
   },
   en: {
     appTitle: 'Only What Matters',
@@ -2452,7 +2462,7 @@ const STRINGS = {
     aboutTitle: 'About',
     aboutText: 'Only What Matters helps you move toward what matters — without deadlines, pressure, or needless complexity.\n\nPick a goal, break it into subgoals and small steps. Do the important things at your own pace — every completed step brings you closer to the result.\n\nIf your energy or resources run low, archive the goal: it will not weigh on you or affect your progress. Come back to it later — change it or let it go.\n\nYou don\'t have to do everything. The point is to move forward, gently.\n\n— Vladimir Sokolov',
     instructionsTitle: 'Instructions',
-    instructionsText: 'Goals and Subgoals\nTap "+" next to "Important Life Areas" to create a goal. Break a big goal into subgoals — as many times as you need, until the step feels simple.\n\nChecklist\nYou can add a checklist of items to a goal. Progress is counted by checked items.\n\nDeadline\nYou can add a date to a goal. It doesn\'t create pressure — just a hint for you.\n\nMain Goals\nThe star ★ takes a goal or an item into the "Main Goals" block. You can choose up to 5 at a time.\n\nArchive\nArchive hides a goal from progress. You can return to it at any time.\n\nOrder and Move\nPencil to rename, "−" to delete, "↕" to reorder by dragging, and the move button to move a goal to another sphere or subgoal.\n\nSorting\nThe funnel changes the order: completed first, incomplete first, or your own order.\n\nExpand and Split\n"Expand" adds two subgoals, "Split into 6 steps" creates six at once.\n\nTemplates\nThe "Templates" button offers ready-made sets: health, work, learning, finance, relationships, leisure. Select what you need and add — or close without changes.\n\nSearch\nThe magnifying glass in the header finds a goal or checklist item and shows the path to it.\n\nBalance Wheel\nThe wheel shows the state of spheres. Click a sector to open its goals. An empty sphere is not an error: it just has no open tasks.\n\nGood Today\nWrite down one good thing of the day. There are no obligations — just the opportunity to notice the good.\n\nWins of the Week\nOnce a week you can answer three short questions. A missed week can be filled in later.\n\nI Will Have\nThe wish board is a place for photos and their captions. Photos can be viewed, edited, reordered and printed.\n\nChallenge\nA daily habit or goal ("21 days without sugar") with a calendar of check-offs. Set a title and a term — 7, 14, 21, 30 days or "no limit". A missed day shows as a red ✗ — one tap turns it into ✓. The "History" button opens completed challenges with results.\n\nMy Achievements\nA list of up to 10 lines for motivation: what you\'ve already achieved. Each line can be edited or deleted.\n\nSphere Reminder\nIf you haven\'t returned to a sphere for a long time, the app will gently offer to take a look. "Hide" removes the reminder for two weeks.\n\nAccount and Sync\nWithout an account, data stays in the browser. With an account, they sync between devices.\n\nBackup\nIn the menu you can download and restore a copy of your data.\n\nInstallation and Updates\nThe app can be added to the home screen. If after an update something looks old, open the menu and tap "Clear cache".\n\nThemes and Language\nThe menu offers dark, light and pink themes, as well as Russian and English languages.',
+    instructionsText: 'Goals and Subgoals\nTap "+" next to "Important Life Areas" to create a goal. Break a big goal into subgoals — as many times as you need, until the step feels simple.\n\nChecklist\nYou can add a checklist of items to a goal. Progress is counted by checked items.\n\nDeadline\nYou can add a date to a goal. It doesn\'t create pressure — just a hint for you.\n\nMain Goals\nThe star ★ takes a goal or an item into the "Main Goals" block. You can choose up to 5 at a time.\n\nArchive\nArchive hides a goal from progress. You can return to it at any time.\n\nOrder and Move\nPencil to rename, "−" to delete, "↕" to reorder by dragging, and the move button to move a goal to another sphere or subgoal.\n\nSorting\nThe funnel changes the order: completed first, incomplete first, or your own order.\n\nExpand and Split\n"Expand" adds two subgoals, "Split into 6 steps" creates six at once.\n\nTemplates\nThe "Templates" button offers ready-made sets: health, work, learning, finance, relationships, leisure. Select what you need and add — or close without changes.\n\nSearch\nThe magnifying glass in the header finds a goal or checklist item and shows the path to it.\n\nBalance Wheel\nThe wheel shows the state of spheres. Click a sector to open its goals. An empty sphere is not an error: it just has no open tasks.\n\nGood Today\nWrite down one good thing of the day. There are no obligations — just the opportunity to notice the good.\n\nWins of the Week\nOnce a week you can answer three short questions. A missed week can be filled in later.\n\nI Will Have\nThe wish board is a place for photos and their captions. Photos can be viewed, edited, reordered and printed.\n\nChallenge\nA daily habit or goal ("21 days without sugar") with a calendar of check-offs. Set a title and a term — 7, 14, 21, 30 days or "no limit". A missed day shows as a red ✗ — one tap turns it into ✓. The "History" button opens completed challenges with results.\n\nMy Achievements\nMotivation block with 3 groups of up to 10 lines: \"My Achievements\", \"Brings Me Joy\", \"Inspires Me\". Switch with ← → arrows under the header. Edit each line (✎) or delete (✕), add new with «+».\n\nSphere Reminder\nIf you haven\'t returned to a sphere for a long time, the app will gently offer to take a look. "Hide" removes the reminder for two weeks.\n\nAccount and Sync\nWithout an account, data stays in the browser. With an account, they sync between devices.\n\nBackup\nIn the menu you can download and restore a copy of your data.\n\nInstallation and Updates\nThe app can be added to the home screen. If after an update something looks old, open the menu and tap "Clear cache".\n\nThemes and Language\nThe menu offers dark, light and pink themes, as well as Russian and English languages.',
     menuTitle: 'Menu',
     share: 'Share the app',
     shareCopied: 'Link copied',
@@ -2593,6 +2603,8 @@ const STRINGS = {
     challengeHistoryPageOlder: 'Older',
     challengeHistoryPageNext: 'Next',
     challengeHistoryPagePrev: 'Prev',
+    challengeHistoryProgress: '{done} of {total} days',
+    challengeHistoryDateRange: 'From {start} to {end}',
     challengePct1: 'percent',
     challengePctFew: 'percent',
     challengePctMany: 'percent',
@@ -2609,7 +2621,10 @@ const STRINGS = {
     blockAchievements: 'My Achievements',
     blockSettingsSave: 'Done',
     blockSettingsCancel: 'Cancel',
-    achievementsTitle: 'My Achievements',
+    achievementsTitle: 'Inspires Me',
+    achievementsGroup1: 'My Achievements',
+    achievementsGroup2: 'Brings Me Joy',
+    achievementsGroup3: 'Inspires Me',
     achievementsAdd: '+ Add achievement',
     achievementsPlaceholder: 'Your achievement…',
     achievementsSave: 'Save',
@@ -2623,6 +2638,8 @@ const STRINGS = {
     tipAchievementsAdd: 'Add an achievement to the list',
     tipAchievementsEdit: 'Edit achievement',
     tipAchievementsDelete: 'Delete achievement',
+    tipAchievementsGroupPrev: 'Previous group',
+    tipAchievementsGroupNext: 'Next group',
   }
 };
 function loadLang(){
@@ -4081,12 +4098,53 @@ function ensureGoodToday(node){
     }));
   }
 }
-/* «Мои достижения»: гарантируем, что state.achievements — всегда массив строк (макс. 10). */
+/* «Мои достижения»: гарантируем, что state.achievements — объект с 3 группами.
+   Каждая группа: { id, title, items[] } — максимум 10 строк в группе.
+   Старый формат (плоский массив строк) мигрируется автоматически. */
 function ensureAchievements(node){
   if(!node) return;
-  if(!Array.isArray(node.achievements)){ node.achievements = []; return; }
-  node.achievements = node.achievements.filter(a => typeof a === 'string').slice(0, 10);
-  if(node.achievementsOpen === undefined){ node.achievementsOpen = true; }
+  const a = node.achievements;
+  // Миграция со старого плоского массива.
+  if(Array.isArray(a)){
+    const items = a.filter(x => typeof x === 'string').slice(0, 10);
+    node.achievements = {
+      groups: [
+        { id: 'achievements', title: null, items },
+        { id: 'rejoice', title: null, items: [] },
+        { id: 'inspire', title: null, items: [] }
+      ],
+      activeGroupId: 'achievements',
+      open: a.achievementsOpen === undefined ? true : !!a.achievementsOpen
+    };
+    return;
+  }
+  if(!a || typeof a !== 'object' || !Array.isArray(a.groups)){
+    node.achievements = {
+      groups: [
+        { id: 'achievements', title: null, items: [] },
+        { id: 'rejoice', title: null, items: [] },
+        { id: 'inspire', title: null, items: [] }
+      ],
+      activeGroupId: 'achievements',
+      open: true
+    };
+    return;
+  }
+  // Убеждаемся, что все 3 группы существуют.
+  const ids = ['achievements', 'rejoice', 'inspire'];
+  for(const id of ids){
+    if(!a.groups.find(g => g.id === id)){
+      a.groups.push({ id, title: null, items: [] });
+    }
+  }
+  a.groups = a.groups.filter(g => ids.includes(g.id));
+  for(const g of a.groups){
+    if(!Array.isArray(g.items)) g.items = [];
+    g.items = g.items.filter(x => typeof x === 'string').slice(0, 10);
+  }
+  if(!ids.includes(a.activeGroupId)) a.activeGroupId = 'achievements';
+  if(a.open === undefined) a.open = true;
+  node.achievements = a;
 }
 
 /* ===== Мягкое напоминание о сферах =====
@@ -6145,18 +6203,47 @@ function homeViewHTML(overallPct, hintHTML, mode, protectedCount){
    return html;
 }
 
-/* ===== «Мои достижения» section: список до 10 строк для мотивации ====
-   Каждая строка — текст достижения. Редактирование/удаление по кнопкам в строке,
-   добавление через «+». Не влияет на колесо, приоритеты, итоги. */
+/* ===== «Мои достижения» section: 3 группы по до 10 строк в каждой ====
+   Группы: Мои достижения / Меня радует / Меня вдохновляет.
+   Переключение влево-вправо, позиция (открыто/закрыто) общая, содержимое каждой группы — своё.
+   Не влияет на колесо, приоритеты, итоги. */
 function achievementsSectionHTML(){
-  const arr = Array.isArray(state.achievements) ? state.achievements : [];
+  const a = state.achievements;
+  // Если state.achievements ещё не пройден через ensureAchievements (прямой вызов из теста),
+  // нормализуем тут же: плоский массив → объект с группами.
+  let st;
+  if(Array.isArray(a)){
+    st = { groups: [{ id: 'achievements', title: null, items: a }, { id: 'rejoice', title: null, items: [] }, { id: 'inspire', title: null, items: [] }], activeGroupId: 'achievements', open: true };
+  } else if(a && a.groups){
+    st = a;
+  } else {
+    st = { groups: [{ id: 'achievements', title: null, items: [] }, { id: 'rejoice', title: null, items: [] }, { id: 'inspire', title: null, items: [] }], activeGroupId: 'achievements', open: true };
+  }
+  const grp = st.groups.find(g => g.id === st.activeGroupId) || st.groups[0] || { items: [] };
+  const arr = Array.isArray(grp.items) ? grp.items : [];
   const canAdd = arr.length < 10;
+  const groupTitles = {
+    achievements: t('achievementsGroup1'),
+    rejoice: t('achievementsGroup2'),
+    inspire: t('achievementsGroup3')
+  };
+  const curTitle = groupTitles[st.activeGroupId] || t('achievementsGroup1');
+  const open = st.open === undefined ? true : st.open;
   let html = `<div class="section-title-row" style="margin-top:24px;">
     <div class="section-title" id="achievementsToggle">
-      <span class="wheel-arrow">${achievementsOpen ? '▾' : '▸'}</span>${t('achievementsTitle')}
+      <span class="wheel-arrow">${open ? '▾' : '▸'}</span>${t('achievementsTitle')}
     </div>
   </div>`;
-  if(!achievementsOpen) return html;
+  if(!open) return html;
+
+  // Групповая навигация: ← название группы →
+  const prevId = st.groups[(st.groups.findIndex(g => g.id === st.activeGroupId) + st.groups.length - 1) % st.groups.length].id;
+  const nextId = st.groups[(st.groups.findIndex(g => g.id === st.activeGroupId) + 1) % st.groups.length].id;
+  html += `<div class="achievements-nav-row">
+    <button id="btnAchievementsGroupPrev" class="icon-btn" data-achievements-group="${prevId}" data-tip="${t('tipAchievementsGroupPrev')}" aria-label="${t('tipAchievementsGroupPrev')}">‹</button>
+    <span class="achievements-group-title">${esc(curTitle)}</span>
+    <button id="btnAchievementsGroupNext" class="icon-btn" data-achievements-group="${nextId}" data-tip="${t('tipAchievementsGroupNext')}" aria-label="${t('tipAchievementsGroupNext')}">›</button>
+  </div>`;
 
   if(arr.length === 0){
     html += `<div class="achievements-subtitle-row">
@@ -6181,11 +6268,6 @@ function achievementsSectionHTML(){
   }
   if(achievementsFormOpen || achievementsEditId !== null){
     const editing = achievementsEditId !== null;
-    // currentText always takes the live draft: when editing, achievementsDraft is seeded
-    // from arr[achievementsEditId] on entering edit mode and kept in sync by the input
-    // listener below. If we used arr[achievementsEditId] here instead, every keystroke
-    // (which triggers render() via the input handler) would reset the textarea to the
-    // old value — the cursor would move but the typed character would vanish.
     const currentText = achievementsDraft;
     html += `<div class="achievements-form">
       <textarea id="achievementsTextarea" class="achievements-textarea" maxlength="100" placeholder="${t('achievementsPlaceholder')}">${esc(currentText)}</textarea>
@@ -6435,17 +6517,21 @@ function challengeHistoryHTML(){
   }else{
     html += `<div class="challenge-history-list">`;
     pageEntries.forEach(rec=>{
-      const donePlural = t('challengeProgress' + challengePlural(rec.total, '1', 'Few', 'Many'))
+      const progress = t('challengeHistoryProgress')
         .replace('{done}', String(rec.done)).replace('{total}', String(rec.total));
+      const shortDate = (iso) => {
+        if(!iso) return '';
+        const p = String(iso).split('-');
+        if(p.length !== 3) return String(iso);
+        return p[2] + '.' + p[1] + '.' + p[0].slice(2);
+      };
+      const range = t('challengeHistoryDateRange')
+        .replace('{start}', shortDate(rec.startedAt))
+        .replace('{end}', shortDate(rec.finishedAt));
       html += `<div class="challenge-history-row">
         <div class="challenge-history-info">
-          <div class="challenge-history-title">${esc(rec.title)}</div>
-          <div class="challenge-history-meta">
-            <span>${t('challengeHistoryStarted')}: ${rec.startedAt}</span>
-            <span>${t('challengeHistoryFinished')}: ${rec.finishedAt}</span>
-            <span>${donePlural}</span>
-            <span>${Math.round(rec.pct)} %</span>
-          </div>
+          <div class="challenge-history-line1">${esc(rec.title)} ${progress} ${Math.round(rec.pct)}%</div>
+          <div class="challenge-history-line2">${range}</div>
         </div>
         <button type="button" class="challenge-history-delete" data-challenge-history-delete="${rec.id}" data-tip="${t('challengeHistoryDelete')}" aria-label="${t('challengeHistoryDelete')}">✕</button>
       </div>`;
@@ -8756,22 +8842,65 @@ function attachChallengeHandlers(){
     });
   });
 }
-/* «Мои достижения»: хендлеры — тумблер развёртки, добавление/редактирование/удаление строк. */
+/* «Мои достижения»: хендлеры — тумблер развёртки, переключение групп, добавление/редактирование/удаление строк. */
 function attachAchievementsHandlers(){
+  function activeGroup(){
+    const a = state.achievements;
+    let st;
+    if(Array.isArray(a)){
+      st = { groups: [{ id: 'achievements', title: null, items: a }, { id: 'rejoice', title: null, items: [] }, { id: 'inspire', title: null, items: [] }], activeGroupId: 'achievements', open: true };
+    } else if(a && a.groups){
+      st = a;
+    } else {
+      st = { groups: [{ id: 'achievements', title: null, items: [] }, { id: 'rejoice', title: null, items: [] }, { id: 'inspire', title: null, items: [] }], activeGroupId: 'achievements', open: true };
+    }
+    return st.groups.find(g => g.id === st.activeGroupId) || st.groups[0] || { items: [] };
+  }
   // Section toggle.
   on('achievementsToggle', 'click', ()=>{
-    achievementsOpen = !achievementsOpen;
-    state.achievementsOpen = achievementsOpen;
+    const st = state.achievements || { groups: [], activeGroupId: 'achievements', open: true };
+    st.open = !st.open;
+    state.achievements = st;
     saveState();
     render();
   });
-  // «+» открывает форму добавления; если форма уже открыта — закрывает её (тумблер, как у goodToday).
-  // Раньше видимость формы зависела от `achievementsEditId !== null || achievementsDraft`, и при
-  // добавлении (editId=null, draft='') форма не рисовалась — «+» ничего не делал. Теперь видимость
-  // управляется явным флагом achievementsFormOpen, как goodTodayFormOpen.
+  // Переключение группы: ← / →
+  on('btnAchievementsGroupPrev', 'click', (e)=>{
+    const a = state.achievements;
+    let st;
+    if(Array.isArray(a)){
+      st = { groups: [{ id: 'achievements', title: null, items: a }, { id: 'rejoice', title: null, items: [] }, { id: 'inspire', title: null, items: [] }], activeGroupId: 'achievements', open: true };
+    } else if(a && a.groups){
+      st = a;
+    } else {
+      st = { groups: [{ id: 'achievements', title: null, items: [] }, { id: 'rejoice', title: null, items: [] }, { id: 'inspire', title: null, items: [] }], activeGroupId: 'achievements', open: true };
+    }
+    const idx = st.groups.findIndex(g => g.id === st.activeGroupId);
+    st.activeGroupId = st.groups[(idx + st.groups.length - 1) % st.groups.length].id;
+    state.achievements = st;
+    saveState();
+    render();
+  });
+  on('btnAchievementsGroupNext', 'click', (e)=>{
+    const a = state.achievements;
+    let st;
+    if(Array.isArray(a)){
+      st = { groups: [{ id: 'achievements', title: null, items: a }, { id: 'rejoice', title: null, items: [] }, { id: 'inspire', title: null, items: [] }], activeGroupId: 'achievements', open: true };
+    } else if(a && a.groups){
+      st = a;
+    } else {
+      st = { groups: [{ id: 'achievements', title: null, items: [] }, { id: 'rejoice', title: null, items: [] }, { id: 'inspire', title: null, items: [] }], activeGroupId: 'achievements', open: true };
+    }
+    const idx = st.groups.findIndex(g => g.id === st.activeGroupId);
+    st.activeGroupId = st.groups[(idx + 1) % st.groups.length].id;
+    state.achievements = st;
+    saveState();
+    render();
+  });
+  // «+» открывает форму добавления для текущей группы.
   on('btnAchievementsAdd', 'click', ()=>{
-    const arr = Array.isArray(state.achievements) ? state.achievements : [];
-    if(arr.length >= 10) return;
+    const grp = activeGroup();
+    if(grp.items.length >= 10) return;
     if(achievementsFormOpen || achievementsEditId !== null){
       achievementsFormOpen = false;
       achievementsEditId = null;
@@ -8793,10 +8922,10 @@ function attachAchievementsHandlers(){
     el.addEventListener('click', (e)=>{
       e.stopPropagation();
       const i = parseInt(el.dataset.achievementsEdit, 10);
-      const arr = Array.isArray(state.achievements) ? state.achievements : [];
+      const grp = activeGroup();
       achievementsFormOpen = true;
       achievementsEditId = i;
-      achievementsDraft = arr[i] || '';
+      achievementsDraft = grp.items[i] || '';
       achievementsCharError = '';
       render();
       // Фокус + курсор в конец после перерисовки формы редактирования.
@@ -8810,9 +8939,9 @@ function attachAchievementsHandlers(){
       e.stopPropagation();
       const i = parseInt(el.dataset.achievementsDelete, 10);
       if(!confirm(t('achievementsDeleteConfirm'))) return;
-      const arr = Array.isArray(state.achievements) ? state.achievements : [];
-      arr.splice(i, 1);
-      state.achievements = arr;
+      const grp = activeGroup();
+      grp.items.splice(i, 1);
+      state.achievements = { ...state.achievements, groups: state.achievements.groups.map(g => g.id === grp.id ? grp : g) };
       achievementsFormOpen = false;
       achievementsEditId = null;
       achievementsDraft = '';
@@ -8836,7 +8965,7 @@ function attachAchievementsHandlers(){
       }
     });
   }
-  // Сохранить — создать новую или обновить существующую.
+  // Сохранить — создать новую или обновить существующую в текущей группе.
   on('btnAchievementsSave', 'click', ()=>{
     const text = achievementsDraft.trim();
     if(!text){
@@ -8844,14 +8973,14 @@ function attachAchievementsHandlers(){
       render();
       return;
     }
-    const arr = Array.isArray(state.achievements) ? state.achievements : [];
+    const grp = activeGroup();
     if(achievementsEditId !== null){
-      arr[achievementsEditId] = text;
+      grp.items[achievementsEditId] = text;
     } else {
-      if(arr.length >= 10) return;
-      arr.push(text);
+      if(grp.items.length >= 10) return;
+      grp.items.push(text);
     }
-    state.achievements = arr;
+    state.achievements = { ...state.achievements, groups: state.achievements.groups.map(g => g.id === grp.id ? grp : g) };
     achievementsFormOpen = false;
     achievementsEditId = null;
     achievementsDraft = '';
