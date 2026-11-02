@@ -6462,7 +6462,6 @@ function homeViewHTML(overallPct, hintHTML, mode, protectedCount){
          <span class="main-goals-arrow">${mainGoalsOpen ? '▾' : '▸'}</span>
         ${t('mainGoals')}${hintHTML}
       </div>
-      ${mainGoalsOpen && state.children.length > 0 ? `<button id="btnMainGoalsHistory" class="icon-btn" data-tip="${t('mainGoalsHistory')}" aria-label="${t('mainGoalsHistory')}"><i class="ti ti-history" aria-hidden="true"></i></button>` : ''}
       ${/* The whole action group (+ − ↕ filter relocate edit) belongs to the OPEN grid — when the
            section is collapsed the cards are gone, so the buttons that operate on them have nothing
            to act on and only clutter the header. They come back with the grid on expand. */
@@ -9898,58 +9897,6 @@ function attachGoodTodayHandlers(){
   });
 }
 // ===== «Главные цели»: хендлеры истории выполненных целей =====
-function attachMainGoalsHistoryHandlers(){
-  // Открыть историю выполненных целей.
-  const btnHistory = document.getElementById('btnMainGoalsHistory');
-  if(btnHistory){
-    btnHistory.addEventListener('click', ()=>{
-      mainGoalsHistoryOpen = true;
-      mainGoalsHistorySelectedDate = null;
-      render();
-    });
-  }
-  // Назад из истории.
-  on('btnMainGoalsHistoryBack', 'click', ()=>{
-    mainGoalsHistoryOpen = false;
-    mainGoalsHistorySelectedDate = null;
-    render();
-  });
-  // Навигация по месяцам календаря.
-  on('btnMainGoalsHistoryPrevMonth', 'click', ()=>{
-    const d = new Date();
-    d.setMonth(d.getMonth() - 1);
-    // Просто перерисовываем — месяц вычисляется из системной даты в рендере, поэтому
-    // для навигации достаточно сбросить выбранную дату и оставить календарь на текущем месяце.
-    // Полноценная навигация по месяцам потребует хранения выбранного года/месяца в состоянии.
-    mainGoalsHistorySelectedDate = null;
-    render();
-  });
-  on('btnMainGoalsHistoryNextMonth', 'click', ()=>{
-    const d = new Date();
-    d.setMonth(d.getMonth() + 1);
-    mainGoalsHistorySelectedDate = null;
-    render();
-  });
-  // Клик по дню календаря — показать выполненные цели за эту дату.
-  document.querySelectorAll('[data-main-goals-history-day]').forEach(el=>{
-    el.addEventListener('click', ()=>{
-      const iso = el.dataset.mainGoalsHistoryDay;
-      if(!iso) return;
-      mainGoalsHistorySelectedDate = iso;
-      render();
-    });
-  });
-  // Удаление записи из истории.
-  document.querySelectorAll('[data-main-goals-history-delete]').forEach(el=>{
-    el.addEventListener('click', (e)=>{
-      e.stopPropagation();
-      const id = el.dataset.mainGoalsHistoryDelete;
-      if(!confirm(t('mainGoalsHistoryDeleteConfirm'))) return;
-      mainGoalsHistoryRemove(id);
-      render();
-    });
-  });
-}
 function attachHandlers(){
   attachMainViewHandlers();
   attachTemplatesModalHandlers();
@@ -9964,7 +9911,6 @@ function attachHandlers(){
   attachModalHandlers();
   attachWishMapHandlers();
   attachGoodTodayHandlers();
-  attachMainGoalsHistoryHandlers();
   attachChallengeHandlers();
   attachAchievementsHandlers();
 }
