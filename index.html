@@ -292,7 +292,7 @@
      #btnTopMenu{ padding:0 !important; font-size:20px !important; }
    }
   /* ===== Action buttons (edit/delete/move/relocate/archive) ===== */
-   #btnEdit, #btnDelete, #btnAddSubgoal, #btnDeleteChecklist, #btnMove, #btnMoveChecklist, #btnRelocate, #btnChecklistAdd, #btnFilter, .add-child-row #btnArchive, .add-goal-wrap #btnArchive, #btnGoodTodayHistory, #btnGoodTodayWeekHistory, #btnGoodTodayWeekEdit, #btnWishManage, #btnWishGrid, #btnWishPrint, #btnWishShare, #btnWheelPrint, #btnWheelShare, #btnGoodTodayHistoryPagePrev, #btnGoodTodayHistoryPageNext, #btnGoodTodayHistoryPagePrevBottom, #btnGoodTodayHistoryPageNextBottom, #btnAchievementsSave, #btnAchievementsCancel{
+   #btnEdit, #btnDelete, #btnAddSubgoal, #btnDeleteChecklist, #btnMove, #btnMoveChecklist, #btnRelocate, #btnChecklistAdd, #btnFilter, .add-child-row #btnArchive, .add-goal-wrap #btnArchive, #btnGoodTodayHistory, #btnGoodTodayWeekHistory, #btnGoodTodayWeekEdit, #btnWishManage, #btnWishGrid, #btnWishPrint, #btnWishShare, #btnWheelPrint, #btnWheelShare, #btnGoodTodayHistoryPagePrev, #btnGoodTodayHistoryPageNext, #btnGoodTodayHistoryPagePrevBottom, #btnGoodTodayHistoryPageNextBottom, #btnAchievementsSave, #btnAchievementsCancel, #btnPriorityHistory{
     background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:8px;
     padding:6px 12px; font-size:13px; cursor:pointer; white-space:nowrap;
   }
@@ -1495,7 +1495,7 @@
   .wish-header-actions{display:flex; align-items:center; gap:10px;}
   .wheel-header-actions{display:flex; align-items:center; gap:10px;}
   .add-goal-wrap{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
-  #btnAddGoal, #btnTemplates, #btnWishAdd, #btnGoodTodayAdd, #btnAchievementsAdd, #btnChallengeEdit, #btnChallengeReset, #btnChallengeHistory, #btnTodayHistory, #btnChallengePrevMonth, #btnChallengeNextMonth, #btnAchievementsGroupPrev, #btnAchievementsGroupNext, #btnMainGoalsHistory, #btnPriorityHistory, #btnMainGoalsHistoryBack, #btnPriorityHistoryBack{
+   #btnAddGoal, #btnTemplates, #btnWishAdd, #btnGoodTodayAdd, #btnAchievementsAdd, #btnChallengeEdit, #btnChallengeReset, #btnChallengeHistory, #btnTodayHistory, #btnChallengePrevMonth, #btnChallengeNextMonth, #btnAchievementsGroupPrev, #btnAchievementsGroupNext, #btnMainGoalsHistory, #btnMainGoalsHistoryBack, #btnPriorityHistoryBack{
     background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:8px;
     padding:6px 12px; font-size:13px; cursor:pointer; white-space:nowrap;
     margin-left:8px;
@@ -1670,7 +1670,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.4.40';
+const APP_VERSION = '1.4.41';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
