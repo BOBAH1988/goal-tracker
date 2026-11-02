@@ -885,6 +885,7 @@
     background:var(--card2); border:1px solid var(--border); border-radius:10px;
     padding:10px 12px; margin-bottom:8px; font-size:13px; color:var(--text);
   }
+  .challenge-history-info{flex:1; min-width:0;}
   .challenge-history-info .challenge-history-line1{font-weight:600; font-size:13px; color:var(--text);}
   .challenge-history-info .challenge-history-line2{font-size:13px; color:var(--muted);}
   .challenge-history-page-info{font-size:13px; color:var(--muted); white-space:nowrap;}
@@ -1640,7 +1641,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.4.32';
+const APP_VERSION = '1.4.33';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
