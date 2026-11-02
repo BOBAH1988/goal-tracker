@@ -1493,7 +1493,7 @@
   .wish-header-actions{display:flex; align-items:center; gap:10px;}
   .wheel-header-actions{display:flex; align-items:center; gap:10px;}
   .add-goal-wrap{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
-  #btnAddGoal, #btnTemplates, #btnWishAdd, #btnGoodTodayAdd, #btnAchievementsAdd, #btnChallengeEdit, #btnChallengeReset, #btnChallengeHistory, #btnTodayHistory, #btnChallengePrevMonth, #btnChallengeNextMonth, #btnAchievementsGroupPrev, #btnAchievementsGroupNext{
+  #btnAddGoal, #btnTemplates, #btnWishAdd, #btnGoodTodayAdd, #btnAchievementsAdd, #btnChallengeEdit, #btnChallengeReset, #btnChallengeHistory, #btnTodayHistory, #btnChallengePrevMonth, #btnChallengeNextMonth, #btnAchievementsGroupPrev, #btnAchievementsGroupNext, #btnMainGoalsHistory{
     background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:8px;
     padding:6px 12px; font-size:13px; cursor:pointer; white-space:nowrap;
   }
@@ -1517,7 +1517,7 @@
   #btnAddChild:disabled{opacity:.5; cursor:not-allowed;}
   /* Compact "+"/"−" icon style for Add/Delete, used instead of full text labels to save room on
      narrow (phone) screens. */
-    #btnAddGoal.icon-btn, #btnTemplates.icon-btn, #btnWishAdd.icon-btn, #btnWishManage.icon-btn, #btnWishGrid.icon-btn, #btnWishPrint.icon-btn, #btnWishShare.icon-btn, #btnWheelPrint.icon-btn, #btnWheelShare.icon-btn, #btnAddChild.icon-btn, #btnDelete.icon-btn, #btnEdit.icon-btn, #btnAddSubgoal.icon-btn, #btnDeleteChecklist.icon-btn, #btnMove.icon-btn, #btnMoveChecklist.icon-btn, #btnRelocate.icon-btn, #btnChecklistAdd.icon-btn, #btnFilter.icon-btn, .add-child-row #btnArchive.icon-btn, .add-goal-wrap #btnArchive.icon-btn, #btnSearch.icon-btn, #btnGoodTodayHistory.icon-btn, #btnGoodTodayWeekHistory.icon-btn, #btnGoodTodayWeekEdit.icon-btn, #btnGoodTodayAdd.icon-btn, #btnAchievementsAdd.icon-btn, #btnGoodTodayHistoryPagePrevBottom.icon-btn, #btnGoodTodayHistoryPageNextBottom.icon-btn, #btnChallengeEdit.icon-btn, #btnChallengeReset.icon-btn, #btnChallengePrevMonth.icon-btn, #btnChallengeNextMonth.icon-btn, #btnAchievementsGroupPrev.icon-btn, #btnAchievementsGroupNext.icon-btn{
+    #btnAddGoal.icon-btn, #btnTemplates.icon-btn, #btnWishAdd.icon-btn, #btnWishManage.icon-btn, #btnWishGrid.icon-btn, #btnWishPrint.icon-btn, #btnWishShare.icon-btn, #btnWheelPrint.icon-btn, #btnWheelShare.icon-btn, #btnAddChild.icon-btn, #btnDelete.icon-btn, #btnEdit.icon-btn, #btnAddSubgoal.icon-btn, #btnDeleteChecklist.icon-btn, #btnMove.icon-btn, #btnMoveChecklist.icon-btn, #btnRelocate.icon-btn, #btnChecklistAdd.icon-btn, #btnFilter.icon-btn, .add-child-row #btnArchive.icon-btn, .add-goal-wrap #btnArchive.icon-btn, #btnSearch.icon-btn, #btnGoodTodayHistory.icon-btn, #btnGoodTodayWeekHistory.icon-btn, #btnGoodTodayWeekEdit.icon-btn, #btnGoodTodayAdd.icon-btn, #btnAchievementsAdd.icon-btn, #btnGoodTodayHistoryPagePrevBottom.icon-btn, #btnGoodTodayHistoryPageNextBottom.icon-btn, #btnChallengeEdit.icon-btn, #btnChallengeReset.icon-btn, #btnChallengePrevMonth.icon-btn, #btnChallengeNextMonth.icon-btn, #btnAchievementsGroupPrev.icon-btn, #btnAchievementsGroupNext.icon-btn, #btnMainGoalsHistory.icon-btn{
     font-size:14px; font-weight:700; line-height:1; padding:5px 13px;
     min-width:32px; display:inline-flex; align-items:center; justify-content:center;
   }
@@ -1532,7 +1532,7 @@
    #btnWishAdd.icon-btn{ min-width:42px; padding:5px 0; justify-content:center; }
   /* Same box for the text "+" and the icon-font history glyph — both centered, both 42px,
      so the two buttons in the «Хорошее сегодня» header read as one visual pair. */
-   #btnGoodTodayHistory.icon-btn, #btnGoodTodayAdd.icon-btn{
+   #btnGoodTodayHistory.icon-btn, #btnGoodTodayAdd.icon-btn, #btnMainGoalsHistory.icon-btn{
      min-width:42px; padding:5px 0; justify-content:center;
    }
    #btnAddSubgoal.icon-btn{ font-size:24px; padding:2px; }
@@ -1667,7 +1667,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.4.36';
+const APP_VERSION = '1.4.37';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
