@@ -292,7 +292,7 @@
      #btnTopMenu{ padding:0 !important; font-size:20px !important; }
    }
   /* ===== Action buttons (edit/delete/move/relocate/archive) ===== */
-   #btnEdit, #btnDelete, #btnAddSubgoal, #btnDeleteChecklist, #btnMove, #btnMoveChecklist, #btnRelocate, #btnChecklistAdd, #btnFilter, .add-child-row #btnArchive, .add-goal-wrap #btnArchive, #btnGoodTodayHistory, #btnGoodTodayWeekHistory, #btnGoodTodayWeekEdit, #btnWishManage, #btnWishGrid, #btnWishPrint, #btnWishShare, #btnWheelPrint, #btnWheelShare, #btnGoodTodayHistoryPagePrev, #btnGoodTodayHistoryPageNext, #btnGoodTodayHistoryPagePrevBottom, #btnGoodTodayHistoryPageNextBottom, #btnAchievementsSave, #btnAchievementsCancel, #btnPriorityHistory{
+   #btnEdit, #btnDelete, #btnAddSubgoal, #btnDeleteChecklist, #btnMove, #btnMoveChecklist, #btnRelocate, #btnChecklistAdd, #btnFilter, .add-child-row #btnArchive, .add-goal-wrap #btnArchive, #btnGoodTodayHistory, #btnGoodTodayWeekHistory, #btnGoodTodayWeekEdit, #btnWishManage, #btnWishGrid, #btnWishPrint, #btnWishShare, #btnWheelPrint, #btnWheelShare, #btnGoodTodayHistoryPagePrev, #btnGoodTodayHistoryPageNext, #btnGoodTodayHistoryPagePrevBottom, #btnGoodTodayHistoryPageNextBottom, #btnAchievementsSave, #btnAchievementsCancel{
     background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:8px;
     padding:6px 12px; font-size:13px; cursor:pointer; white-space:nowrap;
   }
@@ -303,7 +303,7 @@
       never paints these, so nothing can stick; a mouse keeps the feedback. The REAL mode colours
       (.active rules) are deliberately OUTSIDE this gate: they signal a working mode. */
    @media (hover: hover) and (pointer: fine){
-    :where(html:not(.touch-mode)) #btnFilter:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistory:hover,:where(html:not(.touch-mode)) #btnGoodTodayWeekHistory:hover,:where(html:not(.touch-mode)) #btnGoodTodayWeekEdit:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPagePrev:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPageNext:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPagePrevBottom:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPageNextBottom:hover,:where(html:not(.touch-mode)) #btnChallengeHistory:hover,:where(html:not(.touch-mode)) #btnTodayHistory:hover,:where(html:not(.touch-mode)) #btnAchievementsGroupPrev:hover,:where(html:not(.touch-mode)) #btnAchievementsGroupNext:hover,:where(html:not(.touch-mode)) #btnMainGoalsHistory:hover,:where(html:not(.touch-mode)) #btnPriorityHistory:hover{color:var(--text); border-color:var(--accent);}
+     :where(html:not(.touch-mode)) #btnFilter:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistory:hover,:where(html:not(.touch-mode)) #btnGoodTodayWeekHistory:hover,:where(html:not(.touch-mode)) #btnGoodTodayWeekEdit:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPagePrev:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPageNext:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPagePrevBottom:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPageNextBottom:hover,:where(html:not(.touch-mode)) #btnChallengeHistory:hover,:where(html:not(.touch-mode)) #btnTodayHistory:hover,:where(html:not(.touch-mode)) #btnAchievementsGroupPrev:hover,:where(html:not(.touch-mode)) #btnAchievementsGroupNext:hover{color:var(--text); border-color:var(--accent);}
      :where(html:not(.touch-mode)) #btnEdit:hover{color:var(--text); border-color:var(--accent);}
      :where(html:not(.touch-mode)) #btnDelete:hover{border-color:var(--red); color:var(--red);}
      :where(html:not(.touch-mode)) #btnDeleteChecklist:hover{border-color:var(--red); color:var(--red);}
@@ -375,9 +375,7 @@
     .touch-mode .add-child-row #btnArchive:hover:not(.active),
     .touch-mode .add-goal-wrap #btnArchive:hover:not(.active),
     .touch-mode .topbar button:hover,
-    .touch-mode .goal-row .actions button:hover,
-    .touch-mode #btnPriorityHistory:hover,
-    .touch-mode #btnMainGoalsHistory:hover{color:var(--muted); border-color:var(--border);}
+    .touch-mode .goal-row .actions button:hover{color:var(--muted); border-color:var(--border);}
     /* Мягкое напоминание: у его второй кнопки hover меняет только рамка, поэтому в тач-режиме
        гасим именно её (акцентная кнопка «Открыть сферу» вне списка — её цвет не ховерный). */
     .touch-mode .sphere-reminder-actions button:not(.sphere-reminder-open):hover{border-color:var(--border);}
@@ -1495,10 +1493,9 @@
   .wish-header-actions{display:flex; align-items:center; gap:10px;}
   .wheel-header-actions{display:flex; align-items:center; gap:10px;}
   .add-goal-wrap{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
-   #btnAddGoal, #btnTemplates, #btnWishAdd, #btnGoodTodayAdd, #btnAchievementsAdd, #btnChallengeEdit, #btnChallengeReset, #btnChallengeHistory, #btnTodayHistory, #btnChallengePrevMonth, #btnChallengeNextMonth, #btnAchievementsGroupPrev, #btnAchievementsGroupNext, #btnMainGoalsHistory, #btnMainGoalsHistoryBack, #btnPriorityHistoryBack{
+  #btnAddGoal, #btnTemplates, #btnWishAdd, #btnGoodTodayAdd, #btnAchievementsAdd, #btnChallengeEdit, #btnChallengeReset, #btnChallengeHistory, #btnTodayHistory, #btnChallengePrevMonth, #btnChallengeNextMonth, #btnAchievementsGroupPrev, #btnAchievementsGroupNext{
     background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:8px;
     padding:6px 12px; font-size:13px; cursor:pointer; white-space:nowrap;
-    margin-left:8px;
   }
   #btnAddGoal:disabled{opacity:.5; cursor:not-allowed;}
   .add-goal-msg{color:var(--red); font-size:13px; white-space:nowrap;}
@@ -1520,7 +1517,7 @@
   #btnAddChild:disabled{opacity:.5; cursor:not-allowed;}
   /* Compact "+"/"−" icon style for Add/Delete, used instead of full text labels to save room on
      narrow (phone) screens. */
-    #btnAddGoal.icon-btn, #btnTemplates.icon-btn, #btnWishAdd.icon-btn, #btnWishManage.icon-btn, #btnWishGrid.icon-btn, #btnWishPrint.icon-btn, #btnWishShare.icon-btn, #btnWheelPrint.icon-btn, #btnWheelShare.icon-btn, #btnAddChild.icon-btn, #btnDelete.icon-btn, #btnEdit.icon-btn, #btnAddSubgoal.icon-btn, #btnDeleteChecklist.icon-btn, #btnMove.icon-btn, #btnMoveChecklist.icon-btn, #btnRelocate.icon-btn, #btnChecklistAdd.icon-btn, #btnFilter.icon-btn, .add-child-row #btnArchive.icon-btn, .add-goal-wrap #btnArchive.icon-btn, #btnSearch.icon-btn, #btnGoodTodayHistory.icon-btn, #btnGoodTodayWeekHistory.icon-btn, #btnGoodTodayWeekEdit.icon-btn, #btnGoodTodayAdd.icon-btn, #btnAchievementsAdd.icon-btn, #btnGoodTodayHistoryPagePrevBottom.icon-btn, #btnGoodTodayHistoryPageNextBottom.icon-btn, #btnChallengeEdit.icon-btn, #btnChallengeReset.icon-btn, #btnChallengePrevMonth.icon-btn, #btnChallengeNextMonth.icon-btn, #btnAchievementsGroupPrev.icon-btn, #btnAchievementsGroupNext.icon-btn, #btnMainGoalsHistory.icon-btn, #btnPriorityHistory.icon-btn{
+    #btnAddGoal.icon-btn, #btnTemplates.icon-btn, #btnWishAdd.icon-btn, #btnWishManage.icon-btn, #btnWishGrid.icon-btn, #btnWishPrint.icon-btn, #btnWishShare.icon-btn, #btnWheelPrint.icon-btn, #btnWheelShare.icon-btn, #btnAddChild.icon-btn, #btnDelete.icon-btn, #btnEdit.icon-btn, #btnAddSubgoal.icon-btn, #btnDeleteChecklist.icon-btn, #btnMove.icon-btn, #btnMoveChecklist.icon-btn, #btnRelocate.icon-btn, #btnChecklistAdd.icon-btn, #btnFilter.icon-btn, .add-child-row #btnArchive.icon-btn, .add-goal-wrap #btnArchive.icon-btn, #btnSearch.icon-btn, #btnGoodTodayHistory.icon-btn, #btnGoodTodayWeekHistory.icon-btn, #btnGoodTodayWeekEdit.icon-btn, #btnGoodTodayAdd.icon-btn, #btnAchievementsAdd.icon-btn, #btnGoodTodayHistoryPagePrevBottom.icon-btn, #btnGoodTodayHistoryPageNextBottom.icon-btn, #btnChallengeEdit.icon-btn, #btnChallengeReset.icon-btn, #btnChallengePrevMonth.icon-btn, #btnChallengeNextMonth.icon-btn, #btnAchievementsGroupPrev.icon-btn, #btnAchievementsGroupNext.icon-btn{
     font-size:14px; font-weight:700; line-height:1; padding:5px 13px;
     min-width:32px; display:inline-flex; align-items:center; justify-content:center;
   }
@@ -1535,7 +1532,7 @@
    #btnWishAdd.icon-btn{ min-width:42px; padding:5px 0; justify-content:center; }
   /* Same box for the text "+" and the icon-font history glyph — both centered, both 42px,
      so the two buttons in the «Хорошее сегодня» header read as one visual pair. */
-   #btnGoodTodayHistory.icon-btn, #btnGoodTodayAdd.icon-btn, #btnMainGoalsHistory.icon-btn, #btnPriorityHistory.icon-btn{
+   #btnGoodTodayHistory.icon-btn, #btnGoodTodayAdd.icon-btn{
      min-width:42px; padding:5px 0; justify-content:center;
    }
    #btnAddSubgoal.icon-btn{ font-size:24px; padding:2px; }
@@ -1878,8 +1875,7 @@ function emptyTemplate(){
   todayOpen: true,
   priorityDefaultsSeeded: true,
   hiddenBlocks: [],
-  mainGoalsHistory: [],
-  priorityHistory: [] };
+  mainGoalsHistory: [] };
 }
 
 /* ===== Language ===== */
@@ -2302,13 +2298,6 @@ const STRINGS = {
     achievementsGroup2: 'Мне приносит радость',
     achievementsGroup3: 'Меня вдохновляют',
     achievementsGroup4: 'Мои полезные привычки',
-    priorityHistory: 'История приоритетов',
-    priorityHistoryTitle: 'История выполненных приоритетов',
-    priorityHistoryEmpty: 'Выполненных приоритетов пока нет.',
-    priorityHistoryDelete: 'Удалить',
-    priorityHistoryDeleteConfirm: 'Удалить запись из истории?',
-    priorityHistoryCalendar: 'Календарь',
-    priorityHistoryCompletedOn: 'Приоритеты, выполненные {date}',
     mainGoalsHistory: 'История целей',
     mainGoalsHistoryTitle: 'История выполненных целей',
     mainGoalsHistoryEmpty: 'Выполненных целей пока нет.',
@@ -2745,13 +2734,6 @@ const STRINGS = {
     achievementsGroup2: 'Brings Me Joy',
     achievementsGroup3: 'Меня вдохновляют',
     achievementsGroup4: 'My Useful Habits',
-    priorityHistory: 'Priorities History',
-    priorityHistoryTitle: 'Completed Priorities History',
-    priorityHistoryEmpty: 'No completed priorities yet.',
-    priorityHistoryDelete: 'Delete',
-    priorityHistoryDeleteConfirm: 'Delete this record from history?',
-    priorityHistoryCalendar: 'Calendar',
-    priorityHistoryCompletedOn: 'Completed priorities on {date}',
     mainGoalsHistory: 'Goals History',
     mainGoalsHistoryTitle: 'Completed Goals History',
     mainGoalsHistoryEmpty: 'No completed goals yet.',
@@ -3067,8 +3049,6 @@ let goodTodayHistoryOpen = false;       // history view (grouped by week) is ope
 let goodTodayHistoryPage = 0;           // 0 = newest page of 7 entries; ++ for older
 let mainGoalsHistoryOpen = false;       // main goals history calendar view is open
 let mainGoalsHistorySelectedDate = null; // ISO date selected in the calendar
-let priorityHistoryOpen = false;        // priority history calendar view is open
-let priorityHistorySelectedDate = null; // ISO date selected in the calendar
 let goodTodayEditId = null;             // id of the entry being edited inline (daily view)
 let goodTodayDraftText = '';            // text typed into the add form (survives re-renders)
 let goodTodayHistoryEditId = null;      // id of the entry being edited inline (history view)
@@ -3918,42 +3898,6 @@ function mainGoalsHistoryAdd(goalNode, dateStr){
 // Remove a completion record by id.
 function mainGoalsHistoryRemove(id){
   state.mainGoalsHistory = (state.mainGoalsHistory || []).filter(e => e && e.id !== id);
-}
-// ===== «Главные цели» (приоритеты): история выполненных приоритетов =====
-// All completed priority history entries, newest first.
-// Each entry: { id, date: 'YYYY-MM-DD', priorityText } — snapshot at completion time.
-function priorityAllHistory(){
-  const arr = Array.isArray(state.priorityHistory) ? state.priorityHistory : [];
-  return arr.slice().sort((a,b)=>(b.date||'').localeCompare(a.date||''));
-}
-// Completed priorities for a given ISO date string.
-function priorityHistoryFor(dateStr){
-  return priorityAllHistory().filter(e => e && e.date === dateStr);
-}
-// ISO dates that have at least one completed priority — used to mark the calendar.
-function priorityHistoryDates(){
-  const arr = priorityAllHistory();
-  const dates = new Set();
-  arr.forEach(e => { if(e && e.date) dates.add(e.date); });
-  return dates;
-}
-// Add a completion record when a priority item is ticked done. Called from priority toggle
-// handlers. The record is append-only — stays even if the priority is later removed or undone.
-function priorityHistoryAdd(priorityText, dateStr){
-  if(!priorityText || !dateStr) return;
-  // Don't duplicate the same text on the same date.
-  const exists = priorityAllHistory().some(e => e && e.priorityText === priorityText && e.date === dateStr);
-  if(exists) return;
-  state.priorityHistory = state.priorityHistory || [];
-  state.priorityHistory.push({
-    id: 'pr_' + dateStr + '_' + priorityText.replace(/\s+/g,'_').slice(0,30),
-    date: dateStr,
-    priorityText: priorityText
-  });
-}
-// Remove a priority completion record by id.
-function priorityHistoryRemove(id){
-  state.priorityHistory = (state.priorityHistory || []).filter(e => e && e.id !== id);
 }
 // Entries from today.
 function goodTodayTodayEntries(){
@@ -6402,17 +6346,14 @@ function homeViewHTML(overallPct, hintHTML, mode, protectedCount){
      </div>`;
    }
    lastPriorityItems = collectPriorityItems();
-    if(blockShown('priority')){
-      const priorityOpen = !!state.priorityOpen;
-      html += `<div class="priority-block">
-      <div class="section-title-row" style="margin-bottom:8px;">
-      <div class="priority-header" id="priorityToggle">
-        <span class="priority-arrow">${priorityOpen ? '▾' : '▸'}</span>
-        <span class="section-title">${t('priorityTitle')}</span>
-      </div>
-      <button id="btnPriorityHistory" class="icon-btn" data-tip="${t('priorityHistory')}" aria-label="${t('priorityHistory')}"><i class="ti ti-history" aria-hidden="true"></i></button>
-      </div>
-      ${priorityOpen ? `<div class="priority-list">
+   if(blockShown('priority')){
+     const priorityOpen = !!state.priorityOpen;
+     html += `<div class="priority-block">
+     <div class="priority-header" id="priorityToggle">
+       <span class="priority-arrow">${priorityOpen ? '▾' : '▸'}</span>
+       <span class="section-title">${t('priorityTitle')}</span>
+     </div>
+     ${priorityOpen ? `<div class="priority-list">
        ${lastPriorityItems.length
          ? lastPriorityItems.map((entry, i) => {
              const done = entry.kind === 'leaf' ? entry.node.done : entry.item.done;
@@ -6431,9 +6372,6 @@ function homeViewHTML(overallPct, hintHTML, mode, protectedCount){
       </div>` : ''}
     </div>`;
    }
-    if(priorityHistoryOpen){
-      html += priorityHistoryHTML();
-    }
     // Мягкое напоминание о сфере, к которой давно не возвращались. Ненавязчивый блок над
     // списком сфер: без сроков, красных цветов и оценок — только предложение заглянуть.
     // Считается по-настоящему загруженным данным (sphereDataReady) и только для ОДНОЙ сферы —
@@ -6457,7 +6395,7 @@ function homeViewHTML(overallPct, hintHTML, mode, protectedCount){
          <span class="main-goals-arrow">${mainGoalsOpen ? '▾' : '▸'}</span>
         ${t('mainGoals')}${hintHTML}
       </div>
-      <button id="btnMainGoalsHistory" class="icon-btn" data-tip="${t('mainGoalsHistory')}" aria-label="${t('mainGoalsHistory')}"><i class="ti ti-history" aria-hidden="true"></i></button>
+      ${mainGoalsOpen && state.children.length > 0 ? `<button id="btnMainGoalsHistory" class="icon-btn" data-tip="${t('mainGoalsHistory')}" aria-label="${t('mainGoalsHistory')}"><i class="ti ti-history" aria-hidden="true"></i></button>` : ''}
       ${/* The whole action group (+ − ↕ filter relocate edit) belongs to the OPEN grid — when the
            section is collapsed the cards are gone, so the buttons that operate on them have nothing
            to act on and only clutter the header. They come back with the grid on expand. */
@@ -7203,7 +7141,7 @@ function mainGoalsHistoryHTML(){
     </div>
   </div>`;
   html += `<div class="good-today-subtitle" style="display:flex; align-items:center; gap:8px;">${t('mainGoalsHistory')}
-    <button id="btnMainGoalsHistoryBack" type="button" class="icon-btn">${t('back')}</button>
+    <button id="btnMainGoalsHistoryBack" type="button">${t('back')}</button>
   </div>`;
 
   // Calendar header with month navigation
@@ -7255,82 +7193,6 @@ function mainGoalsHistoryHTML(){
       html += `</div>`;
     }else{
       html += `<div class="main-goals-history-empty">${t('mainGoalsHistoryEmpty')}</div>`;
-    }
-    html += `</div>`;
-  }
-
-  html += `</div>`;
-  return html;
-}
-
-// ===== «Главные цели» (приоритеты): история выполненных приоритетов с календарём =====
-function priorityHistoryHTML(){
-  const todayStr = isoToday();
-  const d = new Date();
-  const y = d.getFullYear();
-  const m = d.getMonth();
-  const firstDay = new Date(y, m, 1);
-  const startOffset = firstDay.getDay(); // 0=Sun .. 6=Sat
-  const daysInMonth = new Date(y, m + 1, 0).getDate();
-  const datesWithPriority = priorityHistoryDates();
-  const monthNamesRu = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
-  const monthNamesEn = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-  const monthName = lang === 'ru' ? monthNamesRu[m] : monthNamesEn[m];
-
-  let html = `<div class="section-title-row" style="margin-top:24px;">
-    <div class="section-title" id="priorityToggle">
-      <span class="priority-arrow">${priorityOpen ? '▾' : '▸'}</span>${t('priorityTitle')}
-    </div>
-  </div>`;
-  html += `<div class="good-today-subtitle" style="display:flex; align-items:center; gap:8px;">${t('priorityHistory')}
-    <button id="btnPriorityHistoryBack" type="button">${t('back')}</button>
-  </div>`;
-
-  html += `<div class="main-goals-history-cal-wrap">
-    <div class="main-goals-history-cal-head" style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
-      <button id="btnPriorityHistoryPrevMonth" class="icon-btn" data-tip="${t('todayHistoryMonthPrev')}" aria-label="${t('todayHistoryMonthPrev')}">‹</button>
-      <div class="main-goals-history-cal-title">${monthName} ${y}</div>
-      <button id="btnPriorityHistoryNextMonth" class="icon-btn" data-tip="${t('todayHistoryMonthNext')}" aria-label="${t('todayHistoryMonthNext')}">›</button>
-    </div>
-    <div class="challenge-weekdays">` + t('challengeWeekdays').split(',').map(w => `<span>${w.trim()}</span>`).join('') + `</div>
-    <div class="challenge-grid main-goals-history-grid">`;
-
-  for(let i = 0; i < startOffset; i++){
-    html += `<div class="challenge-day out"></div>`;
-  }
-
-  for(let day = 1; day <= daysInMonth; day++){
-    const iso = y + '-' + String(m + 1).padStart(2,'0') + '-' + String(day).padStart(2,'0');
-    const hasPriority = datesWithPriority.has(iso);
-    const isToday = iso === todayStr;
-    const cls = ['challenge-day', 'main-goals-history-day'];
-    if(hasPriority) cls.push('done');
-    if(isToday) cls.push('today');
-    html += `<button type="button" class="${cls.join(' ')}" data-priority-history-day="${iso}"${isToday ? '' : ' '}>
-      <span class="cd-num">${day}</span>
-      ${hasPriority ? '<span class="cd-mark">✓</span>' : ''}
-    </button>`;
-  }
-
-  html += `</div>`;
-
-  if(priorityHistorySelectedDate){
-    const dayItems = priorityHistoryFor(priorityHistorySelectedDate);
-    const fmtDate = formatDateISO(priorityHistorySelectedDate);
-    html += `<div class="main-goals-history-day-list">
-      <div class="main-goals-history-day-title">${t('priorityHistoryCompletedOn').replace('{date}', fmtDate)}</div>`;
-    if(dayItems.length){
-      html += `<div class="main-goals-history-items">`;
-      dayItems.forEach(g => {
-        html += `<div class="main-goals-history-item">
-          <div class="main-goals-history-item-mark">✓</div>
-          <div class="main-goals-history-item-text">${esc(g.priorityText || '')}</div>
-          <button type="button" class="main-goals-history-delete" data-priority-history-delete="${g.id}" data-tip="${t('priorityHistoryDelete')}" aria-label="${t('priorityHistoryDelete')}">✕</button>
-        </div>`;
-      });
-      html += `</div>`;
-    }else{
-      html += `<div class="main-goals-history-empty">${t('priorityHistoryEmpty')}</div>`;
     }
     html += `</div>`;
   }
@@ -10021,52 +9883,6 @@ function attachMainGoalsHistoryHandlers(){
     });
   });
 }
-// ===== «Главные цели» (приоритеты): хендлеры истории выполненных приоритетов =====
-function attachPriorityHistoryHandlers(){
-  // Открыть историю выполненных приоритетов.
-  const btnHistory = document.getElementById('btnPriorityHistory');
-  if(btnHistory){
-    btnHistory.addEventListener('click', ()=>{
-      priorityHistoryOpen = true;
-      priorityHistorySelectedDate = null;
-      render();
-    });
-  }
-  // Назад из истории.
-  on('btnPriorityHistoryBack', 'click', ()=>{
-    priorityHistoryOpen = false;
-    priorityHistorySelectedDate = null;
-    render();
-  });
-  // Навигация по месяцам календаря.
-  on('btnPriorityHistoryPrevMonth', 'click', ()=>{
-    priorityHistorySelectedDate = null;
-    render();
-  });
-  on('btnPriorityHistoryNextMonth', 'click', ()=>{
-    priorityHistorySelectedDate = null;
-    render();
-  });
-  // Клик по дню календаря — показать выполненные приоритеты за эту дату.
-  document.querySelectorAll('[data-priority-history-day]').forEach(el=>{
-    el.addEventListener('click', ()=>{
-      const iso = el.dataset.priorityHistoryDay;
-      if(!iso) return;
-      priorityHistorySelectedDate = iso;
-      render();
-    });
-  });
-  // Удаление записи из истории.
-  document.querySelectorAll('[data-priority-history-delete]').forEach(el=>{
-    el.addEventListener('click', (e)=>{
-      e.stopPropagation();
-      const id = el.dataset.priorityHistoryDelete;
-      if(!confirm(t('priorityHistoryDeleteConfirm'))) return;
-      priorityHistoryRemove(id);
-      render();
-    });
-  });
-}
 function attachHandlers(){
   attachMainViewHandlers();
   attachTemplatesModalHandlers();
@@ -10082,7 +9898,6 @@ function attachHandlers(){
   attachWishMapHandlers();
   attachGoodTodayHandlers();
   attachMainGoalsHistoryHandlers();
-  attachPriorityHistoryHandlers();
   attachChallengeHandlers();
   attachAchievementsHandlers();
 }
@@ -10458,9 +10273,6 @@ function attachMainViewHandlers(){
     mainGoalsToggle.addEventListener('click', ()=>{
       mainGoalsOpen = !mainGoalsOpen;
       state.mainGoalsOpen = mainGoalsOpen;
-      // При открытии/закрытии секции выходим из режима истории, чтобы не оставаться на календаре.
-      mainGoalsHistoryOpen = false;
-      mainGoalsHistorySelectedDate = null;
       // Секция свёрнута — дерево сферы скрывается вместе с ней, подсветка сектора снимается.
       if(!mainGoalsOpen) expandedSphereIdx = null;
       saveState();
@@ -10630,12 +10442,6 @@ function attachMainViewHandlers(){
       lastPriorityToggleTime = now;
       if(entry.kind === 'leaf'){ entry.node.done = !entry.node.done; }
       else { entry.item.done = !entry.item.done; }
-      // Если приоритет только что выполнен — фиксируем в истории приоритетов.
-      if(entry.kind === 'leaf' && entry.node.done){
-        priorityHistoryAdd(entry.node.name, isoToday());
-      } else if(entry.kind !== 'leaf' && entry.item.done){
-        priorityHistoryAdd(entry.item.text, isoToday());
-      }
       // Отметка «готово» прямо с главной — выполнение цели внутри её сферы.
       touchSphereAtPath(entry.path);
       saveState();
