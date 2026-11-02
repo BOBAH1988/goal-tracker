@@ -1641,7 +1641,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.4.33';
+const APP_VERSION = '1.4.34';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -2270,6 +2270,7 @@ const STRINGS = {
     achievementsGroup1: 'Мои достижения',
     achievementsGroup2: 'Мне приносит радость',
     achievementsGroup3: 'Меня вдохновляют',
+    achievementsGroup4: 'Мои полезные привычки',
     achievementsAdd: '+ Добавить достижение',
     achievementsPlaceholder: 'Ваше достижение…',
     achievementsSave: 'Сохранить',
@@ -2280,6 +2281,7 @@ const STRINGS = {
     achievementsEmpty: 'Добавьте первое свое достижение.',
     achievementsEmptyRejoice: 'Добавьте что вам приносит радость',
     achievementsEmptyInspire: 'Добавьте человека который вас вдохновляет',
+    achievementsEmptyHabits: 'Добавьте свою полезную привычку',
     achievementsMax: 'Достижений можно не более 10',
     achievementsCharCount: '{n} из 100 символов',
     tipAchievementsAdd: 'Добавить достижение в список',
@@ -2697,6 +2699,7 @@ const STRINGS = {
     achievementsGroup1: 'My Achievements',
     achievementsGroup2: 'Brings Me Joy',
     achievementsGroup3: 'Меня вдохновляют',
+    achievementsGroup4: 'My Useful Habits',
     achievementsAdd: '+ Add achievement',
     achievementsPlaceholder: 'Your achievement…',
     achievementsSave: 'Save',
@@ -2707,6 +2710,7 @@ const STRINGS = {
     achievementsEmpty: 'No achievements yet — add your first one to come back to for motivation.',
     achievementsEmptyRejoice: 'Add what brings you joy',
     achievementsEmptyInspire: 'Add a person who inspires you',
+    achievementsEmptyHabits: 'Add your useful habit',
     achievementsMax: 'Maximum 10 achievements',
     achievementsCharCount: '{n} of 100 characters',
     tipAchievementsAdd: 'Add an achievement to the list',
@@ -4298,7 +4302,7 @@ function ensureGoodToday(node){
     }));
   }
 }
-/* «Мои достижения»: гарантируем, что state.achievements — объект с 3 группами.
+/* «Мои достижения»: гарантируем, что state.achievements — объект с 4 группами.
    Каждая группа: { id, title, items[] } — максимум 10 строк в группе.
    Старый формат (плоский массив строк) мигрируется автоматически. */
 function ensureAchievements(node){
@@ -4311,7 +4315,8 @@ function ensureAchievements(node){
       groups: [
         { id: 'achievements', title: null, items },
         { id: 'rejoice', title: null, items: [] },
-        { id: 'inspire', title: null, items: [] }
+        { id: 'inspire', title: null, items: [] },
+        { id: 'habits', title: null, items: [] }
       ],
       activeGroupId: 'achievements',
       open: a.achievementsOpen === undefined ? true : !!a.achievementsOpen
@@ -4323,15 +4328,16 @@ function ensureAchievements(node){
       groups: [
         { id: 'achievements', title: null, items: [] },
         { id: 'rejoice', title: null, items: [] },
-        { id: 'inspire', title: null, items: [] }
+        { id: 'inspire', title: null, items: [] },
+        { id: 'habits', title: null, items: [] }
       ],
       activeGroupId: 'achievements',
       open: true
     };
     return;
   }
-  // Убеждаемся, что все 3 группы существуют.
-  const ids = ['achievements', 'rejoice', 'inspire'];
+  // Убеждаемся, что все 4 группы существуют.
+  const ids = ['achievements', 'rejoice', 'inspire', 'habits'];
   for(const id of ids){
     if(!a.groups.find(g => g.id === id)){
       a.groups.push({ id, title: null, items: [] });
@@ -6424,11 +6430,11 @@ function achievementsSectionHTML(){
   // нормализуем тут же: плоский массив → объект с группами.
   let st;
   if(Array.isArray(a)){
-    st = { groups: [{ id: 'achievements', title: null, items: a }, { id: 'rejoice', title: null, items: [] }, { id: 'inspire', title: null, items: [] }], activeGroupId: 'achievements', open: true };
+    st = { groups: [{ id: 'achievements', title: null, items: a }, { id: 'rejoice', title: null, items: [] }, { id: 'inspire', title: null, items: [] }, { id: 'habits', title: null, items: [] }], activeGroupId: 'achievements', open: true };
   } else if(a && a.groups){
     st = a;
   } else {
-    st = { groups: [{ id: 'achievements', title: null, items: [] }, { id: 'rejoice', title: null, items: [] }, { id: 'inspire', title: null, items: [] }], activeGroupId: 'achievements', open: true };
+    st = { groups: [{ id: 'achievements', title: null, items: [] }, { id: 'rejoice', title: null, items: [] }, { id: 'inspire', title: null, items: [] }, { id: 'habits', title: null, items: [] }], activeGroupId: 'achievements', open: true };
   }
   const grp = st.groups.find(g => g.id === st.activeGroupId) || st.groups[0] || { items: [] };
   const arr = Array.isArray(grp.items) ? grp.items : [];
@@ -6436,7 +6442,8 @@ function achievementsSectionHTML(){
   const groupTitles = {
     achievements: t('achievementsGroup1'),
     rejoice: t('achievementsGroup2'),
-    inspire: t('achievementsGroup3')
+    inspire: t('achievementsGroup3'),
+    habits: t('achievementsGroup4')
   };
   const curTitle = groupTitles[st.activeGroupId] || t('achievementsGroup1');
   const open = st.open === undefined ? true : st.open;
@@ -6459,6 +6466,7 @@ function achievementsSectionHTML(){
   if(arr.length === 0){
     const emptyText = st.activeGroupId === 'rejoice' ? t('achievementsEmptyRejoice')
       : st.activeGroupId === 'inspire' ? t('achievementsEmptyInspire')
+      : st.activeGroupId === 'habits' ? t('achievementsEmptyHabits')
       : t('achievementsEmpty');
     html += `<div class="achievements-subtitle-row">
       <span class="achievements-empty">${esc(emptyText)}</span>
@@ -9062,11 +9070,11 @@ function attachAchievementsHandlers(){
     const a = state.achievements;
     let st;
     if(Array.isArray(a)){
-      st = { groups: [{ id: 'achievements', title: null, items: a }, { id: 'rejoice', title: null, items: [] }, { id: 'inspire', title: null, items: [] }], activeGroupId: 'achievements', open: true };
+      st = { groups: [{ id: 'achievements', title: null, items: a }, { id: 'rejoice', title: null, items: [] }, { id: 'inspire', title: null, items: [] }, { id: 'habits', title: null, items: [] }], activeGroupId: 'achievements', open: true };
     } else if(a && a.groups){
       st = a;
     } else {
-      st = { groups: [{ id: 'achievements', title: null, items: [] }, { id: 'rejoice', title: null, items: [] }, { id: 'inspire', title: null, items: [] }], activeGroupId: 'achievements', open: true };
+      st = { groups: [{ id: 'achievements', title: null, items: [] }, { id: 'rejoice', title: null, items: [] }, { id: 'inspire', title: null, items: [] }, { id: 'habits', title: null, items: [] }], activeGroupId: 'achievements', open: true };
     }
     return st.groups.find(g => g.id === st.activeGroupId) || st.groups[0] || { items: [] };
   }
@@ -9083,11 +9091,11 @@ function attachAchievementsHandlers(){
     const a = state.achievements;
     let st;
     if(Array.isArray(a)){
-      st = { groups: [{ id: 'achievements', title: null, items: a }, { id: 'rejoice', title: null, items: [] }, { id: 'inspire', title: null, items: [] }], activeGroupId: 'achievements', open: true };
+      st = { groups: [{ id: 'achievements', title: null, items: a }, { id: 'rejoice', title: null, items: [] }, { id: 'inspire', title: null, items: [] }, { id: 'habits', title: null, items: [] }], activeGroupId: 'achievements', open: true };
     } else if(a && a.groups){
       st = a;
     } else {
-      st = { groups: [{ id: 'achievements', title: null, items: [] }, { id: 'rejoice', title: null, items: [] }, { id: 'inspire', title: null, items: [] }], activeGroupId: 'achievements', open: true };
+      st = { groups: [{ id: 'achievements', title: null, items: [] }, { id: 'rejoice', title: null, items: [] }, { id: 'inspire', title: null, items: [] }, { id: 'habits', title: null, items: [] }], activeGroupId: 'achievements', open: true };
     }
     const idx = st.groups.findIndex(g => g.id === st.activeGroupId);
     st.activeGroupId = st.groups[(idx + st.groups.length - 1) % st.groups.length].id;
@@ -9099,11 +9107,11 @@ function attachAchievementsHandlers(){
     const a = state.achievements;
     let st;
     if(Array.isArray(a)){
-      st = { groups: [{ id: 'achievements', title: null, items: a }, { id: 'rejoice', title: null, items: [] }, { id: 'inspire', title: null, items: [] }], activeGroupId: 'achievements', open: true };
+      st = { groups: [{ id: 'achievements', title: null, items: a }, { id: 'rejoice', title: null, items: [] }, { id: 'inspire', title: null, items: [] }, { id: 'habits', title: null, items: [] }], activeGroupId: 'achievements', open: true };
     } else if(a && a.groups){
       st = a;
     } else {
-      st = { groups: [{ id: 'achievements', title: null, items: [] }, { id: 'rejoice', title: null, items: [] }, { id: 'inspire', title: null, items: [] }], activeGroupId: 'achievements', open: true };
+      st = { groups: [{ id: 'achievements', title: null, items: [] }, { id: 'rejoice', title: null, items: [] }, { id: 'inspire', title: null, items: [] }, { id: 'habits', title: null, items: [] }], activeGroupId: 'achievements', open: true };
     }
     const idx = st.groups.findIndex(g => g.id === st.activeGroupId);
     st.activeGroupId = st.groups[(idx + 1) % st.groups.length].id;
