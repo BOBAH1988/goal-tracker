@@ -168,7 +168,7 @@
      all, so there is nothing left to stick. A mouse-driven desktop keeps the feedback. */
   @media (hover: hover) and (pointer: fine){
     :where(html:not(.touch-mode)) .topbar button:hover{color:var(--text); border-color:var(--accent);}
-    :where(html:not(.touch-mode)) #btnFilter:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistory:hover,:where(html:not(.touch-mode)) #btnGoodTodayWeekHistory:hover,:where(html:not(.touch-mode)) #btnGoodTodayWeekEdit:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPagePrev:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPageNext:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPagePrevBottom:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPageNextBottom:hover,:where(html:not(.touch-mode)) #btnChallengeHistory:hover,:where(html:not(.touch-mode)) #btnTodayHistory:hover,:where(html:not(.touch-mode)) #btnAchievementsGroupPrev:hover,:where(html:not(.touch-mode)) #btnAchievementsGroupNext:hover{color:var(--text); border-color:var(--accent);}
+    :where(html:not(.touch-mode)) #btnFilter:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistory:hover,:where(html:not(.touch-mode)) #btnGoodTodayWeekHistory:hover,:where(html:not(.touch-mode)) #btnGoodTodayWeekEdit:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPagePrev:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPageNext:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPagePrevBottom:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPageNextBottom:hover,:where(html:not(.touch-mode)) #btnChallengeHistory:hover,:where(html:not(.touch-mode)) #btnTodayHistory:hover,:where(html:not(.touch-mode)) #btnMainGoalsHistory:hover,:where(html:not(.touch-mode)) #btnAchievementsGroupPrev:hover,:where(html:not(.touch-mode)) #btnAchievementsGroupNext:hover{color:var(--text); border-color:var(--accent);}
     :where(html:not(.touch-mode)) #btnEdit:hover{color:var(--text); border-color:var(--accent);}
     :where(html:not(.touch-mode)) #btnDelete:hover{border-color:var(--red); color:var(--red);}
     :where(html:not(.touch-mode)) #btnDeleteChecklist:hover{border-color:var(--red); color:var(--red);}
@@ -292,7 +292,7 @@
      #btnTopMenu{ padding:0 !important; font-size:20px !important; }
    }
   /* ===== Action buttons (edit/delete/move/relocate/archive) ===== */
-   #btnEdit, #btnDelete, #btnAddSubgoal, #btnDeleteChecklist, #btnMove, #btnMoveChecklist, #btnRelocate, #btnChecklistAdd, #btnFilter, .add-child-row #btnArchive, .add-goal-wrap #btnArchive, #btnGoodTodayHistory, #btnGoodTodayWeekHistory, #btnGoodTodayWeekEdit, #btnWishManage, #btnWishGrid, #btnWishPrint, #btnWishShare, #btnWheelPrint, #btnWheelShare, #btnGoodTodayHistoryPagePrev, #btnGoodTodayHistoryPageNext, #btnGoodTodayHistoryPagePrevBottom, #btnGoodTodayHistoryPageNextBottom, #btnAchievementsSave, #btnAchievementsCancel{
+   #btnEdit, #btnDelete, #btnAddSubgoal, #btnDeleteChecklist, #btnMove, #btnMoveChecklist, #btnRelocate, #btnChecklistAdd, #btnFilter, .add-child-row #btnArchive, .add-goal-wrap #btnArchive, #btnGoodTodayHistory, #btnGoodTodayWeekHistory, #btnGoodTodayWeekEdit, #btnWishManage, #btnWishGrid, #btnWishPrint, #btnWishShare, #btnWheelPrint, #btnWheelShare, #btnGoodTodayHistoryPagePrev, #btnGoodTodayHistoryPageNext, #btnGoodTodayHistoryPagePrevBottom, #btnGoodTodayHistoryPageNextBottom, #btnAchievementsSave, #btnAchievementsCancel, #btnMainGoalsHistory{
     background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:8px;
     padding:6px 12px; font-size:13px; cursor:pointer; white-space:nowrap;
   }
@@ -303,7 +303,7 @@
       never paints these, so nothing can stick; a mouse keeps the feedback. The REAL mode colours
       (.active rules) are deliberately OUTSIDE this gate: they signal a working mode. */
    @media (hover: hover) and (pointer: fine){
-     :where(html:not(.touch-mode)) #btnFilter:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistory:hover,:where(html:not(.touch-mode)) #btnGoodTodayWeekHistory:hover,:where(html:not(.touch-mode)) #btnGoodTodayWeekEdit:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPagePrev:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPageNext:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPagePrevBottom:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPageNextBottom:hover,:where(html:not(.touch-mode)) #btnChallengeHistory:hover,:where(html:not(.touch-mode)) #btnTodayHistory:hover,:where(html:not(.touch-mode)) #btnAchievementsGroupPrev:hover,:where(html:not(.touch-mode)) #btnAchievementsGroupNext:hover{color:var(--text); border-color:var(--accent);}
+     :where(html:not(.touch-mode)) #btnFilter:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistory:hover,:where(html:not(.touch-mode)) #btnGoodTodayWeekHistory:hover,:where(html:not(.touch-mode)) #btnGoodTodayWeekEdit:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPagePrev:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPageNext:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPagePrevBottom:hover,:where(html:not(.touch-mode)) #btnGoodTodayHistoryPageNextBottom:hover,:where(html:not(.touch-mode)) #btnChallengeHistory:hover,:where(html:not(.touch-mode)) #btnTodayHistory:hover,:where(html:not(.touch-mode)) #btnMainGoalsHistory:hover,:where(html:not(.touch-mode)) #btnAchievementsGroupPrev:hover,:where(html:not(.touch-mode)) #btnAchievementsGroupNext:hover{color:var(--text); border-color:var(--accent);}
      :where(html:not(.touch-mode)) #btnEdit:hover{color:var(--text); border-color:var(--accent);}
      :where(html:not(.touch-mode)) #btnDelete:hover{border-color:var(--red); color:var(--red);}
      :where(html:not(.touch-mode)) #btnDeleteChecklist:hover{border-color:var(--red); color:var(--red);}
@@ -1525,7 +1525,7 @@
   #btnAddChild:disabled{opacity:.5; cursor:not-allowed;}
   /* Compact "+"/"−" icon style for Add/Delete, used instead of full text labels to save room on
      narrow (phone) screens. */
-    #btnAddGoal.icon-btn, #btnTemplates.icon-btn, #btnWishAdd.icon-btn, #btnWishManage.icon-btn, #btnWishGrid.icon-btn, #btnWishPrint.icon-btn, #btnWishShare.icon-btn, #btnWheelPrint.icon-btn, #btnWheelShare.icon-btn, #btnAddChild.icon-btn, #btnDelete.icon-btn, #btnEdit.icon-btn, #btnAddSubgoal.icon-btn, #btnDeleteChecklist.icon-btn, #btnMove.icon-btn, #btnMoveChecklist.icon-btn, #btnRelocate.icon-btn, #btnChecklistAdd.icon-btn, #btnFilter.icon-btn, .add-child-row #btnArchive.icon-btn, .add-goal-wrap #btnArchive.icon-btn, #btnSearch.icon-btn, #btnGoodTodayHistory.icon-btn, #btnGoodTodayWeekHistory.icon-btn, #btnGoodTodayWeekEdit.icon-btn, #btnGoodTodayAdd.icon-btn, #btnAchievementsAdd.icon-btn, #btnGoodTodayHistoryPagePrevBottom.icon-btn, #btnGoodTodayHistoryPageNextBottom.icon-btn, #btnChallengeEdit.icon-btn, #btnChallengeReset.icon-btn, #btnChallengePrevMonth.icon-btn, #btnChallengeNextMonth.icon-btn, #btnAchievementsGroupPrev.icon-btn, #btnAchievementsGroupNext.icon-btn{
+    #btnAddGoal.icon-btn, #btnTemplates.icon-btn, #btnWishAdd.icon-btn, #btnWishManage.icon-btn, #btnWishGrid.icon-btn, #btnWishPrint.icon-btn, #btnWishShare.icon-btn, #btnWheelPrint.icon-btn, #btnWheelShare.icon-btn, #btnAddChild.icon-btn, #btnDelete.icon-btn, #btnEdit.icon-btn, #btnAddSubgoal.icon-btn, #btnDeleteChecklist.icon-btn, #btnMove.icon-btn, #btnMoveChecklist.icon-btn, #btnRelocate.icon-btn, #btnChecklistAdd.icon-btn, #btnFilter.icon-btn, .add-child-row #btnArchive.icon-btn, .add-goal-wrap #btnArchive.icon-btn, #btnSearch.icon-btn, #btnGoodTodayHistory.icon-btn, #btnGoodTodayWeekHistory.icon-btn, #btnGoodTodayWeekEdit.icon-btn, #btnGoodTodayAdd.icon-btn, #btnAchievementsAdd.icon-btn, #btnGoodTodayHistoryPagePrevBottom.icon-btn, #btnGoodTodayHistoryPageNextBottom.icon-btn, #btnChallengeEdit.icon-btn, #btnChallengeReset.icon-btn, #btnChallengePrevMonth.icon-btn, #btnChallengeNextMonth.icon-btn, #btnAchievementsGroupPrev.icon-btn, #btnAchievementsGroupNext.icon-btn, #btnMainGoalsHistory.icon-btn{
     font-size:14px; font-weight:700; line-height:1; padding:5px 13px;
     min-width:32px; display:inline-flex; align-items:center; justify-content:center;
   }
@@ -1555,6 +1555,12 @@
     background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:8px;
     padding:4px; min-width:42px; font-size:24px; cursor:pointer;
     display:inline-flex; align-items:center; justify-content:flex-end;
+  }
+  #btnMainGoalsHistory.icon-btn{
+    margin-left: auto;
+    background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:8px;
+    padding:4px; min-width:42px; font-size:24px; cursor:pointer;
+    display:inline-flex; align-items:center; justify-content:center;
   }
   /* ===== Checklist rows ===== */
   .checklist-section{margin-top:20px;}
@@ -1681,7 +1687,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.4.41';
+const APP_VERSION = '1.4.42';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -3065,6 +3071,7 @@ let goodTodayHistoryOpen = false;       // history view (grouped by week) is ope
 let goodTodayHistoryPage = 0;           // 0 = newest page of 7 entries; ++ for older
 let mainGoalsHistoryOpen = false;       // main goals history calendar view is open
 let mainGoalsHistorySelectedDate = null; // ISO date selected in the calendar
+let mainGoalsHistoryMonth = null;        // {y, m} for month navigation
 
 let priorityHistoryOpen = false;        // priority history calendar view is open
 let priorityHistorySelectedDay = null;   // ISO date selected in the calendar
@@ -6498,8 +6505,9 @@ function homeViewHTML(overallPct, hintHTML, mode, protectedCount){
        <button id="btnRelocate" class="${relocateMode?'active':'icon-btn'}" aria-pressed="${relocateMode}" data-tip="${relocateMode?t('done'):t('tipRelocate')}" aria-label="${relocateMode?t('done'):t('tipRelocate')}">${relocateMode ? t('done') : '<i class="ti ti-folder-symlink" aria-hidden="true"></i>'}</button>
         <button id="btnEdit" class="${editMode?'active':'icon-btn'}" aria-pressed="${editMode}" data-tip="${editMode?t('done'):t('tipEdit')}" aria-label="${editMode?t('done'):t('tipEdit')}">${editMode ? t('done') : '<i class="ti ti-edit" aria-hidden="true"></i>'}</button>
         <span id="deleteMsg" class="add-goal-msg"></span>
+        <button id="btnMainGoalsHistory" class="icon-btn" data-tip="${t('mainGoalsHistory')}" aria-label="${t('mainGoalsHistory')}"><i class="ti ti-history" aria-hidden="true"></i></button>
        </div>` : ''}
-   </div>`;
+    </div>`;
    }
    if(mainGoalsOpen){
     html += `<div class="grid grid-goals">`;
@@ -7200,15 +7208,33 @@ function goodTodayHistoryHTML(){
   return html;
 }
 
+// «Главные цели»: месяц, который показывается в календаре истории. Ограничен снизу самой
+// старой датой записи и сверху — текущим месяцем (будущего ещё нет).
+function mainGoalsHistoryVisibleMonth(){
+  const todayD = new Date();
+  const todayM = todayD.getFullYear()*12 + todayD.getMonth();
+  const hist = Array.isArray(state.mainGoalsHistory) ? state.mainGoalsHistory : [];
+  let minM = todayM;
+  hist.forEach(e => {
+    if(e && e.date){
+      const p = e.date.split('-');
+      const mm = parseInt(p[0],10)*12 + parseInt(p[1],10) - 1;
+      if(mm < minM) minM = mm;
+    }
+  });
+  const picked = mainGoalsHistoryMonth ? mainGoalsHistoryMonth.y*12 + mainGoalsHistoryMonth.m : todayM;
+  const cur = Math.max(minM, Math.min(todayM, picked));
+  return { y: Math.floor(cur/12), m: cur%12, cur, minM, maxM: todayM };
+}
 // ===== «Главные цели»: история выполненных целей с календарём =====
 // Календарь текущего месяца с зелёной галочкой в дни, когда была выполнена хотя бы одна цель.
 // Клик по дате показывает список выполненных целей под календарём. Запись в истории остаётся
 // навсегда, даже если цель позже удалена или снята с выполнения.
 function mainGoalsHistoryHTML(){
   const todayStr = isoToday();
-  const d = new Date();
-  const y = d.getFullYear();
-  const m = d.getMonth();
+  const mv = mainGoalsHistoryVisibleMonth();
+  const y = mv.y;
+  const m = mv.m;
   const firstDay = new Date(y, m, 1);
   const startOffset = firstDay.getDay(); // 0=Sun .. 6=Sat
   const daysInMonth = new Date(y, m + 1, 0).getDate();
@@ -7229,9 +7255,9 @@ function mainGoalsHistoryHTML(){
   // Calendar header with month navigation
   html += `<div class="main-goals-history-cal-wrap">
     <div class="main-goals-history-cal-head" style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
-      <button id="btnMainGoalsHistoryPrevMonth" class="icon-btn" data-tip="${t('todayHistoryMonthPrev')}" aria-label="${t('todayHistoryMonthPrev')}">‹</button>
+      <button id="btnMainGoalsHistoryPrevMonth" class="icon-btn" data-tip="${t('todayHistoryMonthPrev')}" aria-label="${t('todayHistoryMonthPrev')}"${mv.cur <= mv.minM ? ' disabled' : ''}>‹</button>
       <div class="main-goals-history-cal-title">${monthName} ${y}</div>
-      <button id="btnMainGoalsHistoryNextMonth" class="icon-btn" data-tip="${t('todayHistoryMonthNext')}" aria-label="${t('todayHistoryMonthNext')}">›</button>
+      <button id="btnMainGoalsHistoryNextMonth" class="icon-btn" data-tip="${t('todayHistoryMonthNext')}" aria-label="${t('todayHistoryMonthNext')}"${mv.cur >= mv.maxM ? ' disabled' : ''}>›</button>
     </div>
     <div class="challenge-weekdays">` + t('challengeWeekdays').split(',').map(w => `<span>${w.trim()}</span>`).join('') + `</div>
     <div class="challenge-grid main-goals-history-grid">`;
@@ -10556,6 +10582,65 @@ function attachMainViewHandlers(){
       const id = el.dataset.priorityHistoryDelete;
       if(!confirm('Удалить запись из истории?')) return;
       state.priorityHistory = (state.priorityHistory || []).filter(e => e && e.id !== id);
+      saveState();
+      render();
+    });
+  });
+
+  // «Главные цели»: открыть/закрыть историю выполненных целей
+  const btnMainGoalsHistory = document.getElementById('btnMainGoalsHistory');
+  if(btnMainGoalsHistory){
+    btnMainGoalsHistory.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      mainGoalsHistoryOpen = true;
+      mainGoalsHistorySelectedDate = null;
+      mainGoalsHistoryMonth = null;
+      render();
+    });
+  }
+  const btnMainGoalsHistoryBack = document.getElementById('btnMainGoalsHistoryBack');
+  if(btnMainGoalsHistoryBack){
+    btnMainGoalsHistoryBack.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      mainGoalsHistoryOpen = false;
+      mainGoalsHistorySelectedDate = null;
+      mainGoalsHistoryMonth = null;
+      render();
+    });
+  }
+  const btnMainGoalsHistoryPrevMonth = document.getElementById('btnMainGoalsHistoryPrevMonth');
+  if(btnMainGoalsHistoryPrevMonth){
+    btnMainGoalsHistoryPrevMonth.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      const mv = mainGoalsHistoryVisibleMonth();
+      if(mv.cur <= mv.minM) return;
+      mainGoalsHistoryMonth = { y: Math.floor((mv.cur - 1)/12), m: (mv.cur - 1)%12 };
+      render();
+    });
+  }
+  const btnMainGoalsHistoryNextMonth = document.getElementById('btnMainGoalsHistoryNextMonth');
+  if(btnMainGoalsHistoryNextMonth){
+    btnMainGoalsHistoryNextMonth.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      const mv = mainGoalsHistoryVisibleMonth();
+      if(mv.cur >= mv.maxM) return;
+      mainGoalsHistoryMonth = { y: Math.floor((mv.cur + 1)/12), m: (mv.cur + 1)%12 };
+      render();
+    });
+  }
+  document.querySelectorAll('[data-main-goals-history-day]').forEach(el=>{
+    el.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      mainGoalsHistorySelectedDate = el.dataset.mainGoalsHistoryDay;
+      render();
+    });
+  });
+  document.querySelectorAll('[data-main-goals-history-delete]').forEach(el=>{
+    el.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      const id = el.dataset.mainGoalsHistoryDelete;
+      if(!confirm(t('mainGoalsHistoryDeleteConfirm'))) return;
+      mainGoalsHistoryRemove(id);
       saveState();
       render();
     });
