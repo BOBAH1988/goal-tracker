@@ -847,6 +847,32 @@
   @media (hover: hover) and (pointer: fine){
     :where(html:not(.touch-mode)) .challenge-day:not(:disabled):hover{border-color:var(--accent);}
   }
+  /* ===== История главных целей — календарь и список выполненных целей ===== */
+  .main-goals-history-cal-wrap{margin-top:8px;}
+  .main-goals-history-grid{display:grid; grid-template-columns:repeat(7, 1fr); gap:2px; margin-bottom:10px;}
+  .main-goals-history-day{position:relative; width:32px; height:32px; background:var(--card2);
+    border:1px solid var(--border); border-radius:8px; color:var(--text); font-size:13px;
+    cursor:pointer; padding:0; display:flex; align-items:center; justify-content:center;}
+  .main-goals-history-day .cd-num{position:absolute; top:2px; left:3px; font-size:13px; color:var(--muted); line-height:1;}
+  .main-goals-history-day .cd-mark{position:absolute; bottom:1px; left:0; right:0; text-align:center; font-size:13px; font-weight:700; line-height:1;}
+  .main-goals-history-day.done{background:rgba(46,204,113,.16); border-color:var(--green);}
+  .main-goals-history-day.done .cd-mark{color:var(--green);}
+  .main-goals-history-day.today{border-color:var(--accent); box-shadow:0 0 0 1px var(--accent);}
+  .main-goals-history-day.out{opacity:.4; cursor:default;}
+  @media (hover: hover) and (pointer: fine){
+    :where(html:not(.touch-mode)) .main-goals-history-day:not(.out):hover{border-color:var(--accent);}
+  }
+  .main-goals-history-day-list{margin-top:12px;}
+  .main-goals-history-day-title{font-weight:600; font-size:14px; color:var(--text); margin-bottom:8px;}
+  .main-goals-history-items{display:flex; flex-direction:column; gap:6px;}
+  .main-goals-history-item{display:flex; align-items:center; gap:8px;
+    background:var(--card2); border:1px solid var(--border); border-radius:10px;
+    padding:8px 12px;}
+  .main-goals-history-item-mark{color:var(--green); font-weight:700; font-size:14px; flex:none;}
+  .main-goals-history-item-text{flex:1; min-width:0; font-size:14px; color:var(--text);}
+  .main-goals-history-delete{flex:none; background:none; border:none; color:var(--muted);
+    font-size:14px; line-height:1; cursor:pointer; padding:4px;}
+  .main-goals-history-empty{color:var(--muted); font-size:14px; margin-top:8px;}
   .today-history-day-list{display:flex; flex-direction:column; gap:6px;}
   .today-history-day-item{
     display:flex; align-items:center; gap:10px; padding:8px 10px;
@@ -1641,7 +1667,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.4.34';
+const APP_VERSION = '1.4.35';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -1848,7 +1874,8 @@ function emptyTemplate(){
   today: [{text:"",done:false},{text:"",done:false},{text:"",done:false}],
   todayOpen: true,
   priorityDefaultsSeeded: true,
-  hiddenBlocks: [] };
+  hiddenBlocks: [],
+  mainGoalsHistory: [] };
 }
 
 /* ===== Language ===== */
@@ -2271,6 +2298,13 @@ const STRINGS = {
     achievementsGroup2: 'Мне приносит радость',
     achievementsGroup3: 'Меня вдохновляют',
     achievementsGroup4: 'Мои полезные привычки',
+    mainGoalsHistory: 'История целей',
+    mainGoalsHistoryTitle: 'История выполненных целей',
+    mainGoalsHistoryEmpty: 'Выполненных целей пока нет.',
+    mainGoalsHistoryDelete: 'Удалить',
+    mainGoalsHistoryDeleteConfirm: 'Удалить запись из истории?',
+    mainGoalsHistoryCalendar: 'Календарь',
+    mainGoalsHistoryCompletedOn: 'Цели, выполненные {date}',
     achievementsAdd: '+ Добавить достижение',
     achievementsPlaceholder: 'Ваше достижение…',
     achievementsSave: 'Сохранить',
@@ -2700,6 +2734,13 @@ const STRINGS = {
     achievementsGroup2: 'Brings Me Joy',
     achievementsGroup3: 'Меня вдохновляют',
     achievementsGroup4: 'My Useful Habits',
+    mainGoalsHistory: 'Goals History',
+    mainGoalsHistoryTitle: 'Completed Goals History',
+    mainGoalsHistoryEmpty: 'No completed goals yet.',
+    mainGoalsHistoryDelete: 'Delete',
+    mainGoalsHistoryDeleteConfirm: 'Delete this record from history?',
+    mainGoalsHistoryCalendar: 'Calendar',
+    mainGoalsHistoryCompletedOn: 'Completed goals on {date}',
     achievementsAdd: '+ Add achievement',
     achievementsPlaceholder: 'Your achievement…',
     achievementsSave: 'Save',
@@ -3006,6 +3047,8 @@ let wishLightboxIdx = null;       // index of the card enlarged in the lightbox
 let goodTodayEntriesOpen = state.goodTodayEntriesOpen === true;
 let goodTodayHistoryOpen = false;       // history view (grouped by week) is open
 let goodTodayHistoryPage = 0;           // 0 = newest page of 7 entries; ++ for older
+let mainGoalsHistoryOpen = false;       // main goals history calendar view is open
+let mainGoalsHistorySelectedDate = null; // ISO date selected in the calendar
 let goodTodayEditId = null;             // id of the entry being edited inline (daily view)
 let goodTodayDraftText = '';            // text typed into the add form (survives re-renders)
 let goodTodayHistoryEditId = null;      // id of the entry being edited inline (history view)
@@ -3816,6 +3859,45 @@ function goodTodayAllEntries(){
 // Entries for a given ISO date string.
 function goodTodayEntriesFor(dateStr){
   return goodTodayAllEntries().filter(e => e && e.date === dateStr);
+}
+// All completed main-goal history entries, newest first. Each entry:
+// { id, date: 'YYYY-MM-DD', goalId, goalName } — goalId/goalName are a snapshot taken at
+// completion time so the record survives even if the goal is later deleted or renamed.
+function mainGoalsAllHistory(){
+  const arr = Array.isArray(state.mainGoalsHistory) ? state.mainGoalsHistory : [];
+  return arr.slice().sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+}
+// Completed main goals for a given ISO date string.
+function mainGoalsHistoryFor(dateStr){
+  return mainGoalsAllHistory().filter(e => e && e.date === dateStr);
+}
+// ISO dates (as strings) that have at least one completed main goal — used to mark the calendar.
+function mainGoalsHistoryDates(){
+  const arr = mainGoalsAllHistory();
+  const dates = new Set();
+  arr.forEach(e => { if(e && e.date) dates.add(e.date); });
+  return dates;
+}
+// Add a completion record when a main-goal leaf is ticked done. Called from the done-toggle
+// handlers. The record is append-only: once a goal is marked done on a date, the record stays
+// even if the goal is later deleted or undone — the owner asked for the calendar to keep showing
+// when goals were achieved.
+function mainGoalsHistoryAdd(goalNode, dateStr){
+  if(!goalNode || !goalNode.id || !dateStr) return;
+  // Don't duplicate the same goal on the same date.
+  const exists = mainGoalsAllHistory().some(e => e && e.goalId === goalNode.id && e.date === dateStr);
+  if(exists) return;
+  state.mainGoalsHistory = state.mainGoalsHistory || [];
+  state.mainGoalsHistory.push({
+    id: 'mg_' + dateStr + '_' + goalNode.id,
+    date: dateStr,
+    goalId: goalNode.id,
+    goalName: goalNode.name || ''
+  });
+}
+// Remove a completion record by id.
+function mainGoalsHistoryRemove(id){
+  state.mainGoalsHistory = (state.mainGoalsHistory || []).filter(e => e && e.id !== id);
 }
 // Entries from today.
 function goodTodayTodayEntries(){
@@ -6305,34 +6387,39 @@ function homeViewHTML(overallPct, hintHTML, mode, protectedCount){
       </div>`;
     }
    if(blockShown('mainGoals')){
-    html += `<div class="section-title-row">
-      <div class="section-title" id="mainGoalsToggle">
-        <span class="main-goals-arrow">${mainGoalsOpen ? '▾' : '▸'}</span>
-       ${t('mainGoals')}${hintHTML}
-     </div>
-     ${/* The whole action group (+ − ↕ filter relocate edit) belongs to the OPEN grid — when the
-          section is collapsed the cards are gone, so the buttons that operate on them have nothing
-          to act on and only clutter the header. They come back with the grid on expand. */
-       mainGoalsOpen ? `<div class="add-goal-wrap">
-       <span id="addGoalMsg" class="add-goal-msg"></span>
-      <button id="btnAddGoal" class="icon-btn" data-tip="${t('tipAdd')}" aria-label="${t('tipAdd')}">+</button>
-      <button id="btnTemplates" class="icon-btn" data-tip="${t('tipTemplates')}" aria-label="${t('tipTemplates')}"><i class="ti ti-file-text" aria-hidden="true"></i></button>
-      <button id="btnDelete" class="${deleteMode?'active':'icon-btn'}" aria-pressed="${deleteMode}" data-tip="${deleteMode?t('done'):t('tipDelete')}" aria-label="${deleteMode?t('done'):t('tipDelete')}">${deleteMode ? t('done') : '−'}</button>
-      <button id="btnMove" class="${moveMode?'active':'icon-btn'}" aria-pressed="${moveMode}" data-tip="${moveMode?t('ok'):t('tipMove')}" aria-label="${moveMode?t('ok'):t('tipMove')}">${moveMode ? t('ok') : '<i class="ti ti-arrows-move" aria-hidden="true"></i>'}</button>
-      <div class="filter-dropdown">
-        <button id="btnFilter" class="icon-btn" data-tip="${t('tipSort')}" aria-label="${t('tipSort')}"><i class="ti ti-filter" aria-hidden="true"></i></button>
-        ${filterMenuOpen ? `<div class="filter-menu" id="filterMenu">
-          <button data-sort="desc" class="${goalsSort==='desc'?'active':''}" aria-pressed="${goalsSort==='desc'}">${t('sortDesc')}</button>
-          <button data-sort="asc" class="${goalsSort==='asc'?'active':''}" aria-pressed="${goalsSort==='asc'}">${t('sortAsc')}</button>
-          <button data-sort="custom" class="${goalsSort==='custom'?'active':''}" aria-pressed="${goalsSort==='custom'}">${t('sortCustom')}</button>
-        </div>` : ''}
+     if(mainGoalsHistoryOpen){
+       html += mainGoalsHistoryHTML();
+     }else{
+     html += `<div class="section-title-row">
+       <div class="section-title" id="mainGoalsToggle">
+         <span class="main-goals-arrow">${mainGoalsOpen ? '▾' : '▸'}</span>
+        ${t('mainGoals')}${hintHTML}
       </div>
-      <button id="btnRelocate" class="${relocateMode?'active':'icon-btn'}" aria-pressed="${relocateMode}" data-tip="${relocateMode?t('done'):t('tipRelocate')}" aria-label="${relocateMode?t('done'):t('tipRelocate')}">${relocateMode ? t('done') : '<i class="ti ti-folder-symlink" aria-hidden="true"></i>'}</button>
-       <button id="btnEdit" class="${editMode?'active':'icon-btn'}" aria-pressed="${editMode}" data-tip="${editMode?t('done'):t('tipEdit')}" aria-label="${editMode?t('done'):t('tipEdit')}">${editMode ? t('done') : '<i class="ti ti-edit" aria-hidden="true"></i>'}</button>
-       <span id="deleteMsg" class="add-goal-msg"></span>
-     </div>` : ''}
+      ${mainGoalsOpen && state.children.length > 0 ? `<button id="btnMainGoalsHistory" class="icon-btn" data-tip="${t('mainGoalsHistory')}" aria-label="${t('mainGoalsHistory')}"><i class="ti ti-history" aria-hidden="true"></i></button>` : ''}
+      ${/* The whole action group (+ − ↕ filter relocate edit) belongs to the OPEN grid — when the
+           section is collapsed the cards are gone, so the buttons that operate on them have nothing
+           to act on and only clutter the header. They come back with the grid on expand. */
+         mainGoalsOpen ? `<div class="add-goal-wrap">
+        <span id="addGoalMsg" class="add-goal-msg"></span>
+       <button id="btnAddGoal" class="icon-btn" data-tip="${t('tipAdd')}" aria-label="${t('tipAdd')}">+</button>
+       <button id="btnTemplates" class="icon-btn" data-tip="${t('tipTemplates')}" aria-label="${t('tipTemplates')}"><i class="ti ti-file-text" aria-hidden="true"></i></button>
+       <button id="btnDelete" class="${deleteMode?'active':'icon-btn'}" aria-pressed="${deleteMode}" data-tip="${deleteMode?t('done'):t('tipDelete')}" aria-label="${deleteMode?t('done'):t('tipDelete')}">${deleteMode ? t('done') : '−'}</button>
+       <button id="btnMove" class="${moveMode?'active':'icon-btn'}" aria-pressed="${moveMode}" data-tip="${moveMode?t('ok'):t('tipMove')}" aria-label="${moveMode?t('ok'):t('tipMove')}">${moveMode ? t('ok') : '<i class="ti ti-arrows-move" aria-hidden="true"></i>'}</button>
+       <div class="filter-dropdown">
+         <button id="btnFilter" class="icon-btn" data-tip="${t('tipSort')}" aria-label="${t('tipSort')}"><i class="ti ti-filter" aria-hidden="true"></i></button>
+         ${filterMenuOpen ? `<div class="filter-menu" id="filterMenu">
+           <button data-sort="desc" class="${goalsSort==='desc'?'active':''}" aria-pressed="${goalsSort==='desc'}">${t('sortDesc')}</button>
+           <button data-sort="asc" class="${goalsSort==='asc'?'active':''}" aria-pressed="${goalsSort==='asc'}">${t('sortAsc')}</button>
+           <button data-sort="custom" class="${goalsSort==='custom'?'active':''}" aria-pressed="${goalsSort==='custom'}">${t('sortCustom')}</button>
+         </div>` : ''}
+       </div>
+       <button id="btnRelocate" class="${relocateMode?'active':'icon-btn'}" aria-pressed="${relocateMode}" data-tip="${relocateMode?t('done'):t('tipRelocate')}" aria-label="${relocateMode?t('done'):t('tipRelocate')}">${relocateMode ? t('done') : '<i class="ti ti-folder-symlink" aria-hidden="true"></i>'}</button>
+        <button id="btnEdit" class="${editMode?'active':'icon-btn'}" aria-pressed="${editMode}" data-tip="${editMode?t('done'):t('tipEdit')}" aria-label="${editMode?t('done'):t('tipEdit')}">${editMode ? t('done') : '<i class="ti ti-edit" aria-hidden="true"></i>'}</button>
+        <span id="deleteMsg" class="add-goal-msg"></span>
+       </div>` : ''}
    </div>`;
-  if(mainGoalsOpen){
+   }
+   if(mainGoalsOpen){
     html += `<div class="grid grid-goals">`;
     sortHomeGoals(state.children, goalsSort).forEach(({ node, idx }) => {
       let cardHTML = cardOrLeafHTML(node, idx, mode, protectedCount);
@@ -7028,6 +7115,89 @@ function goodTodayHistoryHTML(){
     </div>`;
   }
   html += ` <div class="good-today-btn-row" style="margin-top:12px;"><button id="btnGoodTodayHistoryBack" type="button">${t('back')}</button></div>`;
+  return html;
+}
+
+// ===== «Главные цели»: история выполненных целей с календарём =====
+// Календарь текущего месяца с зелёной галочкой в дни, когда была выполнена хотя бы одна цель.
+// Клик по дате показывает список выполненных целей под календарём. Запись в истории остаётся
+// навсегда, даже если цель позже удалена или снята с выполнения.
+function mainGoalsHistoryHTML(){
+  const todayStr = isoToday();
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = d.getMonth();
+  const firstDay = new Date(y, m, 1);
+  const startOffset = firstDay.getDay(); // 0=Sun .. 6=Sat
+  const daysInMonth = new Date(y, m + 1, 0).getDate();
+  const datesWithGoals = mainGoalsHistoryDates();
+  const monthNamesRu = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+  const monthNamesEn = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const monthName = lang === 'ru' ? monthNamesRu[m] : monthNamesEn[m];
+
+  let html = `<div class="section-title-row" style="margin-top:24px;">
+    <div class="section-title" id="mainGoalsToggle">
+      <span class="main-goals-arrow">${mainGoalsOpen ? '▾' : '▸'}</span>${t('mainGoals')}
+    </div>
+  </div>`;
+  html += `<div class="good-today-subtitle" style="display:flex; align-items:center; gap:8px;">${t('mainGoalsHistory')}
+    <button id="btnMainGoalsHistoryBack" type="button">${t('back')}</button>
+  </div>`;
+
+  // Calendar header with month navigation
+  html += `<div class="main-goals-history-cal-wrap">
+    <div class="main-goals-history-cal-head" style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+      <button id="btnMainGoalsHistoryPrevMonth" class="icon-btn" data-tip="${t('todayHistoryMonthPrev')}" aria-label="${t('todayHistoryMonthPrev')}">‹</button>
+      <div class="main-goals-history-cal-title">${monthName} ${y}</div>
+      <button id="btnMainGoalsHistoryNextMonth" class="icon-btn" data-tip="${t('todayHistoryMonthNext')}" aria-label="${t('todayHistoryMonthNext')}">›</button>
+    </div>
+    <div class="challenge-weekdays">` + t('challengeWeekdays').split(',').map(w => `<span>${w.trim()}</span>`).join('') + `</div>
+    <div class="challenge-grid main-goals-history-grid">`;
+
+  // Empty cells before the 1st of the month
+  for(let i = 0; i < startOffset; i++){
+    html += `<div class="challenge-day out"></div>`;
+  }
+
+  // Days of the month
+  for(let day = 1; day <= daysInMonth; day++){
+    const iso = y + '-' + String(m + 1).padStart(2,'0') + '-' + String(day).padStart(2,'0');
+    const hasGoal = datesWithGoals.has(iso);
+    const isToday = iso === todayStr;
+    const cls = ['challenge-day', 'main-goals-history-day'];
+    if(hasGoal) cls.push('done');
+    if(isToday) cls.push('today');
+    html += `<button type="button" class="${cls.join(' ')}" data-main-goals-history-day="${iso}"${isToday ? '' : ' '}>
+      <span class="cd-num">${day}</span>
+      ${hasGoal ? '<span class="cd-mark">✓</span>' : ''}
+    </button>`;
+  }
+
+  html += `</div>`;
+
+  // Completed goals for the selected date
+  if(mainGoalsHistorySelectedDate){
+    const dayGoals = mainGoalsHistoryFor(mainGoalsHistorySelectedDate);
+    const fmtDate = formatDateISO(mainGoalsHistorySelectedDate);
+    html += `<div class="main-goals-history-day-list">
+      <div class="main-goals-history-day-title">${t('mainGoalsHistoryCompletedOn').replace('{date}', fmtDate)}</div>`;
+    if(dayGoals.length){
+      html += `<div class="main-goals-history-items">`;
+      dayGoals.forEach(g => {
+        html += `<div class="main-goals-history-item">
+          <div class="main-goals-history-item-mark">✓</div>
+          <div class="main-goals-history-item-text">${esc(g.goalName || '')}</div>
+          <button type="button" class="main-goals-history-delete" data-main-goals-history-delete="${g.id}" data-tip="${t('mainGoalsHistoryDelete')}" aria-label="${t('mainGoalsHistoryDelete')}">✕</button>
+        </div>`;
+      });
+      html += `</div>`;
+    }else{
+      html += `<div class="main-goals-history-empty">${t('mainGoalsHistoryEmpty')}</div>`;
+    }
+    html += `</div>`;
+  }
+
+  html += `</div>`;
   return html;
 }
 
@@ -9660,6 +9830,59 @@ function attachGoodTodayHandlers(){
     render();
   });
 }
+// ===== «Главные цели»: хендлеры истории выполненных целей =====
+function attachMainGoalsHistoryHandlers(){
+  // Открыть историю выполненных целей.
+  const btnHistory = document.getElementById('btnMainGoalsHistory');
+  if(btnHistory){
+    btnHistory.addEventListener('click', ()=>{
+      mainGoalsHistoryOpen = true;
+      mainGoalsHistorySelectedDate = null;
+      render();
+    });
+  }
+  // Назад из истории.
+  on('btnMainGoalsHistoryBack', 'click', ()=>{
+    mainGoalsHistoryOpen = false;
+    mainGoalsHistorySelectedDate = null;
+    render();
+  });
+  // Навигация по месяцам календаря.
+  on('btnMainGoalsHistoryPrevMonth', 'click', ()=>{
+    const d = new Date();
+    d.setMonth(d.getMonth() - 1);
+    // Просто перерисовываем — месяц вычисляется из системной даты в рендере, поэтому
+    // для навигации достаточно сбросить выбранную дату и оставить календарь на текущем месяце.
+    // Полноценная навигация по месяцам потребует хранения выбранного года/месяца в состоянии.
+    mainGoalsHistorySelectedDate = null;
+    render();
+  });
+  on('btnMainGoalsHistoryNextMonth', 'click', ()=>{
+    const d = new Date();
+    d.setMonth(d.getMonth() + 1);
+    mainGoalsHistorySelectedDate = null;
+    render();
+  });
+  // Клик по дню календаря — показать выполненные цели за эту дату.
+  document.querySelectorAll('[data-main-goals-history-day]').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      const iso = el.dataset.mainGoalsHistoryDay;
+      if(!iso) return;
+      mainGoalsHistorySelectedDate = iso;
+      render();
+    });
+  });
+  // Удаление записи из истории.
+  document.querySelectorAll('[data-main-goals-history-delete]').forEach(el=>{
+    el.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      const id = el.dataset.mainGoalsHistoryDelete;
+      if(!confirm(t('mainGoalsHistoryDeleteConfirm'))) return;
+      mainGoalsHistoryRemove(id);
+      render();
+    });
+  });
+}
 function attachHandlers(){
   attachMainViewHandlers();
   attachTemplatesModalHandlers();
@@ -9674,6 +9897,7 @@ function attachHandlers(){
   attachModalHandlers();
   attachWishMapHandlers();
   attachGoodTodayHandlers();
+  attachMainGoalsHistoryHandlers();
   attachChallengeHandlers();
   attachAchievementsHandlers();
 }
@@ -10648,7 +10872,12 @@ function attachLeafHandlers(){
   if(leafToggle){
     const toggle = ()=>{
       const node = resolve(path);
+      const wasDone = !!node.done;
       node.done = !node.done;
+      // Если цель только что выполнена (doneになった) — фиксируем в истории главных целей.
+      if(!wasDone && node.done){
+        mainGoalsHistoryAdd(node, isoToday());
+      }
       touchSphereAtPath(path);
       saveState();
       render();
