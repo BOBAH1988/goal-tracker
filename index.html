@@ -3049,6 +3049,10 @@ let goodTodayHistoryOpen = false;       // history view (grouped by week) is ope
 let goodTodayHistoryPage = 0;           // 0 = newest page of 7 entries; ++ for older
 let mainGoalsHistoryOpen = false;       // main goals history calendar view is open
 let mainGoalsHistorySelectedDate = null; // ISO date selected in the calendar
+
+let priorityHistoryOpen = false;        // priority history calendar view is open
+let priorityHistorySelectedDay = null;   // ISO date selected in the calendar
+let priorityHistoryMonth = null;         // {y, m} for month navigation
 let goodTodayEditId = null;             // id of the entry being edited inline (daily view)
 let goodTodayDraftText = '';            // text typed into the add form (survives re-renders)
 let goodTodayHistoryEditId = null;      // id of the entry being edited inline (history view)
@@ -4203,6 +4207,16 @@ function todayHistoryGet(iso){
   const e = (Array.isArray(state.todayHistory) ? state.todayHistory : []).find(x => x.date === iso);
   return e ? e.items : [];
 }
+
+function priorityHistoryGet(iso){
+  return (Array.isArray(state.priorityHistory) ? state.priorityHistory : []).filter(e => e && e.date === iso);
+}
+function priorityHistoryDates(){
+  const arr = Array.isArray(state.priorityHistory) ? state.priorityHistory : [];
+  const dates = new Set();
+  arr.forEach(e => { if(e && e.date) dates.add(e.date); });
+  return dates;
+}
 function todayHistoryMonthCells(y, m){
   const first = new Date(y, m, 1);
   const startWd = (first.getDay() + 6) % 7;
@@ -4297,6 +4311,58 @@ function todayHistoryHTML(){
   }
   html += `</div></div>`;
   return html;
+
+// ===== «Главные цели»: история выполненных приоритетов =====
+function priorityHistoryHTML(){
+  const mv = todayHistoryVisibleMonth();
+  const months = t('challengeMonths').split(',').map(s => s.trim());
+  const todayISO = isoToday();
+  const selISO = priorityHistorySelectedDay || todayISO;
+  const items = priorityHistoryGet(selISO);
+  const label = selISO.split('-');
+  const monthName = selISO === todayISO ? 'Сегодня' : `${+label[2]} ${months[parseInt(label[1],10)-1]} ${label[0]}`;
+  const datesWithPriority = priorityHistoryDates();
+  let html = `<div class="auth-modal-overlay" id="priorityHistoryOverlay">
+    <div class="auth-panel scrollable wide">
+      <button class="auth-close" id="btnPriorityHistoryClose" aria-label="close" title="${t('todayHistoryClose')}">✕</button>
+      <h2 style="margin:0 0 8px; font-size:14px;">${t('priorityHistoryTitle')}</h2>
+      <div class="today-history-cal-head">
+        <button id="btnPriorityHistoryPrevMonth" class="icon-btn" data-tip="${t('todayHistoryMonthPrev')}" aria-label="${t('todayHistoryMonthPrev')}"${mv.cur <= mv.minM ? ' disabled' : ''}>←</button>
+        <div class="challenge-cal-title">${months[mv.m]} ${mv.y}</div>
+        <button id="btnPriorityHistoryNextMonth" class="icon-btn" data-tip="${t('todayHistoryMonthNext')}" aria-label="${t('todayHistoryMonthNext')}"${mv.cur >= mv.maxM ? ' disabled' : ''}>→</button>
+      </div>
+      <div class="challenge-weekdays">` + t('challengeWeekdays').split(',').map(w => `<span>${w.trim()}</span>`).join('') + `</div>
+      <div class="challenge-grid">`;
+  todayHistoryMonthCells(mv.y, mv.m).forEach(c => {
+    const dayItems = priorityHistoryGet(c.iso);
+    const cls = ['challenge-day'];
+    if(!c.inMonth) cls.push('out');
+    if(priorityHistorySelectedDay === c.iso) cls.push('selected');
+    if(dayItems.length === 0) cls.push('none-done');
+    else cls.push('all-done');
+    if(c.iso === todayISO) cls.push('today');
+    html += `<button type="button" class="${cls.join(' ')}" data-priority-history-day="${c.iso}"${!dayItems.length || c.iso > todayISO ? ' disabled' : ''}><span class="cd-num">${+c.iso.slice(8)}</span>${dayItems.length ? '<span class="cd-mark">✓</span>' : ''}</button>`;
+  });
+  html += `</div>`;
+  html += `<div class="today-history-day-head">
+    <div class="today-history-day-title">${esc(monthName)}</div>
+  </div>`;
+  if(!items.length){
+    html += `<div class="today-history-empty">${t('priorityHistoryEmpty')}</div>`;
+  }else{
+    html += `<div class="today-history-day-list">`;
+    items.forEach(it => {
+      html += `<div class="today-history-day-item done">
+        <div class="thdi-chk">✓</div>
+        <div class="thdi-text">${esc(it.priorityText || '')}</div>
+        <button type="button" class="main-goals-history-delete" data-priority-history-delete="${it.id}" data-tip="${t('priorityHistoryDelete')}" aria-label="${t('priorityHistoryDelete')}">✕</button>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+  html += `</div></div>`;
+  return html;
+}
 }
 // v1.2.8: два стартовых примера для блока «Главные цели» (☆-приоритеты) — закладываются
 // ОДИН раз: SEED/emptyTemplate несут их и флаг priorityDefaultsSeeded прямо в константах,
@@ -6352,6 +6418,7 @@ function homeViewHTML(overallPct, hintHTML, mode, protectedCount){
      <div class="priority-header" id="priorityToggle">
        <span class="priority-arrow">${priorityOpen ? '▾' : '▸'}</span>
        <span class="section-title">${t('priorityTitle')}</span>
+        <button id="btnPriorityHistory" class="icon-btn" data-tip="${t('priorityHistory')}" aria-label="${t('priorityHistory')}"><i class="ti ti-history" aria-hidden="true"></i></button>
      </div>
      ${priorityOpen ? `<div class="priority-list">
        ${lastPriorityItems.length
@@ -10470,6 +10537,63 @@ function attachMainViewHandlers(){
       if(entry.kind === 'leaf'){ entry.node.priority = false; }
       else { entry.item.priority = false; }
       touchSphereAtPath(entry.path);
+      saveState();
+      render();
+    });
+  });
+
+  const btnPriorityHistory = document.getElementById('btnPriorityHistory');
+  if(btnPriorityHistory){
+    btnPriorityHistory.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      priorityHistoryOpen = true;
+      priorityHistorySelectedDay = isoToday();
+      priorityHistoryMonth = null;
+      render();
+    });
+  }
+  const btnPriorityHistoryClose = document.getElementById('btnPriorityHistoryClose');
+  if(btnPriorityHistoryClose){
+    btnPriorityHistoryClose.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      priorityHistoryOpen = false;
+      priorityHistorySelectedDay = null;
+      render();
+    });
+  }
+  const btnPriorityHistoryPrevMonth = document.getElementById('btnPriorityHistoryPrevMonth');
+  if(btnPriorityHistoryPrevMonth){
+    btnPriorityHistoryPrevMonth.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      const mv = todayHistoryVisibleMonth();
+      if(mv.cur <= mv.minM) return;
+      priorityHistoryMonth = { y: Math.floor((mv.cur - 1)/12), m: (mv.cur - 1)%12 };
+      render();
+    });
+  }
+  const btnPriorityHistoryNextMonth = document.getElementById('btnPriorityHistoryNextMonth');
+  if(btnPriorityHistoryNextMonth){
+    btnPriorityHistoryNextMonth.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      const mv = todayHistoryVisibleMonth();
+      if(mv.cur >= mv.maxM) return;
+      priorityHistoryMonth = { y: Math.floor((mv.cur + 1)/12), m: (mv.cur + 1)%12 };
+      render();
+    });
+  }
+  document.querySelectorAll('[data-priority-history-day]').forEach(el=>{
+    el.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      priorityHistorySelectedDay = el.dataset.priorityHistoryDay;
+      render();
+    });
+  });
+  document.querySelectorAll('[data-priority-history-delete]').forEach(el=>{
+    el.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      const id = el.dataset.priorityHistoryDelete;
+      if(!confirm('Удалить запись из истории?')) return;
+      state.priorityHistory = (state.priorityHistory || []).filter(e => e && e.id !== id);
       saveState();
       render();
     });
