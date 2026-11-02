@@ -1490,7 +1490,9 @@
      (24px → 10px) without changing card heights. */
   #mainGoalsToggle + .section-title-row{margin-top:10px;}
   /* Collapsing "Важные сферы жизни" / "Important Life Areas" — the arrow toggles the grid below. */
-  #mainGoalsToggle{cursor:pointer; user-select:none;}
+  #mainGoalsToggle{cursor:pointer; user-select:none; text-align:left !important; display:inline-block;}
+  .main-goals-title-row{display:block !important;}
+  #mainGoalsToggle{float:left !important;}
   #mainGoalsToggle .main-goals-arrow{color:var(--muted); font-size:13px; margin-right:6px;}
   #wheelToggle,#wishToggle,#challengeToggle,#achievementsToggle,#goodTodayEntriesToggle,#goodTodayWeekToggle{cursor:pointer; user-select:none;}
   #wheelToggle .wheel-arrow,#wishToggle .wheel-arrow,#challengeToggle .wheel-arrow,#achievementsToggle .wheel-arrow,#goodTodayEntriesToggle .wheel-arrow,#goodTodayWeekToggle .wheel-arrow{color:var(--muted); font-size:13px; margin-right:6px;}
@@ -1679,7 +1681,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.4.35';
+const APP_VERSION = '1.4.41';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -1932,6 +1934,7 @@ const STRINGS = {
     searchNoResults: 'Ничего не найдено',
     search: 'Поиск',
     priorityTitle: 'Главные цели',
+     priorityHistory: 'История',
     priorityEmpty: 'Отметьте цель звёздочкой ☆ на её странице, чтобы она появилась здесь.',
     tipAddPriority: 'Добавить в приоритет',
     todayTitle: 'Три важных дела на сегодня',
@@ -2373,6 +2376,7 @@ const STRINGS = {
     searchNoResults: 'Nothing found',
     search: 'Search',
     priorityTitle: 'Main Goals',
+     priorityHistory: 'History',
     priorityEmpty: 'Star ☆ a goal on its own page to add it here.',
     tipAddPriority: 'Add to priority',
     todayTitle: 'Three important things for today',
@@ -6400,7 +6404,7 @@ function homeViewHTML(overallPct, hintHTML, mode, protectedCount){
         <span class="priority-arrow">${todayOpen ? '▾' : '▸'}</span>
         <span class="section-title">${t('todayTitle')}</span>
         <div style="flex:1"></div>
-        <button id="btnTodayHistory" class="icon-btn" data-tip="${t('todayHistory')}" aria-label="${t('todayHistory')}"><i class="ti ti-history" aria-hidden="true"></i></button>
+         ${todayOpen ? `<button id="btnTodayHistory" class="icon-btn" data-tip="${t('todayHistory')}" aria-label="${t('todayHistory')}"><i class="ti ti-history" aria-hidden="true"></i></button>` : ''}
        </div>
        ${todayOpen ? `<div class="today-badges">
          <div class="good-today ${moodClass}">
@@ -6430,7 +6434,7 @@ function homeViewHTML(overallPct, hintHTML, mode, protectedCount){
      <div class="priority-header" id="priorityToggle">
        <span class="priority-arrow">${priorityOpen ? '▾' : '▸'}</span>
        <span class="section-title">${t('priorityTitle')}</span>
-        <button id="btnPriorityHistory" class="icon-btn" data-tip="${t('priorityHistory')}" aria-label="${t('priorityHistory')}"><i class="ti ti-history" aria-hidden="true"></i></button>
+         ${priorityOpen ? `<button id="btnPriorityHistory" class="icon-btn" data-tip="${t('priorityHistory')}" aria-label="${t('priorityHistory')}"><i class="ti ti-history" aria-hidden="true"></i></button>` : ''}
      </div>
      ${priorityOpen ? `<div class="priority-list">
        ${lastPriorityItems.length
@@ -6469,7 +6473,7 @@ function homeViewHTML(overallPct, hintHTML, mode, protectedCount){
      if(mainGoalsHistoryOpen){
        html += mainGoalsHistoryHTML();
      }else{
-     html += `<div class="section-title-row">
+     html += `<div class="section-title-row main-goals-title-row" style="justify-content:flex-start;">
        <div class="section-title" id="mainGoalsToggle">
          <span class="main-goals-arrow">${mainGoalsOpen ? '▾' : '▸'}</span>
         ${t('mainGoals')}${hintHTML}
