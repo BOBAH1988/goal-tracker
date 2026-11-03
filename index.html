@@ -1643,7 +1643,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.4.40';
+const APP_VERSION = '1.4.41';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -3116,6 +3116,7 @@ function loadState(){
          sanitizeEmptyChecklists(parsed);
           ensureWheelTotals(parsed);
           ensureToday(parsed);
+          ensureQuote(parsed);
           ensurePriorityDefaults(parsed);
           ensureGoodToday(parsed);
           if (parsed.goodToday === undefined) parsed.goodToday = parsed.today.some(item => item.done);
@@ -3128,6 +3129,7 @@ function loadState(){
     }
   }catch(e){}
   const fresh = structuredCloneFallback(SEED);
+  ensureQuote(fresh);
   sanitizeGoalTree(fresh);
   sanitizeEmptyChecklists(fresh);
    ensureWheelTotals(fresh);
@@ -3497,8 +3499,9 @@ function startCloudSync(uid){
         sanitizeGoalTree(state); sanitizeEmptyChecklists(state); ensureWheelTotals(state); ensureToday(state); ensureGoodToday(state);
         ensurePriorityDefaults(state);
         ensureSphereActivity(state);
-        ensureChallenge(state);   // a cloud snapshot from an older build has no «Челлендж» yet
+        ensureChallenge(state);   // a cloud snapshot from an older build has no «Челлендж» yet    ensureQuote(state);
         ensureHiddenBlocks(state);
+        ensureQuote(state);
         // The cloud board carries metadata only; keep local cached images for cards we
         // The third argument is the document's own updatedAt: a local card whose file is
         // already uploaded but which this older write does not contain yet is kept instead of
@@ -3528,7 +3531,7 @@ function startCloudSync(uid){
       applyingRemoteUpdate = true;
       state = initial;
       ensureSphereActivity(state);
-      ensureChallenge(state);   // a fresh template has no «Челлендж» yet
+      ensureChallenge(state);   // a fresh template has no «Челлендж» yet    ensureQuote(state);
       ensureHiddenBlocks(state);
       path = [];
       saveState();
@@ -4280,6 +4283,19 @@ function ensureHiddenBlocks(node){
     return;
   }
   node.hiddenBlocks = node.hiddenBlocks.filter(id => typeof id === 'string' && valid.has(id));
+}
+// v1.4.41: мотивационная цитата обновляется раз в день автоматически (и по кнопке).
+// Отсутствующий quoteDate мигрируется «как есть» — текущая цитата считается «на сегодня»,
+// чтобы обновление не сбрасывало выбранную строку при первом запуске новой версии.
+function ensureQuote(node){
+  if(!node || typeof node !== 'object') return;
+  if(!node.quoteText && QUOTES.length){ node.quoteText = randomQuote(); }
+  const today = isoToday();
+  if(typeof node.quoteDate !== 'string' || !node.quoteDate){ node.quoteDate = today; return; }
+  if(node.quoteDate !== today && QUOTES.length){
+    node.quoteText = randomQuote(node.quoteText);
+    node.quoteDate = today;
+  }
 }
 function ensureGoodToday(node){
   if(!node) return;
@@ -5832,7 +5848,7 @@ function doImportData(file){
      ensureGoodToday(state);
      ensureWishMap(state);
      ensureSphereActivity(state);
-     ensureChallenge(state);   // an old backup has no «Челлендж» yet — backfill an empty one
+     ensureChallenge(state);   // an old backup has no «Челлендж» yet — backfill an empty one    ensureQuote(state);
      ensureHiddenBlocks(state);
     path = [];
     // Restore «Карта желаний» photos (v2 backups carry them as base64). They go straight into the
@@ -6026,7 +6042,7 @@ function render(){
    // The collapsed/expanded flag lives in the state, so a swapped state must carry it over
    // (otherwise an imported or synced «open» block would silently stay closed).
    if(typeof state.challengeOpen === 'boolean') challengeOpen = state.challengeOpen;
-   const app = document.getElementById('app');
+   const app = document.getElementById('app');    ensureQuote(state);
   const node = resolve(path);
   const overallPct = computePercent(state);
 
@@ -10911,7 +10927,7 @@ function attachSyncConflictHandlers(){
       sanitizeGoalTree(state); sanitizeEmptyChecklists(state); ensureWheelTotals(state); ensureToday(state); ensureGoodToday(state);
       ensurePriorityDefaults(state);
       ensureSphereActivity(state);
-      ensureChallenge(state);   // a cloud snapshot from an older build has no «Челлендж» yet
+      ensureChallenge(state);   // a cloud snapshot from an older build has no «Челлендж» yet    ensureQuote(state);
       ensureHiddenBlocks(state);
       // The account document holds the wish board as METADATA ONLY: no uploadState flags and no
       // bytes. Without this merge the cards keep no state at all and nothing ever downloads
