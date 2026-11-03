@@ -974,10 +974,10 @@
       flex:none; background:none; border:none; color:var(--muted);
       font-size:14px; line-height:1; cursor:pointer; padding:4px;
     }
-    .challenge-history-delete{
+    .challenge-history-row .challenge-history-delete{
       flex:0 0 auto; width:max-content; min-width:0; margin-left:auto;
       background:none; border:none; color:var(--muted);
-      font-size:14px; line-height:1; cursor:pointer; padding:4px;
+      font-size:14px; line-height:1; cursor:pointer; padding:2px 0;
     }
     @media (hover: hover) and (pointer: fine){
       :where(html:not(.touch-mode)) .good-today-history-delete:hover{color:var(--red);}
@@ -1643,7 +1643,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.4.38';
+const APP_VERSION = '1.4.39';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
