@@ -836,6 +836,7 @@ test('CSS guard: editable text fields are at least 16px (iOS zoom-on-focus)', ()
     '.auth-panel input{',       // формы авторизации/аккаунта
     '.wish-form input[type=text]{', // подпись карточки желаний
     '.challenge-title-input{',  // название челленджа (v1.2.62)
+    '.quote-input{',            // дневник «Хорошее сегодня»: цитата motivation (readonly <textarea>)
   ];
   for(const sel of editable){
     const rule = css.match(new RegExp(sel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '[^}]*\\}'));

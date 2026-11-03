@@ -126,10 +126,11 @@
       /* The standalone account button shows only the user icon (the name lives in its data-tip
          bubble, since a native title never appears on touch) — give the glyph a proper size. */
       #btnAccount{min-width:34px; padding:6px 10px; font-size:18px; display:inline-flex; align-items:center; justify-content:center;}
-      /* Motivation line: at the full 18px a quote does not fit the narrow standalone width —
-         smaller font here, and the field itself is a <textarea>, so a long quote wraps to a
-         second line instead of being cut off (see .quote-input). */
-      .quote-input{font-size:14px;}
+      /* Motivation line: the quote is a <textarea> (an <input> cannot wrap), so a long quote wraps
+         to a second line instead of being cut off — fitQuoteInput() grows the box after every render.
+         Kept at 16px, not 14px: an editable field below 16px triggers iOS zoom-on-focus in the
+         installed PWA (the whole viewport widens, a double-tap resets it). 16px is the iOS floor. */
+      .quote-input{font-size:16px;}
       /* A long press in the installed app must NOT open the copy/paste menu: on a phone that
          gesture is easy to fire by accident while scrolling, and a native app never offers it for
          chrome text. `-webkit-touch-callout:none` is the iOS half (it kills the native callout);
@@ -1641,7 +1642,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.4.35';
+const APP_VERSION = '1.4.36';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
