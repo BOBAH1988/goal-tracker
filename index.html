@@ -1643,7 +1643,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.4.39';
+const APP_VERSION = '1.4.40';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -2739,9 +2739,16 @@ let expandedSphereIdx = null;
 const LANG_FLAGS = { ru: '🇷🇺', en: '🇺🇸' };
 function t(key){ return STRINGS[lang][key]; }
 // Pick a random motivational quote from the embedded database (500 quotes).
-function randomQuote(){
-  if(QUOTES.length) return QUOTES[Math.floor(Math.random()*QUOTES.length)];
-  return t('quoteRefresh');
+function randomQuote(current){
+  if(!QUOTES.length) return t('quoteRefresh');
+  if(QUOTES.length === 1) return QUOTES[0];
+  // Never hand back the quote that is already on the screen: a tap on «Обновить цитату»
+  // must visibly change the line instead of (rarely but annoyingly) repeating it.
+  let pick;
+  let guard = 0;
+  do { pick = QUOTES[Math.floor(Math.random()*QUOTES.length)]; guard++; }
+  while (pick === current && guard < 10);
+  return pick;
 }
 const THEME_KEY = "goal_tracker_theme";
 function loadTheme(){
@@ -10201,7 +10208,7 @@ function attachMainViewHandlers(){
      quoteRefreshBtn.addEventListener('click', (e)=>{
        e.stopPropagation();
        if(!QUOTES.length) return;
-       state.quoteText = randomQuote();
+       state.quoteText = randomQuote(state.quoteText);
        saveState();
        render();
      });
