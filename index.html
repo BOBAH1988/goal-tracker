@@ -979,7 +979,6 @@
       background:none; border:none; color:var(--muted);
       font-size:14px; line-height:1; cursor:pointer; padding:2px 0;
     }
-    .challenge-history-actions{margin-top:12px; display:flex; justify-content:flex-end;}
     @media (hover: hover) and (pointer: fine){
       :where(html:not(.touch-mode)) .good-today-history-delete:hover{color:var(--red);}
       :where(html:not(.touch-mode)) .challenge-history-delete:hover{color:var(--red);}
@@ -1644,7 +1643,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.4.42';
+const APP_VERSION = '1.4.43';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -2249,7 +2248,6 @@ const STRINGS = {
     challengeHistoryFinished: 'Завершено',
     challengeHistoryPageNewer: 'Новейшие',
     challengeHistoryPageOlder: 'Старые',
-    challengeHistoryStart: 'Начать заново',
     challengeHistoryPageNext: 'Вперёд',
     challengeHistoryPagePrev: 'Назад',
     challengeHistoryProgress: '{done} из {total} дн.',
@@ -2679,7 +2677,6 @@ const STRINGS = {
     challengeHistoryFinished: 'Finished',
     challengeHistoryPageNewer: 'Newer',
     challengeHistoryPageOlder: 'Older',
-    challengeHistoryStart: 'Start new',
     challengeHistoryPageNext: 'Next',
     challengeHistoryPagePrev: 'Prev',
     challengeHistoryProgress: '{done} of {total} days',
@@ -6766,12 +6763,6 @@ function challengeHistoryHTML(){
       <button class="auth-close" id="btnChallengeHistoryClose" aria-label="close" title="${t('done')}">✕</button>
       <h2 style="margin:0 0 4px; font-size:14px;">${t('challengeHistoryTitle')}</h2>`;
 
-  if ((state.challengeHistory || []).length) {
-    html += `<div class="challenge-history-actions">
-      <button id="btnChallengeHistoryStart" type="button" class="good-today-primary" data-tip="${t('challengeHistoryStart')}" aria-label="${t('challengeHistoryStart')}">${t('challengeHistoryStart')}</button>
-    </div>`;
-  }
-
   if(!pageEntries.length){
     html += `<p style="margin:0; font-size:14px; color:var(--muted);">${t('challengeHistoryEmpty')}</p>`;
   }else{
@@ -9086,18 +9077,6 @@ function attachChallengeHandlers(){
   // «История» modal — open / close / page / delete / «Начать заново».
   on('btnChallengeHistory', 'click', ()=>{ challengeHistoryOpen = true; challengeHistoryPage = 0; render(); });
   on('btnChallengeHistoryClose', 'click', ()=>{ challengeHistoryOpen = false; render(); });
-  on('btnChallengeHistoryStart', 'click', ()=>{
-    // Начать заново — сбросить текущий челлендж в пустое состояние и открыть раздел для нового запуска.
-    state.challenge = { title:'', startedAt:'', duration: 21, days:{} };
-    challengeOpen = true;
-    challengeEditing = false;
-    challengeDraft = '';
-    challengeError = '';
-    challengeResetConfirm = false;
-    challengeMonth = null;
-    saveState();
-    render();
-  });
   on('btnChallengeHistoryPagePrev', 'click', ()=>{
     const total = Math.ceil((state.challengeHistory || []).length / 5) || 1;
     if(challengeHistoryPage < total - 1){ challengeHistoryPage++; render(); }
