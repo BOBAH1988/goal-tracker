@@ -1643,7 +1643,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.4.43';
+const APP_VERSION = '1.4.44';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -10159,7 +10159,9 @@ function attachMainViewHandlers(){
       e.stopPropagation();
       const idx = parseInt(el.dataset.todayToggle,10);
       if(!Array.isArray(state.today) || idx >= state.today.length) return;
-      state.today[idx].done = !state.today[idx].done;
+      const item = state.today[idx];
+      if((item.text || '').trim() === '') return;   // пустое дело не может быть выполненным
+      item.done = !item.done;
       state.todayDate = isoToday();  // отметка галочкой = корректировка записи (капсула даты)
       todayHistoryPush();
       state.goodToday = state.today.some(item => item.done);
