@@ -1652,7 +1652,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.4.45';
+const APP_VERSION = '1.4.46';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -6337,7 +6337,7 @@ function homeViewHTML(overallPct, hintHTML, mode, protectedCount){
          ${todayDateLabel ? `<div id="todayDateCapsule" class="good-today today-date ${todayDateSame ? 'today-date-same' : 'today-date-diff'}" data-today-date-capsule="1" data-tip="${t('todayDateTip')}" style="cursor:pointer;">
            <span class="good-today-text">${todayDateLabel}</span>
          </div>` : ''}
-          ${todayPickerOpen ? `<div id="todayDatePicker" class="today-date-picker" style="width:100%;margin-top:6px;display:flex;flex-wrap:wrap;gap:6px;">${Array.from({length:7}).map((_,k)=>{const iso=isoDaysAgo(6-k);const sel=(todayViewDate?todayViewDate:isoToday())===iso;return `<button type="button" class="icon-btn${sel?' active':''}" data-today-pick-date="${iso}" style="flex:none;padding:4px 8px;font-size:12px;">${shortDateDMY(iso)}</button>`;}).join('')} </div>` : ''}
+          ${todayPickerOpen ? `<div id="todayDatePicker" class="today-date-picker" style="width:100%;margin-top:6px;display:flex;flex-wrap:wrap;gap:6px;">${Array.from({length:5}).map((_,k)=>{const iso=isoDaysAgo(4-k);const sel=(todayViewDate?todayViewDate:isoToday())===iso;return `<button type="button" class="icon-btn${sel?' active':''}" data-today-pick-date="${iso}" style="flex:none;padding:4px 8px;font-size:12px;">${shortDateDMY(iso)}</button>`;}).join('')} </div>` : ''}
        </div>
        <div class="priority-list">
           ${todayItems.map((item, i) => {

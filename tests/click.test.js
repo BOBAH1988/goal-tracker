@@ -804,8 +804,8 @@ test('today block: date capsule sits next to the mood badge — green today, red
 });
 
 
-// ===== v1.4.45: «Закрыть задним числом» — дата капсула открывает пикер из 7 дней =====
-test('today block: date capsule opens 7-day picker; picking a past day edits that day, not today', () => {
+// ===== v1.4.45: «Закрыть задним числом» — дата капсула открывает пикер из 5 дней =====
+test('today block: date capsule opens 5-day picker; picking a past day edits that day, not today', () => {
   const t = bootDom();
   const todayIso = t.app.isoToday();
   t.app.setState({
@@ -823,7 +823,7 @@ test('today block: date capsule opens 7-day picker; picking a past day edits tha
   const picker = t.document.getElementById('todayDatePicker');
   assert.ok(picker, 'picker opens on capsule click');
   const btns = picker.querySelectorAll('[data-today-pick-date]');
-  assert.equal(btns.length, 7, 'picker shows exactly 7 days');
+  assert.equal(btns.length, 5, 'picker shows exactly 5 days');
 
   // Выбираем любой несегодняшний день.
   const picked = [...btns].find(b => b.dataset.todayPickDate !== todayIso);
