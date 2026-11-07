@@ -803,6 +803,57 @@ test('today block: date capsule sits next to the mood badge — green today, red
   assert.equal(t.app.getState().todayDate, '2020-01-01', 'render must not overwrite the stored date');
 });
 
+
+// ===== v1.4.45: «Закрыть задним числом» — дата капсула открывает пикер из 7 дней =====
+test('today block: date capsule opens 7-day picker; picking a past day edits that day, not today', () => {
+  const t = bootDom();
+  const todayIso = t.app.isoToday();
+  t.app.setState({
+    name: 'root', children: [leaf(false, { name: 'Цель' })],
+    today: [{ text: 'Сегодня', done: false }, { text: '', done: false }, { text: '', done: false }],
+    todayDate: todayIso,
+  });
+  t.window.render();
+
+  assert.ok(t.document.getElementById('todayDateCapsule'), 'date capsule renders');
+  assert.ok(!t.document.getElementById('todayDatePicker'), 'picker hidden by default');
+
+  t.click('#todayDateCapsule');
+  t.window.render();
+  const picker = t.document.getElementById('todayDatePicker');
+  assert.ok(picker, 'picker opens on capsule click');
+  const btns = picker.querySelectorAll('[data-today-pick-date]');
+  assert.equal(btns.length, 7, 'picker shows exactly 7 days');
+
+  // Выбираем любой несегодняшний день.
+  const picked = [...btns].find(b => b.dataset.todayPickDate !== todayIso);
+  assert.ok(picked, 'a non-today button exists');
+  const pickIso = picked.dataset.todayPickDate;
+  picked.click();
+  t.window.render();
+
+  assert.ok(!t.document.getElementById('todayDatePicker'), 'picker closes after pick');
+  const capsule = t.document.getElementById('todayDateCapsule');
+  assert.match(capsule.textContent.trim(), new RegExp(t.app.shortDateDMY(pickIso)), 'capsule shows the picked date');
+
+  // Отмечаем первое дело выбранного (прошлого) дня → пишется в todayHistory под эту дату,
+  // а не в state.today (сегодняшний список не меняется).
+  const chk = t.document.querySelector('[data-today-toggle="0"]');
+  assert.ok(chk, 'checkbox renders for the picked day');
+  chk.click();
+  t.window.render();
+  const hist = t.app.getState().todayHistory;
+  assert.ok(Array.isArray(hist) && hist.find(e => e.date === pickIso && e.items[0].done === true),
+    'done flag saved to history for the picked day');
+  assert.equal(t.app.getState().today[0].done, false, "today's list stays untouched when editing a past day");
+
+  // Повторный клик по капсуле закрывает пикер и сбрасывает todayViewDate (возврат к сегодня).
+  t.click('#todayDateCapsule');
+  t.window.render();
+  assert.ok(!t.document.getElementById('todayDatePicker'), 'picker closed again');
+  assert.equal(t.app.getState().today[0].text, 'Сегодня', 'back to today list');
+});
+
 // ===== v1.2.7: дата последней правки обновляется при корректировке записей =====
 test('today block: text edit and checkbox toggle stamp todayDate', () => {
   const t = bootDom();

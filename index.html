@@ -1497,6 +1497,15 @@
     font-size:14px; font-weight:700; line-height:1; padding:5px 13px;
     min-width:32px; display:inline-flex; align-items:center; justify-content:center;
   }
+  /* «Закрыть задним числом»: кнопки выбора дня в пикере даты. */
+  #todayDatePicker .icon-btn{
+    background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:6px;
+  }
+  #todayDatePicker .icon-btn.active{background:var(--accent); color:#fff; border-color:var(--accent);}
+  @media (hover: hover) and (pointer: fine){
+    :where(html:not(.touch-mode)) #todayDatePicker .icon-btn:hover{color:var(--text); border-color:var(--accent);}
+  }
+
    #btnAddGoal.icon-btn, #btnWishAdd.icon-btn, #btnGoodTodayAdd.icon-btn, #btnAddChild.icon-btn, #btnDelete.icon-btn, #btnChecklistAdd.icon-btn{ font-size:18px; }
   /* The wish «Исправить» button mirrors #btnEdit in «Важные сферы жизни» — the same rename pencil
      glyph and the same 24px/2px box, so the two sections read alike. No colour override here:
@@ -1643,7 +1652,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.4.44';
+const APP_VERSION = '1.4.45';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -2962,6 +2971,9 @@ let wishIsUserPhotoDraft = false; // «Это моё фото» checkbox state i
   let todayHistoryOpen = false;
   let todayHistoryMonth = null;
   let todayHistorySelectedDay = null;
+   // v1.4.45: «закрыть задним числом» — выбор дня из последних 7 при нажатии на капсулу даты.
+   let todayPickerOpen = false;
+   let todayViewDate = null;   // ISO выбранного дня для редактирования; null = сегодня
 /* ===== Статусы сохранения (v1.1.99) =====
    Данные важны, поэтому приложение честно говорит, что с ними происходит, и НИКОГДА не
    называет их «сохранёнными в аккаунт» до подтверждённой записи. Раньше ошибка облачной
@@ -4132,6 +4144,53 @@ function todayHistoryPush(){
 function todayHistoryGet(iso){
   const e = (Array.isArray(state.todayHistory) ? state.todayHistory : []).find(x => x.date === iso);
   return e ? e.items : [];
+}
+function todayViewIso(){ return todayViewDate || isoToday(); }
+function isoDaysAgo(n){
+  const d = new Date(); d.setDate(d.getDate() - n);
+  const y = d.getFullYear(); const m = String(d.getMonth()+1).padStart(2,'0'); const dd = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${dd}`;
+}
+function ensureTodayHistoryEntry(iso){
+  if(!Array.isArray(state.todayHistory)) state.todayHistory = [];
+  let e = state.todayHistory.find(x => x.date === iso);
+  if(!e){
+    const base = Array.isArray(state.today) ? state.today : [];
+    e = { date: iso, items: base.map(it => ({ text: String(it.text || ''), done: false })) };
+    state.todayHistory.push(e);
+    state.todayHistory.sort((a,b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
+  }
+  if(!Array.isArray(e.items)) e.items = [];
+  while(e.items.length < 3) e.items.push({ text: '', done: false });
+  e.items = e.items.slice(0, 3).map(it => ({ text: String((it && it.text) || ''), done: !!(it && it.done) }));
+  return e;
+}
+function todayItemsForView(){
+  // «Чужой день» активируется только после явного выбора в пикере (todayViewDate !== null).
+  // Иначе правим текущий список state.today (старая семантика).
+  if(!todayViewDate) return Array.isArray(state.today) ? state.today : [{text:"",done:false},{text:"",done:false},{text:"",done:false}];
+  const iso = todayViewDate;
+  if(iso === isoToday()) return state.today;
+  return ensureTodayHistoryEntry(iso).items;
+}
+function todayHistoryPushFor(iso, items){
+  if(!iso || !Array.isArray(items)) return;
+  if(!Array.isArray(state.todayHistory)) state.todayHistory = [];
+  const norm = items.map(it => ({ text: String(it.text || ''), done: !!it.done }));
+  const idx = state.todayHistory.findIndex(e => e.date === iso);
+  if(idx >= 0) state.todayHistory[idx].items = norm;
+  else {
+    state.todayHistory.push({ date: iso, items: norm });
+    state.todayHistory.sort((a,b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
+  }
+}
+function todaySaveCurrentView(){
+  if(!todayViewDate || todayViewDate === isoToday()){
+    state.todayDate = isoToday();
+    todayHistoryPush();
+  } else {
+    todayHistoryPushFor(todayViewDate, todayItemsForView());
+  }
 }
 function todayHistoryMonthCells(y, m){
   const first = new Date(y, m, 1);
@@ -6245,7 +6304,11 @@ function homeViewHTML(overallPct, hintHTML, mode, protectedCount){
     </div>
   </div>`;
    if(blockShown('today')){
-     const todayItems = Array.isArray(state.today) ? state.today : [{text:"",done:false},{text:"",done:false},{text:"",done:false}];
+     const viewDate = todayViewIso();
+      const viewingToday = (todayViewDate === null || viewDate === isoToday());
+      const todayItems = viewingToday
+        ? (Array.isArray(state.today) ? state.today : [{text:"",done:false},{text:"",done:false},{text:"",done:false}])
+        : todayItemsForView();
    const todayDoneCount = todayItems.filter(it => it.done).length;
    const moodClass = todayDoneCount === 0 ? 'good-today-start'
      : todayDoneCount === 1 ? 'good-today-begin'
@@ -6257,7 +6320,7 @@ function homeViewHTML(overallPct, hintHTML, mode, protectedCount){
      : t('goodTodayMoodPerfect');
    // v1.2.7: капсула с датой последней правки записей блока — рядом с капсулой настроения.
    // Зелёная, когда дата совпадает с сегодняшней, красная — когда записи не менялись в этот день.
-   const todayDateIso = (typeof state.todayDate === 'string') ? state.todayDate : '';
+   const todayDateIso = todayViewDate ? viewDate : ((typeof state.todayDate === 'string') ? state.todayDate : '');
    const todayDateLabel = shortDateDMY(todayDateIso);
    const todayDateSame = todayDateIso === isoToday();
    html += `<div class="priority-block">
@@ -6271,9 +6334,10 @@ function homeViewHTML(overallPct, hintHTML, mode, protectedCount){
          <div class="good-today ${moodClass}">
            <span class="good-today-text">${moodText}</span>
          </div>
-         ${todayDateLabel ? `<div class="good-today today-date ${todayDateSame ? 'today-date-same' : 'today-date-diff'}" data-tip="${t('todayDateTip')}">
+         ${todayDateLabel ? `<div id="todayDateCapsule" class="good-today today-date ${todayDateSame ? 'today-date-same' : 'today-date-diff'}" data-today-date-capsule="1" data-tip="${t('todayDateTip')}" style="cursor:pointer;">
            <span class="good-today-text">${todayDateLabel}</span>
          </div>` : ''}
+          ${todayPickerOpen ? `<div id="todayDatePicker" class="today-date-picker" style="width:100%;margin-top:6px;display:flex;flex-wrap:wrap;gap:6px;">${Array.from({length:7}).map((_,k)=>{const iso=isoDaysAgo(6-k);const sel=(todayViewDate?todayViewDate:isoToday())===iso;return `<button type="button" class="icon-btn${sel?' active':''}" data-today-pick-date="${iso}" style="flex:none;padding:4px 8px;font-size:12px;">${shortDateDMY(iso)}</button>`;}).join('')} </div>` : ''}
        </div>
        <div class="priority-list">
           ${todayItems.map((item, i) => {
@@ -10002,35 +10066,32 @@ function attachMainViewHandlers(){
       }
     });
   });
-  document.querySelectorAll('[data-today-action]').forEach(el=>{
+    document.querySelectorAll('[data-today-action]').forEach(el=>{
     el.addEventListener('mousedown', (e)=>{
       e.preventDefault();
       e.stopPropagation();
       const idx = parseInt(el.dataset.todayAction,10);
       const input = el.parentNode.querySelector('[data-today-edit="'+idx+'"]');
       if(!input) return;
+      const items = todayItemsForView();
       const hasText = input.value.trim() !== '';
       const isActive = input.classList.contains('editing');
       if(hasText && isActive){
-        // Green checkmark (active input with text) → finalize.
-        if(!Array.isArray(state.today) || idx >= state.today.length) return;
-        state.today[idx].text = input.value.slice(0, TODAY_TEXT_MAX);
-        saveState();
+        // Green checkmark (active input with text) -> finalize.
+        if(!Array.isArray(items) || idx >= items.length) return;
+        items[idx].text = input.value.slice(0, TODAY_TEXT_MAX);
+        todaySaveCurrentView();
         render();
       }else{
-        // Trash → clear text and focus for re-entry. v1.2.59: вместе с текстом гасим и
-        // «выполнено» — иначе строка стиралась, а зелёная заливка/зачёркивание оставались.
-        if(Array.isArray(state.today) && idx < state.today.length){
-          state.today[idx].text = '';
-          state.today[idx].done = false;
-          state.todayDate = isoToday();
-          todayHistoryPush();
-          state.goodToday = state.today.some(item => item.done);  // legacy-флаг, как в обработчике галочки
+        // Trash -> clear text and focus for re-entry.
+        if(Array.isArray(items) && idx < items.length){
+          items[idx].text = '';
+          items[idx].done = false;
+          todaySaveCurrentView();
+          if(todayViewIso() === isoToday()) state.goodToday = state.today.some(item => item.done);
         }
         input.value = '';
         input.classList.remove('done');
-        // Галочку на чекбоксе гасим на месте: полный render() пересобрал бы DOM и потерял
-        // фокус на поле ввода (для повторного ввода), а на таче закрылась бы клавиатура.
         const chk = el.parentNode.querySelector('[data-today-toggle]');
         if(chk){ chk.classList.remove('done'); chk.textContent = ''; }
         syncTodayMood();
@@ -10158,13 +10219,13 @@ function attachMainViewHandlers(){
     el.addEventListener('click', (e)=>{
       e.stopPropagation();
       const idx = parseInt(el.dataset.todayToggle,10);
-      if(!Array.isArray(state.today) || idx >= state.today.length) return;
-      const item = state.today[idx];
+      const items = todayItemsForView();
+      if(!Array.isArray(items) || idx >= items.length) return;
+      const item = items[idx];
       if((item.text || '').trim() === '') return;   // пустое дело не может быть выполненным
       item.done = !item.done;
-      state.todayDate = isoToday();  // отметка галочкой = корректировка записи (капсула даты)
-      todayHistoryPush();
-      state.goodToday = state.today.some(item => item.done);
+      todaySaveCurrentView();
+      if(todayViewIso() === isoToday()) state.goodToday = state.today.some(item => item.done);
       saveState();
       render();
     });
@@ -10224,6 +10285,27 @@ function attachMainViewHandlers(){
       render();
     });
   });
+  // v1.4.45: календарь «закрыть задним числом» — выбор дня из последних 7.
+  document.querySelectorAll('[data-today-date-capsule]').forEach(el=>{
+    el.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      const wasOpen = todayPickerOpen;
+      const wasViewingPast = todayViewDate !== null && todayViewDate !== isoToday();
+      todayViewDate = null;          // клик по капсуле всегда возвращает к сегодня
+      if(wasOpen) todayPickerOpen = false;      // был открыт → закрыть пикер
+      else todayPickerOpen = !wasViewingPast;   // был на сегодня → открыть; был в прошлом → просто сбросить
+      render();
+    });
+  });
+  document.querySelectorAll('[data-today-pick-date]').forEach(el=>{
+    el.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      todayViewDate = el.dataset.todayPickDate;
+      todayPickerOpen = false;
+      render();
+    });
+  });
+
    const quoteRefreshBtn = document.querySelector('[data-quote-refresh]');
    if(quoteRefreshBtn){
      quoteRefreshBtn.addEventListener('click', (e)=>{
