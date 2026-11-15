@@ -1651,7 +1651,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.4.56';
+const APP_VERSION = '1.4.57';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -7969,7 +7969,7 @@ function cardModeAttrs(node, idx, mode, protectedCount){
 }
 function cardModeTitle(node, idx, mode, defaultArrow, protectedCount){
   if(mode === 'edit'){
-    return `<input type="text" class="goal-input" data-goal-idx="${idx}" data-original="${esc(node.name)}" value="${esc(node.name)}">`;
+    return `<input type="text" id="goal-input-${idx}" class="goal-input" data-goal-idx="${idx}" data-original="${esc(node.name)}" value="${esc(node.name)}">`;
   }
   if(mode === 'delete'){
     return `<span>${esc(node.name)}</span><span class="arrow">${idx >= protectedCount ? '🗑' : '🔒'}</span>`;
@@ -8428,7 +8428,7 @@ function checklistHTML(list){
       html += `<div class="checklist-row">
         <div class="checklist-circle ${item.done?'done':''}" data-checklist-toggle="${i}" role="checkbox" tabindex="0" aria-checked="${item.done?'true':'false'}" aria-label="${esc(item.text)}">${item.done?'✓':''}</div>
         ${isEditing
-          ? `<form class="checklist-edit-form" style="display:contents"><input type="text" class="checklist-edit-input" data-checklist-edit-idx="${i}" data-original="${esc(item.text)}" value="${esc(item.text)}" maxlength="80" enterkeyhint="done"></form>`
+          ? `<form class="checklist-edit-form" style="display:contents"><input type="text" id="checklist-edit-input" class="checklist-edit-input" data-checklist-edit-idx="${i}" data-original="${esc(item.text)}" value="${esc(item.text)}" maxlength="80" enterkeyhint="done"></form>`
           : `<span class="checklist-text ${item.done?'done':''}">${esc(item.text)}</span>`}
         <button class="star-btn checklist-star ${item.priority?'active':''}" aria-pressed="${item.priority}" data-checklist-priority="${i}" data-tip="${item.priority ? t('tipRemovePriority') : t('tipAddPriority')}" aria-label="${item.priority ? t('tipRemovePriority') : t('tipAddPriority')}">${item.priority ? '⭐' : '☆'}</button>
         <button class="checklist-edit" data-checklist-edit="${i}" data-tip="${t('tipEditItem')}" aria-label="${t('tipEditItem')}"><i class="ti ti-edit" aria-hidden="true"></i></button>
