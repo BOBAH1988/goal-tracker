@@ -108,23 +108,22 @@ test('emptyTemplate/seed carry a valid 3-item today checklist', () => {
 
 // v1.2.7: капсула даты в блоке «Три важных дела на сегодня» + стартовый шаблон задач,
 // который закладывается ровно один раз — при самом первом открытии приложения.
-test('ensureToday: stamps todayDate and seeds the default template exactly once', () => {
+test('ensureToday: stamps todayDate and keeps the block empty on first open', () => {
   const t = boot();
   const todayIso = t.app.isoToday();
 
-  // Первое открытие (о блоке данных нет вовсе): стартовый шаблон, первая задача уже
-  // выполнена, дата = сегодняшний день первого открытия.
+  // Первое открытие (о блоке данных нет вовсе): дата = сегодня, список пуст.
   const fresh = { name: 'root', children: [] };
   t.app.ensureToday(fresh);
   assert.equal(fresh.todayDate, todayIso, 'first open stamps todayDate with today');
-  assert.equal(fresh.today.length, 3, 'exactly three rows');
-  assert.equal(fresh.today[0].done, true, '«Установить приложение» comes pre-checked');
-  assert.match(fresh.today[0].text, /Установить приложение/);
-  assert.equal(fresh.today[1].done, false, 'the instruction task starts unchecked');
-  assert.equal(fresh.today[2].done, false, 'the planning task starts unchecked');
-  assert.equal(fresh.goodToday, true, 'the legacy flag follows the pre-checked row');
+  assert.equal(fresh.today.length, 3, 'exactly three empty rows');
+  assert.equal(fresh.today[0].text, '', 'first row is empty');
+  assert.equal(fresh.today[0].done, false, 'first row unchecked');
+  assert.equal(fresh.today[1].text, '', 'second row is empty');
+  assert.equal(fresh.today[2].text, '', 'third row is empty');
+  assert.equal(fresh.goodToday, false, 'the legacy flag stays false for empty block');
 
-  // Блок уже был в пользовании (дата стоит), пользователь всё стёр: шаблон НЕ возвращается.
+  // Блок уже был в пользовании (дата стоит), пользователь всё стёр: список остаётся пустым.
   const cleared = {
     name: 'root', children: [], todayDate: todayIso,
     today: [{ text: '', done: false }, { text: '', done: false }, { text: '', done: false }],

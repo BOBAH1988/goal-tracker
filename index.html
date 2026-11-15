@@ -1652,7 +1652,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.4.49';
+const APP_VERSION = '1.4.50';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -4115,18 +4115,9 @@ function ensureToday(node){
     else if(item.text.length > TODAY_TEXT_MAX){ item.text = item.text.slice(0, TODAY_TEXT_MAX); }
     return item;
   });
-  // v1.2.7: капсула даты рядом с настроением блока. Пустая/битая дата = блок ещё ни разу не
-  // правился под этой механикой (первое открытие приложения или апгрейд со старой версии):
-  // ставим сегодняшнюю дату, а если список ещё СОВСЕМ нетронут (все три строки пустые и без
-  // галочек) — один раз закладываем стартовый шаблон задач (TODAY_DEFAULT_ITEMS).
-  // Шаблон срабатывает только пока даты нет: как только сегодняшняя дата попала в state, её
-  // сохраняет ближайший же saveState — поэтому пользователь, который потом всё стёр, при
-  // следующем открытии увидит пустой блок, а не шаблон заново.
+  // v1.2.7: капсула даты рядом с настроением блока. При первом открытии проставляется
+  // сегодняшняя дата; список остаётся пустым, пока пользователь сам не добавит дела.
   if(typeof node.todayDate !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(node.todayDate)){
-    if(node.today.every(it => !it.text.trim() && !it.done)){
-      node.today = TODAY_DEFAULT_ITEMS.map(it => ({ text: it.text, done: it.done }));
-      node.goodToday = node.today.some(it => it.done);
-    }
     node.todayDate = isoToday();
   }
   if(node.goodToday === undefined) node.goodToday = node.today.some(item => item.done);
@@ -6349,7 +6340,7 @@ function homeViewHTML(overallPct, hintHTML, mode, protectedCount){
          ${todayDateLabel ? `<div id="todayDateCapsule" class="good-today today-date ${todayDateSame ? 'today-date-same' : 'today-date-diff'}" data-today-date-capsule="1" data-tip="${t('todayDateTip')}" style="cursor:pointer;">
            <span class="good-today-text">${todayDateLabel}</span>
          </div>` : ''}
-          ${todayPickerOpen ? `<div id="todayDatePicker" class="today-date-picker" style="width:100%;margin-top:6px;display:flex;flex-wrap:wrap;gap:6px;">${Array.from({length:5}).map((_,k)=>{const iso=isoDaysAgo(4-k);const sel=(todayViewDate?todayViewDate:isoToday())===iso;return `<button type="button" class="icon-btn${sel?' active':''}" data-today-pick-date="${iso}" style="flex:none;padding:4px 8px;font-size:12px;">${shortDateDMY(iso)}</button>`;}).join('')} </div>` : ''}
+          ${todayPickerOpen ? `<div id="todayDatePicker" class="today-date-picker" style="width:100%;margin-top:6px;display:flex;flex-wrap:wrap;gap:6px;">${Array.from({length:4}).map((_,k)=>{const iso=isoDaysAgo(3-k);const sel=(todayViewDate?todayViewDate:isoToday())===iso;return `<button type="button" class="icon-btn${sel?' active':''}" data-today-pick-date="${iso}" style="flex:none;padding:4px 8px;font-size:12px;">${shortDateDMY(iso)}</button>`;}).join('')} </div>` : ''}
        </div>
        <div class="priority-list">
           ${todayItems.map((item, i) => {
@@ -7874,9 +7865,6 @@ function topbarHTML(){
   // на экране — когда имя не влезает на ширину устройства.
   const accAsIcon = isStandalonePwa() || accountIconOnly;
   return `<div class="topbar">
-    <div class="top-menu-dropdown">
-      <button id="btnTopMenu" data-tip="${t('menuTitle')}" aria-label="${t('menuTitle')}">☰</button>
-    </div>
     <div class="app-title-wrap"><h1><img class="app-logo" src="./icon-192.png" alt="" aria-hidden="true">${t('appTitle')}</h1>
     <div class="app-subtitle">${esc(t('appSubtitle'))}</div></div>
     <div class="actions">
@@ -7891,6 +7879,9 @@ function topbarHTML(){
             </div>` : ''}
           </div>`
         : `<button id="btnAccount">🔐 ${t('account')}</button>`) : ''}
+    </div>
+    <div class="top-menu-dropdown">
+      <button id="btnTopMenu" data-tip="${t('menuTitle')}" aria-label="${t('menuTitle')}">☰</button>
     </div>
   </div>${topMenuOpen ? `<div class="menu-backdrop"><div class="lang-menu">
         <div class="menu-head"><span class="menu-title">${t('menuTitle')}</span><button class="menu-close" id="btnTopMenuClose" aria-label="close" title="${t('done')}">✕</button></div>
