@@ -152,7 +152,7 @@
   .app-subtitle{font-size:13px; color:var(--muted); font-weight:400;}
   /* margin-left:auto on .top-menu-dropdown keeps ☰ pinned to the right edge without wrapping.
      The account name is swapped for the user icon by fitAccountButton() when it doesn't fit. */
-  .actions{display:flex; gap:8px; flex-wrap:wrap;}
+  .actions{display:flex; gap:8px; flex-wrap:nowrap;}
   /* Scoped to .topbar (not .actions) because #btnTopMenu/.lang-menu now live in their own
      .top-menu-dropdown wrapper, a sibling of .actions rather than a descendant of it — .topbar is
      the nearest ancestor shared by both, so this still styles the account button AND the ☰ button. */
@@ -394,7 +394,7 @@
      Лечится системной настройкой: -webkit-tap-highlight-color:transparent.
      Свойство НАСЛЕДУЕТСЯ, поэтому правила на <html> хватает всему документу;
      кнопкам/ссылкам дублируем явно — на случай если наследование не сработает. */
-  html{ -webkit-tap-highlight-color: transparent; }
+  html{ -webkit-tap-highlight-color: transparent; -webkit-text-size-adjust: 100%; }
   button, a, [role="button"], [data-tip], summary, label, input, select, textarea{
     -webkit-tap-highlight-color: transparent;
   }
@@ -1651,7 +1651,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.4.52';
+const APP_VERSION = '1.4.54';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -6213,8 +6213,10 @@ function fitQuoteInput(){
 function fitAccountButton(){
   if(!authUser || isStandalonePwa() || accountIconOnly) return;
   const btn = document.getElementById('btnAccount');
-  if(!btn || !btn.clientWidth) return; // jsdom / non-layout environment
-  if(btn.scrollWidth > btn.clientWidth + 1){
+  const topbar = document.querySelector('.topbar');
+  if(!btn || !btn.clientWidth || !topbar || !topbar.clientWidth) return; // jsdom / non-layout environment
+  // Имя не влезает в кнопку или шапка не влезает на экран — показываем иконку пользователя.
+  if(btn.scrollWidth > btn.clientWidth + 1 || topbar.scrollWidth > topbar.clientWidth + 1){
     accountIconOnly = true;
     render();
   }
@@ -6223,9 +6225,8 @@ let accountResizeTimer = null;
 window.addEventListener('resize', ()=>{
   clearTimeout(accountResizeTimer);
   accountResizeTimer = setTimeout(()=>{
-    if(!accountIconOnly) return;
-    // Ширина изменилась — замерим заново: влезло — вернём
-    // текст, всё ещё нет — fitAccountButton снова поставит иконку.
+    // Пересобираем шапку: fitAccountButton внутри render() sama поставит иконку,
+    // если содержимое не влезает, или вернёт текст, если Places достаточно.
     accountIconOnly = false;
     render();
   }, 200);
