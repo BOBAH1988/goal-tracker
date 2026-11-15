@@ -8433,7 +8433,7 @@ function checklistHTML(list){
       html += `<div class="checklist-row">
         <div class="checklist-circle ${item.done?'done':''}" data-checklist-toggle="${i}" role="checkbox" tabindex="0" aria-checked="${item.done?'true':'false'}" aria-label="${esc(item.text)}">${item.done?'✓':''}</div>
         ${isEditing
-          ? `<form class="checklist-edit-form" style="display:contents"><input type="text" id="checklist-edit-input" class="checklist-edit-input" data-checklist-edit-idx="${i}" data-original="${esc(item.text)}" value="${esc(item.text)}" maxlength="80" enterkeyhint="done"></form>`
+          ? `<form class="checklist-edit-form" style="display:contents"><input type="text" class="checklist-edit-input" data-checklist-edit-idx="${i}" data-original="${esc(item.text)}" value="${esc(item.text)}" maxlength="80" enterkeyhint="done"></form>`
           : `<span class="checklist-text ${item.done?'done':''}">${esc(item.text)}</span>`}
         <button class="star-btn checklist-star ${item.priority?'active':''}" aria-pressed="${item.priority}" data-checklist-priority="${i}" data-tip="${item.priority ? t('tipRemovePriority') : t('tipAddPriority')}" aria-label="${item.priority ? t('tipRemovePriority') : t('tipAddPriority')}">${item.priority ? '⭐' : '☆'}</button>
         <button class="checklist-edit" data-checklist-edit="${i}" data-tip="${t('tipEditItem')}" aria-label="${t('tipEditItem')}"><i class="ti ti-edit" aria-hidden="true"></i></button>
