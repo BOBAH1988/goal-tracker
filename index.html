@@ -1652,7 +1652,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.4.47';
+const APP_VERSION = '1.4.48';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -1922,6 +1922,7 @@ const STRINGS = {
     todayHistoryOneDone: 'Выполнено одно дело',
     todayHistoryTwoDone: 'Выполнено два дела',
     todayHistoryNoPlan: 'Нет запланированных дел',
+    todayHistoryToday: 'Сегодня',
     todayHistoryClose: 'Закрыть',
     goodTodayGood: "Сегодня хорошее",
     goodTodayBad: "День хороший",
@@ -2360,6 +2361,7 @@ const STRINGS = {
     todayHistoryOneDone: 'One task completed',
     todayHistoryTwoDone: 'Two tasks completed',
     todayHistoryNoPlan: 'No planned tasks',
+    todayHistoryToday: 'Today',
     todayHistoryClose: 'Close',
     goodTodayGood: "Today is good",
     goodTodayBad: "Make today good",
@@ -4250,7 +4252,7 @@ function todayHistoryHTML(){
   const doneCount = items.filter(it => it.done).length;
   const color = todayHistoryDayColor(doneCount, items.length > 0);
   const label = selISO.split('-');
-  const monthName = selISO === todayISO ? 'Сегодня' : `${+label[2]} ${months[parseInt(label[1],10)-1]} ${label[0]}`;
+  const monthName = selISO === todayISO ? t('todayHistoryToday') : `${+label[2]} ${months[parseInt(label[1],10)-1]} ${label[0]}`;
   let html = `<div class="auth-modal-overlay" id="todayHistoryOverlay">
     <div class="auth-panel scrollable wide">
       <button class="auth-close" id="btnTodayHistoryClose" aria-label="close" title="${t('todayHistoryClose')}">✕</button>
@@ -6650,7 +6652,9 @@ function challengeStats(ch){
   const lastDay = ch.duration > 0 ? challengeAddDays(ch.startedAt, ch.duration - 1) : null;
   // Окончание по дате окончания термина (а не по наличию duration > 0): и «без срока»
   // (lastDay=null) финиширует с 1-го дня после начала, иначе «навсегда» неusable.
-  const finished = lastDay ? today > lastDay : today > ch.startedAt;
+  // Бессрочный челлендж (duration: 0) НЕ завершается никогда — finished всегда false.
+  // Иначе duration > 0 смотрим, прошел ли сегодня последний день термина.
+  const finished = ch.duration === 0 ? false : (lastDay ? today > lastDay : today > ch.startedAt);
   const total = ch.duration > 0 ? ch.duration : Math.max(elapsed, 1);
   const remaining = lastDay ? Math.max(challengeDaysBetween(today, lastDay) + 1, 0) : 0;
   const pct = Math.max(0, Math.min(100, Math.round(100 * done / Math.max(total, 1))));
