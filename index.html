@@ -1652,7 +1652,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.4.48';
+const APP_VERSION = '1.4.49';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -7736,19 +7736,6 @@ function footerHTML(){
 
 function statusPanelsHTML(){
   let html = '';
-  if(syncConflict){
-    html += `<div class="auth-modal-overlay" id="syncConflictOverlay">
-      <div class="auth-panel">
-        <h2 style="margin:0 0 4px; font-size:14px;">${t('syncConflictTitle')}</h2>
-        <p style="margin:0; font-size:14px; white-space:pre-line;">${esc(t('syncConflictText'))}</p>
-        <div class="auth-btn-col">
-          <button id="btnSyncConflictUseCloud">${t('syncConflictUseCloud')}</button>
-          <button id="btnSyncConflictUseLocal" class="btn-danger">${t('syncConflictUseLocal')}</button>
-        </div>
-        <button type="button" id="btnSyncConflictExport" class="auth-link-center">${t('syncConflictExport')}</button>
-      </div>
-    </div>`;
-  }
   if(goodTodayDeleteId){
     html += `<div class="auth-modal-overlay" id="goodTodayDeleteOverlay">
       <div class="auth-panel">
