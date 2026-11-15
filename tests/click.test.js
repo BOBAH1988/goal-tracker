@@ -788,7 +788,7 @@ test('today block: date capsule sits next to the mood badge — green today, red
   assert.ok(badge, 'the date capsule must render next to the mood badge');
   const mood = t.document.querySelector('.today-badges .good-today:not(.today-date)');
   assert.ok(mood, 'the mood badge must live in the same row');
-  assert.match(badge.textContent.trim(), /^\d{2}\.\d{2}\.\d{2}$/, 'format is 12.10.26');
+  assert.match(badge.textContent.trim(), /^\d{2}\.\d{2}\.\d{4}$/, 'format is 12.10.2026');
   assert.equal(badge.textContent.trim(), t.app.shortDateDMY(todayIso), 'label comes from todayDate');
   assert.ok(badge.classList.contains('today-date-same'), 'date = today → green capsule');
   assert.ok(!badge.classList.contains('today-date-diff'), 'and not the red one');
@@ -799,7 +799,7 @@ test('today block: date capsule sits next to the mood badge — green today, red
   t.window.render();
   const stale = t.document.querySelector('.today-date');
   assert.ok(stale.classList.contains('today-date-diff'), 'stale date → red capsule');
-  assert.equal(stale.textContent.trim(), '01.01.20', 'compact format keeps the leading zeroes');
+  assert.equal(stale.textContent.trim(), '01.01.2020', 'date format is DD.MM.YYYY with leading zeroes');
   assert.equal(t.app.getState().todayDate, '2020-01-01', 'render must not overwrite the stored date');
 });
 

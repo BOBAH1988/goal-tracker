@@ -68,12 +68,11 @@ test('weekStartISO: Monday of the week for a given ISO date', () => {
 
 test('formatDateISO: ru vs en formatting', () => {
   const t = boot();
-  // Default lang is 'ru' in the vm harness (loadTheme/loadLang defaults)
   vm.runInContext("lang = 'ru'", t.ctx);
-  assert.equal(t.app.formatDateISO('2026-10-05'), '5 октября 2026');
-  assert.equal(t.app.formatDateISO('2026-01-03'), '3 января 2026');
+  assert.equal(t.app.formatDateISO('2026-10-05'), '05.10.2026');
+  assert.equal(t.app.formatDateISO('2026-01-03'), '03.01.2026');
   vm.runInContext("lang = 'en'", t.ctx);
-  assert.equal(t.app.formatDateISO('2026-10-05'), '10/05/2026');
+  assert.equal(t.app.formatDateISO('2026-10-05'), '05.10.2026');
 });
 
 test('formatWeekLabel: ru week range', () => {
@@ -81,8 +80,8 @@ test('formatWeekLabel: ru week range', () => {
   vm.runInContext("lang = 'ru'", t.ctx);
   // Week starting Monday 2026-10-05 → ends Sunday 2026-10-11
   const label = t.app.formatWeekLabel('2026-10-05');
-  assert.ok(label.includes('5 октября 2026'), 'week label must include start date');
-  assert.ok(label.includes('11 октября 2026'), 'week label must include end date');
+  assert.ok(label.includes('05.10.2026'), 'week label must include start date');
+  assert.ok(label.includes('11.10.2026'), 'week label must include end date');
 });
 
 test('goodTodayAllEntries: newest first', () => {

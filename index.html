@@ -1651,7 +1651,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.4.57';
+const APP_VERSION = '1.4.58';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -3809,13 +3809,13 @@ function isoToday(){
   const d = String(now.getDate()).padStart(2,'0');
   return `${y}-${m}-${d}`;
 }
-// «12.10.26» — компактный формат даты для капсулы в блоке «Три важных дела на сегодня».
+// «12.10.2026» — формат даты для капсулы в блоке «Три важных дела на сегодня».
 // На вход — ISO "YYYY-MM-DD"; пустая/не-дата даёт пустую строку (капсула просто не рисуется).
 function shortDateDMY(isoStr){
   if(typeof isoStr !== 'string') return '';
   const p = isoStr.split('-');
   if(p.length !== 3 || !p.every(part => /^\d{2,4}$/.test(part))) return '';
-  return `${p[2]}.${p[1]}.${p[0].slice(-2)}`;
+  return `${p[2]}.${p[1]}.${p[0]}`;
 }
 // «Хорошее сегодня» journal helpers. Entries are {id, date(YYYY-MM-DD), text}.
 // weekStartISO: the Monday (00:00 ISO) that begins the week containing the given ISO date string.
@@ -3836,10 +3836,9 @@ function formatDateISO(isoStr){
   const parts = isoStr.split('-');
   if(parts.length !== 3) return isoStr;
   if(lang === 'ru'){
-    const m = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
-    return `${parseInt(parts[2],10)} ${m[parseInt(parts[1],10)-1]} ${parts[0]}`;
+    return `${parts[2]}.${parts[1]}.${parts[0]}`;
   }
-  return `${parts[1]}/${parts[2]}/${parts[0]}`;
+  return `${parts[2]}.${parts[1]}.${parts[0]}`;
 }
 // All journal entries, newest first.
 function goodTodayAllEntries(){
