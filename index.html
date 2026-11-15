@@ -1651,7 +1651,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.4.54';
+const APP_VERSION = '1.4.55';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -3136,7 +3136,7 @@ function loadState(){
          sanitizeGoalTree(parsed);
          sanitizeEmptyChecklists(parsed);
           ensureWheelTotals(parsed);
-          ensureToday(parsed);
+          ensureToday(parsed, true);
           ensureQuote(parsed);
           ensurePriorityDefaults(parsed);
           ensureGoodToday(parsed);
@@ -3154,7 +3154,7 @@ function loadState(){
   sanitizeGoalTree(fresh);
   sanitizeEmptyChecklists(fresh);
    ensureWheelTotals(fresh);
-   ensureToday(fresh);
+   ensureToday(fresh, true);
    ensurePriorityDefaults(fresh);
    ensureGoodToday(fresh);
    ensureSphereActivity(fresh);
@@ -3517,7 +3517,7 @@ function startCloudSync(uid){
         lastAppliedCloudStateJson = JSON.stringify(data.state, syncStripTreeOnly);
         // Cloud docs written by older app versions may lack the wheel counter — backfill it
         // the same way as loadState()/import so the wheel never divides by a missing zero.
-        sanitizeGoalTree(state); sanitizeEmptyChecklists(state); ensureWheelTotals(state); ensureToday(state); ensureGoodToday(state);
+        sanitizeGoalTree(state); sanitizeEmptyChecklists(state); ensureWheelTotals(state); ensureToday(state, true); ensureGoodToday(state);
         ensurePriorityDefaults(state);
         ensureSphereActivity(state);
         ensureChallenge(state);   // a cloud snapshot from an older build has no «Челлендж» yet    ensureQuote(state);
@@ -4101,7 +4101,7 @@ function ensureWheelTotals(node){
 }
 // Backfills the "today" checklist for older saves that predate this feature — so a user
 // upgrading from a previous version gets three blank items instead of a broken/empty block.
-function ensureToday(node){
+function ensureToday(node, carryForward = false){
   if(!Array.isArray(node.today)){
     node.today = [{text:"",done:false},{text:"",done:false},{text:"",done:false}];
   }else{
@@ -4116,8 +4116,17 @@ function ensureToday(node){
   });
   // v1.2.7: капсула даты рядом с настроением блока. При первом открытии проставляется
   // сегодняшняя дата; список остаётся пустым, пока пользователь сам не добавит дела.
+  const todayIso = isoToday();
   if(typeof node.todayDate !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(node.todayDate)){
-    node.todayDate = isoToday();
+    node.todayDate = todayIso;
+  } else if (carryForward && node.todayDate !== todayIso) {
+    // Новый день: невыполненные дела с прошлого дня переносятся на сегодня.
+    const carried = node.today
+      .filter(it => !it.done && (it.text || '').trim() !== '')
+      .map(it => ({ text: it.text, done: false }));
+    node.today = carried.slice(0, 3);
+    while(node.today.length < 3){ node.today.push({text:"",done:false}); }
+    node.todayDate = todayIso;
   }
   if(node.goodToday === undefined) node.goodToday = node.today.some(item => item.done);
 }
@@ -5904,7 +5913,7 @@ function doImportData(file){
      sanitizeGoalTree(state);
      sanitizeEmptyChecklists(state);
      ensureWheelTotals(state);
-     ensureToday(state);
+      ensureToday(state, true);
      ensurePriorityDefaults(state);
      ensureGoodToday(state);
      ensureWishMap(state);
@@ -11005,7 +11014,7 @@ function attachSyncConflictHandlers(){
     applyingRemoteUpdate = true;
     state = syncConflict.cloud;
     if(isValidGoalTree(state)){
-      sanitizeGoalTree(state); sanitizeEmptyChecklists(state); ensureWheelTotals(state); ensureToday(state); ensureGoodToday(state);
+      sanitizeGoalTree(state); sanitizeEmptyChecklists(state); ensureWheelTotals(state); ensureToday(state, true); ensureGoodToday(state);
       ensurePriorityDefaults(state);
       ensureSphereActivity(state);
       ensureChallenge(state);   // a cloud snapshot from an older build has no «Челлендж» yet    ensureQuote(state);
