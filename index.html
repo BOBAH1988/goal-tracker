@@ -283,14 +283,20 @@
       installed PWA looked scruffy next to the rest of the site. Applies to the installed PWA and
       to any narrow screen (a phone browser gets the same tidy corner). */
    @media (display-mode: standalone), (max-width:480px){
-     #btnTopMenu, #btnSearch, .account-dropdown #btnAccount{
-       min-width:38px; height:38px; padding:0; font-size:20px; border-radius:8px;
-       display:inline-flex; align-items:center; justify-content:center; border-color:var(--border);
-     }
-     /* #btnTopMenu's base rule pins padding/font-size with !important — answer in kind, or the
-        trio would still sit in three different boxes. */
-     #btnTopMenu{ padding:0 !important; font-size:20px !important; }
-   }
+      #btnTopMenu, #btnSearch{
+        min-width:38px; height:38px; padding:0; font-size:20px; border-radius:8px;
+        display:inline-flex; align-items:center; justify-content:center; border-color:var(--border);
+      }
+      /* Account button shows text (name/email) — needs horizontal padding so the text
+         doesn't stick to the button edges. Keep height fixed at 38px to match the trio. */
+      .account-dropdown #btnAccount{
+        min-width:38px; height:38px; padding:0 10px; font-size:20px; border-radius:8px;
+        display:inline-flex; align-items:center; justify-content:center; border-color:var(--border);
+      }
+      /* #btnTopMenu's base rule pins padding/font-size with !important — answer in kind, or the
+         trio would still sit in three different boxes. */
+      #btnTopMenu{ padding:0 !important; font-size:20px !important; }
+    }
   /* ===== Action buttons (edit/delete/move/relocate/archive) ===== */
    #btnEdit, #btnDelete, #btnAddSubgoal, #btnDeleteChecklist, #btnMove, #btnMoveChecklist, #btnRelocate, #btnChecklistAdd, #btnFilter, .add-child-row #btnArchive, .add-goal-wrap #btnArchive, #btnGoodTodayHistory, #btnGoodTodayWeekHistory, #btnGoodTodayWeekEdit, #btnWishManage, #btnWishGrid, #btnWishPrint, #btnWishShare, #btnWheelPrint, #btnWheelShare, #btnGoodTodayHistoryPagePrev, #btnGoodTodayHistoryPageNext, #btnGoodTodayHistoryPagePrevBottom, #btnGoodTodayHistoryPageNextBottom, #btnAchievementsSave, #btnAchievementsCancel{
     background:var(--card2); border:1px solid var(--border); color:var(--muted); border-radius:8px;
@@ -1651,7 +1657,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.4.58';
+const APP_VERSION = '1.4.59';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
