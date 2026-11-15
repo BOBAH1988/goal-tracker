@@ -1657,7 +1657,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.4.59';
+const APP_VERSION = '1.4.60';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -6388,7 +6388,7 @@ function homeViewHTML(overallPct, hintHTML, mode, protectedCount){
              return `<div class="priority-row">
                <div class="chk ${done?'done':''}" data-priority-toggle="${i}">${done?'✓':''}</div>
                <span class="priority-name ${done?'done':''}" data-priority-nav="${i}">${esc(name)}</span>
-               ${date ? `<span class="priority-date">${esc(date)}</span>` : ''}
+                ${date ? `<span class="priority-date">${formatDateISO(date)}</span>` : ''}
                <button class="priority-remove" data-priority-remove="${i}" data-tip="${t('tipRemovePriority')}" aria-label="${t('tipRemovePriority')}">✕</button>
              </div>`;
            }).join('')
@@ -8042,7 +8042,7 @@ function cardOrLeafHTML(node, idx, mode, protectedCount){
     const titleHTML = cardModeTitle(node, idx, mode, defaultArrow, protectedCount);
     return `<div class="card ${finalCls}" ${attrs}>
       <div class="title">${titleHTML}</div>
-      ${node.date ? `<div class="sub"><span>${t('due')} ${esc(node.date)}</span></div>` : ''}
+      ${node.date ? `<div class="sub"><span>${t('due')} ${formatDateISO(node.date)}</span></div>` : ''}
       <div class="bar"><div style="width:${pct}%; background:${barColor(pct)}"></div></div>
     </div>`;
   }
