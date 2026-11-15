@@ -1657,7 +1657,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.4.62';
+const APP_VERSION = '1.4.63';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -7974,7 +7974,7 @@ function cardModeAttrs(node, idx, mode, protectedCount){
 }
 function cardModeTitle(node, idx, mode, defaultArrow, protectedCount){
   if(mode === 'edit'){
-    return `<input type="text" id="goal-input-${idx}" class="goal-input" data-goal-idx="${idx}" data-original="${esc(node.name)}" value="${esc(node.name)}">`;
+    return `<input type="text" class="goal-input" data-goal-idx="${idx}" data-original="${esc(node.name)}" value="${esc(node.name)}">`;
   }
   if(mode === 'delete'){
     return `<span>${esc(node.name)}</span><span class="arrow">${idx >= protectedCount ? '🗑' : '🔒'}</span>`;
