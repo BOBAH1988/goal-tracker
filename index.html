@@ -1651,7 +1651,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.4.55';
+const APP_VERSION = '1.4.56';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -6355,7 +6355,7 @@ function homeViewHTML(overallPct, hintHTML, mode, protectedCount){
           ${todayItems.map((item, i) => {
            return `<div class="priority-row">
              <div class="chk ${item.done?'done':''}" data-today-toggle="${i}">${item.done?'✓':''}</div>
-             <input type="text" class="today-input ${item.done?'done':''}" data-today-edit="${i}" maxlength="${TODAY_TEXT_MAX}" value="${esc(item.text || '')}" placeholder="${t('todayPlaceholder')}">
+              <input type="text" id="today-input-${i}" class="today-input ${item.done?'done':''}" data-today-edit="${i}" maxlength="${TODAY_TEXT_MAX}" value="${esc(item.text || '')}" placeholder="${t('todayPlaceholder')}">
               <button class="today-action" data-today-action="${i}" data-tip="${t('todayClear')}" aria-label="${t('todayClear')}">
                 <i class="ti ti-trash" aria-hidden="true"></i>
               </button>
