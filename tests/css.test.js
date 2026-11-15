@@ -295,11 +295,11 @@ test('CSS guard: the narrow/PWA topbar moves the whole title wrap and puts ☰ l
   // assertion is order+flex TOGETHER on the wrap, never on .topbar h1.
   assert.match(body, /\.app-title-wrap\{[^}]*order:1[^}]*flex:1 1 auto[^}]*min-width:0/,
     'the title wrap must get order+flex, not .topbar h1');
-  // Auto margin on .actions pushes itself AND the ☰ behind it to the right edge.
-  assert.match(body, /\.actions\{[^}]*order:2[^}]*margin-left:auto/,
-    'the actions row must push itself (and ☰) to the right edge');
-  assert.match(body, /\.top-menu-dropdown\{[^}]*order:3[^}]*\}/,
-    'the menu button must come last (right) in the shared top row');
+  // Auto margin on .top-menu-dropdown pushes ☰ to the right edge (never wraps to its own row).
+  assert.match(body, /\.top-menu-dropdown\{[^}]*order:3[^}]*margin-left:auto/,
+    'the menu button is pushed to the right edge');
+  assert.match(body, /\.actions\{[^}]*order:2[^}]*\}/,
+    'the actions row comes second, before the menu button');
   assert.doesNotMatch(body, /\.topbar h1\{[^}]*order:/,
     'an order on h1 re-orders the wrap column — subtitle above title');
   // Главное меню — центрированная модалка (.menu-backdrop — flex-контейнер, .lang-menu внутри
