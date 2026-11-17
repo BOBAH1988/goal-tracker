@@ -403,6 +403,7 @@
   html{ -webkit-tap-highlight-color: transparent; -webkit-text-size-adjust: 100%; }
   button, a, [role="button"], [data-tip], summary, label, input, select, textarea{
     -webkit-tap-highlight-color: transparent;
+    touch-action:manipulation;
   }
   /* Вторая линия той же защиты: снимаем НАТИВНУЮ отрисовку кнопки. В iOS 26
      <button> с appearance:auto рисует свою «стеклянную» подложку (светло-синюю)
@@ -1657,7 +1658,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.4.63';
+const APP_VERSION = '1.4.64';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
