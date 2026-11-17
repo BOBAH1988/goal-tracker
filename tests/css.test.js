@@ -290,10 +290,11 @@ test('CSS guard: the narrow/PWA topbar moves the whole title wrap and puts ☰ l
   // order/width must sit on .app-title-wrap — the actual flex item of .topbar. On .topbar h1 they
   // do nothing at topbar level AND reorder the wrap's own column, putting the subtitle ABOVE the
   // title (the reported bug). The ☰ then lands mid-row instead of at the right edge.
-  // The wrap carries order:1 and the flexible slot, so the title shares the top row with the
-  // buttons (title left, buttons right) instead of dropping to a row of its own. The point of the
-  // assertion is order+flex TOGETHER on the wrap, never on .topbar h1.
-  assert.match(body, /\.app-title-wrap\{[^}]*order:1[^}]*flex:1 1 auto[^}]*min-width:0/,
+  // The wrap carries order:1 and flex:0 0 auto (not flex:1) so it does NOT stretch across the whole
+  // topbar — its width collapses to the widest child, i.e. the subtitle below the title, keeping the
+  // title the same length as the description under it. order+flex TOGETHER on the wrap, never on
+  // .topbar h1.
+  assert.match(body, /\.app-title-wrap\{[^}]*order:1[^}]*flex:0 0 auto[^}]*min-width:0/,
     'the title wrap must get order+flex, not .topbar h1');
   // Auto margin on .top-menu-dropdown pushes ☰ to the right edge (never wraps to its own row).
   assert.match(body, /\.top-menu-dropdown\{[^}]*order:3[^}]*margin-left:auto/,

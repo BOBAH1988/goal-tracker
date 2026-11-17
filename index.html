@@ -146,7 +146,7 @@
   #app{max-width:920px; margin:0 auto; padding:28px 20px 80px;}
   /* ===== Topbar: menus, language & theme switchers ===== */
   .topbar{display:flex; align-items:center; margin-bottom:18px; flex-wrap:nowrap; gap:10px;}
-  .app-title-wrap{display:flex; flex-direction:column; gap:0; line-height:1.2; flex:1; min-width:0; overflow:hidden;}
+  .app-title-wrap{display:flex; flex-direction:column; gap:0; line-height:1.2; min-width:0; overflow:hidden;}
   .topbar h1{font-size:20px; margin:0; font-weight:600; display:flex; align-items:center; gap:8px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0;}
   .app-logo{width:26px; height:26px; border-radius:50%; flex:none; display:block;}
   .app-subtitle{font-size:13px; color:var(--muted); font-weight:400;}
@@ -1035,7 +1035,7 @@
            the middle of the row right after the title. The wrap is the element that must move.
         2. that same misplaced `h1{order:3}` reordered the wrap's OWN column: the subtitle (order 0)
            jumped ABOVE the title («описание над названием сайта»). */
-    .app-title-wrap{order:1; flex:1 1 auto; min-width:0; align-items:flex-start;}
+    .app-title-wrap{order:1; flex:0 0 auto; min-width:0; align-items:flex-start;}
     .actions{order:2;}
     .top-menu-dropdown{order:3; margin-left:auto;}
     .topbar h1{justify-content:flex-start; margin-top:2px; font-size:17px;}
@@ -1658,7 +1658,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.4.64';
+const APP_VERSION = '1.4.65';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
