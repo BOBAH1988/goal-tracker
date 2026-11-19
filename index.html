@@ -69,6 +69,27 @@
 }
 </script>
 <style>
+  /* ===== ИНДЕКС CSS (оглавление) =====
+     Навигация: Ctrl+F по маркеру «===== Имя =====». Строки приблизительные.
+       Design tokens        ~72    палитра, темы dark/light/pink
+       Page shell           ~103
+       Topbar               ~147   меню, язык, темы
+       Action buttons       ~300   базовый фон/hover кнопок (см. AGENTS §4.9)
+       iOS 26 highlight     ~392   -webkit-tap-highlight / appearance
+       Modals               ~423
+       Breadcrumb           ~603
+       Home progress        ~652
+       Leaf detail          ~691
+       Челлендж             ~774
+       История «Трёх дел»   ~845
+       Cards grid           ~1012
+       Leaf rows            ~1092
+       Sections             ~1174
+       Wish map             ~1176
+       Checklist rows       ~1536
+       Wheel                ~1600
+     Красные линии: подсветка наведения — только внутри медиа-гейта «hover + fine pointer»
+     и под `:where(html:not(.touch-mode))`; печать/тач-режим — AGENTS §14. */
   /* ===== Design tokens: base colors + light/pink themes ===== */
   :root{
     --bg:#0f1420; --card:#1a2233; --card2:#20293d; --text:#eef2f8; --muted:#8a93a6;
@@ -1651,6 +1672,42 @@
 <script src="quotes.js"></script>
 
 <script>
+/* ===== КАРТА КОДА (оглавление) =====
+   Навигация: Ctrl+F по маркеру «===== Имя =====» надёжнее номеров строк —
+   после любой правки они сдвигаются. Ниже — приблизительные строки на момент
+   составления карты (v1.4.67), порядок секций стабилен.
+
+   ===== Основа =====
+   App version          ~1654   APP_VERSION — единственная точка бампа
+   Wish board constants ~1662   лимиты карты желаний (объявлены до loadState!)
+   Seed data            ~1714   стартовое дерево целей (SEED)
+   Language             ~1871   STRINGS ru/en + t()
+
+   ===== Состояние и сохранение =====
+   State                ~2795   ensure* / loadState / saveState / дерево и колесо
+   Templates             ~2811   стартовые наборы сфер и целей
+   Статусы сохранения   ~2993   saveStatus / localStorage-ошибки
+   Cloud sync           ~3190   Firebase Auth + Firestore, очередь push
+   Челлендж sanitizer   ~4325   ensureChallenge
+   Хорошее сегодня      ~4374   ensureGoodToday (+ рефлексии недели)
+   Достижения           ~4409   ensureAchievements
+   Карта желаний        ~4553   ensureWishMap и синхронизация
+   Напоминание о сферах ~4459
+   Поделиться           ~5701   меню ☰, canvas/PNG
+
+   ===== Рендер =====
+   Render               ~6079   render() + *HTML()-секции главного экрана
+   Достижения (рендер)  ~6532
+   Челлендж (рендер)    ~6618
+   Шаблоны (модалка)    ~7466
+   Настройки блоков     ~7499
+   Колесо (интерактив)  ~8236   SVG-колесо, клики по сферам
+   Челлендж (handlers)  ~9036
+   Аналитика            ~9801   admin-only
+
+   Правило проекта: новые HTML-блоки — отдельной `*HTML()`-функцией рядом с render(),
+   новые обработчики — в соответствующей секции `attach*Handlers` (REFACTORING.md §4).
+   ===== /КАРТА КОДА ===== */
 /* ===== App version (single source of truth) =====
    Scheme: MAJOR.MINOR.PATCH (e.g. v1.0.2).
    - MAJOR (1): основная версия.
@@ -1658,7 +1715,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.4.66';
+const APP_VERSION = '1.4.67';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -2910,6 +2967,28 @@ const TEMPLATES = {
   }
 };
 
+/* ===== SCHEMA STATE (единая карта состояния) =====
+   Форма дерева: узел = { name, done, archived, priority?, due?, checklist?,
+   totalGoalsAdded?, children: [] }. Лист = children: [] (+ done). Контейнер — children.length > 0.
+   Инварианты колеса: юнит = активный лист на любой глубине; пункт чек-листа — НЕ юнит;
+   totalGoalsAdded липкий (растёт при добавлении, не падает при удалении/архиве);
+   архив исключён из процентов в обе стороны (P3-A: пустая/архивная сфера = 100%).
+
+   Независимые модули (каждый — свой кусок state, свой рендер, свои хендлеры):
+   - goodTodayEntries: [{id, date:'YYYY-MM-DD', text}]  → «Хорошее сегодня»
+   - goodTodayWeekReflections: [{week, q1, q2, q3, createdAt, updatedAt}] → «Победы за неделю»
+     (запись без текста во всех трёх полях не хранится; трим при загрузке — ensureGoodToday)
+   - wishMap: [{id, title, imagePath, order, isUserPhoto, createdAt, updatedAt, uploadState}]
+     — только метаданные; пиксели в IndexedDB + Firestore (AGENTS §11)
+   - challenge: {title, startedAt, duration, days{ISO:true}} + challengeOpen
+   - achievements: {groups:[{id,title,items[]}], activeGroupId, open}
+   - hiddenBlocks: [id скрытых блоков] — содержимое не удаляется, блок не рисуется
+   - quoteText, goalsSort, *_Open-флаги — UI-состояние, синхронизируется как обычные поля.
+
+   ОБЯЗАТЕЛЬНО: любой путь подмены state (localStorage, облачный снимок, импорт бэкапа,
+   разрешение конфликта, undo) вызывает ensureChallenge/ensureGoodToday/ensureWishMap/
+   ensureAchievements — иначе рендер падает на undefined (AGENTS §16).
+   ===== /SCHEMA STATE ===== */
 // Seed a random motivational quote on first run (or if quotes array is empty).
 let state = loadState();
 // Seed a random motivational quote on first run (or if quotes array is empty).
@@ -3134,6 +3213,9 @@ function minChildrenFor(depth){
   return protectedCountFor(depth);
 }
 
+/**
+ * Reads and normalizes state from localStorage; falls back to SEED on any problem. Never throws.
+ */
 function loadState(){
   try{
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -3172,6 +3254,9 @@ function loadState(){
 function structuredCloneFallback(obj){
   return JSON.parse(JSON.stringify(obj));
 }
+ /**
+  * Persists state to localStorage and schedules a cloud push. Reports storage errors via saveStatus.
+  */
  function saveState(){
    try{
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
@@ -3345,6 +3430,9 @@ function scheduleCloudPush(){
 // the other devices: closing the tab / backgrounding the PWA inside those 800 ms used to lose
 // the Firestore write, and the board then waited for the next reload. Called on pagehide and
 // when the document becomes hidden.
+/**
+ * Pushes pending metadata to Firestore immediately (pagehide / background / retry).
+ */
 function flushCloudPush(){
   if(!cloudSyncTimer) return;         // nothing debounced — nothing to flush
   clearTimeout(cloudSyncTimer);
@@ -3419,6 +3507,9 @@ function retryCloudPushNow(){
 // When a push detects the cloud moved ahead, the user picks: keep pushing LOCAL (overwrite the
 // account) or take the CLOUD data (our snapshot listener already keeps `state` = cloud). Both
 // paths are explicit — neither silently discards the other side.
+/**
+ * Applies the chosen side of a cloud/local conflict and re-renders.
+ */
 function resolvePushConflict(useLocal){
   if(useLocal){
     // User insists their local data wins: bump our view past the cloud timestamp and re-send,
@@ -3434,11 +3525,17 @@ function resolvePushConflict(useLocal){
 }
 // Normalizes a display name into a Firestore-doc-id-safe uniqueness key (trimmed, case-insensitive,
 // collapsed whitespace, no slashes).
+/**
+ * Normalizes a username for auth comparison.
+ */
 function normalizeUsername(name){
   return (name || '').trim().toLowerCase().replace(/\s+/g, ' ').replace(/\//g, '-');
 }
 // Password policy: must contain at least one letter and one digit, min 6 characters —
 // symbols and mixed case are welcome but never required.
+/**
+ * Password policy check used by the sign-up form.
+ */
 function isPasswordStrong(pw){
   return pw.length >= 6 && /[A-Za-zА-Яа-яЁё]/.test(pw) && /[0-9]/.test(pw);
 }
@@ -3779,6 +3876,9 @@ async function doEditAccountSave(name, surname, birthDate, gender, occupation){
 // Safe walk: returns null instead of throwing when the path is broken (stale after a remote
 // edit, corrupt import). Callers in render() are protected by validatePath() first; this guard
 // protects the non-render call sites (relocate picker/confirm) that check the result themselves.
+/**
+ * Returns the tree node at a path array (or null for an invalid path).
+ */
 function resolve(p){
   if(!Array.isArray(p)) return null;
   let node = state;
@@ -3793,6 +3893,9 @@ function resolve(p){
 // the very node this device was sitting on — trims `path` back to the deepest ancestor that's
 // still real. Without this, resolve(path) hits `undefined.children` and render() throws, leaving
 // the page stuck until a manual reload. Called at the top of render(), before resolve(path).
+/**
+ * Drops trailing path segments that no longer resolve (after delete/archive).
+ */
 function validatePath(){
   let node = state;
   for(let i = 0; i < path.length; i++){
@@ -3809,6 +3912,9 @@ function isLeaf(node){
 // Today's date as an ISO "YYYY-MM-DD" string (local time, not UTC) — comparable directly with the
 // stored due-date strings since both use the same zero-padded format and ISO dates sort/compare
 // lexicographically the same as chronologically.
+/**
+ * Local calendar date as YYYY-MM-DD (never UTC-shifted).
+ */
 function isoToday(){
   const now = new Date();
   const y = now.getFullYear();
@@ -3999,6 +4105,9 @@ function renderSearchResults(query){
 // Leaf completion for the balance wheel: a plain leaf counts as finished only via its done
 // flag; a checklist leaf counts as finished only when ALL its items are ticked (a partially
 // filled checklist still leaves open load in the sphere, mirroring the leaf-progress rule).
+/**
+ * A wheel leaf counts as done when `done` is true or its checklist is fully checked.
+ */
 function isWheelLeafDone(node){
   if(node.checklist && node.checklist.length){
     return node.checklist.every(i => i.done);
@@ -4009,6 +4118,9 @@ function isWheelLeafDone(node){
 // subtrees are skipped wholesale: an archived container hides everything inside it, so none
 // of its leaves may leak into the wheel load. `doneOnly` restricts the count to leaves that
 // are finished per isWheelLeafDone().
+/**
+ * Counts active (non-archived) leaves at ANY depth. @param {boolean} [doneOnly] count only completed leaves.
+ */
 function countWheelLeaves(node, doneOnly){
   if(!node || node.archived) return 0;
   if(isLeaf(node)) return (!doneOnly || isWheelLeafDone(node)) ? 1 : 0;
@@ -4020,6 +4132,9 @@ function countWheelLeaves(node, doneOnly){
 // when its done flag is set, else 0; a checklist leaf contributes
 // doneItems/totalItems (so 2/4 = 0.5) instead of all-or-nothing. An empty or
 // missing checklist falls back to the plain done flag.
+/**
+ * Leaf share in the wheel: plain leaf = done?1:0, checklist = done/total; empty checklist falls back to `done`. @returns {number} 0..1
+ */
 function wheelLeafFraction(node){
   if(node.checklist && node.checklist.length){
     const doneN = node.checklist.filter(i => i.done).length;
@@ -4080,6 +4195,9 @@ function removeChecklistItem(node, idx){
 // used to reach render() and die on `undefined.children`. Drops children that aren't objects
 // with a string name, guarantees `children` arrays, normalizes checklist lines. Runs BEFORE
 // sanitizeEmptyChecklists/ensureWheelTotals at every data entry point.
+/**
+ * Repairs a goal tree in place: guarantees children/checklist arrays, numeric totals, boolean flags. Never deletes user goals.
+ */
 function sanitizeGoalTree(node){
   if(!node || typeof node !== 'object') return;
   if(!Array.isArray(node.children)) node.children = [];
@@ -4098,6 +4216,9 @@ function sanitizeGoalTree(node){
 // total = current active leaf count (done + open). Past deletions are unknowable there —
 // acceptable per spec (no real users yet). Never lowers an existing counter, only fills in
 // missing/zero ones so render-time math always has a sane denominator.
+/**
+ * Backfills the sticky `totalGoalsAdded` counters without ever lowering them.
+ */
 function ensureWheelTotals(node){
   if(!node || node.archived || isLeaf(node)) return;
   if(wheelTotal(node) <= 0){
@@ -4107,6 +4228,9 @@ function ensureWheelTotals(node){
 }
 // Backfills the "today" checklist for older saves that predate this feature — so a user
 // upgrading from a previous version gets three blank items instead of a broken/empty block.
+/**
+ * Guarantees the «Три важные дела» block for the current day, carrying unfinished items forward.
+ */
 function ensureToday(node, carryForward = false){
   if(!Array.isArray(node.today)){
     node.today = [{text:"",done:false},{text:"",done:false},{text:"",done:false}];
@@ -4309,6 +4433,9 @@ function todayHistoryHTML(){
 // v1.2.11: для старых сохранений разметка теперь означает (1) проставить ☆ на тех же двух
 // существующих по именам листьях по всему дереву и (2) убрать хвосты v1.2.8 — отдельные
 // корни-примеры с priority=true, которые остались от переноса.
+/**
+ * Guarantees the priority block defaults (max 5 items) without touching user stars.
+ */
 function ensurePriorityDefaults(node){
   if(!node || node.priorityDefaultsSeeded) return;
   node.priorityDefaultsSeeded = true;
@@ -4326,6 +4453,9 @@ function ensurePriorityDefaults(node){
    Normalizes state.challenge on load / import / cloud-apply: wrong types are replaced with
    defaults, day keys that are not YYYY-MM-DD (or falsy values) are dropped. Never throws —
    a corrupted challenge must not take the whole state down with it. */
+/**
+ * Guarantees state.challenge exists and is well-formed. MUST be called on every state swap (AGENTS §16).
+ */
 function ensureChallenge(node){
   if(!node) return;
   const ch = node.challenge;
@@ -4371,6 +4501,9 @@ function ensureQuote(node){
     node.quoteDate = today;
   }
 }
+/**
+ * Sanitizes «Хорошее сегодня» entries and weekly reflections; an all-empty reflection is dropped.
+ */
 function ensureGoodToday(node){
   if(!node) return;
   if(!Array.isArray(node.goodTodayEntries)){
@@ -4406,6 +4539,9 @@ function ensureGoodToday(node){
 /* «Мои достижения»: гарантируем, что state.achievements — объект с 4 группами.
    Каждая группа: { id, title, items[] } — максимум 10 строк в группе.
    Старый формат (плоский массив строк) мигрируется автоматически. */
+/**
+ * Guarantees the «Мои достижения» shape (5 groups × up to 10 items) and migrates the old flat array.
+ */
 function ensureAchievements(node){
   if(!node) return;
   const a = node.achievements;
@@ -4550,6 +4686,9 @@ function ensureAchievements(node){
  // truth, in its own Firestore document. Rendering only borrows blob: URLs (wishBlobUrlFor).
  // ensureWishMap backfills older saves (legacy {src, caption} — migrated to the cache), drops
  // anything that isn't a real card, enforces the 15-card cap and guarantees one isUserPhoto.
+ /**
+  * Sanitizes the wish map: metadata only in state, bytes live in IndexedDB/Firestore (AGENTS §11).
+  */
  function ensureWishMap(node){
   if(!node) return;
   if(!Array.isArray(node.wishMap)){ node.wishMap = []; return; }
@@ -4593,6 +4732,9 @@ function ensureAchievements(node){
 }
 // Cloud projection of the board: metadata only — Firestore stores no image data at all, the
 // bytes live in their own documents (keyed by card id). Used by scheduleCloudPush.
+/**
+ * Firestore projection of the wish map: uploaded metadata only.
+ */
 function wishMapForCloud(node){
   const cards = (node && Array.isArray(node.wishMap)) ? node.wishMap : [];
   // ONLY uploaded cards go to Firestore. A card whose file is still pending (or failed) stays
@@ -4631,6 +4773,9 @@ function wishTsMs(v){
   if(typeof v.seconds === 'number') return v.seconds * 1000 + Math.floor((v.nanoseconds || 0) / 1e6);
   return 0;
 }
+/**
+ * Merges cloud and local wish cards without losing local pending uploads.
+ */
 function mergeWishMapCloud(cloudCards, localCards, cloudUpdatedAt){
   const local = new Map((Array.isArray(localCards) ? localCards : []).filter(c => c && c.id).map(c => [c.id, c]));
   const merged = (Array.isArray(cloudCards) ? cloudCards : []).map(cc => {
@@ -4915,6 +5060,10 @@ function wishImageType(blob){
 // Uploads a card's cached bytes into its Firestore image document. ONLY after the write resolves
 // does the card become an uploaded one (imagePath set, uploadState='uploaded', metadata pushed to
 // Firestore) — a failed write leaves uploadState='error' and the pixels stay cached for a retry.
+/**
+ * Uploads card bytes to Firestore, then marks the card uploaded and pushes metadata.
+ * Order is strict: bytes document first; only success sets imagePath/uploadState.
+ */
 async function uploadWishCard(card){
   if(!wishCloudReady() || !card || !card.id) return;
   const blob = await wishCacheGet(card.id);
@@ -4996,6 +5145,9 @@ async function downloadWishImage(card){
 // One pass over the board: upload cards whose bytes exist only here, download cards whose bytes
 // exist only in the cloud. Safe to call often — every card is in its final state or one async
 // step away from it.
+/**
+ * Uploads cached-only cards, downloads cloud-only ones, then re-renders the board.
+ */
 function syncWishBoard(){
   if(!wishCloudReady()) return;
   (state.wishMap || []).forEach(c => {
@@ -5792,6 +5944,9 @@ async function deleteWishCard(card){
 // into a checklist, or an add path that missed its bump): such a total would
 // otherwise push a healthy sphere down toward 0%. total = 0 (nothing ever
 // added) → 100%.
+/**
+ * Sphere fill % = 100 * (1 - fractionalIncomplete / max(totalGoalsAdded, activeLeaves)), clamped 0..100. Sticky totals; archive excluded on both sides (P3-A).
+ */
 function wheelPercent(item){
   if(!item || item.archived) return 100;
   // A lone leaf sector shows its own fill: plain checkbox 100/0, checklist by
@@ -5817,9 +5972,15 @@ function bumpWheelTotals(containerPath, delta){
     if(node && !isLeaf(node)) setWheelTotal(node, wheelTotal(node) + delta);
   }
 }
+/**
+ * Children of a container minus archived ones.
+ */
 function activeChildren(node){
   return (node.children || []).filter(c => !c.archived);
 }
+/**
+ * Leaf completion 0..100: done→100, checklist→done/total, else 0.
+ */
 function computePercent(node){
   if(isLeaf(node)){
     // A leaf with a checklist fills up according to how many of its checklist lines are ticked
@@ -5838,6 +5999,9 @@ function computePercent(node){
   }
   return 0;
 }
+/**
+ * Completed leaf counter used by sphere headers.
+ */
 function doneCount(node){
   if(!node.children) return 0;
   return activeChildren(node).filter(c => computePercent(c) === 100).length;
@@ -5850,6 +6014,10 @@ function doneCount(node){
 // fresh browser would bring back metadata-only cards with no pictures. So we read each cached blob,
 // embed it as base64 in the JSON, and list any card whose bytes we could NOT find (still uploading,
 // or lost) so the user can be told instead of silently shipping an incomplete board.
+/**
+ * Builds and downloads a JSON backup (v2 includes wish-map photos as base64).
+ * Reports cards whose bytes could not be read instead of shipping a silent hole.
+ */
 async function doExportData(){
   const payload = {
     app: 'goal-tracker-backup',
@@ -5893,9 +6061,15 @@ async function doExportData(){
 }
 // A valid goal tree is, at minimum, an object with a string `name` and an array `children` —
 // matches both the root state and every container/leaf node inside it.
+/**
+ * Cheap structural validation before accepting an imported/cloud tree.
+ */
 function isValidGoalTree(obj){
   return !!obj && typeof obj === 'object' && typeof obj.name === 'string' && Array.isArray(obj.children);
 }
+/**
+ * Imports a JSON backup (validates the tree before replacing state).
+ */
 function doImportData(file){
   if(!file) return;
   const reader = new FileReader();
@@ -5960,12 +6134,18 @@ function doImportData(file){
 /* Progress colour bands (owner spec, v1.1.54): 75%+ green, 50%+ yellow, 25%+ orange, below a
    soft light red. All four are theme variables, so the bands stay muted in every theme — no
    bright, out-of-palette shades. Shared by every bar and percentage in the app. */
+/**
+ * Progress-bar colour by percentage (red → orange → yellow → green).
+ */
 function barColor(pct){
   if(pct>=75) return "var(--green)";
   if(pct>=50) return "var(--yellow)";
   if(pct>=25) return "var(--orange)";
   return "var(--red-soft)";
 }
+/**
+ * HTML-escapes text before it is interpolated into markup.
+ */
 function esc(s){
   return (s||"").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 }
@@ -5975,6 +6155,9 @@ function esc(s){
 // sourceIdx move one slot left; the walk itself runs before the splice, so no post-splice index
 // games). Returns null when the picker path no longer resolves to destNode. Pure tree math —
 // exported to tests.
+/**
+ * Maps a relocate target back to a tree path.
+ */
 function relocateDestPath(pickerPath, destNode, sourceParentPath, sourceIdx){
   let n = state;
   const destPath = [];
@@ -6088,6 +6271,9 @@ let lastRenderPath = null;
    взаимодействия не возвращаем фокус на action-кнопки (#btn*); клавиатурная доступность
    сохраняется: сброс флага по keydown возвращает обычное поведение для таб-навигации. */
 let lastInteractionWasTouch = false;
+/**
+ * Full re-render orchestrated by section helpers; preserves scroll/focus on the same page.
+ */
 function render(){
   // If a card/checklist-row drag is still in progress when render() gets triggered by something
   // else entirely (e.g. a Firestore cloud-sync snapshot landing mid-gesture — more likely for
@@ -6302,6 +6488,9 @@ function nodeViewHTML(node, mode, protectedCount, hintHTML){
   return html;
 }
 
+/**
+ * Markup for the home screen (wheel, priorities, today, modules).
+ */
 function homeViewHTML(overallPct, hintHTML, mode, protectedCount){
   // «История «Три важных дела»» — модалка поверх всего, как «История челленджей».
   if(todayHistoryOpen) return todayHistoryHTML();
@@ -7557,6 +7746,9 @@ function templateNameKey(name){
      create — такой сферы ещё нет и лимит 10 не достигнут: сфера создаётся целиком.
      skip   — лимит 10 сфер достигнут и сферы с таким именем нет: она НЕ добавится (видно
               в preview и в результате, а не теряется молча). */
+/**
+ * Returns the starter spheres/goals of a template pack.
+ */
 function planTemplates(){
   const spheres = [];
   const counts = { created: 0, merged: 0, goalsAdded: 0, skippedSpheres: 0 };
@@ -7638,6 +7830,9 @@ function updateTemplatesPreview(){
    by the normalized name — no renames, no duplicates), a missing sphere is created whole, a
    sphere over the 10-cap is skipped. Wheel totals grow exactly like manual creation. Returns
    the counts so the caller can report exactly what happened (added / skipped / why). */
+/**
+ * Applies selected template packs to the tree.
+ */
 function applyTemplates(){
   if(selectedTemplates.size === 0) return null;
   const plan = planTemplates();
@@ -8007,6 +8202,9 @@ function cardModeTitle(node, idx, mode, defaultArrow, protectedCount){
 // 'custom' keeps the stored (drag-reorderable) order. Archived goals ALWAYS sink to the bottom,
 // in every mode, so a paused goal never floats up among active ones (and an un-archive brings
 // it back to the end of the active group, matching the archive sink in the leaf handler).
+/**
+ * Sorts home goals by the persisted goalsSort mode.
+ */
 function sortHomeGoals(children, sortMode){
   const entries = children.map((node, idx) => ({ node, idx }));
   const archived = entries.filter(e => e.node.archived);
@@ -8096,6 +8294,9 @@ function wheelFilledSteps(pct){
   const RING_STEPS = 10;
   return Math.min(RING_STEPS, Math.floor(pct / (100 / RING_STEPS)));
 }
+/**
+ * SVG markup for the balance wheel; one sector per active sphere.
+ */
 function wheelHTML(items, opts){
   opts = opts || {};
   // Интерактивные сектора (главная страница): opts.targets[i] — индекс сферы в state.children,

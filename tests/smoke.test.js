@@ -71,3 +71,20 @@ test('a11y: every toggle button carries aria-pressed', () => {
   assert.deepEqual(missing, [],
     'these toggle buttons declare an active class but no aria-pressed: ' + missing.join(' | '));
 });
+
+/* Документация внутри index.html — навигационная страховка (ARCHITECTURE_RECOMMENDATIONS §2.1–2.4).
+   Если карту кода, индекс CSS или SCHEMA STATE случайно снесут при рефакторинге, правки снова
+   станут «археологией»; сторож дешёвый и ловит это сразу. */
+test('docs: the code map, CSS index and state schema stay in index.html', () => {
+  const html = readProjectFile('index.html');
+  assert.match(html, /КАРТА КОДА/, 'the code map comment must stay at the top of <script>');
+  assert.match(html, /ИНДЕКС CSS/, 'the CSS index comment must stay at the top of <style>');
+  assert.match(html, /SCHEMA STATE/, 'the state schema comment must stay near `let state`');
+});
+
+test('docs: key public functions carry JSDoc', () => {
+  const html = readProjectFile('index.html');
+  const publics = ['wheelLeafFraction', 'sanitizeGoalTree', 'loadState', 'saveState', 'ensureGoodToday', 'render', 'wheelPercent'];
+  const missing = publics.filter(fn => !new RegExp('/\\*\\*[^]*?function ' + fn + '\\s*\\(').test(html));
+  assert.deepEqual(missing, [], 'these public functions lost their JSDoc: ' + missing.join(', '));
+});
