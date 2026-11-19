@@ -1658,7 +1658,7 @@
    - PATCH (2): +1 на каждое изменение версии, начиная с 2.
    APP_VERSION is the only place to bump: footer, About panel and tests read it;
    package.json / manifest.json / sw.js are synced to the same value. */
-const APP_VERSION = '1.4.65';
+const APP_VERSION = '1.4.66';
 /* ===== Wish board constants =====
    Declared high up on purpose: loadState() runs near the top of this script and calls
    ensureWishMap(), which enforces these limits — declaring them lower would blow up in the
@@ -4386,6 +4386,8 @@ function ensureGoodToday(node){
   }
   if(node.goodTodayEntriesOpen === undefined){ node.goodTodayEntriesOpen = false; }
   // The weekly reflection is optional; prune anything malformed, backfill missing array.
+  // A record whose three answers are all empty carries no content (older builds saved
+  // such blanks) — drop it so «отчёт есть» never becomes true for an empty form.
   if(!Array.isArray(node.goodTodayWeekReflections)){
     node.goodTodayWeekReflections = [];
   }else{
@@ -4393,12 +4395,12 @@ function ensureGoodToday(node){
       !!r && typeof r === 'object' && typeof r.week === 'string'
     ).map(r => ({
       week: r.week,
-      q1: typeof r.q1 === 'string' ? r.q1 : '',
-      q2: typeof r.q2 === 'string' ? r.q2 : '',
-      q3: typeof r.q3 === 'string' ? r.q3 : '',
+      q1: typeof r.q1 === 'string' ? r.q1.trim() : '',
+      q2: typeof r.q2 === 'string' ? r.q2.trim() : '',
+      q3: typeof r.q3 === 'string' ? r.q3.trim() : '',
       createdAt: Number.isFinite(r.createdAt) ? r.createdAt : null,
       updatedAt: Number.isFinite(r.updatedAt) ? r.updatedAt : null
-    }));
+    })).filter(r => r.q1 || r.q2 || r.q3);
   }
 }
 /* «Мои достижения»: гарантируем, что state.achievements — объект с 4 группами.
@@ -6979,18 +6981,19 @@ function goodTodaySectionHTML(){
   }
   if(goodTodayWeekPauseOpen){
     if(hasWeekReflection && !goodTodayWeekEditing){
-      // Show saved reflection
+      // Show saved reflection — only the answers that were actually filled in
+      // (empty questions are never stored, and old records may carry blanks).
       html += `<div class="good-today-week-saved">
         <div class="good-today-week-label">${t('goodTodayWeekPauseSaved')}</div>`;
-      html += `<div class="good-today-week-q">
-        <strong>${t('goodTodayWeekPauseQ1')}</strong><div>${esc(weekRefl.q1)}</div>
-      </div>
-      <div class="good-today-week-q">
-        <strong>${t('goodTodayWeekPauseQ2')}</strong><div>${esc(weekRefl.q2)}</div>
-      </div>
-      <div class="good-today-week-q">
-        <strong>${t('goodTodayWeekPauseQ3')}</strong><div>${esc(weekRefl.q3)}</div>
-      </div></div>`;
+      [['q1','goodTodayWeekPauseQ1'],['q2','goodTodayWeekPauseQ2'],['q3','goodTodayWeekPauseQ3']]
+        .forEach(([key, labelKey])=>{
+          const val = weekRefl[key];
+          if(!val) return;
+          html += `<div class="good-today-week-q">
+        <strong>${t(labelKey)}</strong><div>${esc(val)}</div>
+      </div>`;
+        });
+      html += `</div>`;
     }else{
       // Edit / create form
       html += `<div class="good-today-week-form">`;
@@ -7051,11 +7054,14 @@ function goodTodayWeekHistoryHTML(){
     </div></div>`;
   }else if(refl){
     html += `<div class="good-today-week-saved">
-      <div class="good-today-week-label">${t('goodTodayWeekPauseSaved')}</div>
-      <div class="good-today-week-q"><strong>${t('goodTodayWeekPauseQ1')}</strong><div>${esc(refl.q1 || '')}</div></div>
-      <div class="good-today-week-q"><strong>${t('goodTodayWeekPauseQ2')}</strong><div>${esc(refl.q2 || '')}</div></div>
-      <div class="good-today-week-q"><strong>${t('goodTodayWeekPauseQ3')}</strong><div>${esc(refl.q3 || '')}</div></div>
-      <div class="good-today-btn-row">
+      <div class="good-today-week-label">${t('goodTodayWeekPauseSaved')}</div>`;
+    [['q1','goodTodayWeekPauseQ1'],['q2','goodTodayWeekPauseQ2'],['q3','goodTodayWeekPauseQ3']]
+      .forEach(([key, labelKey])=>{
+        const val = refl[key];
+        if(!val) return;
+        html += `<div class="good-today-week-q"><strong>${t(labelKey)}</strong><div>${esc(val)}</div></div>`;
+      });
+    html += `<div class="good-today-btn-row">
         <button id="btnGoodTodayWeekHistoryEdit" type="button" class="good-today-primary">${t('goodTodayEntriesEdit')}</button>
       </div></div>`;
   }else{
@@ -9553,6 +9559,13 @@ function attachGoodTodayHandlers(){
       createdAt: existing ? existing.createdAt : now,
       updatedAt: now
     };
+    // Save only non-empty answers; an all-empty reflection is never stored or cleared.
+    if(!reflection.q1 && !reflection.q2 && !reflection.q3){
+      goodTodayWeekHistoryEditing = false;
+      goodTodayWeekDrafts = { q1: '', q2: '', q3: '' };
+      render();
+      return;
+    }
     state.goodTodayWeekReflections = state.goodTodayWeekReflections || [];
     if(existing){
       Object.assign(existing, reflection);
@@ -9582,6 +9595,13 @@ function attachGoodTodayHandlers(){
         createdAt: existing ? existing.createdAt : now,
         updatedAt: now
       };
+      // Save only non-empty answers; an all-empty reflection is never stored.
+      if(!reflection.q1 && !reflection.q2 && !reflection.q3){
+        goodTodayWeekEditing = false;
+        goodTodayWeekDrafts = { q1: '', q2: '', q3: '' };
+        render();
+        return;
+      }
       state.goodTodayWeekReflections = state.goodTodayWeekReflections || [];
       if(existing){
         Object.assign(existing, reflection);

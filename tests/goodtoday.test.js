@@ -50,6 +50,21 @@ test('ensureGoodToday: drops corrupted entries and heals text fields', () => {
   assert.equal(node.goodTodayWeekReflections[0].q1, 'a');
 });
 
+test('ensureGoodToday: all-empty reflections are dropped, filled answers are trimmed', () => {
+  const t = boot();
+  const node = {
+    name: 'root', children: [],
+    goodTodayWeekReflections: [
+      { week: '2026-10-05', q1: '', q2: '   ', q3: '', createdAt: 1, updatedAt: 2 },   // blank → dropped
+      { week: '2026-10-12', q1: '  win  ', q2: '', q3: '', createdAt: 1, updatedAt: 2 }, // one answer kept
+    ],
+  };
+  t.app.ensureGoodToday(node);
+  assert.equal(node.goodTodayWeekReflections.length, 1, 'an all-empty reflection is never kept');
+  assert.equal(node.goodTodayWeekReflections[0].week, '2026-10-12');
+  assert.equal(node.goodTodayWeekReflections[0].q1, 'win', 'saved answers are trimmed');
+});
+
 test('weekStartISO: Monday of the week for a given ISO date', () => {
   const t = boot();
   // 2026-10-08 is a Thursday → Monday is 2026-10-05
@@ -685,6 +700,23 @@ test('goodTodaySectionHTML: weekly history paints the block title exactly once',
   assert.ok(html.includes('id="btnGoodTodayWeekHistory"'), 'the history button stays in the single header');
   // And exactly one section-title-row wraps the weekly block.
   assert.equal((html.match(/id="goodTodayWeekToggle"/g) || []).length, 1, 'one toggle id only');
+});
+
+test('goodTodaySectionHTML: saved reflection shows only filled answers', () => {
+  const t = boot();
+  const curWeek = vm.runInContext('weekStartISO(isoToday())', t.ctx);
+  t.app.setState({
+    name: 'root',
+    children: [],
+    goodTodayWeekReflections: [
+      { week: curWeek, q1: 'Только первое', q2: '', q3: '', createdAt: 1, updatedAt: 1 },
+    ],
+  });
+  vm.runInContext('goodTodayWeekPauseOpen = true; goodTodayWeekEditing = false; goodTodayWeekHistoryOpen = false;', t.ctx);
+  const html = vm.runInContext('goodTodaySectionHTML()', t.ctx);
+  assert.ok(html.includes('Только первое'), 'the filled answer is shown');
+  assert.equal((html.match(/class="good-today-week-q"/g) || []).length, 1,
+    'empty questions must not render as blank rows');
 });
 
 test('goodTodaySectionHTML: «+» becomes «−» while the entry form is open', () => {

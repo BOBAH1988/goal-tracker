@@ -2188,6 +2188,55 @@ test('Победы за неделю: history saves a brand new report for the s
   assert.equal(t.app.getState().goodTodayWeekReflections.length, 2, 'a new report is created');
 });
 
+test('Победы за неделю: an empty reflection is not saved', () => {
+  const t = bootDom();
+  t.app.setState(Object.assign(t.app.getState(), { goodTodayWeekReflections: [] }));
+  t.window.render();
+  t.click('#goodTodayWeekToggle');
+  assert.ok(t.document.getElementById('goodTodayWeekQ1'), 'the form is open for the current week');
+  // Whitespace-only answers count as empty too.
+  t.document.getElementById('goodTodayWeekQ1').value = '   ';
+  t.click('#btnGoodTodayWeekSave');
+  assert.equal(t.app.getState().goodTodayWeekReflections.length, 0,
+    'saving an all-empty reflection must not create a record');
+  // The form stays (there is still nothing saved to show) and the draft is reset.
+  assert.ok(t.document.getElementById('goodTodayWeekQ1'), 'the form remains for a real answer');
+  assert.equal(t.document.getElementById('goodTodayWeekQ1').value, '', 'the abandoned draft is discarded');
+});
+
+test('Победы за неделю: only the filled answers are stored', () => {
+  const t = bootDom();
+  t.app.setState(Object.assign(t.app.getState(), { goodTodayWeekReflections: [] }));
+  t.window.render();
+  t.click('#goodTodayWeekToggle');
+  t.document.getElementById('goodTodayWeekQ2').value = '  Только это  ';
+  t.click('#btnGoodTodayWeekSave');
+  const recs = t.app.getState().goodTodayWeekReflections;
+  assert.equal(recs.length, 1, 'the filled answer creates the report');
+  assert.equal(recs[0].q2, 'Только это', 'the answer is trimmed');
+  assert.equal(recs[0].q1, '', 'an empty question stays empty');
+  assert.equal(recs[0].q3, '', 'an empty question stays empty');
+});
+
+test('Победы за неделю: clearing every field keeps the saved report intact', () => {
+  const t = bootDom();
+  const curWeek = t.window.weekStartISO(t.window.isoToday());
+  t.app.setState(Object.assign(t.app.getState(), {
+    goodTodayWeekReflections: [
+      { week: curWeek, q1: 'Первое', q2: '', q3: '', createdAt: 1, updatedAt: 1 },
+    ],
+  }));
+  t.window.render();
+  t.click('#goodTodayWeekToggle');
+  t.click('#btnGoodTodayWeekEdit');
+  t.document.getElementById('goodTodayWeekQ1').value = '';
+  t.click('#btnGoodTodayWeekSave');
+  const rec = t.app.getState().goodTodayWeekReflections.find(r => r.week === curWeek);
+  assert.ok(rec, 'the existing report is not deleted');
+  assert.equal(rec.q1, 'Первое', 'the previous answer stays until the user saves real text');
+  assert.match(t.document.getElementById('app').innerHTML, /Первое/, 'the saved view shows it again');
+});
+
 test('Хорошее сегодня: «+» opens the form and «−» collapses it again', () => {
   const t = bootDom();
   t.app.setState(Object.assign(t.app.getState(), { goodTodayEntries: [] }));
