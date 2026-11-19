@@ -4,13 +4,15 @@
 //
 // Версия кэша = версия приложения (см. APP_VERSION в index.html): каждый бамп версии
 // гарантированно сносит старый кэш у всех, кто уже установил приложение, и тянет свежие файлы.
-const CACHE_NAME = 'goal-tracker-v1.4.67';
+const CACHE_NAME = 'goal-tracker-v1.4.68';
 const ASSETS = [
   './', 
   './index.html',
   './manifest.json',
   './icon-192.png',
   './icon-512.png',
+  './icon-180.png',
+  './icon-32.png',
   './quotes.js'
 ];
 // Версия ЭТОГО воркера (из CACHE_NAME 'goal-tracker-vX.Y.Z'). Используется для самолечения:
